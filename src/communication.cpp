@@ -10,6 +10,8 @@
 // BLAS
 #include "blas.h"
 
+#define NUM_THREADS 2
+
 /*
  * We assume that there are P=2^k processors.  At all times a power of
  * 2 processors are working together on a task, and they are contiguously

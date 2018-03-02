@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(carma-mm)
-set(PROJECT_NAME carma-mm)
+project(carma)
+set(PROJECT_NAME carma)
 
 include(./cmake/utils.cmake)
 
@@ -19,14 +19,6 @@ list(APPEND CMAKE_MODULE_PATH "${PRJ_CMAKE_DIR}")
 
 #local ref
 set(PRJ_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-
-#############
-# Cilk Part #
-#############
-set(cilk_deps cilkrts)
-##############
-# /Cilk Part #
-##############
 
 #################################
 #  Generic Compilation options  #
@@ -48,8 +40,8 @@ if (CMAKE_COMPILER_IS_GNUCXX)
     else ()
         set(CXX_FLAGS ${CXX_FLAGS} -O3)
         #if (OPENMP_FOUND)
-            #set(CXX_FLAGS ${CXX_FLAGS} ${OpenMP_CXX_FLAGS})
-            #set(openmp_deps gomp)
+        #set(CXX_FLAGS ${CXX_FLAGS} ${OpenMP_CXX_FLAGS})
+        #set(openmp_deps gomp)
         #endif ()
     endif ()
     add_compile_options(${CXX_FLAGS})

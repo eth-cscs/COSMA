@@ -1,4 +1,4 @@
-#include "rectmm.h"
+#include "carma.h"
 
 CarmaMatrix* matrixA;
 CarmaMatrix* matrixB;

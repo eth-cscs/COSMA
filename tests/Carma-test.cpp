@@ -13,12 +13,12 @@
 //MPI
 #include <mpi.h>
 
-// Library
-#include <library.h>
+// CMD parser
+#include <cmd_parser.h>
 
 // Local
 #include <communication.h>
-#include <rectmm.h>
+#include <carma.h>
 #include <matrix.hpp>
 
 template<typename T>
