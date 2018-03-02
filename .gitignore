@@ -1,0 +1,6 @@
+.DS_Store*
+*.swp
+__pycache__
+build*
+exports
+doc

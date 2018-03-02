@@ -1,0 +1,11 @@
+macro(add_cuda_lib_executable exename)
+  cuda_add_executable(${exename} "${exename}.cu")
+  set(dependencyName ${ARGN})
+  target_link_libraries(${exename} ${dependencyName} )
+endmacro()
+
+macro(add_lib_executable exename)
+  add_executable(${exename} "${exename}.cpp")
+  set(dependencyName ${ARGN})
+  target_link_libraries(${exename} ${dependencyName} )
+endmacro()
