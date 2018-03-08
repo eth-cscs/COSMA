@@ -1,7 +1,7 @@
 ## Overview
 CARMA (Demmel et al., 2013) is the first matrix-matrix multiplication algorithm that is communication-optimal for all memory ranges and all matrix shapes. [paper](http://www.eecs.berkeley.edu/Pubs/TechRpts/2012/EECS-2012-205.pdf), [poster](http://www.cs.berkeley.edu/~odedsc/papers/CARMA%20Poster-SC12).
 
-The algorithm recursively splits the largest matrix dimension creating smaller subproblems which are then recursively solved sequentially (DFS step) or in parallel (BFS step), depending on the available memory. When the base case of the recursion is reached, CARMA uses dgemm to perform the local multiplication. While appealing and simple at first sight, the implementation details are tricky and the distributed version requires the data layout very different from any layout used in existing linear-algebra libraries. Concretely, whenever the largest matrix is split, these two halves should already reside entirely on the corresponding halves of the processors. This data layout requirement applies recursively to the base case at which point any load balanced data layout can be used.
+The algorithm recursively splits the largest matrix dimension creating smaller subproblems which are then recursively solved sequentially (DFS step) or in parallel (BFS step), depending on the available memory. When the base case of the recursion is reached, CARMA uses `dgemm` to perform the local multiplication. While appealing and simple at first sight, the implementation details are tricky and the distributed version requires the data layout very different from any layout used in existing linear-algebra libraries. Concretely, whenever the largest matrix is split, these two halves should already reside entirely on the corresponding halves of the processors. This data layout requirement applies recursively to the base case at which point any load balanced data layout can be used.
 
 The original implementation of CARMA assumes that all the dimensions and the number of processors are the powers of 2 or that the number of processors always shares common divisors with the largest dimension in each step of the recursion. It also uses a cyclic data layout in the base case which requires that the data is locally completely reshuffled after each communication.
 
@@ -15,6 +15,8 @@ git remote set-url --add both git@gitlab.ethz.ch:kabicm/CARMA.git
 ```
 
 ## How to build for Piz Daint ?
+
+CARMA uses `dgemm` for the local computation in the base case. A flag `-DCARMA_LAPACK_TYPE` determines which `dgemm` is used. It can have values: `MKL` or `openblas`. If equal to `MKL`, the environment variable `MKLROOT` will be used to find `MKL`. If equal to openblas, the environment variable `BLASROOT` will be used to find `openblas`.
 
 ```
 module swap PrgEnv-cray PrgEnv-gnu
@@ -30,19 +32,13 @@ export MPICH_GNI_ASYNC_PROGRESS_TIMEOUT=0
 
 cd build
 
-CXX=CC CC=cc cmake -DCMAKE_CXX_FLAGS=-std=c++14 \
+CXX=CC CC=cc cmake
   -DCMAKE_BUILD_TYPE=Release \
-  -DBINDIR=$SCRATCH/carma/build \
-  -DMAKE_TEST=on \
   -fopenmp \
-  -DUSE_BLAS_DEFAULT=on \
-  -DBLAS_INCLUDE_DIRS:PATH=$PROJECT/Env/daint-mc/include/ \
+  -DCARMA_LAPACK_TYPE=MKL \
   ..
-
 make -j 8
 ```
-
-Instead of -DUSE_BLAS_DEFAULT, option -DUSE_BLAS_MKL can be used as well.
 
 ## How to test
 In the build directory, do:
@@ -50,7 +46,10 @@ In the build directory, do:
 make test
 ```
 ### Requirements
-You must have Intel Parallel Studio XE installed, which will provide MKL or use openblas instead.
+CARMA algorithm uses:
+  - MPI
+  - OpenMP
+  - dgemm that is provided either through MKL (Intel Parallel Studio XE), or through openblas.
 
 ### Authors
 Marko Kabic \

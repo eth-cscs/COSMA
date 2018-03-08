@@ -10,7 +10,7 @@
 // BLAS
 #include "blas.h"
 
-#define NUM_THREADS 2
+//#define NUM_THREADS 2
 
 /*
  * We assume that there are P=2^k processors.  At all times a power of
@@ -34,14 +34,14 @@ int getCommSize() {
 void initCommunication() {
     MPI_Comm_rank( MPI_COMM_WORLD, &rank );
     MPI_Comm_size( MPI_COMM_WORLD, &commsize );
-    omp_set_num_threads(NUM_THREADS);
+    //omp_set_num_threads(NUM_THREADS);
 }
 
 void initCommunication( int *argc, char ***argv ) {
     MPI_Init(argc, argv);
-    MPI_Comm_rank( MPI_COMM_WORLD, &rank );
-    MPI_Comm_size( MPI_COMM_WORLD, &commsize );
-    omp_set_num_threads(NUM_THREADS);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &commsize);
+    //omp_set_num_threads(NUM_THREADS);
 }
 
 int getRelativeRank( int xOld, int xNew ) {
@@ -127,73 +127,6 @@ void copy_mat( int div, Interval& P, Interval& newP, Interval2D& range,
 #endif
     MPI_Comm_free(&subcomm);
 }
-
-/*
-void reduce_old(int div, Interval& P, Interval& newP, Interval& m, Interval& n, double* LC, double* C) {
-  // number of processor in each subset
-  int subset_size = newP.length();
-  // absolute index of the first node of the current group, the group boss
-  int Proc0 = P.first();
-  // relative index of the current subset, inside the group
-  int gp = (rank-Proc0)/subset_size;
-  // relative index of the current node, within a subset
-  int offset = (rank-Proc0)%subset_size;
-
-
-  // part of m x n matrix that current rank owns
-  Interval localm = m;
-  Interval localn = n.subinterval(newP.length(), gp);
-  int receive_size = Interval2D(localm, localn.subinterval(div, gp)).size();
-  double* receiving_buffer = (double*) malloc(receive_size * (div) *sizeof(double));
-  // we send gp-th package to gp-th group, therefore sending size
-  // depends on the receiver
-
-  MPI_Group world_group;
-  MPI_Comm_group(MPI_COMM_WORLD, &world_group);
-
-  std::vector<int> ranks(div);
-  std::vector<int> sendcounts(div);
-  std::vector<int> sdispls(div);
-  std::vector<int> recvcounts(div);
-  std::vector<int> rdispls(div);
-
-  int ssum = 0;
-  int rsum = 0;
-  for (unsigned i = 0; i < div; ++i) {
-    int target = Proc0+offset+subset_size*i;
-    ranks[i] = target;
-    int send_size = Interval2D(localm, localn.subinterval(div, i)).size();
-    sendcounts[i] = send_size;
-    recvcounts[i] = receive_size;
-    sdispls[i] = ssum;
-    rdispls[i] = rsum;
-    ssum += send_size;
-    rsum += receive_size;
-  }
-
-  MPI_Group subgroup;
-  MPI_Group_incl(world_group, div, ranks.data(), &subgroup);
-
-  MPI_Comm subcomm;
-  MPI_Comm_create_group(MPI_COMM_WORLD, subgroup, 0, &subcomm);
-
-  MPI_Alltoallv(LC, sendcounts.data(), sdispls.data(), MPI_DOUBLE, receiving_buffer, recvcounts.data(), rdispls.data(), MPI_DOUBLE, subcomm);
-
-  MPI_Group_free(&world_group);
-  MPI_Group_free(&subgroup);
-  MPI_Comm_free(&subcomm);
-
-  for (int j = 0; j < receive_size; ++j) {
-     int sum = 0;
-     for (int i = 0; i < div; ++i) {
-       sum += receiving_buffer[i * receive_size + j];
-     }
-     C[j] = sum;
-  }
-
-  free(receiving_buffer);
-}
-*/
 
 void reduce(int div, Interval& P, Interval& newP, Interval2D& c_range, double* LC, double* C, 
         std::vector<std::vector<int>>& c_current,

@@ -50,6 +50,8 @@ public:
     void set_sizes(int rank, std::vector<int>& sizes, int start);
 
 protected:
+    char label_;
+
     /// Number of rows of the global atrix
     int m_;
     /// Number of columns of the global matrix
@@ -63,7 +65,6 @@ protected:
     /// index of the row axis related div in the division pattern
     int nOffset_;
 
-    char label_;
     const std::string patt_;
     const std::vector<int> divPatt_;
 

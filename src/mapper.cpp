@@ -42,13 +42,13 @@ Mapper::Mapper(char label, int m, int n, int P, int n_steps,
 
 #ifdef DEBUG
     std::cout << "Row partitions:\n";
-    for (int i = 0; i < row_partition_.size(); i++) {
+    for (auto i = 0u; i < row_partition_.size(); i++) {
         std::cout << row_partition_[i] << " ";
     }
     std::cout << std::endl << std::endl;
 
     std::cout << "Column partitions:\n";
-    for (int i = 0; i < col_partition_.size(); i++) {
+    for (auto i = 0u; i < col_partition_.size(); i++) {
         std::cout << col_partition_[i] << " ";
     }
     std::cout << std::endl << std::endl;;
@@ -60,7 +60,7 @@ Mapper::Mapper(char label, int m, int n, int P, int n_steps,
     std::cout << "\n\n";
 
     std::cout << "Rank to range:\n";
-    for (int i = 0; i < P; ++i) {
+    for (auto i = 0u; i < P; ++i) {
         std::cout << "Rank " << i << " owns:" << std::endl;
         for (auto& range : rank_to_range_[i]) {
             std::cout << range << std::endl;
@@ -206,7 +206,7 @@ std::vector<std::vector<Interval2D>> Mapper::complete_layout(){
 
 // computes the inverse of rank_to_range_ by iterating through it
 void Mapper::compute_range_to_rank() {
-    for (int rank = 0; rank < P_; ++rank) {
+    for (auto rank = 0u; rank < P_; ++rank) {
         int matrix_id = 0;
         for (auto matrix : rank_to_range_[rank]) {
             range_to_rank_.insert({matrix, {rank, range_offset_[rank][matrix_id]}});
@@ -223,14 +223,14 @@ std::pair<int, int> Mapper::local_coordinates(int gi, int gj) {
     Interval col_interval;
 
     // TODO: use segment tree to locate the interval which contains (gi, gj)
-    for (int row_int = 1; row_int < row_partition_.size(); ++row_int) {
+    for (auto row_int = 1u; row_int < row_partition_.size(); ++row_int) {
         if (row_partition_[row_int] >= gi && row_partition_[row_int - 1] < gi) {
             row_interval = Interval(row_partition_[row_int - 1] + 1, row_partition_[row_int]);
             break;
         }
     }
 
-    for (int col_int = 1; col_int < col_partition_.size(); ++col_int) {
+    for (auto col_int = 1u; col_int < col_partition_.size(); ++col_int) {
         if (col_partition_[col_int] >= gj && col_partition_[col_int - 1] < gj) {
             col_interval = Interval(col_partition_[col_int - 1] + 1, col_partition_[col_int]);
             break;
@@ -257,7 +257,7 @@ std::pair<int, int> Mapper::local_coordinates(int gi, int gj) {
 std::pair<int, int> Mapper::global_coordinates(int local_index, int rank) {
     // TODO: use segment tree to locate with matrix of all the matrices
     // owned by rank contain the local_index
-    for (int matrix_id = 0; matrix_id < rank_to_range_[rank].size(); ++matrix_id) {
+    for (auto matrix_id = 0u; matrix_id < rank_to_range_[rank].size(); ++matrix_id) {
         // range_offset_ returns the beginning index of matrix_id range
         // if the beginning of the matrix >= local_index then this range
         // contains local_index
