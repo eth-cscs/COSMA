@@ -27,14 +27,14 @@ add_lib_executable(Carma-test
 ################
 set(TEST_SOURCES
 test_mapper.cpp
-test.cpp)
+unit_test.cpp)
 
-set(target test.exe)
-add_executable(test.exe ${TEST_SOURCES})
+set(target unit_test.exe)
+add_executable(unit_test.exe ${TEST_SOURCES})
 
 target_link_libraries(${target} gtest)
 target_link_libraries(${target} carma)
-add_test(layout-and-mapper-tests test.exe)
+add_test(layout-and-mapper-tests unit_test.exe)
 
 # debug with
 # mpirun -np 1 xterm -e lldb -o run -- ./Carma-lib-test  -m 16 -n 16 -k 16 -r 4 -p dddd -d 211121112211
