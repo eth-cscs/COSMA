@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 3.5)
+
+###############
+#  Src files  #
+###############
+
+set(sources
+    Block.cpp
+    Entry.cpp
+    Profiler.cpp
+    Stat.cpp
+    System.cpp
+)
+
+######################
+#  Profiler Library  #
+######################
+
+add_library(profiler ${sources})
+

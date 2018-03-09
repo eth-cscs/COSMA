@@ -47,9 +47,9 @@ make test
 ```
 ### Requirements
 CARMA algorithm uses:
-  - MPI
-  - OpenMP
-  - dgemm that is provided either through MKL (Intel Parallel Studio XE), or through openblas.
+  - `MPI`
+  - `OpenMP`
+  - `dgemm` that is provided either through `MKL` (Intel Parallel Studio XE), or through `openblas`.
 
 ### Authors
 Marko Kabic \

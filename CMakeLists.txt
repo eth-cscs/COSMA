@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 
 project(carma)
-set(PROJECT_NAME carma)
+set(PROJECT_NAME carma CXX C)
+set(CMAKE_CXX_STANDARD 14)
 
 include(./cmake/utils.cmake)
 
@@ -30,7 +31,6 @@ set(PRJ_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 #################################
 #Compiler must support c++14
 if (CMAKE_COMPILER_IS_GNUCXX)
-    set(CXX_FLAGS -std=c++14 -fcilkplus)
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         set(CXX_FLAGS ${CXX_FLAGS} -Wall -O0 -ggdb -DDEBUG)
     else ()
@@ -114,12 +114,12 @@ endif ()
 ###############
 # OpenMP Part #
 ###############
-#find_package(OpenMP REQUIRED)
-#if(OPENMP_FOUND)
-#    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-#    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-#endif()
+find_package(OpenMP REQUIRED)
+if(OPENMP_FOUND)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
 ################
 # /OpenMP Part #
 ################
@@ -160,3 +160,5 @@ enable_testing()
 
 add_subdirectory(src)
 add_subdirectory(tests)
+add_subdirectory(miniapp)
+add_subdirectory(profiler)

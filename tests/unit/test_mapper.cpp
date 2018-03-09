@@ -25,7 +25,6 @@ TEST(mapper, bdb) {
         EXPECT_EQ(C.initial_size(i), C_initial_size_target[i]);
     }
 
-
     // test rank_to_range map which specified for each rank, the list of Interval2D it owns
     std::vector<std::vector<Interval2D>> A_rank_to_range_target = 
             {{Interval2D(0, 1, 0, 0), Interval2D(2, 3, 0, 0)},
@@ -92,7 +91,7 @@ TEST(mapper, bdb) {
         }
     }
 
-    i = 0;
+    i = 0u;
     for(auto rank = 0u; rank < P; ++rank) {
         for(auto locIdx = 0u; locIdx < B_initial_size_target[rank]; ++locIdx) {
             int gi, gj;
