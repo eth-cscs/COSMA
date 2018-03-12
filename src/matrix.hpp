@@ -13,7 +13,7 @@
 #include <algorithm>
 #include "mapper.hpp"
 #include "layout.hpp"
-#include <profiler.h>
+#include "profiler.h"
 
 class CarmaMatrix {
 public:

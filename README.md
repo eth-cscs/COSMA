@@ -45,6 +45,55 @@ In the build directory, do:
 ```
 make test
 ```
+
+## Profiling the code
+Use `-DCARMA_WITH_PROFILING=ON` to instrument the code. Running miniapp with the following command:
+```mpirun --oversubscribe -np 4 ./miniapp/carma-miniapp -m 10000 -n 10000 -k 10000 -r 3 -p bdb -d 211211112```
+Produces the following output:
+```
+Benchmarking 10000*10000*10000 multiplication using 4 processes
+Division pattern is: bdb - 211211112
+RANK 0
+PROFILING RESULTS:
+    |- multiply: 25864
+        |- communication: 2310
+            |- copying: 1444
+            |- reduction: 866
+        |- computation: 23413
+        |- layout-overhead: 0
+
+
+RANK 1
+PROFILING RESULTS:
+    |- multiply: 25856
+        |- communication: 2249
+            |- copying: 1398
+            |- reduction: 851
+        |- computation: 23418
+        |- layout-overhead: 0
+
+
+RANK 2
+PROFILING RESULTS:
+    |- multiply: 26033
+        |- communication: 2425
+            |- copying: 1455
+            |- reduction: 970
+        |- computation: 23521
+        |- layout-overhead: 0
+
+
+RANK 3
+PROFILING RESULTS:
+    |- multiply: 26042
+        |- communication: 2370
+            |- copying: 1457
+            |- reduction: 913
+        |- computation: 23579
+        |- layout-overhead: 0
+```
+All the time measurements are given in milliseconds.
+
 ### Requirements
 CARMA algorithm uses:
   - `MPI`

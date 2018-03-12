@@ -12,7 +12,7 @@ set(TEST_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 ####################
 
 #include_directories( "${PRJ_ROOT_DIR}/tests" )
-include_directories( "${PRJ_ROOT_DIR}/profiler" )
+#include_directories( "${PRJ_ROOT_DIR}/profiler" )
 include_directories( "${PRJ_ROOT_DIR}/src" )
 
 ################

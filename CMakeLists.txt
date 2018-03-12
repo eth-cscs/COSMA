@@ -165,7 +165,6 @@ enable_testing()
 #####################################
 #  Adding various code directories  #
 #####################################
-add_subdirectory(profiler)
 add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(miniapp)
