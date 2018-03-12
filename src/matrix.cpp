@@ -23,10 +23,14 @@ CarmaMatrix::CarmaMatrix(char label, int m, int n, int P, int n_steps,
         nOffset_ = 1;
     }
 
+    PE("mapper-init", "preprocessing");
     mapper_ = std::make_unique<Mapper>(label, m, n, P, n_steps, mOffset_, nOffset_, 
             patt, divPatt, rank);
+    PL("mapper-init");
+    PE("layout-init", "preprocessing");
     layout_ = std::make_unique<Layout>(label, m, n, P, n_steps, mOffset_, nOffset_, 
             patt, divPatt, rank, mapper_->complete_layout());
+    PL("layout-init");
 
     matrix_ = std::vector<double>(mapper_->initial_size());
 }

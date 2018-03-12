@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
+include_directories("${PRJ_ROOT_DIR}/profiler")
+
 ###############
 #  Src files  #
 ###############
@@ -16,6 +18,6 @@ set(sources
 ###################
 #  Carma Library  #
 ###################
-
 add_library(carma ${sources})
+target_link_libraries(carma profiler)
 

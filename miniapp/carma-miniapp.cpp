@@ -22,7 +22,7 @@
 #include <matrix.hpp>
 
 // profiler
-#include <timer.h>
+#include <profiler.h>
 
 template<typename T>
 void fillInt(T& in) {
@@ -32,7 +32,6 @@ void fillInt(T& in) {
 
 int main( int argc, char **argv ) {
     initCommunication(&argc, &argv);
-
     auto m = read_int(argc, argv, "-m", 4096);
     auto n = read_int(argc, argv, "-n", 4096);
     auto k = read_int(argc, argv, "-k", 4096);
@@ -79,22 +78,13 @@ int main( int argc, char **argv ) {
     int P;
     MPI_Comm_size( MPI_COMM_WORLD, &P );
 
-    std::cout << "P = " << P << std::endl;
-
     // Check if the parameters make sense.
-    int m0 = m;
-    int n0 = n;
-    int k0 = k;
     int prodBFS = 1;
 
     for (int i = 0; i < r; i++) {
         int divM = divPattern[3*i];
         int divN = divPattern[3*i + 1];
         int divK = divPattern[3*i + 2];
-
-        m0 /= divM;
-        n0 /= divN;
-        k0 /= divK;
 
         if (pattern[i] == 'b') {
           prodBFS *= divM * divN * divK;
@@ -129,198 +119,8 @@ int main( int argc, char **argv ) {
     fillInt(A->matrix());
     fillInt(B->matrix());
 
-    //Then rank0 ask for other ranks data
-    std::vector<double> As,Bs;
-    if (getRank()==0) {
-        As=std::vector<double>(m*k);
-        std::copy(A->matrix().cbegin(),A->matrix().cend(),As.begin());
-        Bs=std::vector<double>(k*n);
-        std::copy(B->matrix().cbegin(),B->matrix().cend(),Bs.begin());
-
-        int offsetA = sizeA;
-        int offsetB = sizeB;
-
-        for( int i = 1; i < P; i++ ) {
-            int receive_size_A = A->initial_size(i); 
-            int receive_size_B = B->initial_size(i);
-            //Rank 0 receive data
-            MPI_Recv(As.data()+offsetA, receive_size_A, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,
-                nullptr);
-            MPI_Recv(Bs.data()+offsetB, receive_size_B, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,
-                nullptr);
-
-            offsetA += receive_size_A;
-            offsetB += receive_size_B;
-        }
-    }
-    //Rank i send data
-    if (getRank() > 0) {
-        MPI_Send(A->matrix_pointer(), sizeA, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-        MPI_Send(B->matrix_pointer(), sizeB, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-    }
-
-    MPI_Barrier( MPI_COMM_WORLD );
-
-    //Then rank 0 must reorder data locally
-    std::vector<double> globA;
-    std::vector<double> globB;
-    std::vector<double> globCcheck;
-    if (getRank()==0) {
-        std::cout << "Complete matrix A (before reordering): " << std::endl;
-        for (auto& el : As) {
-            std::cout << el << " ";
-        }
-        std::cout << "\n";
-
-        std::cout << "Complete matrix B (before reordering): " << std::endl;
-        for (auto& el : Bs) {
-            std::cout << el << " ";
-        }
-        std::cout << "\n";
-
-        globA.resize(m*k);
-        globB.resize(k*n);
-        globCcheck.resize(m*n);
-        int offsetA = 0;
-        int offsetB = 0;
-
-        for (int i=0; i<P; i++) {
-            int local_size_A = A->initial_size(i);
-            int local_size_B = B->initial_size(i);
-            int local_size_C = C->initial_size(i);
-            std::cout << "i = " << i << " A.initial_size(" << i << ") = " << local_size_A << std::endl;
-            std::cout << "B.initial_size(" << i << ") = " << local_size_B << std::endl;
-            std::cout << "C.initial_size(" << i << ") = " << local_size_C << std::endl;
-
-            for (int j=0; j<local_size_A; j++) {
-                int y,x;
-                std::tie(y,x) = A->global_coordinates(j,i);
-                std::cout << "Matrix A: Rank " << i << " localid = " << j << " -> (" << y << ", " << x << ")\n";
-                if (y>=0 && x>=0) {
-                    globA.at(x*m+y)=As.at(offsetA+j);
-                }
-            }
-            for (int j=0; j<local_size_B; j++) {
-                int y,x;
-                std::tie(y,x) = B->global_coordinates(j,i);
-                std::cout << "Matrix B: Rank " << i << " localid = " << j << " -> (" << y << ", " << x << ")\n";
-                //std::cout << "Mapped successfully!\n";
-                if (y>=0 && x>=0) {
-                    //globB.at(x*n+y)=Bs.at(i*sizeB+j);
-                    //std::cout << "Retrieved Bs value successfully!\n";
-                    globB.at(x*k+y) = Bs.at(offsetB+j);
-                }
-            }
-
-            offsetA += local_size_A;
-            offsetB += local_size_B;
-        }
-        //Now compute the result
-        char N = 'N';
-        double one = 1., zero = 0.;
-        dgemm_(&N, &N, &m, &n, &k, &one, globA.data(), &m, globB.data(), &k, &zero,
-            globCcheck.data(), &m);
-
-        std::cout << "Complete matrix A: " << std::endl;
-        for (int i = 0; i < m; i++) {
-            for (int j = 0; j < k; j++) {
-                std::cout << globA[j * m + i] << " ";
-            }
-            std::cout << "\n";
-        }
-        std::cout << "\n";
-
-        std::cout << "Complete matrix B: " << std::endl;
-        for (int i = 0; i < k; i++) {
-            for (int j = 0; j < n; j++) {
-                std::cout << globB[j * k + i] << " ";
-            }
-            std::cout << "\n";
-        }
-
-        std::cout << "Complete matrix C: " << std::endl;
-        for (int i = 0; i < m; i++) {
-            for (int j = 0; j < n; j++) {
-                std::cout << globCcheck[j * m + i] << " ";
-            }
-            std::cout << "\n";
-        }
-        std::cout << "\n";
-    }
-
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    TimerCpp::start("multiply");
     multiply(A, B, C, m, n, k, P, r, pattern.cbegin(), divPattern.cbegin());
-    MPI_Barrier(MPI_COMM_WORLD);
-    TimerCpp::tic("multiply");
-    TimerCpp::printAllMeans();
-    TimerCpp::printAllMeansTree();
-
-    //Then rank0 ask for other ranks data
-    std::vector<double> Cs;
-    if (getRank()==0) {
-        Cs=std::vector<double>(m*n);
-        std::copy(C->matrix().cbegin(),C->matrix().cend(),Cs.begin());
-
-        int offsetC = sizeC;
-
-        for( int i = 1; i < P; i++ ) {
-            int receive_size_C = C->initial_size(i); 
-            //Rank 0 receive data
-            MPI_Recv(Cs.data()+offsetC, receive_size_C, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,
-                nullptr);
-            offsetC += receive_size_C;
-        }
-    }
-    //Rank i send data
-    if (getRank() > 0) {
-        MPI_Send(C->matrix_pointer(), sizeC, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-    }
-
-    MPI_Barrier( MPI_COMM_WORLD );
-
-    //Then rank 0 must reorder data locally
-    std::vector<double> globC;
-    if (getRank()==0) {
-        globC.resize(m*n);
-        int offsetC = 0;
-
-        for (int i=0; i<P; i++) {
-            int local_size_C = C->initial_size(i);
-
-            for (int j=0; j<local_size_C; j++) {
-                int y,x;
-                std::tie(y,x) = C->global_coordinates(j,i);
-                if (y>=0 && x>=0) {
-                    globC.at(x*m+y)=Cs.at(offsetC+j);
-                }
-            }
-            offsetC += local_size_C;
-        }
-
-        auto max_globCcheck = *(max_element(globCcheck.begin(), globCcheck.end()));
-        //Now Check result
-        isOK = std::inner_product(globCcheck.cbegin(), globCcheck.cend(),
-            globC.cbegin(), true,
-            [](bool lhs, bool rhs){ return lhs && rhs; },
-            [=](double lhs, double rhs){ return std::abs(lhs - rhs) / max_globCcheck <= 3 * k * std::numeric_limits<double>::epsilon();});
-        if (!isOK) {
-            std::cout <<"Result is NOT OK"<<std::endl;
-            for (int i=0; i<m*n; i++) {
-                if (globCcheck[i] != globC[i]) {
-                    int x = i % m;
-                    int y = i / m;
-                    int locidx, rank;
-                    std::tie(locidx, rank) = C->local_coordinates(x, y);
-                    std::cout<<"global(" << x << ", " << y << ") = (loc = " << locidx << ", rank = " << rank << ") = " << globC.at(i)<<" and should be "<< globCcheck.at(i)<<std::endl;
-                }
-            }
-        } else {
-            std::cout <<"Result is OK"<<std::endl;
-        }
-    }
-
+/*
 #ifdef DEBUG
     for( int i = 0; i < P; i++ ) {
         if( getRank() == i ) {
@@ -343,17 +143,12 @@ int main( int argc, char **argv ) {
         MPI_Barrier( MPI_COMM_WORLD );
     }
 #endif //DEBUG
-
-
+*/
     MPI_Finalize();
 
     free(A);
     free(B);
     free(C);
-
-    if (getRank() == 0) {
-        return !isOK;
-    }
 
     return 0;
 }

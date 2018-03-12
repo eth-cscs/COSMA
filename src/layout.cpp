@@ -101,7 +101,6 @@ void Layout::update_buckets(Interval& P, Interval2D& range) {
             next(rank);
             pointer++;
         }
-        std::cout << "Rank " << rank << " has pointer = " << pointer_[rank] << std::endl;
     }
 }
 

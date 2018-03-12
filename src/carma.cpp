@@ -22,6 +22,7 @@ void multiply(CarmaMatrix* A, CarmaMatrix* B, CarmaMatrix *C,
         int m, int n, int k, int P, int r,
         std::string::const_iterator patt,
         std::vector<int>::const_iterator divPatt) {
+    PE("multiply");
     Interval mi = Interval(0, m-1);
     Interval ni = Interval(0, n-1);
     Interval ki = Interval(0, k-1);
@@ -33,6 +34,19 @@ void multiply(CarmaMatrix* A, CarmaMatrix* B, CarmaMatrix *C,
 
     multiply(A->matrix_pointer(), B->matrix_pointer(), C->matrix_pointer(), 
             mi, ni, ki, Pi, r, patt, divPatt, 0.0, MPI_COMM_WORLD);
+
+    PL("multiply");
+
+#ifdef CARMA_HAVE_PROFILING
+    for (size_t rank = 0; rank < P; ++rank) {
+        if (rank == getRank()) {
+            std::cout << "RANK " << rank << "\n";
+            PP();
+            std::cout << "\n\n";
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+#endif
 }
 
 // dispatch to local call, BFS, or DFS as appropriate
@@ -41,6 +55,8 @@ void multiply(double *A, double *B, double *C,
     std::string::const_iterator patt,
     std::vector<int>::const_iterator divPatt, double beta,
     MPI_Comm comm) {
+
+    PE("layout-overhead", "multiply");
     // current submatrices that are being computed
     Interval2D a_range(m, k);
     Interval2D b_range(k, n);
@@ -67,12 +83,7 @@ void multiply(double *A, double *B, double *C,
     int offsetA = matrixA->offset(bucketA[getRank()-P.first()]);
     int offsetB = matrixB->offset(bucketB[getRank()-P.first()]);
     int offsetC = matrixC->offset(bucketC[getRank()-P.first()]);
-
-#ifdef DEBUG
-    std::cout << "shifting A " << offsetA << std::endl;
-    std::cout << "shifting B " << offsetB << std::endl;
-    std::cout << "shifting C " << offsetC << std::endl;
-#endif
+    PL("layout-overhead");
 
     if (r == 0) {
         if(!P.only_one()) {
@@ -93,11 +104,12 @@ void multiply(double *A, double *B, double *C,
             printf("Error: unrecognized type of step: %c\n", patt[0]);
         }
     }
-
+    PE("layout-overhead", "multiply");
     // Revert the buckets pointers to their previous values.
     matrixA->set_dfs_buckets(P, bucketA);
     matrixB->set_dfs_buckets(P, bucketB);
     matrixC->set_dfs_buckets(P, bucketC);
+    PL("layout-overhead");
 }
 
 void printMat(int m, int n, double*A, char label) {
@@ -125,7 +137,9 @@ void local_multiply(double *A, double *B, double *C, int m, int n, int k, double
         printMat(m, n, C_partial, 'C');
     }
 #endif
+    PE("computation", "multiply");
     dgemm_( &N, &N, &m, &n, &k, &one, A, &m, B, &k, &beta, C, &m );
+    PL("computation");
 #ifdef DEBUG
     std::cout << "After multiplication: " << std::endl;
     std::cout << "beta = " << beta << std::endl;
@@ -283,6 +297,7 @@ void BFS(double *A, double *B, double *C,
     MPI_Comm newcomm;
     MPI_Comm_split(comm, gp, offset, &newcomm);
 
+    PE("layout-overhead", "multiply");
     /*
      * size_before_expansion:
          maps rank i from interval P to the vector [bucket1.size(), bucket2.size()...]
@@ -353,14 +368,18 @@ void BFS(double *A, double *B, double *C,
     // if divk > 1 => original_matrix=C, expanded_matrix=LC
     double* original_matrix = which_is_expanded(A, B, C, divm, divn, divk);
     double* expanded_matrix = which_is_expanded(LA, LB, LC, divm, divn, divk);
+    PL("layout-overhead");
 
+    PE("communication", "multiply");
     // if divided along m or n then copy original matrix inside communication ring
     // to get the expanded matrix (all ranks inside communication ring should own
     // exactly the same data in the expanded matrix.
     if (divm + divn > 2) {
+        PE("copying", "communication");
         // copy the matrix that wasn't divided in this step
         copy_mat(div, P, newP, range, original_matrix, expanded_matrix,
                 size_before_expansion, total_before_expansion, new_size, comm);
+        PL("copying");
         /*
           observe that here we use the communicator "comm" and not "newcomm"
           this is because newcomm contains only ranks inside newP
@@ -370,22 +389,29 @@ void BFS(double *A, double *B, double *C,
           the execution independently of the other processors in "comm"
         */
     }
-
+    PL("communication");
     // invoke recursion with the new communicator containing ranks from newP
     // observe that we have only one recursive call here (we are not entering a loop
     // of recursive calls as in DFS steps since the current rank will only enter
     // into one recursive call since ranks are split).
     multiply(LA, LB, LC, newm, newn, newk, newP, r-1, patt, divPatt, beta, newcomm);
 
+    PE("communication", "multiply");
     // if division by k do additional reduction of C
     if (divk > 1) {
+        PE("reduction", "communication");
         reduce(div, P, newP, range, expanded_matrix, original_matrix, size_before_expansion, 
                total_before_expansion, size_after_expansion, total_after_expansion, comm);
+        PL("reduction");
     }
+    PL("communication");
 
+    PE("layout-overhead", "multiply");
     // after the memory is freed, the buffer sizes are back to the previous values 
     // (the values at the beginning of this BFS step)
     expanded_mat->set_sizes(newP, size_before_expansion, newP.first() - P.first());
+    PL("layout-overhead");
+
     free(expanded_matrix);
     MPI_Comm_free(&newcomm);
 }

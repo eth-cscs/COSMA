@@ -5,8 +5,6 @@ project(tests)
 set(BIN_TEST_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(TEST_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-#add_definitions(-DDEBUG)
-
 ####################
 #  Lib Dependancy  #
 ####################

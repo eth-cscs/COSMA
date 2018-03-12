@@ -108,13 +108,6 @@ void copy_mat( int div, Interval& P, Interval& newP, Interval2D& range,
             bucket_offset[rank] += size_before[target][bucket];
         }
     }
-    std::cout << std::endl;
-
-    std::cout << "Local matrix = " << std::endl;
-    for (int i = 0; i < local_size; i++) {
-        std::cout << mat[i] << " ";
-    }
-    std::cout << std::endl;
 
 #ifdef DEBUG
     std::cout<<"Content of the copied matrix in rank "<<rank<<" is now: "
@@ -174,7 +167,9 @@ void reduce(int div, Interval& P, Interval& newP, Interval2D& c_range, double* L
     for (int i = 0; i < div; i++) {
         int target = i * newP.length() + offset;
         int send_size = c_total_current[target];
+#ifdef DEBUG
         std::cout << "Rank " << getRank() << " sends " << send_size << " to rank " << i * newP.length() + offset << std::endl;
+#endif
         MPI_Ireduce(send_buffer.data() + total_size, C, send_size, MPI_DOUBLE, MPI_SUM, i, subcomm, req + i);
         total_size += send_size;
     }

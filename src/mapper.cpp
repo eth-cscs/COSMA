@@ -41,6 +41,20 @@ Mapper::Mapper(char label, int m, int n, int P, int n_steps,
     col_partition_ = std::vector<int>(col_partition_set_.begin(), col_partition_set_.end());
 
 #ifdef DEBUG
+    output_layout();
+#endif
+}
+
+void Mapper::output_layout() {
+    std::cout << "MATRIX " << label_ << " LAYOUT: " << std::endl;
+    for (int i = 0; i < m_; ++i) {
+        for (int j = 0; j < n_; ++j) {
+            std::cout << local_coordinates(i, j).second << " ";
+        }
+        std::cout << "\n";
+    }
+    std::cout << "\n";
+
     std::cout << "Row partitions:\n";
     for (auto i = 0u; i < row_partition_.size(); i++) {
         std::cout << row_partition_[i] << " ";
@@ -52,34 +66,21 @@ Mapper::Mapper(char label, int m, int n, int P, int n_steps,
         std::cout << col_partition_[i] << " ";
     }
     std::cout << std::endl << std::endl;;
-
+    /*
     std::cout << "Range to rank:\n";
     for (auto& pair : range_to_rank_) {
         std::cout << "Range " << pair.first << " is owned by rank " << pair.second.first << " starting at local index " << pair.second.second << std::endl;
     }
     std::cout << "\n\n";
+    */
 
     std::cout << "Rank to range:\n";
-    for (auto i = 0u; i < P; ++i) {
+    for (auto i = 0u; i < P_; ++i) {
         std::cout << "Rank " << i << " owns:" << std::endl;
         for (auto& range : rank_to_range_[i]) {
             std::cout << range << std::endl;
         }
         std::cout << "\n\n";
-    }
-    std::cout << "\n\n";
-
-    output_layout();
-#endif
-}
-
-void Mapper::output_layout() {
-    std::cout << "LAYOUT: " << std::endl;
-    for (int i = 0; i < m_; ++i) {
-        for (int j = 0; j < n_; ++j) {
-            std::cout << local_coordinates(i, j).second << " ";
-        }
-        std::cout << "\n";
     }
     std::cout << "\n\n";
 }

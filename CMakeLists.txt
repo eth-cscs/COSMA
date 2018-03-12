@@ -26,6 +26,14 @@ list(APPEND CMAKE_MODULE_PATH "${PRJ_CMAKE_DIR}")
 #local ref
 set(PRJ_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
+#----------------------------------------------------------
+# Built-in profiler
+#----------------------------------------------------------
+option(CARMA_WITH_PROFILING "use built-in profiling" OFF)
+if(CARMA_WITH_PROFILING)
+    add_definitions(-DCARMA_HAVE_PROFILING)
+endif()
+
 #################################
 #  Generic Compilation options  #
 #################################
@@ -157,8 +165,8 @@ enable_testing()
 #####################################
 #  Adding various code directories  #
 #####################################
-
+add_subdirectory(profiler)
 add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(miniapp)
-add_subdirectory(profiler)
+
