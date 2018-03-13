@@ -46,6 +46,24 @@ In the build directory, do:
 make test
 ```
 
+## Miniapp
+
+The project contains the miniapp that produces two random matrices `A` and `B`, computes their product `C` with the CARMA algorithm and outputs all three matrices into files names as: `<matrix><rank>.txt` (for example `A0.txt` for local data in rank `0` of matrix `A`). Each file is the list of triplets in the form `row column element`.
+
+The miniapp consists of an executable `./build/miniapp/carma-miniapp` which can be run with the following command line (assuming we are in the root folder of the project):
+### Example:
+```
+mpirun --oversubscribe -np 4 ./build/miniapp/carma-miniapp -m 1000 -n 1000 -k 1000 -r 3 -p bdb -d 211211112
+```
+The flags have the following meaning:
+    - `m`: number of rows of matrices `A` and `C`
+    - `n`: number of columns of matrices `B` and `C`
+    - `k`: number of columns of matrix `A` and rows of matrix `B`
+    - `r`: number of recursive steps
+    - `p`: string of length `r` that represents the type of each step (either *b* for *BFS* step or *d* for *DFS* step).
+    - `d`: division pattern of length `3 r`. An `i-`th triplet `xyz` represents the divisors of `m`, `n` and `k` repsectively in `i-`th step. Only one of `x`, `y` and `z` can be `>1` while other have to be `=1`.
+
+
 ## Profiling the code
 Use `-DCARMA_WITH_PROFILING=ON` to instrument the code. Running miniapp with the following command:
 

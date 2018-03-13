@@ -10,6 +10,8 @@ TEST(mapper, bdb) {
     std::vector<int> divPatt = {2, 1, 1, 2, 1, 1, 1, 2, 1};
     auto P = 4u;
 
+    // the last element is rank = 0, but regardless of this parameter
+    // the mapper can compute the buffers sizes or the mapper for any rank
     Mapper A('A', m, k, P, n_steps, 0, 2, patt.cbegin(), divPatt.cbegin(), 0);
     Mapper B('B', k, n, P, n_steps, 2, 1, patt.cbegin(), divPatt.cbegin(), 0);
     Mapper C('C', m, n, P, n_steps, 0, 1, patt.cbegin(), divPatt.cbegin(), 0);
@@ -23,6 +25,37 @@ TEST(mapper, bdb) {
         EXPECT_EQ(A.initial_size(i), A_initial_size_target[i]);
         EXPECT_EQ(B.initial_size(i), B_initial_size_target[i]);
         EXPECT_EQ(C.initial_size(i), C_initial_size_target[i]);
+    }
+    // check if the precomputed local->global mapper for 
+    // local elements on the current rank match
+    // the results from the on-demand computed local->global
+    // mapper for any element and any rank
+    // we only check if this holds for rank 0
+    for (auto i = 0u; i < A_initial_size_target[0]; ++i) {
+        int gi, gj;
+        std::tie(gi, gj) = A.global_coordinates(i, 0);
+        int gi_local, gj_local;
+        std::tie(gi_local, gj_local) = A.global_coordinates(i);
+        EXPECT_EQ(gi, gi_local);
+        EXPECT_EQ(gj, gj_local);
+    }
+
+    for (auto i = 0u; i < B_initial_size_target[0]; ++i) {
+        int gi, gj;
+        std::tie(gi, gj) = B.global_coordinates(i, 0);
+        int gi_local, gj_local;
+        std::tie(gi_local, gj_local) = B.global_coordinates(i);
+        EXPECT_EQ(gi, gi_local);
+        EXPECT_EQ(gj, gj_local);
+    }
+
+    for (auto i = 0u; i < C_initial_size_target[0]; ++i) {
+        int gi, gj;
+        std::tie(gi, gj) = C.global_coordinates(i, 0);
+        int gi_local, gj_local;
+        std::tie(gi_local, gj_local) = C.global_coordinates(i);
+        EXPECT_EQ(gi, gi_local);
+        EXPECT_EQ(gj, gj_local);
     }
 
     // test rank_to_range map which specified for each rank, the list of Interval2D it owns
