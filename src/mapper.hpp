@@ -21,9 +21,9 @@ public:
          std::string::const_iterator patt,
          std::vector<int>::const_iterator divPatt, int rank);
 
-    int initial_size(int rank);
+    const int initial_size(int rank) const;
 
-    int initial_size();
+    const int initial_size() const;
 
     // rank -> list of ranges it owns initially
     const std::vector<Interval2D>& initial_layout(int rank) const;
@@ -35,6 +35,10 @@ public:
 
     // (local_id, rank) -> (gi, gj)
     std::pair<int, int> global_coordinates(int local_index, int rank);
+
+    // local_id -> (gi, gj) (for local elements on the current rank)
+    // runtime: constant (pre-computed)
+    const std::pair<int, int> global_coordinates(int local_index) const;
 
     char which_matrix();
 
@@ -86,8 +90,12 @@ private:
     std::vector<int> row_partition_;
     std::vector<int> col_partition_;
 
+    std::vector<std::pair<int, int>> global_coord;
+
     void compute_sizes(Interval m, Interval n, Interval P, int step);
     void output_layout();
     void compute_range_to_rank();
+
+    void compute_global_coord();
 
 };

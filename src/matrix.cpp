@@ -43,11 +43,11 @@ int CarmaMatrix::n() {
     return n_;
 }
 
-int CarmaMatrix::initial_size(int rank) {
+const int CarmaMatrix::initial_size(int rank) const {
     return mapper_->initial_size(rank);
 }
 
-int CarmaMatrix::initial_size() {
+const int CarmaMatrix::initial_size() const {
     return mapper_->initial_size();
 }
 
@@ -67,6 +67,11 @@ std::pair<int, int> CarmaMatrix::local_coordinates(int gi, int gj) {
 // (local_id, rank) -> (gi, gj)
 std::pair<int, int> CarmaMatrix::global_coordinates(int local_index, int rank) {
     return mapper_->global_coordinates(local_index, rank);
+}
+
+// local_id -> (gi, gj) for local elements on the current rank
+const std::pair<int, int> CarmaMatrix::global_coordinates(int local_index) const {
+    return mapper_->global_coordinates(local_index);
 }
 
 double* CarmaMatrix::matrix_pointer() {
@@ -117,7 +122,6 @@ int CarmaMatrix::size() {
     return layout_->size();
 }
 
-
 void CarmaMatrix::buffers_before_expansion(Interval& P, Interval2D& range,
         std::vector<std::vector<int>>& size_per_rank,
         std::vector<int>& total_size_per_rank) {
@@ -144,4 +148,16 @@ void CarmaMatrix::set_sizes(int rank, std::vector<int>& sizes, int start) {
     layout_->set_sizes(rank, sizes, start);
 }
 
+double& CarmaMatrix::operator[](const std::vector<double>::size_type index) {
+    return matrix()[index];
+}
 
+std::ostream& operator<<(std::ostream& os, const CarmaMatrix& mat) {
+    for (auto local = 0; local < mat.initial_size(); ++local) {
+        double value = mat.matrix_[local];
+        int row, col;
+        std::tie(row, col) = mat.global_coordinates(local);
+        os << row << " " << col << " " << value << std::endl; 
+    }
+    return os;
+}

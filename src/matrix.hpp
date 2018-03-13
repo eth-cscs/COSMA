@@ -1,6 +1,7 @@
 #pragma once
 #include <cassert>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <numeric>
 #include <tuple>
@@ -27,15 +28,18 @@ public:
     // **********************************************
     // METHODS FROM mapper.hpp
     // **********************************************
-    int initial_size(int rank);
+    const int initial_size(int rank) const;
 
-    int initial_size();
+    const int initial_size() const;
 
     // (gi, gj) -> (local_id, rank)
     std::pair<int, int> local_coordinates(int gi, int gj);
 
     // (local_id, rank) -> (gi, gj)
     std::pair<int, int> global_coordinates(int local_index, int rank);
+    // local_id -> (gi, gj) for local elements on the current rank
+    // runtime: constant (pre-computed)
+    const std::pair<int, int> global_coordinates(int local_index) const;
 
     double* matrix_pointer();
 
@@ -74,6 +78,16 @@ public:
     void set_sizes(Interval& newP, std::vector<std::vector<int>>& size_per_rank, int offset);
     void set_sizes(Interval& newP, std::vector<std::vector<int>>& size_per_rank);
     void set_sizes(int rank, std::vector<int>& sizes, int start);
+
+    // **********************************************
+    // NEW METHODS
+    // **********************************************
+    double& operator[](const std::vector<double>::size_type index);
+
+    // outputs matrix in a format:
+    //      row, column, value
+    // for all local elements on the current rank
+    friend std::ostream& operator<<(std::ostream& os, const CarmaMatrix& mat);
 
 protected:
     // A, B or C

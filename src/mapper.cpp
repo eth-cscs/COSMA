@@ -40,6 +40,7 @@ Mapper::Mapper(char label, int m, int n, int P, int n_steps,
     row_partition_ = std::vector<int>(row_partition_set_.begin(), row_partition_set_.end());
     col_partition_ = std::vector<int>(col_partition_set_.begin(), col_partition_set_.end());
 
+    compute_global_coord();
 #ifdef DEBUG
     output_layout();
 #endif
@@ -185,11 +186,11 @@ void Mapper::compute_sizes(Interval m, Interval n, Interval P, int step) {
     }
 }
 
-int Mapper::initial_size(int rank) {
+const int Mapper::initial_size(int rank) const {
     return initial_buffer_size_[rank];
 }
 
-int Mapper::initial_size() {
+const int Mapper::initial_size() const {
     return initial_size(rank_);
 }
 
@@ -252,6 +253,25 @@ std::pair<int, int> Mapper::local_coordinates(int gi, int gj) {
     local_index = offset + range.local_index(gi, gj);
 
     return {local_index, rank};
+}
+
+void Mapper::compute_global_coord() {
+    int index = 0;
+    global_coord = std::vector<std::pair<int, int>>(initial_size());
+    for (auto matrix_id = 0u; matrix_id < rank_to_range_[rank_].size(); ++matrix_id) {
+        Interval2D range = rank_to_range_[rank_][matrix_id];
+        for (auto local = 0; local < range.size(); ++local, ++index) {
+            global_coord[index] = range.global_index(local);
+        }
+    }
+}
+
+// local_id -> (gi, gj) (only for the current rank)
+const std::pair<int, int> Mapper::global_coordinates(int local_index) const {
+    if (local_index >= initial_size()) {
+        return {-1, -1};
+    }
+    return global_coord[local_index];
 }
 
 // (local_id, rank) -> (gi, gj)

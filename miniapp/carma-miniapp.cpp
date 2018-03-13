@@ -2,8 +2,8 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
-#include <fstream>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -28,6 +28,13 @@ template<typename T>
 void fillInt(T& in) {
   std::generate(in.begin(), in.end(),
     [](){ return (int) (10*drand48()); });
+}
+
+void output_matrix(CarmaMatrix* M) {
+    std::string local = M->which_matrix() + std::to_string(getRank()) + ".txt";
+    std::ofstream local_file(local);
+    local_file << *M << std::endl;
+    local_file.close();
 }
 
 int main( int argc, char **argv ) {
@@ -120,6 +127,10 @@ int main( int argc, char **argv ) {
     fillInt(B->matrix());
 
     multiply(A, B, C, m, n, k, P, r, pattern.cbegin(), divPattern.cbegin());
+
+    output_matrix(A);
+    output_matrix(B);
+    output_matrix(C);
 /*
 #ifdef DEBUG
     for( int i = 0; i < P; i++ ) {

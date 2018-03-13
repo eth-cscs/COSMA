@@ -31,7 +31,7 @@ void profiler::print(std::string node, int indent) {
 
 void profiler::print(void) {
     std::cout << "PROFILING RESULTS:\n";
-    print(root, 4);
+    print(root, 0);
 }
 
 void profiler::start(std::string name, std::string father) {

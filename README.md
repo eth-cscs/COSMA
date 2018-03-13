@@ -48,49 +48,52 @@ make test
 
 ## Profiling the code
 Use `-DCARMA_WITH_PROFILING=ON` to instrument the code. Running miniapp with the following command:
-```mpirun --oversubscribe -np 4 ./miniapp/carma-miniapp -m 10000 -n 10000 -k 10000 -r 3 -p bdb -d 211211112```
+
+```mpirun --oversubscribe -np 4 ./miniapp/carma-miniapp -m 1000 -n 1000 -k 1000 -r 3 -p bdb -d 211211112```
+
 Produces the following output:
+
 ```
-Benchmarking 10000*10000*10000 multiplication using 4 processes
+Benchmarking 1000*1000*1000 multiplication using 4 processes
 Division pattern is: bdb - 211211112
 RANK 0
 PROFILING RESULTS:
-    |- multiply: 25864
-        |- communication: 2310
-            |- copying: 1444
-            |- reduction: 866
-        |- computation: 23413
-        |- layout-overhead: 0
+|- multiply: 134
+    |- communication: 53
+        |- copying: 21
+        |- reduction: 32
+    |- computation: 46
+    |- layout-overhead: 0
 
 
 RANK 1
 PROFILING RESULTS:
-    |- multiply: 25856
-        |- communication: 2249
-            |- copying: 1398
-            |- reduction: 851
-        |- computation: 23418
-        |- layout-overhead: 0
+|- multiply: 134
+    |- communication: 53
+        |- copying: 26
+        |- reduction: 27
+    |- computation: 51
+    |- layout-overhead: 0
 
 
 RANK 2
 PROFILING RESULTS:
-    |- multiply: 26033
-        |- communication: 2425
-            |- copying: 1455
-            |- reduction: 970
-        |- computation: 23521
-        |- layout-overhead: 0
+|- multiply: 134
+    |- communication: 56
+        |- copying: 19
+        |- reduction: 37
+    |- computation: 53
+    |- layout-overhead: 0
 
 
 RANK 3
 PROFILING RESULTS:
-    |- multiply: 26042
-        |- communication: 2370
-            |- copying: 1457
-            |- reduction: 913
-        |- computation: 23579
-        |- layout-overhead: 0
+|- multiply: 134
+    |- communication: 60
+        |- copying: 25
+        |- reduction: 35
+    |- computation: 56
+    |- layout-overhead: 0
 ```
 All the time measurements are given in milliseconds.
 
@@ -101,8 +104,7 @@ CARMA algorithm uses:
   - `dgemm` that is provided either through `MKL` (Intel Parallel Studio XE), or through `openblas`.
 
 ### Authors
-Marko Kabic \
-Dr. Thibault Notargiacomo
+Marko Kabic 
 
 ### Mentors/Supervisors
 Professor Dr. Joost VandeVondele \
