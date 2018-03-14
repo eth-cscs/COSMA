@@ -86,19 +86,20 @@ RANK 0
  --------------------------------------------------------------
 | region                          t [ms]       [%]       count |
  --------------------------------------------------------------
-|-total                          125.000     100.0         -
-    |-multiply                   117.000      93.6         -
-        |-communication           41.000      35.0         -
-            |-copying             19.000      46.3         1
-            |-reduction           22.000      53.7         2
-        |-computation             43.000      36.8         2
+|-total                          107.000     100.0         -
+    |-multiply                   101.000      94.4         -
+        |-communication           42.000      41.6         -
+            |-copying              9.000      21.4         1
+            |-reduction           33.000      78.6         2
+        |-computation             50.000      49.5         2
         |-layout-overhead          0.000       0.0        18
-    |-preprocessing                7.000       5.6         -
+    |-preprocessing                6.000       5.6         -
         |-layout-init              0.000       0.0         3
-        |-mapper-init              7.000     100.0         3
+        |-mapper-init              6.000     100.0         3
 
 ```
 All the time measurements are given in milliseconds. The precentage is always relative to the first level above.
+The difference between the node time and the sum of the nested node times is caused by the overhead of the profiler itself.
 
 ### Requirements
 CARMA algorithm uses:
