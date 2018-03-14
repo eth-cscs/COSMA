@@ -51,7 +51,7 @@ void multiply(CarmaMatrix* A, CarmaMatrix* B, CarmaMatrix *C,
 
 // dispatch to local call, BFS, or DFS as appropriate
 void multiply(double *A, double *B, double *C,
-    Interval m, Interval n, Interval k, Interval P, int r,
+    Interval& m, Interval& n, Interval& k, Interval& P, int r,
     std::string::const_iterator patt,
     std::vector<int>::const_iterator divPatt, double beta,
     MPI_Comm comm) {
@@ -154,7 +154,7 @@ void local_multiply(double *A, double *B, double *C, int m, int n, int k, double
   sequentially by all P processors.
 */
 void DFS(double *A, double *B, double *C,
-    Interval m, Interval n, Interval k, Interval P, int r, int divm, int divn, int divk,
+    Interval& m, Interval& n, Interval& k, Interval& P, int r, int divm, int divn, int divk,
     std::string::const_iterator patt,
     std::vector<int>::const_iterator divPatt, double beta, MPI_Comm comm) {
 
@@ -254,7 +254,7 @@ T expand_if_needed(T original, T expanded, int divm, int divn) {
         should own what was previously owned by newP ranks - thus local matrices are shrinked.
 */
 void BFS(double *A, double *B, double *C,
-             Interval m, Interval n, Interval k, Interval P, int r, int divm, int divn, int divk,
+             Interval& m, Interval& n, Interval& k, Interval& P, int r, int divm, int divn, int divk,
              std::string::const_iterator patt,
              std::vector<int>::const_iterator divPatt, double beta, MPI_Comm comm) {
 #ifdef DEBUG

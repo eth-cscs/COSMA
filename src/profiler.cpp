@@ -7,6 +7,7 @@ profiler::time_diff_map profiler::sum_time = profiler::time_diff_map();
 profiler::tree profiler::children_tree = profiler::tree();
 profiler::f_tree profiler::father_tree = profiler::f_tree();
 profiler::counter_map profiler::count = profiler::counter_map();
+profiler::counter_map profiler::nested = profiler::counter_map();
 
 float profiler::percentage(std::string node) {
     if (node == root)
@@ -30,7 +31,7 @@ profiler::time_point profiler::current_time() {
 }
 
 profiler::time_type profiler::time(time_type t) {
-    return t / 1000;
+    return t;
 }
 
 int profiler::counter(std::string node) {
@@ -99,6 +100,11 @@ void profiler::print(void) {
 }
 
 void profiler::start(std::string name, std::string father) {
+    auto nested_it = nested.find(name);
+    if (nested_it->second > 0) {
+        nested_it->second++;
+        return;
+    }
     auto now = current_time();
     // insert the root in the tree if not already there
     if (father == root && times.find(father) == times.end()) {
@@ -106,6 +112,7 @@ void profiler::start(std::string name, std::string father) {
                 (name,std::set<std::string>()));
         times.insert(node(father,now));
         sum_time.insert(node_delta(father,0));
+        nested[father] = 1;
     }
     // insert the child in the tree if not already there
     // and update the times
@@ -118,9 +125,11 @@ void profiler::start(std::string name, std::string father) {
         children_tree[father].insert(name);
         father_tree[name] = father;
         count[name] = 1;
+        nested[name] = 1;
     }
     else {
         it->second = now;
+        nested_it->second++;
         count[name]++;
     }
 }
@@ -131,11 +140,14 @@ void profiler::tic(std::string name) {
         std::cout << "Invalid timer id : " << name << "\n";
     }
     else {
-        auto now = current_time();
-        auto elapsed_diff = now - it->second;
-        auto elapsed = elapsed_time(now - it->second);
-        times[name] = now;
-        sum_time[name] += elapsed;
+        nested[name]--;
+        if (nested[name] == 0) {
+            auto now = current_time();
+            auto elapsed_diff = now - it->second;
+            auto elapsed = elapsed_time(now - it->second);
+            times[name] = now;
+            sum_time[name] += elapsed;
+        }
     }
 }
 

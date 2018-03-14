@@ -24,8 +24,8 @@ struct profiler {
     typedef std::map<std::string, std::set<std::string>> tree;
     typedef std::chrono::system_clock::duration duration_type;
     typedef long long time_type;
-    // we measure the time in microseconds but output it in milliseconds
-    typedef std::chrono::microseconds time_precision_type;
+    // we measure and output the time in milliseconds
+    typedef std::chrono::milliseconds time_precision_type;
     typedef std::map<std::string, std::string> f_tree;
 
     // time of each node
@@ -33,6 +33,7 @@ struct profiler {
     // sum of each timer per node
     static time_diff_map sum_time;
     static counter_map count;
+    static counter_map nested;
 
     // for each node a set of children
     static tree children_tree;
