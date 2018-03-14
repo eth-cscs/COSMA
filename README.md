@@ -75,51 +75,30 @@ Use `-DCARMA_WITH_PROFILING=ON` to instrument the code. Running miniapp with the
 
 ```mpirun --oversubscribe -np 4 ./miniapp/carma-miniapp -m 1000 -n 1000 -k 1000 -r 3 -p bdb -d 211211112```
 
-Produces the following output:
+Produces the following output from each rank (here only the output from rank 0 shown):
 
 ```
 Benchmarking 1000*1000*1000 multiplication using 4 processes
 Division pattern is: bdb - 211211112
 RANK 0
-PROFILING RESULTS:
-|- multiply: 134
-    |- communication: 53
-        |- copying: 21
-        |- reduction: 32
-    |- computation: 46
-    |- layout-overhead: 0
+ --------------------------------------------------------------
+|                           PROFILER                           |
+ --------------------------------------------------------------
+| region                          t [ms]       [%]       count |
+ --------------------------------------------------------------
+|-total                          125.000     100.0         -
+    |-multiply                   117.000      93.6         -
+        |-communication           41.000      35.0         -
+            |-copying             19.000      46.3         1
+            |-reduction           22.000      53.7         2
+        |-computation             43.000      36.8         2
+        |-layout-overhead          0.000       0.0        18
+    |-preprocessing                7.000       5.6         -
+        |-layout-init              0.000       0.0         3
+        |-mapper-init              7.000     100.0         3
 
-
-RANK 1
-PROFILING RESULTS:
-|- multiply: 134
-    |- communication: 53
-        |- copying: 26
-        |- reduction: 27
-    |- computation: 51
-    |- layout-overhead: 0
-
-
-RANK 2
-PROFILING RESULTS:
-|- multiply: 134
-    |- communication: 56
-        |- copying: 19
-        |- reduction: 37
-    |- computation: 53
-    |- layout-overhead: 0
-
-
-RANK 3
-PROFILING RESULTS:
-|- multiply: 134
-    |- communication: 60
-        |- copying: 25
-        |- reduction: 35
-    |- computation: 56
-    |- layout-overhead: 0
 ```
-All the time measurements are given in milliseconds.
+All the time measurements are given in milliseconds. The precentage is always relative to the first level above.
 
 ### Requirements
 CARMA algorithm uses:

@@ -1,13 +1,45 @@
 #include "profiler.h"
 
-//~ Static veriable instrantiations
+// Static veriable instrantiations
+const std::string profiler::root = "total";
 profiler::time_map profiler::times = profiler::time_map();
-
 profiler::time_diff_map profiler::sum_time = profiler::time_diff_map();
+profiler::tree profiler::children_tree = profiler::tree();
+profiler::f_tree profiler::father_tree = profiler::f_tree();
+profiler::counter_map profiler::count = profiler::counter_map();
 
-profiler::tree profiler::timer_tree = profiler::tree();
+float profiler::percentage(std::string node) {
+    if (node == root)
+        return 100.0f;
 
-std::string profiler::root = "";
+    time_type t_father = time(sum_time[father_tree[node]]);
+    if (t_father > 0) {
+        time_type t_child = time(sum_time[node]);
+        return 100.0f * t_child / t_father;
+    }
+
+    return 0.0f;
+}
+
+profiler::time_type profiler::elapsed_time(profiler::duration_type duration) {
+    return std::chrono::duration_cast<time_precision_type>(duration).count();
+}
+
+profiler::time_point profiler::current_time() {
+    return std::chrono::high_resolution_clock::now();
+}
+
+profiler::time_type profiler::time(time_type t) {
+    return t / 1000;
+}
+
+int profiler::counter(std::string node) {
+    if (children_tree.find(node) == children_tree.end())
+        return -1;
+    if (children_tree[node].size() > 0)
+        return -1;
+    return count[node];
+}
 
 void profiler::print_node(std::string name, int indent) {
     time_map_it it = times.find(name);
@@ -15,38 +47,81 @@ void profiler::print_node(std::string name, int indent) {
         std::cout << "Invalid timer id : " << name << "\n";
     }
     else {
-        std::string s = std::string(indent, ' ');
-        std::cout << s << "|- " << name << ": " <<
-        sum_time[name] << "\n";
+        std::string indent_str = std::string(indent, ' ');
+        std::string label = indent_str + "|-" + name;
+        time_type t = time(sum_time[name]);
+        int c = counter(name);
+        float percent = percentage(name);
+
+        if (c != -1) {
+            printf("%-30s%10.3f%10.1f%10.1d\n",
+                        label.c_str(),
+                        float(t),
+                        float(percent),
+                        int(c));
+        } else {
+            char empty = '-';
+            printf("%-30s%10.3f%10.1f%10c\n",
+                        label.c_str(),
+                        float(t),
+                        float(percent),
+                        empty);
+
+        }
     }
 }
 
 void profiler::print(std::string node, int indent) {
     print_node(node, indent);
-    for(std::set<std::string>::iterator it = timer_tree[node].begin() ; it !=
-        timer_tree[node].end() ; it++) {
+    for(std::set<std::string>::iterator it = children_tree[node].begin() ; it !=
+        children_tree[node].end() ; it++) {
         print(*it,indent+4);
     }
 }
 
+void profiler::print_header(void) {
+    std::cout << " -------------------------------------------------------------- \n";
+    std::cout << "|                           PROFILER                           |\n";
+    std::cout << " -------------------------------------------------------------- \n";
+    std::cout << "| region                          t [ms]       [%]       count |\n";
+    std::cout << " -------------------------------------------------------------- \n";
+}
+
 void profiler::print(void) {
-    std::cout << "PROFILING RESULTS:\n";
-    print(root, -4);
+    long long total_time = 0;
+    for(std::set<std::string>::iterator it = children_tree[root].begin() ; it !=
+        children_tree[root].end() ; it++) {
+        total_time += sum_time[*it];
+    }
+    sum_time[root] = total_time;
+    print_header();
+    print(root, 0);
 }
 
 void profiler::start(std::string name, std::string father) {
+    auto now = current_time();
+    // insert the root in the tree if not already there
+    if (father == root && times.find(father) == times.end()) {
+        children_tree.insert(std::pair<std::string, std::set<std::string> >
+                (name,std::set<std::string>()));
+        times.insert(node(father,now));
+        sum_time.insert(node_delta(father,0));
+    }
+    // insert the child in the tree if not already there
+    // and update the times
     time_map_it it = times.find(name);
     if(it == times.end()) {
-        timer_tree.insert(std::pair<std::string, std::set<std::string> >
+        children_tree.insert(std::pair<std::string, std::set<std::string> >
                 (name,std::set<std::string>()));
-        auto now = std::chrono::high_resolution_clock::now();
         times.insert(node(name,now));
         sum_time.insert(node_delta(name,0));
-        timer_tree[father].insert(name);
+        children_tree[father].insert(name);
+        father_tree[name] = father;
+        count[name] = 1;
     }
     else {
-        auto now = std::chrono::high_resolution_clock::now();
         it->second = now;
+        count[name]++;
     }
 }
 
@@ -56,9 +131,9 @@ void profiler::tic(std::string name) {
         std::cout << "Invalid timer id : " << name << "\n";
     }
     else {
-        auto now = std::chrono::high_resolution_clock::now();
+        auto now = current_time();
         auto elapsed_diff = now - it->second;
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_diff).count();
+        auto elapsed = elapsed_time(now - it->second);
         times[name] = now;
         sum_time[name] += elapsed;
     }
