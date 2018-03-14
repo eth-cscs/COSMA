@@ -163,18 +163,6 @@ int main( int argc, char **argv ) {
     std::vector<double> globB;
     std::vector<double> globCcheck;
     if (getRank()==0) {
-        std::cout << "Complete matrix A (before reordering): " << std::endl;
-        for (auto& el : As) {
-            std::cout << el << " ";
-        }
-        std::cout << "\n";
-
-        std::cout << "Complete matrix B (before reordering): " << std::endl;
-        for (auto& el : Bs) {
-            std::cout << el << " ";
-        }
-        std::cout << "\n";
-
         globA.resize(m*k);
         globB.resize(k*n);
         globCcheck.resize(m*n);
@@ -185,14 +173,10 @@ int main( int argc, char **argv ) {
             int local_size_A = A->initial_size(i);
             int local_size_B = B->initial_size(i);
             int local_size_C = C->initial_size(i);
-            std::cout << "i = " << i << " A.initial_size(" << i << ") = " << local_size_A << std::endl;
-            std::cout << "B.initial_size(" << i << ") = " << local_size_B << std::endl;
-            std::cout << "C.initial_size(" << i << ") = " << local_size_C << std::endl;
 
             for (int j=0; j<local_size_A; j++) {
                 int y,x;
                 std::tie(y,x) = A->global_coordinates(j,i);
-                std::cout << "Matrix A: Rank " << i << " localid = " << j << " -> (" << y << ", " << x << ")\n";
                 if (y>=0 && x>=0) {
                     globA.at(x*m+y)=As.at(offsetA+j);
                 }
@@ -200,7 +184,6 @@ int main( int argc, char **argv ) {
             for (int j=0; j<local_size_B; j++) {
                 int y,x;
                 std::tie(y,x) = B->global_coordinates(j,i);
-                std::cout << "Matrix B: Rank " << i << " localid = " << j << " -> (" << y << ", " << x << ")\n";
                 //std::cout << "Mapped successfully!\n";
                 if (y>=0 && x>=0) {
                     //globB.at(x*n+y)=Bs.at(i*sizeB+j);

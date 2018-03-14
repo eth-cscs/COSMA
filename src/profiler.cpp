@@ -31,7 +31,7 @@ void profiler::print(std::string node, int indent) {
 
 void profiler::print(void) {
     std::cout << "PROFILING RESULTS:\n";
-    print(root, 0);
+    print(root, -4);
 }
 
 void profiler::start(std::string name, std::string father) {
@@ -42,16 +42,11 @@ void profiler::start(std::string name, std::string father) {
         auto now = std::chrono::high_resolution_clock::now();
         times.insert(node(name,now));
         sum_time.insert(node_delta(name,0));
+        timer_tree[father].insert(name);
     }
     else {
         auto now = std::chrono::high_resolution_clock::now();
         it->second = now;
-    }
-    if(father != "") {
-        timer_tree[father].insert(name);
-    }
-    else {
-        root = name;
     }
 }
 
