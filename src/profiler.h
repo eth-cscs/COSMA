@@ -4,7 +4,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <string>
-#include <map>
+#include <unordered_map>
 #include <set>
 #include <fstream>
 #include <sys/time.h>
@@ -13,20 +13,20 @@
 struct profiler {
     typedef std::chrono::system_clock::time_point time_point;
     // tree
-    typedef std::map<std::string, int> counter_map;
-    typedef std::map<std::string, time_point> time_map;
-    typedef std::map<std::string, long long> time_diff_map;
+    typedef std::unordered_map<std::string, int> counter_map;
+    typedef std::unordered_map<std::string, time_point> time_map;
+    typedef std::unordered_map<std::string, long long> time_diff_map;
     typedef time_map::iterator time_map_it;
     // contains node name and absolute time in ms
     typedef std::pair<std::string,time_point> node;
     // contains node name and accumulated relative time diff in ms
     typedef std::pair<std::string,long long> node_delta;
-    typedef std::map<std::string, std::set<std::string>> tree;
+    typedef std::unordered_map<std::string, std::set<std::string>> tree;
     typedef std::chrono::system_clock::duration duration_type;
     typedef long long time_type;
     // we measure and output the time in milliseconds
     typedef std::chrono::milliseconds time_precision_type;
-    typedef std::map<std::string, std::string> f_tree;
+    typedef std::unordered_map<std::string, std::string> f_tree;
 
     // time of each node
     static time_map times;

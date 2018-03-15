@@ -101,9 +101,11 @@ void profiler::print(void) {
 
 void profiler::start(std::string name, std::string father) {
     auto nested_it = nested.find(name);
-    if (nested_it->second > 0) {
-        nested_it->second++;
-        return;
+    if (nested_it != nested.end()) {
+        if (nested_it->second > 0) {
+            nested_it->second++;
+            return;
+        }
     }
     auto now = current_time();
     // insert the root in the tree if not already there
@@ -129,7 +131,7 @@ void profiler::start(std::string name, std::string father) {
     }
     else {
         it->second = now;
-        nested_it->second++;
+        nested[name]++;
         count[name]++;
     }
 }

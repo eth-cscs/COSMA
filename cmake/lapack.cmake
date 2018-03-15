@@ -57,17 +57,10 @@ function(carma_find_lapack)
     endif()
     set(CARMA_LAPACK_INTERNAL "${MKL_LIB_DIR} -lmkl_intel_lp64 ${MKL_THREAD_LIB} -lmkl_core -lpthread -lm -ldl")
   elseif(CARMA_LAPACK_TYPE MATCHES "openblas")
-      FIND_PACKAGE(BLAS REQUIRED)
-      find_path(BLAS_INCLUDE_DIRS cblas.h
-          /usr/include
-          /usr/local
-          /usr/local/include
-          $ENV{BLAS_ROOT}/include
-          $ENV{BLASROOT/INCLUDE})
-      include_directories(${BLAS_INCLUDE_DIRS})
-      if (NOT((HOSTNAME MATCHES ".*daint.*") OR (HOSTNAME MATCHES "tave*")))
-          set(blas_deps blas)
-      endif ()
+      setoption(OPENBLAS_ROOT PATH $ENV{BLASROOT} "OpenBlas path")
+      message("${OPENBLAS_ROOT}")
+      include_directories(${OPENBLAS_ROOT}/include)
+      set(CARMA_LAPACK_INTERNAL "-L${OPENBLAS_ROOT}/lib -llapack -lopenblas -lpthread")
   elseif(CARMA_LAPACK_TYPE STREQUAL "Custom")
     setoption(CARMA_BLAS_LAPACK_LIB STRING "" "BLAS and LAPACK link line for CARMA_LAPACK_TYPE = Custom")
     set(CARMA_LAPACK_INTERNAL "${CARMA_BLAS_LAPACK_LIB}")
