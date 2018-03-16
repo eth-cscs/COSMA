@@ -63,7 +63,7 @@ The flags have the following meaning:
 
 - `d`: division pattern of length `3 r`. An `i-`th triplet `xyz` represents the divisors of `m`, `n` and `k` repsectively in `i-`th step. Only one of `x`, `y` and `z` can be `>1` while other have to be `=1`.
 
-In addition to this miniapp, in the same directory (./build/miniapp/) there is an executable called `carma-statistics` which simulates the algorithm (without actually computing the matrix multiplication) in order to get the total volume of the communication, the maximum volume of computation done in a single branch and the maximum required buffer size that the algorithm requires. In addition to the previous flags, it also defines a flag `-P` for specifying the number of processors. This is needed since this executable is not run with `mpi` (no computation is performed). 
+In addition to this miniapp, after compilation, in the same directory (./build/miniapp/) there will be an executable called `carma-statistics` which simulates the algorithm (without actually computing the matrix multiplication) in order to get the total volume of the communication, the maximum volume of computation done in a single branch and the maximum required buffer size that the algorithm requires. In addition to the previous flags, it also defines a flag `-P` for specifying the number of processors. This is needed since this executable is not run with `mpi` (no actual matrix multiplication is performed).
 
 ### Example:
 ```
