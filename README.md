@@ -108,7 +108,8 @@ CARMA algorithm uses:
   - `dgemm` that is provided either through `MKL` (Intel Parallel Studio XE), or through `openblas`.
 
 ### Authors
-Marko Kabic 
+Marko Kabic \
+(marko.kabic@cscs.ch)
 
 ### Mentors/Supervisors
 Professor Dr. Joost VandeVondele \
