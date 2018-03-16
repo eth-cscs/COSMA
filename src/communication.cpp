@@ -136,8 +136,6 @@ void reduce(int div, Interval& P, Interval& newP, Interval2D& c_range, double* L
 
     int total_size = 0;
 
-    MPI_Request req[div];
-
     // reorder the elements as:
     // first all buckets that should be sent to rank 0 then all buckets for rank 1 and so on...
     std::vector<double> send_buffer(c_total_expanded[offset]);
@@ -150,10 +148,13 @@ void reduce(int div, Interval& P, Interval& newP, Interval2D& c_range, double* L
         sum += c_expanded[offset][i];
     }
 
+    std::vector<int> recvcnts(div);
+
     int index = 0;
     // go through the communication ring
     for (int i = 0; i < div; i++) {
         int target = i * newP.length() + offset;
+        recvcnts[i] = c_total_current[target];
 
         for (int bucket = 0; bucket < n_buckets; ++bucket) {
             int b_offset = bucket_offset[bucket];
@@ -164,17 +165,8 @@ void reduce(int div, Interval& P, Interval& newP, Interval2D& c_range, double* L
         }
     }
 
-    for (int i = 0; i < div; i++) {
-        int target = i * newP.length() + offset;
-        int send_size = c_total_current[target];
-#ifdef DEBUG
-        std::cout << "Rank " << getRank() << " sends " << send_size << " to rank " << i * newP.length() + offset << std::endl;
-#endif
-        MPI_Ireduce(send_buffer.data() + total_size, C, send_size, MPI_DOUBLE, MPI_SUM, i, subcomm, req + i);
-        total_size += send_size;
-    }
-
-    MPI_Waitall(div, req, MPI_STATUSES_IGNORE);
+    MPI_Reduce_scatter(send_buffer.data(), C, recvcnts.data(), MPI_DOUBLE, MPI_SUM, subcomm);
 
     MPI_Comm_free(&subcomm);
 }
+
