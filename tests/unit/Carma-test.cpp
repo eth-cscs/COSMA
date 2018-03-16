@@ -76,8 +76,6 @@ int main( int argc, char **argv ) {
     int P;
     MPI_Comm_size( MPI_COMM_WORLD, &P );
 
-    std::cout << "P = " << P << std::endl;
-
     // Check if the parameters make sense.
     int m0 = m;
     int n0 = n;
@@ -201,6 +199,7 @@ int main( int argc, char **argv ) {
         dgemm_(&N, &N, &m, &n, &k, &one, globA.data(), &m, globB.data(), &k, &zero,
             globCcheck.data(), &m);
 
+#ifdef DEBUG
         std::cout << "Complete matrix A: " << std::endl;
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < k; j++) {
@@ -226,6 +225,7 @@ int main( int argc, char **argv ) {
             std::cout << "\n";
         }
         std::cout << "\n";
+#endif
     }
 
     multiply(A, B, C, m, n, k, P, r, pattern.cbegin(), divPattern.cbegin());
