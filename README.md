@@ -7,15 +7,8 @@ The original implementation of CARMA assumes that all the dimensions and the num
 
 Here, we present the results from an implementation of CARMA that provides functionality not present in earlier published prototypes, namely the ability to deal with matrix dimensions and processor numbers that are not powers of two, and do not necessarily share common divisors. Furthermore, we derive a relatively simple underlying data layout, which preserves the communication-optimality of the algorithm, but requires less intermediate data reshufflings during execution, has improved memory access patterns and is potentially more compatible with existing linear algebra libraries.
 
-## Using two remotes
-
-```sh
-git remote add both git@github.com:eth-cscs/CARMA.git
-git remote set-url --add both git@gitlab.ethz.ch:kabicm/CARMA.git
-```
 
 ## How to build for Piz Daint ?
-
 CARMA uses `dgemm` for the local computation in the base case. A flag `-DCARMA_LAPACK_TYPE` determines which `dgemm` is used. It can have values: `MKL` or `openblas`. If equal to `MKL`, the environment variable `MKLROOT` will be used to find `MKL`. If equal to openblas, the environment variable `BLASROOT` will be used to find `openblas`.
 
 ```
@@ -40,14 +33,15 @@ CXX=CC CC=cc cmake
 make -j 8
 ```
 
+
 ## How to test
 In the build directory, do:
 ```
 make test
 ```
 
-## Miniapp
 
+## Miniapp
 The project contains the miniapp that produces two random matrices `A` and `B`, computes their product `C` with the CARMA algorithm and outputs all three matrices into files names as: `<matrix><rank>.txt` (for example `A0.txt` for local data in rank `0` of matrix `A`). Each file is the list of triplets in the form `row column element`.
 
 The miniapp consists of an executable `./build/miniapp/carma-miniapp` which can be run with the following command line (assuming we are in the root folder of the project):
@@ -68,6 +62,23 @@ The flags have the following meaning:
 - `p`: string of length `r` that represents the type of each step (either *b* for *BFS* step or *d* for *DFS* step).
 
 - `d`: division pattern of length `3 r`. An `i-`th triplet `xyz` represents the divisors of `m`, `n` and `k` repsectively in `i-`th step. Only one of `x`, `y` and `z` can be `>1` while other have to be `=1`.
+
+In addition to this miniapp, in the same directory (./build/miniapp/) there is an executable called `carma-statistics` which simulates the algorithm (without actually computing the matrix multiplication) in order to get the total volume of the communication, the maximum volume of computation done in a single branch and the maximum required buffer size that the algorithm requires. In addition to the previous flags, it also defines a flag `-P` for specifying the number of processors. This is needed since this executable is not run with `mpi` (no computation is performed). 
+
+### Example:
+```
+./build/miniapp/carma-statistics -P 4 -m 1000 -n 1000 -k 1000 -r 3 -p bdb -d 211211112
+```
+Executing the previous command produces the following output:
+
+```
+Benchmarking 1000*1000*1000 multiplication using 4 processes
+Division pattern is: bdb - 211211112
+Total communication units: 2000000
+Total computation units: 250000000
+Max buffer size: 500000
+```
+All the measurements are given in the units representing the number of elements of the matrix (not in bytes).
 
 
 ## Profiling the code
@@ -101,15 +112,23 @@ RANK 0
 All the time measurements are given in milliseconds. The precentage is always relative to the first level above.
 The difference between the node time and the sum of the nested node times is caused by the overhead of the profiler itself.
 
+
 ### Requirements
 CARMA algorithm uses:
   - `MPI`
   - `OpenMP`
   - `dgemm` that is provided either through `MKL` (Intel Parallel Studio XE), or through `openblas`.
 
+
+### Using two remotes
+```
+git remote add both git@github.com:eth-cscs/CARMA.git
+git remote set-url --add both git@gitlab.ethz.ch:kabicm/CARMA.git
+```
+
 ### Authors
 Marko Kabic \
-(marko.kabic@cscs.ch)
+marko.kabic@cscs.ch
 
 ### Mentors/Supervisors
 Professor Dr. Joost VandeVondele \

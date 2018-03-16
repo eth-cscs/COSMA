@@ -14,6 +14,7 @@ set(sources
     layout.cpp
     mapper.cpp
     profiler.cpp
+    statistics.hpp
 )
 
 ###################

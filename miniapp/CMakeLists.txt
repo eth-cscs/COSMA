@@ -21,4 +21,8 @@ add_lib_executable(carma-miniapp
   carma
   ${carma_deps})
 
+add_lib_executable(carma-statistics
+  carma
+  ${carma_deps})
+
 #target_link_libraries(carma-miniapp profiler)
