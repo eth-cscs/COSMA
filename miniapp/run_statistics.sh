@@ -8,3 +8,4 @@
 ../build/miniapp/carma-statistics -P 8 -m 1000 -n 1000 -k 1000 -r 6 -p dddbbb -d 211112121121211112
 ../build/miniapp/carma-statistics -P 8 -m 1000 -n 1000 -k 1000 -r 6 -p bdbdbd -d 121211211112112121
 ../build/miniapp/carma-statistics -P 8 -m 1000 -n 1000 -k 1000 -r 6 -p bbbddd -d 121211112211112121
+../build/miniapp/carma-statistics -P 8 -m 1000 -n 1000 -k 1000 -r 3 -p bbb -d 121211112

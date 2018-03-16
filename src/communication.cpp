@@ -101,11 +101,11 @@ void copy_mat( int div, Interval& P, Interval& newP, Interval2D& range,
     for (int bucket = 0; bucket < n_buckets; bucket++) {
         for (int rank = 0; rank < div; rank++) {
             int target = rank * newP.length() + offset;
-            for (int el = 0; el < size_before[target][bucket]; el++) {
-                out[index] = receiving_buffer[dspls[rank] + bucket_offset[rank] + el];
-                index++;
-            }
-            bucket_offset[rank] += size_before[target][bucket];
+            int dsp = dspls[rank] + bucket_offset[rank];
+            int b_size = size_before[target][bucket];
+            std::copy(receiving_buffer.begin() + dsp, receiving_buffer.begin() + dsp + b_size, out + index);
+            index += b_size;
+            bucket_offset[rank] += b_size;
         }
     }
 
@@ -121,7 +121,7 @@ void copy_mat( int div, Interval& P, Interval& newP, Interval2D& range,
     MPI_Comm_free(&subcomm);
 }
 
-void reduce(int div, Interval& P, Interval& newP, Interval2D& c_range, double* LC, double* C, 
+void reduce(int div, Interval& P, Interval& newP, Interval2D& c_range, double* LC, double* C,
         std::vector<std::vector<int>>& c_current,
         std::vector<int>& c_total_current,
         std::vector<std::vector<int>>& c_expanded,
@@ -156,11 +156,11 @@ void reduce(int div, Interval& P, Interval& newP, Interval2D& c_range, double* L
         int target = i * newP.length() + offset;
 
         for (int bucket = 0; bucket < n_buckets; ++bucket) {
-            for (int el = 0; el < c_current[target][bucket]; ++el) {
-                send_buffer[index] = LC[bucket_offset[bucket] + el];
-                index++;
-            }
-            bucket_offset[bucket] += c_current[target][bucket];
+            int b_offset = bucket_offset[bucket];
+            int b_size = c_current[target][bucket];
+            std::copy(LC + b_offset, LC + b_offset + b_size, send_buffer.begin() + index);
+            index += b_size;
+            bucket_offset[bucket] += b_size;
         }
     }
 
