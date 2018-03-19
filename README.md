@@ -11,7 +11,7 @@ Here, we present the results from an implementation of CARMA that provides funct
 ## How to build for Piz Daint ?
 CARMA uses `dgemm` for the local computation in the base case. A flag `-DCARMA_LAPACK_TYPE` determines which `dgemm` is used. It can have values: `MKL` or `openblas`. If equal to `MKL`, the environment variable `MKLROOT` will be used to find `MKL`. If equal to openblas, the environment variable `BLASROOT` will be used to find `openblas`. If MKL is used, then the type of threading can be specified using the variable `MKL_THREADING` (values `Intel OpenMP`, `GNU OpenMP`, `Sequential`).
 
-###Example (on Piz Daint)
+### Example (on Piz Daint)
 ```
 # clone the repository
 git clone https://github.com/eth-cscs/CARMA.git
