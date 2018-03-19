@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent daint
 
     stages {
         stage('Testing') {
