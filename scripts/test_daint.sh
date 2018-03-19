@@ -66,8 +66,8 @@ case $partition in
 esac
 
 case $lapack in
-  MKLst) OPT_LAPACK=(-DDLA_LAPACK_TYPE=MKL -DMKL_THREADING=Sequential) ;;
-  MKLmt) OPT_LAPACK=(-DDLA_LAPACK_TYPE=MKL -DMKL_THREADING="Intel OpenMP") ;;
+  MKLst) OPT_LAPACK=(-DCARMA_LAPACK_TYPE=MKL -DMKL_THREADING=Sequential) ;;
+  MKLmt) OPT_LAPACK=(-DCARMA_LAPACK_TYPE=MKL -DMKL_THREADING="Intel OpenMP") ;;
   *) echo "Wrong --lapack option: $lapack" ; print_help ; exit 1 ;;
 esac
 
@@ -85,7 +85,7 @@ if [ "`hostname | grep daint`" == "" ]; then
 fi
 
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
-SRC_DIR=$SCRIPT_DIR/../..
+SRC_DIR=$SCRIPT_DIR/..
 
 source $SCRIPT_DIR/daint-${partition}_env.sh
 
@@ -99,8 +99,7 @@ cd $BUILD_DIR
 
 OPT_CMAKE=(\
   -DCMAKE_BUILD_TYPE=$build_type \
-  -DTEST_RUNNER="srun" \
-  -DCARMA_ALL_TESTS_USE_RUNNER=ON \
+  -DMPIEXEC="`which srun`" \
   "${OPT_LAPACK[@]}" \
   ..)
 echo -n "executing cmake with options: ${OPT_CMAKE[@]}"

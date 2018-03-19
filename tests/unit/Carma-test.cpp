@@ -140,9 +140,9 @@ int main( int argc, char **argv ) {
             int receive_size_B = B->initial_size(i);
             //Rank 0 receive data
             MPI_Recv(As.data()+offsetA, receive_size_A, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,
-                nullptr);
+                MPI_STATUSES_IGNORE);
             MPI_Recv(Bs.data()+offsetB, receive_size_B, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,
-                nullptr);
+                MPI_STATUSES_IGNORE);
 
             offsetA += receive_size_A;
             offsetB += receive_size_B;
@@ -243,7 +243,7 @@ int main( int argc, char **argv ) {
             int receive_size_C = C->initial_size(i); 
             //Rank 0 receive data
             MPI_Recv(Cs.data()+offsetC, receive_size_C, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,
-                nullptr);
+                MPI_STATUSES_IGNORE);
             offsetC += receive_size_C;
         }
     }

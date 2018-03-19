@@ -161,7 +161,6 @@ set(carma_deps ${mpi_deps} ${blas_deps})
 #  Testing  #
 #############
 enable_testing()
-setoption(CARMA_ALL_TESTS_USE_RUNNER BOOL "OFF" "Specify if the single rank tests has to use the runner as well")
 
 #####################################
 #  Adding various code directories  #
