@@ -1,8 +1,11 @@
 #include "matrix.hpp"
 
 /* Simulates the algorithm (without actually computing the matrix multiplication)
- * in order to get the total volume of the communication, the maximum volume of computation
- * done in a single branch and the maximum required buffer size that the algorithm requires.
+   and outputs the following information:
+       * total volume of the communication 
+       * maximum volume of computation done in a single branch
+       * maximum buffer size that the algorithm requires
+       * size of matrix (m, n, k) in the base case with the maximum computational volume
  */
 
 CarmaMatrix* matrixA;
@@ -10,9 +13,11 @@ CarmaMatrix* matrixB;
 CarmaMatrix* matrixC;
 
 int total_communication = 0;
-int total_computation = 0;
 int max_buffer_size = 0;
 int max_total_computation = 0;
+int local_m = 0;
+int local_n = 0;
+int local_k = 0;
 
 void multiply(int m, int n, int k, int P, int r,
         std::string::const_iterator pattern,
@@ -61,9 +66,6 @@ void multiply(int m, int n, int k, int P, int r,
     // simulate the algorithm for each rank
     for (int rank = 0; rank < P; ++rank) {
         multiply(mi, ni, ki, Pi, r, pattern, divPatt, 0.0, rank);
-        // we are interested in the maximum computation done per rank
-        max_total_computation = std::max(max_total_computation, total_computation);
-        total_computation = 0;
     }
 
     free(matrixA);
@@ -73,6 +75,9 @@ void multiply(int m, int n, int k, int P, int r,
     std::cout << "Total communication units: " << total_communication << std::endl;
     std::cout << "Total computation units: " << max_total_computation << std::endl;
     std::cout << "Max buffer size: " << max_buffer_size << std::endl;
+    std::cout << "Local m = " << local_m << std::endl;
+    std::cout << "Local n = " << local_n << std::endl;
+    std::cout << "Local k = " << local_k << std::endl;
 }
 
 // dispatch to local call, BFS, or DFS as appropriate
@@ -121,7 +126,12 @@ void multiply(Interval& m, Interval& n, Interval& k, Interval& P, int r,
 }
 
 void local_multiply(int m, int n, int k, double beta) {
-    total_computation += m * n * k;
+    if (m*n*k > max_total_computation) {
+        max_total_computation = m * n * k;
+        local_m = m;
+        local_n = n;
+        local_k = k;
+    }
 }
 
 /*

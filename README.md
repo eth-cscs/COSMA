@@ -9,28 +9,45 @@ Here, we present the results from an implementation of CARMA that provides funct
 
 
 ## How to build for Piz Daint ?
-CARMA uses `dgemm` for the local computation in the base case. A flag `-DCARMA_LAPACK_TYPE` determines which `dgemm` is used. It can have values: `MKL` or `openblas`. If equal to `MKL`, the environment variable `MKLROOT` will be used to find `MKL`. If equal to openblas, the environment variable `BLASROOT` will be used to find `openblas`.
+CARMA uses `dgemm` for the local computation in the base case. A flag `-DCARMA_LAPACK_TYPE` determines which `dgemm` is used. It can have values: `MKL` or `openblas`. If equal to `MKL`, the environment variable `MKLROOT` will be used to find `MKL`. If equal to openblas, the environment variable `BLASROOT` will be used to find `openblas`. If MKL is used, then the type of threading can be specified using the variable `MKL_THREADING` (values `Intel OpenMP`, `GNU OpenMP`, `Sequential`).
 
+###Example (on Piz Daint)
 ```
+# clone the repository
+git clone https://github.com/eth-cscs/CARMA.git
+cd CARMA
+
+# setup the environment
+# this is usually required at the cluster
+# but not on a desktop system
 module swap PrgEnv-cray PrgEnv-gnu
 
 module load daint-mc
 module load intel
 module load CMake
 
+# enable the dynamic linking and
+# the asynchronous thread progressing
+# MPICH (on Cray systems)
 export CRAYPE_LINK_TYPE=dynamic
 export MPICH_NEMESIS_ASYNC_PROGRESS=MC
 export MPICH_MAX_THREAD_SAFETY=multiple
 export MPICH_GNI_ASYNC_PROGRESS_TIMEOUT=0
 
+# setup the right compilers
+export CC=`which gcc`
+export CXX=`which g++`
+
+# build the main project
+mkdir build
 cd build
 
-CXX=CC CC=cc cmake
+cmake
   -DCMAKE_BUILD_TYPE=Release \
-  -fopenmp \
   -DCARMA_LAPACK_TYPE=MKL \
+  -DMKL_THREADING=OpenMP \
   ..
-make -j 8
+make -j 4
 ```
 
 
@@ -45,6 +62,7 @@ make test
 The project contains the miniapp that produces two random matrices `A` and `B`, computes their product `C` with the CARMA algorithm and outputs all three matrices into files names as: `<matrix><rank>.txt` (for example `A0.txt` for local data in rank `0` of matrix `A`). Each file is the list of triplets in the form `row column element`.
 
 The miniapp consists of an executable `./build/miniapp/carma-miniapp` which can be run with the following command line (assuming we are in the root folder of the project):
+
 ### Example:
 ```
 mpirun --oversubscribe -np 4 ./build/miniapp/carma-miniapp -m 1000 -n 1000 -k 1000 -r 3 -p bdb -d 211211112
