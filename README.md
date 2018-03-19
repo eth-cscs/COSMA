@@ -12,7 +12,7 @@ Here, we present the results from an implementation of CARMA that provides funct
 CARMA uses `dgemm` for the local computation in the base case. A flag `-DCARMA_LAPACK_TYPE` determines which `dgemm` is used. It can have values: `MKL` or `openblas`. If equal to `MKL`, the environment variable `MKLROOT` will be used to find `MKL`. If equal to openblas, the environment variable `BLASROOT` will be used to find `openblas`. If MKL is used, then the type of threading can be specified using the variable `MKL_THREADING` (values `Intel OpenMP`, `GNU OpenMP`, `Sequential`).
 
 ### Example (on Piz Daint)
-```
+```bash
 # clone the repository
 git clone https://github.com/eth-cscs/CARMA.git
 cd CARMA
@@ -53,7 +53,7 @@ make -j 4
 
 ## How to test
 In the build directory, do:
-```
+```bash
 make test
 ```
 
@@ -102,7 +102,9 @@ All the measurements are given in the units representing the number of elements 
 ## Profiling the code
 Use `-DCARMA_WITH_PROFILING=ON` to instrument the code. Running miniapp with the following command:
 
-```mpirun --oversubscribe -np 4 ./miniapp/carma-miniapp -m 1000 -n 1000 -k 1000 -r 3 -p bdb -d 211211112```
+```bash
+mpirun --oversubscribe -np 4 ./miniapp/carma-miniapp -m 1000 -n 1000 -k 1000 -r 3 -p bdb -d 211211112
+```
 
 Produces the following output from each rank (here only the output from rank 0 shown):
 
@@ -139,7 +141,7 @@ CARMA algorithm uses:
 
 
 ### Using two remotes
-```
+```bash
 git remote add both git@github.com:eth-cscs/CARMA.git
 git remote set-url --add both git@gitlab.ethz.ch:kabicm/CARMA.git
 ```
