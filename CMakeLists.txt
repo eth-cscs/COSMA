@@ -114,7 +114,12 @@ if (MPI_FOUND)
     include_directories(${MPI_INCLUDE_PATH})
     #runtime libs for mpi
     set(mpi_deps ${MPI_CXX_LIBRARIES})
-    set(OVERSUBSCRIBE --oversubscribe)
+    option(REMOTE "--oversubscribe flag for OpenMPI" OFF)
+    set(OVERSUBSCRIBE "--oversubscribe")
+    if(REMOTE)
+        set(OVERSUBSCRIBE "")
+    endif()
+    message("${OVERSUBSCRIBE}")
 endif ()
 #############
 # /MPI Part #

@@ -30,7 +30,6 @@ unit_test.cpp)
 
 set(target unit_test.exe)
 add_executable(unit_test.exe ${TEST_SOURCES})
-
 target_link_libraries(${target} gtest)
 target_link_libraries(${target} carma)
 add_test(layout-and-mapper-tests unit_test.exe)
