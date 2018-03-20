@@ -126,6 +126,7 @@ void reduce(int div, Interval& P, Interval& newP, Interval2D& c_range, double* L
         std::vector<int>& c_total_current,
         std::vector<std::vector<int>>& c_expanded,
         std::vector<int>& c_total_expanded,
+        int beta,
         MPI_Comm comm) {
 
     int offset = getRank() - newP.first();
@@ -165,7 +166,20 @@ void reduce(int div, Interval& P, Interval& newP, Interval2D& c_range, double* L
         }
     }
 
-    MPI_Reduce_scatter(send_buffer.data(), C, recvcnts.data(), MPI_DOUBLE, MPI_SUM, subcomm);
+    double* receiving_buffer;
+    if (beta == 0) {
+        receiving_buffer = C;
+    } else {
+        receiving_buffer = (double*) malloc(sizeof(double) * recvcnts[gp]);
+    }
+
+    MPI_Reduce_scatter(send_buffer.data(), receiving_buffer, recvcnts.data(), MPI_DOUBLE, MPI_SUM, subcomm);
+
+    if (beta > 0) {
+        for (int i = 0; i < recvcnts[gp]; ++i) {
+            C[i] += receiving_buffer[i];
+        }
+    }
 
     MPI_Comm_free(&subcomm);
 }

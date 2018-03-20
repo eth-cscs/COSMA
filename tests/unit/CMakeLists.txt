@@ -75,6 +75,19 @@ if (MPI_FOUND)
 
     add_test(NAME Carma-test-b-prime COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
         ${MPIEXEC_NUMPROC_FLAG} 7 Carma-test -m 100 -n 100 -k 100 -r 1 -p b -d 711)
+
+    add_test(NAME Carma-test-dbdbdb COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
+        ${MPIEXEC_NUMPROC_FLAG} 8 Carma-test -m 100 -n 100 -k 100 -r 6 -p dbdbdb -d 211121112211121112)
+
+    add_test(NAME Carma-test-dddbbb COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
+        ${MPIEXEC_NUMPROC_FLAG} 8 Carma-test -m 100 -n 100 -k 100 -r 6 -p dddbbb -d 211112121121211112)
+
+    add_test(NAME Carma-test-bbbddd COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
+        ${MPIEXEC_NUMPROC_FLAG} 8 Carma-test -m 100 -n 100 -k 100 -r 6 -p bbbddd -d 121211112211112121)
+
+    add_test(NAME Carma-test-dbdbdb-reshuffled COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
+        ${MPIEXEC_NUMPROC_FLAG} 8 Carma-test -m 100 -n 100 -k 100 -r 6 -p dbdbdb -d 112211121112211121)
+
 endif ()
 
 

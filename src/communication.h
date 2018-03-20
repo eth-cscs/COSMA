@@ -19,6 +19,7 @@ void reduce(int div, Interval& P, Interval& newP, Interval2D& c_range, double* L
         std::vector<int>& c_total_current,
         std::vector<std::vector<int>>& c_expanded,
         std::vector<int>& c_total_expanded,
+        int beta,
         MPI_Comm comm);
 
 #endif 

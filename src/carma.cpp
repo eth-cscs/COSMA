@@ -389,19 +389,30 @@ void BFS(double *A, double *B, double *C,
           the execution independently of the other processors in "comm"
         */
     }
+
+    // if division by k, and we are in the branch where beta > 0, then
+    // reset beta to 0, but keep in mind that on the way back from the recursion
+    // we will have to sum the result with the local data in C
+    // this is necessary since reduction happens AFTER the recursion
+    // so we cannot pass beta = 1 if the data is not present there BEFORE the recursion.
+    int new_beta = beta;
+    if (divk > 1 && beta > 0) {
+        new_beta = 0;
+    }
+
     PL("communication");
     // invoke recursion with the new communicator containing ranks from newP
     // observe that we have only one recursive call here (we are not entering a loop
     // of recursive calls as in DFS steps since the current rank will only enter
     // into one recursive call since ranks are split).
-    multiply(LA, LB, LC, newm, newn, newk, newP, r-1, patt, divPatt, beta, newcomm);
+    multiply(LA, LB, LC, newm, newn, newk, newP, r-1, patt, divPatt, new_beta, newcomm);
 
     PE("communication", "multiply");
     // if division by k do additional reduction of C
     if (divk > 1) {
         PE("reduction", "communication");
         reduce(div, P, newP, range, expanded_matrix, original_matrix, size_before_expansion, 
-               total_before_expansion, size_after_expansion, total_after_expansion, comm);
+               total_before_expansion, size_after_expansion, total_after_expansion, beta, comm);
         PL("reduction");
     }
     PL("communication");
