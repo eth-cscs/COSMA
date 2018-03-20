@@ -34,9 +34,9 @@ int main( int argc, char **argv ) {
     auto n = read_int(argc, argv, "-n", 4096);
     auto k = read_int(argc, argv, "-k", 4096);
     auto r = read_int(argc, argv, "-r", 4);
-    char* patt = read_string(argc, argv, "-p", "bbbb");
+    auto patt = read_string(argc, argv, "-p", "bbbb");
     std::string pattern(patt);
-    char* divPatternStr = read_string(argc, argv, "-d", "211211211211");
+    auto divPatternStr = read_string(argc, argv, "-d", "211211211211");
     std::string divPatternString(divPatternStr);
 
     //use only lower case
