@@ -119,7 +119,6 @@ if (MPI_FOUND)
     if(REMOTE)
         set(OVERSUBSCRIBE "")
     endif()
-    message("${OVERSUBSCRIBE}")
 endif ()
 #############
 # /MPI Part #
