@@ -100,7 +100,7 @@ cd $BUILD_DIR
 OPT_CMAKE=(\
   -DCMAKE_BUILD_TYPE=$build_type \
   -DMPIEXEC="`which srun`" \
-  -DOVERSUBSCRIBE="" \ 
+  -DREMOTE=ON \ 
   "${OPT_LAPACK[@]}" \
   ..)
 echo -n "executing cmake with options: ${OPT_CMAKE[@]}"
