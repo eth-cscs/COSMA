@@ -114,6 +114,7 @@ if (MPI_FOUND)
     include_directories(${MPI_INCLUDE_PATH})
     #runtime libs for mpi
     set(mpi_deps ${MPI_CXX_LIBRARIES})
+    set(OVERSUBSCRIBE --oversubscribe)
 endif ()
 #############
 # /MPI Part #
@@ -128,19 +129,6 @@ set(blas_deps ${CARMA_LAPACK_LIBRARY})
 ################
 # /BLAS Part   #
 ################
-
-##############
-#  Cppcheck  #
-##############
-# Add a target to generate Cppcheck report
-include(${PRJ_CMAKE_DIR}/gen_cppcheck.cmake)
-GENERATE_CPPCHECK(SOURCEDIRS src tests
-    ENABLE_IDS warning style performance portability information
-    INCLUDES ${CURRENT_SOURCE_DIR}
-    PROJECT_NAME ${PROJECT_NAME})
-##############
-# /Cppcheck  #
-##############
 
 set(carma_deps ${mpi_deps} ${blas_deps})
 
