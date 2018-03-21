@@ -27,11 +27,13 @@ list(APPEND CMAKE_MODULE_PATH "${PRJ_CMAKE_DIR}")
 set(PRJ_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 #----------------------------------------------------------
-# Built-in profiler
+# Profiler
 #----------------------------------------------------------
-option(CARMA_WITH_PROFILING "use built-in profiling" OFF)
+option(CARMA_WITH_PROFILING "use the semiprof profiler" OFF)
 if(CARMA_WITH_PROFILING)
-    add_definitions(-DCARMA_HAVE_PROFILING)
+    add_definitions(-DSEMIPROF)
+    include_directories("${PRJ_ROOT_DIR}/profiler")
+    include_directories("${PRJ_ROOT_DIR}/profiler/include/semiprof")
 endif()
 
 #################################
@@ -50,6 +52,26 @@ if (CMAKE_COMPILER_IS_GNUCXX)
     endif ()
     add_compile_options(${CXX_FLAGS})
 endif ()
+
+#################################
+#        COVERAGE TEST          #
+#################################
+option(CARMA_COVERAGE_TEST "use lcov for the code coverage test" OFF)
+if(CARMA_COVERAGE_TEST)
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
+    set(CMAKE_LD_FLAGS "${CMAKE_LD_FLAGS} --coverage")
+
+    add_custom_target("coverage"
+                      COMMAND lcov --capture --directory ${CMAKE_BINARY_DIR} --output-file coverage.info
+                      COMMAND genhtml coverage.info --output-directory ${CMAKE_BINARY_DIR}/coverage
+                      WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+  else ()
+    message(WARNING "Coverage test can be used only with GCC.")
+    set(CARMA_COVERAGE_TEST "OFF" FORCE)
+  endif()
+endif()
 
 ##############################
 #  Cuda Compilation options  #
@@ -139,6 +161,7 @@ set(carma_deps ${mpi_deps} ${blas_deps})
 #############
 #  Testing  #
 #############
+include(CTest)
 enable_testing()
 
 #####################################
@@ -147,4 +170,7 @@ enable_testing()
 add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(miniapp)
+if(CARMA_WITH_PROFILING)
+    add_subdirectory(profiler)
+endif()
 

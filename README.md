@@ -101,37 +101,31 @@ All the measurements are given in the units representing the number of elements 
 
 
 ## Profiling the code
-Use `-DCARMA_WITH_PROFILING=ON` to instrument the code. Running miniapp with the following command:
+Use `-DCARMA_WITH_PROFILING=ON` to instrument the code. We use the profiler called `semiprof`, written by Benjamin Cumming.
+
+### Example
+Running the miniapp locally with the following command:
 
 ```bash
 mpirun --oversubscribe -np 4 ./miniapp/carma-miniapp -m 1000 -n 1000 -k 1000 -r 3 -p bdb -d 211211112
 ```
 
-Produces the following output from each rank (here only the output from rank 0 shown):
+Produces the following output from rank 0:
 
 ```
 Benchmarking 1000*1000*1000 multiplication using 4 processes
 Division pattern is: bdb - 211211112
-RANK 0
- --------------------------------------------------------------
-|                           PROFILER                           |
- --------------------------------------------------------------
-| region                          t [ms]       [%]       count |
- --------------------------------------------------------------
-|-total                          107.000     100.0         -
-    |-multiply                   101.000      94.4         -
-        |-communication           42.000      41.6         -
-            |-copying              9.000      21.4         1
-            |-reduction           33.000      78.6         2
-        |-computation             50.000      49.5         2
-        |-layout-overhead          0.000       0.0        18
-    |-preprocessing                6.000       5.6         -
-        |-layout-init              0.000       0.0         3
-        |-mapper-init              6.000     100.0         3
-
+_p_ REGION                     CALLS      THREAD        WALL       %
+_p_ total                          -       0.119       0.119   100.0
+_p_   multiply                     -       0.106       0.106    88.8
+_p_     communication              -       0.057       0.057    47.8
+_p_       copy                     3       0.029       0.029    24.5
+_p_       reduce                   3       0.028       0.028    23.3
+_p_     computation                2       0.049       0.049    41.0
+_p_     layout                    18       0.000       0.000     0.0
+_p_   preprocessing                3       0.013       0.013    11.2
 ```
-All the time measurements are given in milliseconds. The precentage is always relative to the first level above.
-The difference between the node time and the sum of the nested node times is caused by the overhead of the profiler itself.
+The precentage is always relative to the first level above.
 
 
 ### Requirements

@@ -8,7 +8,7 @@
 #include <vector>
 
 //Blas
-#include "blas.h"
+#include <blas.h>
 
 //MPI
 #include <mpi.h>

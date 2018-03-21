@@ -10,7 +10,7 @@
 #include "blas.h"
 #include "matrix.hpp"
 #include <omp.h>
-#include "profiler.h"
+#include <semiprof.hpp>
 
 void multiply(CarmaMatrix *A, CarmaMatrix *B, CarmaMatrix *C,
     int m, int n, int k, int P, int r,

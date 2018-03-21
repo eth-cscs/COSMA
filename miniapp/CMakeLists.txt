@@ -9,9 +9,7 @@ set(TEST_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 #  Lib Dependancy  #
 ####################
 
-#include_directories("${PRJ_ROOT_DIR}/tests")
 include_directories("${PRJ_ROOT_DIR}/src")
-#include_directories("${PRJ_ROOT_DIR}/profiler")
 
 ################
 #  Build test  #
@@ -25,4 +23,5 @@ add_lib_executable(carma-statistics
   carma
   ${carma_deps})
 
-#target_link_libraries(carma-miniapp profiler)
+target_link_libraries(carma-miniapp semiprof)
+target_link_libraries(carma-statistics semiprof)

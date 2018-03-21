@@ -14,7 +14,7 @@
 #include <algorithm>
 #include "mapper.hpp"
 #include "layout.hpp"
-#include "profiler.h"
+#include <semiprof.hpp>
 
 class CarmaMatrix {
 public:

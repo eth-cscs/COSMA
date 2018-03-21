@@ -21,9 +21,6 @@
 #include <carma.h>
 #include <matrix.hpp>
 
-// profiler
-#include <profiler.h>
-
 template<typename T>
 void fillInt(T& in) {
   std::generate(in.begin(), in.end(),
@@ -131,30 +128,7 @@ int main( int argc, char **argv ) {
     output_matrix(A);
     output_matrix(B);
     output_matrix(C);
-/*
-#ifdef DEBUG
-    for( int i = 0; i < P; i++ ) {
-        if( getRank() == i ) {
 
-            printf("(%d) A: ", i );
-            for( auto j = 0; j < sizeA; j++ )
-                printf("%5.3f ", A->matrix()[j] );
-            printf("\n");
-
-            printf("(%d) B: ", i );
-            for( auto j = 0; j < sizeB; j++ )
-                printf("%5.3f ", B->matrix()[j] );
-            printf("\n");
-
-            printf("(%d) C: ", i );
-            for( auto j = 0; j < sizeC; j++ )
-                printf("%5.3f ", C->matrix()[j] );
-            printf("\n");
-        }
-        MPI_Barrier( MPI_COMM_WORLD );
-    }
-#endif //DEBUG
-*/
     MPI_Finalize();
 
     free(A);
