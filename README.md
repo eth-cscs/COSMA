@@ -36,8 +36,8 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 export MPICH_GNI_ASYNC_PROGRESS_TIMEOUT=0
 
 # setup the right compilers
-export CC=`which gcc`
-export CXX=`which g++`
+export CC=`which cc`
+export CXX=`which CC`
 
 # build the main project
 mkdir build
@@ -46,7 +46,7 @@ cd build
 cmake
   -DCMAKE_BUILD_TYPE=Release \
   -DCARMA_LAPACK_TYPE=MKL \
-  -DMKL_THREADING=OpenMP \
+  -DMKL_THREADING="Intel OpenMP" \
   ..
 make -j 4
 ```
@@ -101,7 +101,7 @@ All the measurements are given in the units representing the number of elements 
 
 
 ## Profiling the code
-Use `-DCARMA_WITH_PROFILING=ON` to instrument the code. We use the profiler called `semiprof`, written by Benjamin Cumming.
+Use `-DCARMA_WITH_PROFILING=ON` to instrument the code. We use the profiler called `semiprof`, written by Benjamin Cumming (https://github.com/bcumming).
 
 ### Example
 Running the miniapp locally with the following command:
@@ -146,5 +146,5 @@ Marko Kabic \
 marko.kabic@cscs.ch
 
 ### Mentors/Supervisors
-Professor Dr. Joost VandeVondele \
+Dr. Joost VandeVondele \
 Dr. Raffaele Solcà

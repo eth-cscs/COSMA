@@ -1,7 +1,7 @@
 module switch PrgEnv-cray PrgEnv-gnu
 module load daint-mc
 module load CMake
-module load intel           # defines $MKLROOT
+module load intel # defines $MKLROOT
 
 # enable the dynamic linking and
 # the asynchronous thread progressing
@@ -12,5 +12,5 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 export MPICH_GNI_ASYNC_PROGRESS_TIMEOUT=0
 
 # setup the right compilers
-export CC=`which gcc`
-export CXX=`which g++`
+export CC=`which cc`
+export CXX=`which CC`
