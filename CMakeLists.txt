@@ -32,9 +32,10 @@ set(PRJ_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 option(CARMA_WITH_PROFILING "use the semiprof profiler" OFF)
 if(CARMA_WITH_PROFILING)
     add_definitions(-DSEMIPROF)
-    include_directories("${PRJ_ROOT_DIR}/profiler")
-    include_directories("${PRJ_ROOT_DIR}/profiler/include/semiprof")
 endif()
+
+include_directories("${PRJ_ROOT_DIR}/profiler")
+include_directories("${PRJ_ROOT_DIR}/profiler/include/semiprof")
 
 #################################
 #  Generic Compilation options  #
@@ -106,7 +107,5 @@ enable_testing()
 add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(miniapp)
-if(CARMA_WITH_PROFILING)
-    add_subdirectory(profiler)
-endif()
+add_subdirectory(profiler)
 
