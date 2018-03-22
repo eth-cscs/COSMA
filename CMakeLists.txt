@@ -9,7 +9,7 @@ include(./cmake/utils.cmake)
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING
     "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release." FORCE)
-endif(NOT CMAKE_BUILD_TYPE)
+endif()
 
 #Destination
 if (BINDIR)
@@ -26,9 +26,9 @@ list(APPEND CMAKE_MODULE_PATH "${PRJ_CMAKE_DIR}")
 #local ref
 set(PRJ_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-#----------------------------------------------------------
-# Profiler
-#----------------------------------------------------------
+#################################
+#          PROFILER             #
+#################################
 option(CARMA_WITH_PROFILING "use the semiprof profiler" OFF)
 if(CARMA_WITH_PROFILING)
     add_definitions(-DSEMIPROF)
@@ -45,10 +45,6 @@ if (CMAKE_COMPILER_IS_GNUCXX)
         set(CXX_FLAGS ${CXX_FLAGS} -Wall -O0 -ggdb -DDEBUG)
     else ()
         set(CXX_FLAGS ${CXX_FLAGS} -O3)
-        #if (OPENMP_FOUND)
-        #set(CXX_FLAGS ${CXX_FLAGS} ${OpenMP_CXX_FLAGS})
-        #set(openmp_deps gomp)
-        #endif ()
     endif ()
     add_compile_options(${CXX_FLAGS})
 endif ()
@@ -73,60 +69,6 @@ if(CARMA_COVERAGE_TEST)
   endif()
 endif()
 
-##############################
-#  Cuda Compilation options  #
-##############################
-if (USE_CUDA)
-    find_package(CUDA 8.0)
-    if (CUDA_FOUND)
-        add_definitions(-DUSE_CUDA)
-
-        if (THRUST_BACKEND STREQUAL "OMP")
-            list(APPEND CUDA_NVCC_FLAGS
-                -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_OMP
-                -Xcompiler -fopenmp)
-            list(APPEND cuda_deps gomp)
-        else () #(THRUST_BACKEND STREQUAL "CUDA")
-            list(APPEND CUDA_NVCC_FLAGS
-                -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CUDA)
-        endif ()
-
-        #Eventually add some code instrumentation
-        if (USE_NVTX)
-            add_definitions(-DUSE_NVTX)
-        endif ()
-
-        #generic compilation flag, defines target architecture, type of build, ...
-        list(APPEND CUDA_NVCC_FLAGS
-            -gencode arch=compute_60,code=sm_60
-            -std=c++11
-            --expt-extended-lambda
-            -rdc=true
-            -Xcompiler -fPIC)
-
-        set(CUDA_SEPARABLE_COMPILATION ON)
-
-        if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-            list(APPEND CUDA_NVCC_FLAGS
-                --device-debug
-                --generate-line-info
-                -g
-                -G
-                -DTHRUST_DEBUG )
-        else ()
-            list(APPEND CUDA_NVCC_FLAGS
-                -use_fast_math
-                -O3)
-        endif ()
-        #runtime libs for cuda
-        list(APPEND cuda_deps cudadevrt nvToolsExt)
-        link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib64)
-    endif ()
-endif ()
-###############################
-#  /Cuda Compilation options  #
-###############################
-
 ############
 # MPI Part #
 ############
@@ -142,9 +84,6 @@ if (MPI_FOUND)
         set(OVERSUBSCRIBE "")
     endif()
 endif ()
-#############
-# /MPI Part #
-#############
 
 ################
 # BLAS Part    #
@@ -152,9 +91,6 @@ endif ()
 include(lapack)
 carma_find_lapack()
 set(blas_deps ${CARMA_LAPACK_LIBRARY})
-################
-# /BLAS Part   #
-################
 
 set(carma_deps ${mpi_deps} ${blas_deps})
 
