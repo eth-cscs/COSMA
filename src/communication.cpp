@@ -1,16 +1,5 @@
-// STL
-#include <iostream>
-
-// OpenMP
-#include <omp.h>
-
 // Local
-#include "communication.h"
-
-// BLAS
-#include "blas.h"
-
-//#define NUM_THREADS 2
+#include "communication.hpp"
 
 /*
  * We assume that there are P=2^k processors.  At all times a power of

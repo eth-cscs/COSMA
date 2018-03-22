@@ -1,33 +1,24 @@
 #include "matrix.hpp"
 
-CarmaMatrix::CarmaMatrix(char label, int m, int n, int P, int n_steps,
-    std::string::const_iterator patt,
-    std::vector<int>::const_iterator divPatt, int rank) :
-        label_(label), m_(m), n_(n), P_(P), n_steps_(n_steps), 
-        patt_(patt,patt+n_steps),
-        divPatt_(divPatt,divPatt+3*n_steps),
-        rank_(rank) {
-
-    if (label_ == 'A') {
-        mOffset_ = 0;
-        nOffset_ = 2;
-    }
-
-    if (label_ == 'B') {
-        mOffset_ = 2;
-        nOffset_ = 1;
-    }
-
-    if (label_ == 'C') {
-        mOffset_ = 0;
-        nOffset_ = 1;
-    }
+CarmaMatrix::CarmaMatrix(char label, const Strategy& strategy, int rank) :
+        label_(label), rank_(rank) {
     PE(preprocessing);
-    mapper_ = std::make_unique<Mapper>(label, m, n, P, n_steps, mOffset_, nOffset_, 
-            patt, divPatt, rank);
-    layout_ = std::make_unique<Layout>(label, m, n, P, n_steps, mOffset_, nOffset_, 
-            patt, divPatt, rank, mapper_->complete_layout());
-    matrix_ = std::vector<double>(mapper_->initial_size());
+    if (label_ == 'A') {
+        m_ = strategy.m;
+        n_ = strategy.k;
+    }
+    else if (label_ == 'B') {
+        m_ = strategy.k;
+        n_ = strategy.n;
+    }
+    else {
+        m_ = strategy.m;
+        n_ = strategy.n;
+    }
+    P_ = strategy.P;
+    mapper_ = std::make_unique<Mapper>(label, m_, n_, P_, strategy, rank);
+    layout_ = std::make_unique<Layout>(label, m_, n_, P_, rank, mapper_->complete_layout());
+    matrix_ = std::vector<double>(mapper_->initial_size(rank));
     PL();
 }
 

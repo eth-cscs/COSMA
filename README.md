@@ -66,7 +66,7 @@ The miniapp consists of an executable `./build/miniapp/carma-miniapp` which can 
 
 ### Example:
 ```
-mpirun --oversubscribe -np 4 ./build/miniapp/carma-miniapp -m 1000 -n 1000 -k 1000 -r 3 -p bdb -d 211211112
+mpirun --oversubscribe -np 4 ./build/miniapp/carma-miniapp -m 1000 -n 1000 -k 1000 -P 4 -s bm2,dm2,bk2
 ```
 The flags have the following meaning:
 
@@ -76,26 +76,32 @@ The flags have the following meaning:
 
 - `k`: number of columns of matrix `A` and rows of matrix `B`
 
-- `r`: number of recursive steps
+- `P`: number of processors (i.e. ranks)
 
-- `p`: string of length `r` that represents the type of each step (either *b* for *BFS* step or *d* for *DFS* step).
+- `s`: string of triplets divided by comma. Each triplet defines one step of the algorithm. The first character in the triplet defines whether it is BFS (b) or DFS (d) step. The second character defines the dimension that is splitted in this step. The third parameter is an integer which defines the divisor.
 
-- `d`: division pattern of length `3 r`. An `i-`th triplet `xyz` represents the divisors of `m`, `n` and `k` repsectively in `i-`th step. Only one of `x`, `y` and `z` can be `>1` while other have to be `=1`.
-
-In addition to this miniapp, after compilation, in the same directory (./build/miniapp/) there will be an executable called `carma-statistics` which simulates the algorithm (without actually computing the matrix multiplication) in order to get the total volume of the communication, the maximum volume of computation done in a single branch and the maximum required buffer size that the algorithm requires. In addition to the previous flags, it also defines a flag `-P` for specifying the number of processors. This is needed since this executable is not run with `mpi` (no actual matrix multiplication is performed).
+In addition to this miniapp, after compilation, in the same directory (./build/miniapp/) there will be an executable called `carma-statistics` which simulates the algorithm (without actually computing the matrix multiplication) in order to get the total volume of the communication, the maximum volume of computation done in a single branch and the maximum required buffer size that the algorithm requires.
 
 ### Example:
 ```
-./build/miniapp/carma-statistics -P 4 -m 1000 -n 1000 -k 1000 -r 3 -p bdb -d 211211112
+./build/miniapp/carma-statistics -m 1000 -n 1000 -k 1000 -P 4 -s bm2,dm2,bk2
 ```
 Executing the previous command produces the following output:
 
 ```
-Benchmarking 1000*1000*1000 multiplication using 4 processes
-Division pattern is: bdb - 211211112
+Matrix dimensions (m, n, k) = (1000, 1000, 1000)
+Number of processors: 4
+Divisions strategy:
+BFS (m / 2)
+DFS (m / 2)
+BFS (k / 2)
+
 Total communication units: 2000000
-Total computation units: 250000000
+Total computation units: 125000000
 Max buffer size: 500000
+Local m = 250
+Local n = 1000
+Local k = 500
 ```
 All the measurements are given in the units representing the number of elements of the matrix (not in bytes).
 
@@ -104,28 +110,33 @@ All the measurements are given in the units representing the number of elements 
 Use `-DCARMA_WITH_PROFILING=ON` to instrument the code. We use the profiler called `semiprof`, written by Benjamin Cumming (https://github.com/bcumming).
 
 ### Example
-Running the miniapp locally with the following command:
+Running the miniapp locally (from the project root folder) with the following command:
 
 ```bash
-mpirun --oversubscribe -np 4 ./miniapp/carma-miniapp -m 1000 -n 1000 -k 1000 -r 3 -p bdb -d 211211112
+mpirun --oversubscribe -np 4 ./build/miniapp/carma-miniapp -m 1000 -n 1000 -k 1000 -P 4 -s bm2,dm2,bk2 -d 211211112
 ```
 
 Produces the following output from rank 0:
 
 ```
-Benchmarking 1000*1000*1000 multiplication using 4 processes
-Division pattern is: bdb - 211211112
+Matrix dimensions (m, n, k) = (1000, 1000, 1000)
+Number of processors: 4
+Divisions strategy:
+BFS (m / 2)
+DFS (m / 2)
+BFS (k / 2)
+
 _p_ REGION                     CALLS      THREAD        WALL       %
-_p_ total                          -       0.119       0.119   100.0
-_p_   multiply                     -       0.106       0.106    88.8
-_p_     communication              -       0.057       0.057    47.8
-_p_       copy                     3       0.029       0.029    24.5
-_p_       reduce                   3       0.028       0.028    23.3
-_p_     computation                2       0.049       0.049    41.0
+_p_ total                          -       0.110       0.110   100.0
+_p_   multiply                     -       0.098       0.098    88.7
+_p_     computation                2       0.052       0.052    47.1
+_p_     communication              -       0.046       0.046    41.6
+_p_       copy                     3       0.037       0.037    33.2
+_p_       reduce                   3       0.009       0.009     8.3
 _p_     layout                    18       0.000       0.000     0.0
-_p_   preprocessing                3       0.013       0.013    11.2
+_p_   preprocessing                3       0.012       0.012    11.3
 ```
-The precentage is always relative to the first level above.
+The precentage is always relative to the first level above. All time measurements are in seconds.
 
 
 ### Requirements
@@ -134,12 +145,6 @@ CARMA algorithm uses:
   - `OpenMP`
   - `dgemm` that is provided either through `MKL` (Intel Parallel Studio XE), or through `openblas`.
 
-
-### Using two remotes
-```bash
-git remote add both git@github.com:eth-cscs/CARMA.git
-git remote set-url --add both git@gitlab.ethz.ch:kabicm/CARMA.git
-```
 
 ### Authors
 Marko Kabic \

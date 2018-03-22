@@ -13,13 +13,10 @@
 //MPI
 #include <mpi.h>
 
-// CMD parser
-#include <cmd_parser.h>
-
 // Local
-#include <communication.h>
-#include <carma.h>
-#include <matrix.hpp>
+#include <communication.hpp>
+#include <carma.hpp>
+#include <strategy.hpp>
 
 template<typename T>
 void fillInt(T& in) {
@@ -28,91 +25,31 @@ void fillInt(T& in) {
 }
 
 int main( int argc, char **argv ) {
+    Strategy strategy(argc, argv);
+    int m = strategy.m;
+    int n = strategy.n;
+    int k = strategy.k;
+
     initCommunication(&argc, &argv);
 
-    auto m = read_int(argc, argv, "-m", 4096);
-    auto n = read_int(argc, argv, "-n", 4096);
-    auto k = read_int(argc, argv, "-k", 4096);
-    auto r = read_int(argc, argv, "-r", 4);
-    auto patt = read_string(argc, argv, "-p", "bbbb");
-    std::string pattern(patt);
-    auto divPatternStr = read_string(argc, argv, "-d", "211211211211");
-    std::string divPatternString(divPatternStr);
-
-    //use only lower case
-    std::transform(pattern.begin(), pattern.end(), pattern.begin(),
-        [](char c) { return std::tolower(c); });
-    if ( pattern.size() != r || !std::all_of(pattern.cbegin(),pattern.cend(),
-        [](char c) {
-          return (c=='b')||(c=='d');
-         })) {
-           std::cout << "Recursive pattern " << pattern << " malformed expression\n";
-           exit(-1);
-    }
-
-    std::vector<int> divPattern;
-    auto it = divPatternString.cbegin();
-
-    for (int i=0; i<r; i++) {
-        bool isNonZero=true;
-        for(int j=0; j<3; j++ ) {
-            if (it != divPatternString.cend()) {
-                int val=std::stoi(std::string(it,it+1));
-                divPattern.push_back(val);
-                isNonZero &= (val!=0);
-            } else {
-              std::cout << "Recursive division pattern " << divPatternString << " has wrong size\n";
-              exit(-1);
-            }
-            it++;
-        }
-        if (!isNonZero){
-          std::cout << "Recursive division pattern " << divPatternString << "contains 3 zeros in a step\n";
-          exit(-1);
-        }
-    }
-
-    bool isOK;
     int P;
     MPI_Comm_size( MPI_COMM_WORLD, &P );
 
-    // Check if the parameters make sense.
-    int m0 = m;
-    int n0 = n;
-    int k0 = k;
-    int prodBFS = 1;
-
-    for (int i = 0; i < r; i++) {
-        int divM = divPattern[3*i];
-        int divN = divPattern[3*i + 1];
-        int divK = divPattern[3*i + 2];
-
-        m0 /= divM;
-        n0 /= divN;
-        k0 /= divK;
-
-        if (pattern[i] == 'b') {
-          prodBFS *= divM * divN * divK;
-        }
+    if (P != strategy.P) {
+        throw(std::runtime_error("Number of processors available not equal \
+                                 to the number of processors specified by flag P"));
     }
 
-    // Check if we are using too few processors!
-    if (P < prodBFS) {
-      std::cout << "Too few processors available for the given steps. The number of processors should be at least " << std::to_string(prodBFS) << ". Aborting the application.\n";
-        exit(-1);
+    if (getRank() == 0) {
+        std::cout << strategy << std::endl;
     }
 
-    if( getRank() == 0 ) {
-        std::cout<<"Benchmarking "<<m<<"*"<<n<<"*"<<k<<" multiplication using "
-            <<P<<" processes"<<std::endl;
-        std::cout<<"Division pattern is: "<<pattern<<" - "
-            <<divPatternString<<std::endl;
-    }
+    bool isOK;
 
     //Declare A,B and C CARMA matrices objects
-    CarmaMatrix* A = new CarmaMatrix('A', m, k, P, r, pattern.cbegin(), divPattern.cbegin(), getRank());
-    CarmaMatrix* B = new CarmaMatrix('B', k, n, P, r, pattern.cbegin(), divPattern.cbegin(), getRank());
-    CarmaMatrix* C = new CarmaMatrix('C', m, n, P, r, pattern.cbegin(), divPattern.cbegin(), getRank());
+    CarmaMatrix* A = new CarmaMatrix('A', strategy, getRank());
+    CarmaMatrix* B = new CarmaMatrix('B', strategy, getRank());
+    CarmaMatrix* C = new CarmaMatrix('C', strategy, getRank());
 
     // initial sizes
     auto sizeA=A->initial_size();
@@ -154,7 +91,7 @@ int main( int argc, char **argv ) {
         MPI_Send(B->matrix_pointer(), sizeB, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
     }
 
-    MPI_Barrier( MPI_COMM_WORLD );
+    MPI_Barrier(MPI_COMM_WORLD);
 
     //Then rank 0 must reorder data locally
     std::vector<double> globA;
@@ -170,7 +107,6 @@ int main( int argc, char **argv ) {
         for (int i=0; i<P; i++) {
             int local_size_A = A->initial_size(i);
             int local_size_B = B->initial_size(i);
-            int local_size_C = C->initial_size(i);
 
             for (int j=0; j<local_size_A; j++) {
                 int y,x;
@@ -228,7 +164,7 @@ int main( int argc, char **argv ) {
 #endif
     }
 
-    multiply(A, B, C, m, n, k, P, r, pattern.cbegin(), divPattern.cbegin());
+    multiply(A, B, C, strategy);
     MPI_Barrier(MPI_COMM_WORLD);
 
     //Then rank0 ask for other ranks data

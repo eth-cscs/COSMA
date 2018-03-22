@@ -15,12 +15,11 @@
 #include "mapper.hpp"
 #include "layout.hpp"
 #include <semiprof.hpp>
+#include "strategy.hpp"
 
 class CarmaMatrix {
 public:
-    CarmaMatrix(char label, int m, int n, int P, int n_steps,
-        std::string::const_iterator patt,
-        std::vector<int>::const_iterator divPatt, int rank);
+    CarmaMatrix(char label, const Strategy& strategy, int rank);
 
     int m();
     int n();
@@ -99,15 +98,7 @@ protected:
     /// Number of columns of the global matrix
     int n_;
     /// Maximum number of rank in the global communicator
-    int P_;
-    /// Number of recursive steps in the algorithm
-    int n_steps_;
-    /// index of the column axis related div in the division pattern
-    int mOffset_;
-    /// index of the row axis related div in the division pattern
-    int nOffset_;
-    const std::string patt_;
-    const std::vector<int> divPatt_;
+    size_t P_;
 
     int rank_;
 

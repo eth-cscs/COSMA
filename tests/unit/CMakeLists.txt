@@ -36,66 +36,66 @@ target_link_libraries(${target} carma)
 add_test(layout-and-mapper-tests unit_test.exe)
 
 # debug with
-# mpirun -np 1 xterm -e lldb -o run -- ./Carma-lib-test  -m 16 -n 16 -k 16 -r 4 -p dddd -d 211121112211
+# mpirun -np 1 xterm -e lldb -o run -- ./Carma-lib-test  ...
 
 if (MPI_FOUND)
 # test the correctness of carma
     add_test(NAME Carma-test-bbdd COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 4 Carma-test -m 30 -n 35 -k 40 -r 4 -p bbdd -d 211121112211)
+        ${MPIEXEC_NUMPROC_FLAG} 4 Carma-test -m 30 -n 35 -k 40 -P 4 -s bm2,bn2,dk2,dm2)
 
     add_test(NAME Carma-test-bdb COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 4 Carma-test -m 8 -n 4 -k 2 -r 3 -p bdb -d 211211121)
+        ${MPIEXEC_NUMPROC_FLAG} 4 Carma-test -m 8 -n 4 -k 2 -P 4 -s bm2,dm2,bn2)
 
     add_test(NAME Carma-test-ddb COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 2 Carma-test -m 8 -n 8 -k 2 -r 3 -p ddb -d 211211121)
+        ${MPIEXEC_NUMPROC_FLAG} 2 Carma-test -m 8 -n 8 -k 2 -P 2 -s dm2,dm2,bn2)
 
     add_test(NAME Carma-test-bb COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 4 Carma-test -m 16 -n 4 -k 4 -r 2 -p bb -d 211211)
+        ${MPIEXEC_NUMPROC_FLAG} 4 Carma-test -m 16 -n 4 -k 4 -P 4 -s bm2,bm2)
 
     add_test(NAME Carma-test-db COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 3 Carma-test -m 20 -n 20 -k 20 -r 2 -p db -d 112311)
+        ${MPIEXEC_NUMPROC_FLAG} 3 Carma-test -m 20 -n 20 -k 20 -P 3 -s dk2,bm3)
 
     add_test(NAME Carma-test-bbbb COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 16 Carma-test -m 16 -n 16 -k 16 -r 4 -p bbbb -d 211121112211)
+        ${MPIEXEC_NUMPROC_FLAG} 16 Carma-test -m 16 -n 16 -k 16 -P 16 -s bm2,bn2,bk2,bm2)
 
     add_test(NAME Carma-test-dddd COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 1 Carma-test -m 16 -n 16 -k 16 -r 4 -p dddd -d 211121211121)
+        ${MPIEXEC_NUMPROC_FLAG} 1 Carma-test -m 16 -n 16 -k 16 -P 1 -s dm2,dn2,dm2,dn2)
 
     add_test(NAME Carma-test-ddbb COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 4 Carma-test -m 20 -n 30 -k 25 -r 4 -p ddbb -d 211121112211)
+        ${MPIEXEC_NUMPROC_FLAG} 4 Carma-test -m 20 -n 30 -k 25 -P 4 -s dm2,dn2,bk2,bm2)
 
     add_test(NAME Carma-test-dbdb COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 10 Carma-test -m 100 -n 100 -k 100 -r 4 -p dbdb -d 211121112511)
+        ${MPIEXEC_NUMPROC_FLAG} 10 Carma-test -m 100 -n 100 -k 100 -P 10 -s dm2,bn2,dk2,bm5)
 
     add_test(NAME Carma-test-bbb COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 12 Carma-test -m 100 -n 100 -k 100 -r 3 -p bbb -d 211121113)
+        ${MPIEXEC_NUMPROC_FLAG} 12 Carma-test -m 100 -n 100 -k 100 -P 12 -s bm2,bn2,bk3)
 
     add_test(NAME Carma-test-bdbd COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 4 Carma-test -m 100 -n 100 -k 100 -r 4 -p bdbd -d 211113121311)
+        ${MPIEXEC_NUMPROC_FLAG} 4 Carma-test -m 100 -n 100 -k 100 -P 4 -s bm2,dk3,bn2,dm3)
 
     add_test(NAME Carma-test-b-prime COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 7 Carma-test -m 100 -n 100 -k 100 -r 1 -p b -d 711)
+        ${MPIEXEC_NUMPROC_FLAG} 7 Carma-test -m 100 -n 100 -k 100 -P 7 -s bm7)
 
     add_test(NAME Carma-test-dbdbdb COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 8 Carma-test -m 100 -n 100 -k 100 -r 6 -p dbdbdb -d 211121112211121112)
+        ${MPIEXEC_NUMPROC_FLAG} 8 Carma-test -m 100 -n 100 -k 100 -P 8 -s dm2,bn2,dk2,bm2,dn2,bk2)
 
     add_test(NAME Carma-test-dddbbb COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 8 Carma-test -m 100 -n 100 -k 100 -r 6 -p dddbbb -d 211112121121211112)
+        ${MPIEXEC_NUMPROC_FLAG} 8 Carma-test -m 100 -n 100 -k 100 -P 8 -s dm2,dk2,dn2,bn2,bm2,bk2)
 
     add_test(NAME Carma-test-dddbbb-reshuffled COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 8 Carma-test -m 200 -n 200 -k 200 -r 6 -p dddbbb -d 113311131112121211)
+        ${MPIEXEC_NUMPROC_FLAG} 8 Carma-test -m 200 -n 200 -k 200 -P 8 -s dk3,dm3,dn3,bk2,bn2,bm2)
 
     add_test(NAME Carma-test-bbbddd COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 8 Carma-test -m 100 -n 100 -k 100 -r 6 -p bbbddd -d 121211112211112121)
+        ${MPIEXEC_NUMPROC_FLAG} 8 Carma-test -m 100 -n 100 -k 100 -P 8 -s bn2,bm2,bk2,dm2,dk2,dn2)
 
     add_test(NAME Carma-test-dbdbdb-reshuffled COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 8 Carma-test -m 100 -n 100 -k 100 -r 6 -p dbdbdb -d 112211121112211121)
+        ${MPIEXEC_NUMPROC_FLAG} 8 Carma-test -m 100 -n 100 -k 100 -P 8 -s dk2,bm2,dn2,bk2,dm2,bn2)
 
     add_test(NAME Carma-test-bdbdbd COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 8 Carma-test -m 100 -n 100 -k 100 -r 6 -p bdbdbd -d 112211121112211121)
+        ${MPIEXEC_NUMPROC_FLAG} 8 Carma-test -m 100 -n 100 -k 100 -P 8 -s bk2,dm2,bn2,dk2,bm2,dn2)
 
     add_test(NAME Carma-test-dbdbdb-3 COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 8 Carma-test -m 200 -n 200 -k 200 -r 6 -p dbdbdb -d 311121113211131112)
+        ${MPIEXEC_NUMPROC_FLAG} 8 Carma-test -m 200 -n 200 -k 200 -P 8 -s dm3,bn2,dk3,bm2,dn3,bk2)
 endif ()
 
 

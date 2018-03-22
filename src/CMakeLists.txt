@@ -5,13 +5,13 @@ cmake_minimum_required(VERSION 3.5)
 ###############
 
 set(sources
-    cmd_parser.cpp
     communication.cpp
     carma.cpp
     matrix.cpp
     layout.cpp
     mapper.cpp
     statistics.hpp
+    strategy.hpp
 )
 
 ###################

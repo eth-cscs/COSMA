@@ -17,11 +17,8 @@
 class Layout {
 
 public:
-    Layout(char label, int m, int n, int P, int n_steps,
-        int mOffset, int nOffset,
-        std::string::const_iterator patt,
-        std::vector<int>::const_iterator divPatt, int rank,
-        std::vector<std::vector<Interval2D>> rank_to_range);
+    Layout(char label, int m, int n, size_t P,
+           int rank, std::vector<std::vector<Interval2D>> rank_to_range);
 
     int size(int rank);
     int size();
@@ -58,15 +55,6 @@ protected:
     int n_;
     /// Maximum number of rank in the global communicator
     int P_;
-    /// Number of recursive steps in the algorithm
-    int n_steps_;
-    /// index of the column axis related div in the division pattern
-    int mOffset_;
-    /// index of the row axis related div in the division pattern
-    int nOffset_;
-
-    const std::string patt_;
-    const std::vector<int> divPatt_;
 
     int rank_;
 

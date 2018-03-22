@@ -13,17 +13,15 @@
 #include "interval.hpp"
 #include <unordered_map>
 #include <algorithm>
+#include "strategy.hpp"
 
 class Mapper {
 public:
-    Mapper(char label, int m, int n, int P, int n_steps,
-         int mOffset, int nOffset,
-         std::string::const_iterator patt,
-         std::vector<int>::const_iterator divPatt, int rank);
+    Mapper(char label, int m, int n, size_t P, const Strategy& strategy, int rank);
 
-    const int initial_size(int rank) const;
+    const size_t initial_size(int rank) const;
 
-    const int initial_size() const;
+    const size_t initial_size() const;
 
     // rank -> list of ranges it owns initially
     const std::vector<Interval2D>& initial_layout(int rank) const;
@@ -50,17 +48,9 @@ protected:
     /// Number of columns of the global matrix
     int n_;
     /// Maximum number of rank in the global communicator
-    int P_;
-    /// Number of recursive steps in the algorithm
-    int n_steps_;
-    /// index of the column axis related div in the division pattern
-    int mOffset_;
-    /// index of the row axis related div in the division pattern
-    int nOffset_;
-
-    const std::string patt_;
-    const std::vector<int> divPatt_;
-
+    size_t P_;
+    /// division strategy
+    const Strategy& strategy_;
     int rank_;
 
     // rank -> list of submatrices that this rank owns
@@ -71,7 +61,7 @@ protected:
     std::unordered_map<Interval2D, std::pair<int, int>> range_to_rank_;
 
     // rank -> total initial buffer size
-    std::vector<int> initial_buffer_size_;
+    std::vector<size_t> initial_buffer_size_;
 
     // rank -> vector of sizes of all the ranges that this rank owns
     std::vector<std::vector<int>> range_offset_;

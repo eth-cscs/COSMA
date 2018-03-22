@@ -5,16 +5,18 @@ TEST(mapper, bdb) {
     auto m = 8u;
     auto n = 4u;
     auto k = 2u;
-    auto n_steps = 3u;
-    std::string patt = "bdb";
-    std::vector<int> divPatt = {2, 1, 1, 2, 1, 1, 1, 2, 1};
+    std::string types = "bdb";
+    std::vector<int> divisors = {2, 2, 2};
+    std::string dims = "mmn";
     auto P = 4u;
+
+    Strategy strategy(m, n, k, P, divisors, dims, types);
 
     // the last element is rank = 0, but regardless of this parameter
     // the mapper can compute the buffers sizes or the mapper for any rank
-    Mapper A('A', m, k, P, n_steps, 0, 2, patt.cbegin(), divPatt.cbegin(), 0);
-    Mapper B('B', k, n, P, n_steps, 2, 1, patt.cbegin(), divPatt.cbegin(), 0);
-    Mapper C('C', m, n, P, n_steps, 0, 1, patt.cbegin(), divPatt.cbegin(), 0);
+    Mapper A('A', m, k, P, strategy, 0);
+    Mapper B('B', k, n, P, strategy, 0);
+    Mapper C('C', m, n, P, strategy, 0);
 
     // test initial sizes for all ranks
     std::vector<int> A_initial_size_target = {4, 4, 4, 4};

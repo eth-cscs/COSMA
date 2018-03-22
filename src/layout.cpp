@@ -1,24 +1,17 @@
 #include "layout.hpp"
 
-Layout::Layout(char label, int m, int n, int P, int n_steps,
-    int mOffset, int nOffset,
-    std::string::const_iterator patt,
-    std::vector<int>::const_iterator divPatt, int rank,
-    std::vector<std::vector<Interval2D>> rank_to_range) :
-        label_(label), m_(m), n_(n), P_(P), n_steps_(n_steps), mOffset_(mOffset), nOffset_(nOffset),
-        patt_(patt,patt+n_steps),
-        divPatt_(divPatt,divPatt+3*n_steps),
-        rank_(rank), rank_to_range_(rank_to_range) {
-
+Layout::Layout(char label, int m, int n, size_t P,
+               int rank, std::vector<std::vector<Interval2D>> rank_to_range) :
+        label_(label), m_(m), n_(n), P_(P), rank_(rank), rank_to_range_(rank_to_range) {
     initial_size_ = std::vector<int>(P);
     bucket_size_ = std::vector<std::vector<int>>(P, std::vector<int>());
     pointer_ = std::vector<int>(P);
 
-    for (int p = 0; p < P; ++p) {
+    for (size_t p = 0; p < P; ++p) {
         int sum = 0;
         auto ranges = rank_to_range[p];
 
-        for (int bucket = 0; bucket < ranges.size(); ++bucket) {
+        for (size_t bucket = 0; bucket < ranges.size(); ++bucket) {
             int size = ranges[bucket].size();
             bucket_size_[p].push_back(size);
             sum += size;

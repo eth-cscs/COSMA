@@ -1,4 +1,4 @@
-#include "carma.h"
+#include "carma.hpp"
 
 CarmaMatrix* matrixA;
 CarmaMatrix* matrixB;
@@ -19,20 +19,18 @@ CarmaMatrix* matrixC;
 
 // this is just a wrapper to initialize and call the recursive function
 void multiply(CarmaMatrix* A, CarmaMatrix* B, CarmaMatrix *C,
-        int m, int n, int k, int P, int r,
-        std::string::const_iterator patt,
-        std::vector<int>::const_iterator divPatt) {
-    Interval mi = Interval(0, m-1);
-    Interval ni = Interval(0, n-1);
-    Interval ki = Interval(0, k-1);
-    Interval Pi = Interval(0, P-1);
+        const Strategy& strategy) {
+    Interval mi = Interval(0, strategy.m-1);
+    Interval ni = Interval(0, strategy.n-1);
+    Interval ki = Interval(0, strategy.k-1);
+    Interval Pi = Interval(0, strategy.P-1);
 
     matrixA = A;
     matrixB = B;
     matrixC = C;
 
     multiply(A->matrix_pointer(), B->matrix_pointer(), C->matrix_pointer(), 
-            mi, ni, ki, Pi, r, patt, divPatt, 0.0, MPI_COMM_WORLD);
+            mi, ni, ki, Pi, 0, strategy, 0.0, MPI_COMM_WORLD);
 
     if (getRank() == 0) {
         PP();
@@ -42,10 +40,8 @@ void multiply(CarmaMatrix* A, CarmaMatrix* B, CarmaMatrix *C,
 
 // dispatch to local call, BFS, or DFS as appropriate
 void multiply(double *A, double *B, double *C,
-    Interval& m, Interval& n, Interval& k, Interval& P, int r,
-    std::string::const_iterator patt,
-    std::vector<int>::const_iterator divPatt, double beta,
-    MPI_Comm comm) {
+              Interval& m, Interval& n, Interval& k, Interval& P,
+              size_t step, const Strategy& strategy, double beta, MPI_Comm comm) {
 
     PE(multiply_layout);
     // current submatrices that are being computed
@@ -76,24 +72,13 @@ void multiply(double *A, double *B, double *C,
     int offsetC = matrixC->offset(bucketC[getRank()-P.first()]);
     PL();
 
-    if (r == 0) {
-        if(!P.only_one()) {
-            printf("Error: reached r=0 with more than one processor\n");
-            exit(-1);
-        }
+    if (strategy.final_step(step))
         local_multiply(A+offsetA, B+offsetB, C+offsetC, m.length(), n.length(), k.length(), beta);
-    } else {
-        if (patt[0] == 'B' || patt[0] == 'b') {
-            BFS(A+offsetA, B+offsetB, C+offsetC, m, n, k, P, r, 
-                    divPatt[0], divPatt[1], divPatt[2], patt+1, divPatt+3, beta, comm);
-        } else if (patt[0] == 'D' || patt[0] == 'd') {
-
-            DFS(A+offsetA, B+offsetB, C+offsetC, m, n, k, P, r, 
-                    divPatt[0], divPatt[1], divPatt[2], patt+1, divPatt+3, beta, comm);
-
-        } else {
-            printf("Error: unrecognized type of step: %c\n", patt[0]);
-        }
+    else {
+        if (strategy.bfs_step(step))
+            BFS(A+offsetA, B+offsetB, C+offsetC, m, n, k, P, step, strategy, beta, comm);
+        else
+            DFS(A+offsetA, B+offsetB, C+offsetC, m, n, k, P, step, strategy, beta, comm);
     }
     PE(multiply_layout);
     // Revert the buckets pointers to their previous values.
@@ -145,28 +130,22 @@ void local_multiply(double *A, double *B, double *C, int m, int n, int k, double
   sequentially by all P processors.
 */
 void DFS(double *A, double *B, double *C,
-    Interval& m, Interval& n, Interval& k, Interval& P, int r, int divm, int divn, int divk,
-    std::string::const_iterator patt,
-    std::vector<int>::const_iterator divPatt, double beta, MPI_Comm comm) {
-
-#ifdef DEBUG
-    std::cout << "DFS with " << m << " " << n << " " << k << std::endl;
-#endif
-
+        Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
+        const Strategy& strategy, double beta, MPI_Comm comm) {
     // split the dimension but not the processors, all P processors are taking part
     // in each recursive call.
-    if (divm > 1) {
-        for (int M = 0; M < divm; ++M) {
-            Interval newm = m.subinterval(divm, M);
-            multiply(A, B, C, newm, n, k, P, r - 1, patt, divPatt, beta, comm);
+    if (strategy.split_m(step)) {
+        for (int M = 0; M < strategy.divisor(step); ++M) {
+            Interval newm = m.subinterval(strategy.divisor(step), M);
+            multiply(A, B, C, newm, n, k, P, step+1, strategy, beta, comm);
         }
         return;
     }
 
-    if (divn > 1) {
-        for (int N = 0; N < divn; ++N) {
-            Interval newn = n.subinterval(divn, N);
-            multiply(A, B, C, m, newn, k, P, r - 1, patt, divPatt, beta, comm);
+    if (strategy.split_n(step)) {
+        for (int N = 0; N < strategy.divisor(step); ++N) {
+            Interval newn = n.subinterval(strategy.divisor(step), N);
+            multiply(A, B, C, m, newn, k, P, step+1, strategy, beta, comm);
         }
         return;
     }
@@ -175,44 +154,34 @@ void DFS(double *A, double *B, double *C,
     // which should all be summed up. We solve this by letting beta parameter be 1
     // in the recursive calls that follow so that dgemm automatically adds up the subsequent
     // results to the previous partial results of C.
-    if (divk > 1) {
-        for (int K = 0; K < divk; ++K) {
-            Interval newk = k.subinterval(divk, K);
-            multiply(A, B, C, m, n, newk, P, r - 1, patt, divPatt, (K==0)&&(beta==0) ? 0 : 1, comm);
+    if (strategy.split_k(step)) {
+        for (int K = 0; K < strategy.divisor(step); ++K) {
+            Interval newk = k.subinterval(strategy.divisor(step), K);
+            multiply(A, B, C, m, n, newk, P, step+1, strategy, (K==0)&&(beta==0) ? 0 : 1, comm);
         }
         return;
     } 
 }
 
 template<typename T>
-T which_is_expanded(T A, T B, T C, int divm, int divn, int divk) {
+T which_is_expanded(T A, T B, T C, const Strategy& strategy, size_t step) {
     // divn > 1 => divm==divk==1 => matrix A has not been splitted
     // therefore it is expanded (in the communication step of BFS)
-    if (divn > 1)
+    if (strategy.split_n(step))
         return A;
 
     // divm > 1 => divk==divn==1 => matrix B has not been splitted
     // therefore it is expanded (in the communication step of BFS)
-    if (divm > 1)
+    if (strategy.split_m(step))
         return B;
 
     // divk > 1 => divm==divn==1 => matrix C has not been splitted
     // therefore it is expanded (in the reduction step of BFS)
-    if (divk > 1)
+    if (strategy.split_k(step))
         return C;
 
     // this should never happen
     return C;
-}
-
-template<typename T>
-T expand_if_needed(T original, T expanded, int divm, int divn) {
-    // if the dimensions of this matrix were split, then this matrix is not expanded since we
-    // since CARMA assumes that before splitting the data already resides on the right ranks
-    if (divm + divn > 2)
-        return original;
-
-    return expanded;
 }
 
 /*
@@ -245,32 +214,21 @@ T expand_if_needed(T original, T expanded, int divm, int divn) {
         should own what was previously owned by newP ranks - thus local matrices are shrinked.
 */
 void BFS(double *A, double *B, double *C,
-             Interval& m, Interval& n, Interval& k, Interval& P, int r, int divm, int divn, int divk,
-             std::string::const_iterator patt,
-             std::vector<int>::const_iterator divPatt, double beta, MPI_Comm comm) {
-#ifdef DEBUG
-    std::cout << "BFS with " << m << " " << n << " " << k 
-        << " divm = " << divm << " divn = " << divn << " divk = " << divk << std::endl;
-#endif
-
-    int div = divm * divn * divk;
-    // check if only 1 dimension is divided in this step
-    // Diophantine equation (x y z + 2 = x + y + z, s.t. x, y, z >= 1) has only solutions
-    // of the form (k, 1, 1), (1, k, 1) and (1, 1, k) where k >= 1
-    if (div + 2 != divm + divn + divk) {
-        std::cout << "In each step, only one dimension can be split. Aborting the application...\n";
-        exit(-1);
-    }
-
+             Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
+             const Strategy& strategy, double beta, MPI_Comm comm) {
+    int divisor = strategy.divisor(step);
+    int divisor_m = strategy.divisor_m(step);
+    int divisor_n = strategy.divisor_n(step);
+    int divisor_k = strategy.divisor_k(step);
     // processor subinterval which the current rank belongs to
-    int partition_idx = P.partition_index(div, getRank());
-    Interval newP = P.subinterval(div, partition_idx);
+    int partition_idx = P.partition_index(divisor, getRank());
+    Interval newP = P.subinterval(divisor, partition_idx);
     // intervals of M, N and K that the current rank is in charge of,
     // together with other ranks from its group.
     // (see the definition of group and offset below)
-    Interval newm = m.subinterval(divm, divm>1 ? partition_idx : 0);
-    Interval newn = n.subinterval(divn, divn>1 ? partition_idx : 0);
-    Interval newk = k.subinterval(divk, divk>1 ? partition_idx : 0);
+    Interval newm = m.subinterval(divisor_m, divisor_m>1 ? partition_idx : 0);
+    Interval newn = n.subinterval(divisor_n, divisor_n>1 ? partition_idx : 0);
+    Interval newk = k.subinterval(divisor_k, divisor_k>1 ? partition_idx : 0);
 
     /*
       We split P processors into div groups of newP.length() processors.
@@ -317,8 +275,8 @@ void BFS(double *A, double *B, double *C,
          if divn > 1 => matrix A expanded => Interval2D(m, k)
          if divk > 1 => matrix C expanded => Interval2D(m, n)
     */
-    Interval row_copy = which_is_expanded(m, k, m, divm, divn, divk);
-    Interval col_copy = which_is_expanded(k, n, n, divm, divn, divk);
+    Interval row_copy = which_is_expanded(m, k, m, strategy, step);
+    Interval col_copy = which_is_expanded(k, n, n, strategy, step);
     Interval2D range(row_copy, col_copy);
 
     /*
@@ -327,7 +285,7 @@ void BFS(double *A, double *B, double *C,
          if divn > 1 => matrix A is expanded
          if divk > 1 => matrix C is expanded
     */
-    CarmaMatrix* expanded_mat = which_is_expanded(matrixA, matrixB, matrixC, divm, divn, divk);
+    CarmaMatrix* expanded_mat = which_is_expanded(matrixA, matrixB, matrixC, strategy, step);
     // gets the buffer sizes before and after expansion.
     // this still does not modify the buffer sizes inside layout
     // it just tells us what they would be.
@@ -350,24 +308,24 @@ void BFS(double *A, double *B, double *C,
 
     // LM = M if M was not expanded
     // LM = expanded_space if M was expanded
-    double* LA = expand_if_needed(A, expanded_space, divm, divk);
-    double* LB = expand_if_needed(B, expanded_space, divk, divn);
-    double* LC = expand_if_needed(C, expanded_space, divm, divn);
+    double* LA = strategy.split_A(step) ? A : expanded_space;
+    double* LB = strategy.split_B(step) ? B : expanded_space;
+    double* LC = strategy.split_C(step) ? C : expanded_space;
 
     // if divm > 1 => original_matrix=B, expanded_matrix=LB
     // if divn > 1 => original_matrix=A, expanded_matrix=LA
     // if divk > 1 => original_matrix=C, expanded_matrix=LC
-    double* original_matrix = which_is_expanded(A, B, C, divm, divn, divk);
-    double* expanded_matrix = which_is_expanded(LA, LB, LC, divm, divn, divk);
+    double* original_matrix = which_is_expanded(A, B, C, strategy, step);
+    double* expanded_matrix = which_is_expanded(LA, LB, LC, strategy, step);
     PL();
 
     PE(multiply_communication_copy);
     // if divided along m or n then copy original matrix inside communication ring
     // to get the expanded matrix (all ranks inside communication ring should own
     // exactly the same data in the expanded matrix.
-    if (divm + divn > 2) {
+    if (strategy.split_m(step) || strategy.split_n(step)) {
         // copy the matrix that wasn't divided in this step
-        copy_mat(div, P, newP, range, original_matrix, expanded_matrix,
+        copy_mat(divisor, P, newP, range, original_matrix, expanded_matrix,
                 size_before_expansion, total_before_expansion, new_size, comm);
         /*
           observe that here we use the communicator "comm" and not "newcomm"
@@ -386,20 +344,19 @@ void BFS(double *A, double *B, double *C,
     // this is necessary since reduction happens AFTER the recursion
     // so we cannot pass beta = 1 if the data is not present there BEFORE the recursion.
     int new_beta = beta;
-    if (divk > 1 && beta > 0) {
+    if (strategy.split_k(step) && beta > 0) {
         new_beta = 0;
     }
     // invoke recursion with the new communicator containing ranks from newP
     // observe that we have only one recursive call here (we are not entering a loop
     // of recursive calls as in DFS steps since the current rank will only enter
     // into one recursive call since ranks are split).
-    multiply(LA, LB, LC, newm, newn, newk, newP, r-1, patt, divPatt, new_beta, newcomm);
+    multiply(LA, LB, LC, newm, newn, newk, newP, step+1, strategy, new_beta, newcomm);
 
     PE(multiply_communication_reduce);
     // if division by k do additional reduction of C
-    if (divk > 1) {
-        reduce(div, P, newP, range, expanded_matrix, original_matrix, size_before_expansion, 
-               total_before_expansion, size_after_expansion, total_after_expansion, beta, comm);
+    if (strategy.split_k(step)) {
+        reduce(divisor, P, newP, range, expanded_matrix, original_matrix, size_before_expansion, total_before_expansion, size_after_expansion, total_after_expansion, beta, comm);
     }
     PL();
 

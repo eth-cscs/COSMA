@@ -1,10 +1,12 @@
+#ifndef COMMUNICATION_H
+#define COMMUNICATION_H
+
 #include <mpi.h>
 #include <stdlib.h>
 #include "interval.hpp"
 #include <algorithm>
-
-#ifndef COMMUNICATION_H
-#define COMMUNICATION_H
+#include <iostream>
+#include "blas.h"
 
 int getRank();
 int getCommSize();

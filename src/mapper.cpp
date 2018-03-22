@@ -1,25 +1,18 @@
 #include "mapper.hpp"
 
-Mapper::Mapper(char label, int m, int n, int P, int n_steps,
-    int mOffset, int nOffset,
-    std::string::const_iterator patt,
-    std::vector<int>::const_iterator divPatt, int rank) :
-        label_(label), m_(m), n_(n), P_(P), n_steps_(n_steps), mOffset_(mOffset), nOffset_(nOffset),
-        patt_(patt,patt+n_steps),
-        divPatt_(divPatt,divPatt+3*n_steps),
-        rank_(rank) {
-
+Mapper::Mapper(char label, int m, int n, size_t P, const Strategy& strategy, int rank) :
+        label_(label), m_(m), n_(n), P_(P), strategy_(strategy), rank_(rank) {
     skip_ranges_ = std::vector<int>(P);
     rank_to_range_ = std::vector<std::vector<Interval2D>>(P, std::vector<Interval2D>());
     mi_ = Interval(0, m-1);
     ni_ = Interval(0, n-1);
     Pi_ = Interval(0, P-1);
     compute_sizes(mi_, ni_, Pi_, 0);
-    initial_buffer_size_ = std::vector<int>(P);
+    initial_buffer_size_ = std::vector<size_t>(P);
     range_offset_ = std::vector<std::vector<int>>(P, std::vector<int>());
 
-    for (int rank = 0; rank < P; ++rank) {
-        int size = 0;
+    for (size_t rank = 0; rank < P; ++rank) {
+        size_t size = 0;
         int matrix_id = 0;
         for (auto& matrix : rank_to_range_[rank]) {
             range_offset_[rank].push_back(size);
@@ -91,26 +84,22 @@ void Mapper::compute_sizes(Interval m, Interval n, Interval P, int step) {
     Interval2D submatrix(m, n);
 
     // base case
-    if (step == n_steps_) {
-        if (P.length() != 1) {
-            std::cout << "Error in Layout.compute_sizes, came to the end of recursion with more than 1 processor" << std::endl;
-            std::cout << "Interval = " << m << " and " << n << " and P = " << P << std::endl;
-        }
+    if (strategy_.final_step(step)) {
         auto submatrices = rank_to_range_[P.first()];
         rank_to_range_[P.first()].push_back(submatrix);
         return;
     }
 
-    int divm = divPatt_[3 * step + mOffset_];
-    int divn = divPatt_[3 * step + nOffset_];
-    int div = divm * divn * divPatt_[3 * step + 3 - mOffset_ - nOffset_];
+    int divm = strategy_.divisor_row(label_, step);
+    int divn = strategy_.divisor_col(label_, step);
+    int div = strategy_.divisor(step);
 
     // remember the previous number of fixed subranges
     // for each rank. this is only used in DFS step
     // we want the next DFS step to NOT modify the
     // subranges from the previous DFS step
     std::vector<int> prev_skip_ranges;
-    if (patt_[step] == 'd' || patt_[step] == 'D') {
+    if (strategy_.dfs_step(step)) {
         for (int i = P.first(); i <= P.last(); ++i) {
             prev_skip_ranges.push_back(skip_ranges_[i]);
         }
@@ -122,7 +111,7 @@ void Mapper::compute_sizes(Interval m, Interval n, Interval P, int step) {
         Interval newm = m.subinterval(divm, divm>1 ? i : 0);
         Interval newn = n.subinterval(divn, divn>1 ? i : 0);
 
-        if (patt_[step] == 'd' || patt_[step] == 'D') {
+        if (strategy_.dfs_step(step)) {
             // invoke recursion
             compute_sizes(newm, newn, P, step+1);
             // skip these elements in rank_to_range_ to make the next DFS step independent
@@ -178,7 +167,7 @@ void Mapper::compute_sizes(Interval m, Interval n, Interval P, int step) {
     // skip the subranges after all DFS steps since maybe the first copy case
     // wants to modify all the elements from the beginning of DFS
     // (to subdivide all the matrices as above)
-    if (patt_[step] == 'd' || patt_[step] == 'D') {
+    if (strategy_.dfs_step(step)) {
         // clean after yourself, once all DFS steps have finished
         for (int i = P.first(); i <= P.last(); ++i) {
             skip_ranges_[i] = prev_skip_ranges[i - P.first()];
@@ -186,11 +175,11 @@ void Mapper::compute_sizes(Interval m, Interval n, Interval P, int step) {
     }
 }
 
-const int Mapper::initial_size(int rank) const {
+const size_t Mapper::initial_size(int rank) const {
     return initial_buffer_size_[rank];
 }
 
-const int Mapper::initial_size() const {
+const size_t Mapper::initial_size() const {
     return initial_size(rank_);
 }
 
