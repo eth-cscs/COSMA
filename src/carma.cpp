@@ -32,7 +32,7 @@ void multiply(CarmaMatrix* A, CarmaMatrix* B, CarmaMatrix *C,
     multiply(A->matrix_pointer(), B->matrix_pointer(), C->matrix_pointer(), 
             mi, ni, ki, Pi, 0, strategy, 0.0, MPI_COMM_WORLD);
 
-    if (getRank() == 0) {
+    if (communicator::rank() == 0) {
         PP();
     }
 
@@ -67,9 +67,9 @@ void multiply(double *A, double *B, double *C,
 
     // This iterates over the skipped buckets and sums up their sizes so that
     // we know how many elements we should skip. 
-    int offsetA = matrixA->offset(bucketA[getRank()-P.first()]);
-    int offsetB = matrixB->offset(bucketB[getRank()-P.first()]);
-    int offsetC = matrixC->offset(bucketC[getRank()-P.first()]);
+    int offsetA = matrixA->offset(bucketA[communicator::relative_rank(P)]);
+    int offsetB = matrixB->offset(bucketB[communicator::relative_rank(P)]);
+    int offsetC = matrixC->offset(bucketC[communicator::relative_rank(P)]);
     PL();
 
     if (strategy.final_step(step))
@@ -221,7 +221,7 @@ void BFS(double *A, double *B, double *C,
     int divisor_n = strategy.divisor_n(step);
     int divisor_k = strategy.divisor_k(step);
     // processor subinterval which the current rank belongs to
-    int partition_idx = P.partition_index(divisor, getRank());
+    int partition_idx = P.partition_index(divisor, communicator::rank());
     Interval newP = P.subinterval(divisor, partition_idx);
     // intervals of M, N and K that the current rank is in charge of,
     // together with other ranks from its group.
@@ -230,21 +230,9 @@ void BFS(double *A, double *B, double *C,
     Interval newn = n.subinterval(divisor_n, divisor_n>1 ? partition_idx : 0);
     Interval newk = k.subinterval(divisor_k, divisor_k>1 ? partition_idx : 0);
 
-    /*
-      We split P processors into div groups of newP.length() processors.
-        * gp from [0..(div-1)] is the id of the group of the current rank
-        * offset from [0..(newP.length()-1)] is the offset of current rank inside its group
-
-      We now define the communication ring of the current processor as:
-        i * newP.length() + offset, where i = 0..(div-1) and offset = getRank() - newP.first()
-    */
-    int offset = getRank() - newP.first();
-    int gp = (getRank() - P.first()) / newP.length();
-
     // New communicator splitting P processors into div groups of newP.length() rocessors
     // This communicator will be used in the recursive call.
-    MPI_Comm newcomm;
-    MPI_Comm_split(comm, gp, offset, &newcomm);
+    MPI_Comm newcomm = communicator::split_in_groups(comm, P, divisor);
 
     PE(multiply_layout);
     /*
@@ -301,7 +289,7 @@ void BFS(double *A, double *B, double *C,
     // this is the sum of sizes of all the buckets after expansion
     // that the current rank will own.
     // which is also the size of the matrix after expansion
-    int new_size = total_after_expansion[offset];
+    int new_size = total_after_expansion[communicator::relative_rank(newP)];
 
     // new allocated space for the expanded matrix
     double* expanded_space = (double*) malloc(new_size * sizeof(double));
@@ -325,7 +313,7 @@ void BFS(double *A, double *B, double *C,
     // exactly the same data in the expanded matrix.
     if (strategy.split_m(step) || strategy.split_n(step)) {
         // copy the matrix that wasn't divided in this step
-        copy_mat(divisor, P, newP, range, original_matrix, expanded_matrix,
+        communicator::copy(divisor, P, original_matrix, expanded_matrix,
                 size_before_expansion, total_before_expansion, new_size, comm);
         /*
           observe that here we use the communicator "comm" and not "newcomm"
@@ -356,7 +344,7 @@ void BFS(double *A, double *B, double *C,
     PE(multiply_communication_reduce);
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
-        reduce(divisor, P, newP, range, expanded_matrix, original_matrix, size_before_expansion, total_before_expansion, size_after_expansion, total_after_expansion, beta, comm);
+        communicator::reduce(divisor, P, expanded_matrix, original_matrix, size_before_expansion, total_before_expansion, size_after_expansion, total_after_expansion, beta, comm);
     }
     PL();
 

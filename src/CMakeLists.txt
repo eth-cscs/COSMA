@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.5)
 ###############
 
 set(sources
-    communication.cpp
+    communicator.cpp
     carma.cpp
     matrix.cpp
     layout.cpp

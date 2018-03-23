@@ -10,9 +10,6 @@
 //Blas
 #include "blas.h"
 
-//MPI
-#include <mpi.h>
-
 // Local
 #include <carma.hpp>
 
@@ -23,7 +20,7 @@ void fillInt(T& in) {
 }
 
 void output_matrix(CarmaMatrix* M) {
-    std::string local = M->which_matrix() + std::to_string(getRank()) + ".txt";
+    std::string local = M->which_matrix() + std::to_string(communicator::rank()) + ".txt";
     std::ofstream local_file(local);
     local_file << *M << std::endl;
     local_file.close();
@@ -31,27 +28,26 @@ void output_matrix(CarmaMatrix* M) {
 
 int main( int argc, char **argv ) {
     Strategy strategy(argc, argv);
-    initCommunication(&argc, &argv);
+    communicator::initialize(&argc, &argv);
 
-    int P;
-    MPI_Comm_size(MPI_COMM_WORLD, &P);
-    
+    int P = communicator::size();
+
     if (P != strategy.P) {
         throw(std::runtime_error("Number of processors available not equal \
                                  to the number of processors specified by flag P"));
     }
 
-    if (getRank() == 0) {
+    if (communicator::rank() == 0) {
         std::cout << strategy << std::endl;
     }
 
     //Declare A,B and C CARMA matrices objects
-    CarmaMatrix* A = new CarmaMatrix('A', strategy, getRank());
-    CarmaMatrix* B = new CarmaMatrix('B', strategy, getRank());
-    CarmaMatrix* C = new CarmaMatrix('C', strategy, getRank());
+    CarmaMatrix* A = new CarmaMatrix('A', strategy, communicator::rank());
+    CarmaMatrix* B = new CarmaMatrix('B', strategy, communicator::rank());
+    CarmaMatrix* C = new CarmaMatrix('C', strategy, communicator::rank());
 
     // fill the matrices with random data
-    srand48(getRank());
+    srand48(communicator::rank());
     fillInt(A->matrix());
     fillInt(B->matrix());
 
@@ -61,7 +57,7 @@ int main( int argc, char **argv ) {
     output_matrix(B);
     output_matrix(C);
 
-    MPI_Finalize();
+    communicator::finalize();
 
     free(A);
     free(B);

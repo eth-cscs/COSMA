@@ -3,7 +3,7 @@
 // STL
 #include <vector>
 #include "interval.hpp"
-#include "communication.hpp"
+#include "communicator.hpp"
 #include "blas.h"
 #include "matrix.hpp"
 #include <omp.h>

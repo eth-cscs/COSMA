@@ -1,5 +1,5 @@
-#ifndef _STRATEGYH_
-#define _STRATEGYH_
+#ifndef _STRATEGY_H_
+#define _STRATEGY_H_
 
 #include <stdexcept>
 #include <vector>
