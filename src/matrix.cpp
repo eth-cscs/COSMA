@@ -19,6 +19,7 @@ CarmaMatrix::CarmaMatrix(char label, const Strategy& strategy, int rank) :
     mapper_ = std::make_unique<Mapper>(label, m_, n_, P_, strategy, rank);
     layout_ = std::make_unique<Layout>(label, m_, n_, P_, rank, mapper_->complete_layout());
     matrix_ = std::vector<double>(mapper_->initial_size(rank));
+    current_mat = matrix_.data();
     PL();
 }
 
@@ -69,16 +70,33 @@ std::vector<double>& CarmaMatrix::matrix() {
     return matrix_;
 }
 
+double* CarmaMatrix::current_matrix() {
+    return current_mat;
+}
+
+void CarmaMatrix::set_current_matrix(double* mat) {
+    current_mat = mat;
+}
+
 char CarmaMatrix::which_matrix() {
     return label_;
 }
 
-int CarmaMatrix::offset(int rank, int dfs_bucket) {
-    return layout_->offset(rank, dfs_bucket);
+int CarmaMatrix::shift(int rank, int dfs_bucket) {
+    int offset = layout_->offset(rank, dfs_bucket);
+    current_mat += offset;
+    return offset;
 }
 
-int CarmaMatrix::offset(int dfs_bucket) {
-    return layout_->offset(dfs_bucket);
+int CarmaMatrix::shift(int dfs_bucket) {
+    int offset = layout_->offset(dfs_bucket);
+    current_mat += offset;
+    return offset;
+}
+
+
+void CarmaMatrix::unshift(int offset) {
+    current_mat -= offset;
 }
 
 int CarmaMatrix::dfs_bucket(int rank) {

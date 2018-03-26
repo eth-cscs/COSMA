@@ -40,9 +40,6 @@ public:
     // runtime: constant (pre-computed)
     const std::pair<int, int> global_coordinates(int local_index) const;
 
-    double* matrix_pointer();
-
-    std::vector<double>& matrix();
 
     char which_matrix();
 
@@ -52,8 +49,9 @@ public:
     // **********************************************
     // METHODS FROM layout.hpp
     // **********************************************
-    int offset(int rank, int dfs_bucket);
-    int offset(int dfs_bucket);
+    int shift(int rank, int dfs_bucket);
+    int shift(int dfs_bucket);
+    void unshift(int offset);
 
     void update_buckets(Interval& P, Interval2D& range);
     int dfs_bucket(int rank);
@@ -88,11 +86,19 @@ public:
     // for all local elements on the current rank
     friend std::ostream& operator<<(std::ostream& os, const CarmaMatrix& mat);
 
+    double* matrix_pointer();
+    std::vector<double>& matrix();
+
+    double* current_matrix();
+    void set_current_matrix(double* mat);
+
 protected:
     // A, B or C
     char label_;
     /// local matrix
     std::vector<double> matrix_;
+    /// temporary local matrix
+    double* current_mat;
     /// Number of rows of the global atrix
     int m_;
     /// Number of columns of the global matrix

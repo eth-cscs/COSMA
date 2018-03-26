@@ -18,7 +18,7 @@ namespace communicator {
 
     int size();
 
-    int finalize();
+    void finalize();
 
     void barrier(MPI_Comm comm = MPI_COMM_WORLD);
 

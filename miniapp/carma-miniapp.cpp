@@ -19,10 +19,10 @@ void fillInt(T& in) {
     [](){ return (int) (10*drand48()); });
 }
 
-void output_matrix(CarmaMatrix* M) {
-    std::string local = M->which_matrix() + std::to_string(communicator::rank()) + ".txt";
+void output_matrix(CarmaMatrix& M) {
+    std::string local = M.which_matrix() + std::to_string(communicator::rank()) + ".txt";
     std::ofstream local_file(local);
-    local_file << *M << std::endl;
+    local_file << M << std::endl;
     local_file.close();
 }
 
@@ -42,14 +42,14 @@ int main( int argc, char **argv ) {
     }
 
     //Declare A,B and C CARMA matrices objects
-    CarmaMatrix* A = new CarmaMatrix('A', strategy, communicator::rank());
-    CarmaMatrix* B = new CarmaMatrix('B', strategy, communicator::rank());
-    CarmaMatrix* C = new CarmaMatrix('C', strategy, communicator::rank());
+    CarmaMatrix A('A', strategy, communicator::rank());
+    CarmaMatrix B('B', strategy, communicator::rank());
+    CarmaMatrix C('C', strategy, communicator::rank());
 
     // fill the matrices with random data
     srand48(communicator::rank());
-    fillInt(A->matrix());
-    fillInt(B->matrix());
+    fillInt(A.matrix());
+    fillInt(B.matrix());
 
     multiply(A, B, C, strategy);
 
@@ -58,10 +58,6 @@ int main( int argc, char **argv ) {
     output_matrix(C);
 
     communicator::finalize();
-
-    free(A);
-    free(B);
-    free(C);
 
     return 0;
 }

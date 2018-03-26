@@ -42,34 +42,34 @@ int main( int argc, char **argv ) {
     bool isOK;
 
     //Declare A,B and C CARMA matrices objects
-    CarmaMatrix* A = new CarmaMatrix('A', strategy, communicator::rank());
-    CarmaMatrix* B = new CarmaMatrix('B', strategy, communicator::rank());
-    CarmaMatrix* C = new CarmaMatrix('C', strategy, communicator::rank());
+    CarmaMatrix A('A', strategy, communicator::rank());
+    CarmaMatrix B('B', strategy, communicator::rank());
+    CarmaMatrix C('C', strategy, communicator::rank());
 
     // initial sizes
-    auto sizeA=A->initial_size();
-    auto sizeB=B->initial_size();
-    auto sizeC=C->initial_size();
+    auto sizeA=A.initial_size();
+    auto sizeB=B.initial_size();
+    auto sizeC=C.initial_size();
 
     // fill the matrices with random data
     srand48(communicator::rank());
-    fillInt(A->matrix());
-    fillInt(B->matrix());
+    fillInt(A.matrix());
+    fillInt(B.matrix());
 
     //Then rank0 ask for other ranks data
     std::vector<double> As,Bs;
     if (communicator::rank()==0) {
         As=std::vector<double>(m*k);
-        std::copy(A->matrix().cbegin(),A->matrix().cend(),As.begin());
+        std::copy(A.matrix().cbegin(),A.matrix().cend(),As.begin());
         Bs=std::vector<double>(k*n);
-        std::copy(B->matrix().cbegin(),B->matrix().cend(),Bs.begin());
+        std::copy(B.matrix().cbegin(),B.matrix().cend(),Bs.begin());
 
         int offsetA = sizeA;
         int offsetB = sizeB;
 
         for( int i = 1; i < P; i++ ) {
-            int receive_size_A = A->initial_size(i); 
-            int receive_size_B = B->initial_size(i);
+            int receive_size_A = A.initial_size(i);
+            int receive_size_B = B.initial_size(i);
             //Rank 0 receive data
             MPI_Recv(As.data()+offsetA, receive_size_A, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,
                 MPI_STATUSES_IGNORE);
@@ -82,8 +82,8 @@ int main( int argc, char **argv ) {
     }
     //Rank i send data
     if (communicator::rank() > 0) {
-        MPI_Send(A->matrix_pointer(), sizeA, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-        MPI_Send(B->matrix_pointer(), sizeB, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+        MPI_Send(A.matrix_pointer(), sizeA, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+        MPI_Send(B.matrix_pointer(), sizeB, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
     }
 
     communicator::barrier();
@@ -100,19 +100,19 @@ int main( int argc, char **argv ) {
         int offsetB = 0;
 
         for (int i=0; i<P; i++) {
-            int local_size_A = A->initial_size(i);
-            int local_size_B = B->initial_size(i);
+            int local_size_A = A.initial_size(i);
+            int local_size_B = B.initial_size(i);
 
             for (int j=0; j<local_size_A; j++) {
                 int y,x;
-                std::tie(y,x) = A->global_coordinates(j,i);
+                std::tie(y,x) = A.global_coordinates(j,i);
                 if (y>=0 && x>=0) {
                     globA.at(x*m+y)=As.at(offsetA+j);
                 }
             }
             for (int j=0; j<local_size_B; j++) {
                 int y,x;
-                std::tie(y,x) = B->global_coordinates(j,i);
+                std::tie(y,x) = B.global_coordinates(j,i);
                 //std::cout << "Mapped successfully!\n";
                 if (y>=0 && x>=0) {
                     //globB.at(x*n+y)=Bs.at(i*sizeB+j);
@@ -166,12 +166,12 @@ int main( int argc, char **argv ) {
     std::vector<double> Cs;
     if (communicator::rank()==0) {
         Cs=std::vector<double>(m*n);
-        std::copy(C->matrix().cbegin(),C->matrix().cend(),Cs.begin());
+        std::copy(C.matrix().cbegin(),C.matrix().cend(),Cs.begin());
 
         int offsetC = sizeC;
 
         for( int i = 1; i < P; i++ ) {
-            int receive_size_C = C->initial_size(i); 
+            int receive_size_C = C.initial_size(i);
             //Rank 0 receive data
             MPI_Recv(Cs.data()+offsetC, receive_size_C, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,
                 MPI_STATUSES_IGNORE);
@@ -180,7 +180,7 @@ int main( int argc, char **argv ) {
     }
     //Rank i send data
     if (communicator::rank() > 0) {
-        MPI_Send(C->matrix_pointer(), sizeC, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+        MPI_Send(C.matrix_pointer(), sizeC, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
     }
 
     communicator::barrier();
@@ -192,11 +192,11 @@ int main( int argc, char **argv ) {
         int offsetC = 0;
 
         for (int i=0; i<P; i++) {
-            int local_size_C = C->initial_size(i);
+            int local_size_C = C.initial_size(i);
 
             for (int j=0; j<local_size_C; j++) {
                 int y,x;
-                std::tie(y,x) = C->global_coordinates(j,i);
+                std::tie(y,x) = C.global_coordinates(j,i);
                 if (y>=0 && x>=0) {
                     globC.at(x*m+y)=Cs.at(offsetC+j);
                 }
@@ -217,7 +217,7 @@ int main( int argc, char **argv ) {
                     int x = i % m;
                     int y = i / m;
                     int locidx, rank;
-                    std::tie(locidx, rank) = C->local_coordinates(x, y);
+                    std::tie(locidx, rank) = C.local_coordinates(x, y);
                     std::cout<<"global(" << x << ", " << y << ") = (loc = " << locidx << ", rank = " << rank << ") = " << globC.at(i)<<" and should be "<< globCcheck.at(i)<<std::endl;
                 }
             }
@@ -232,26 +232,22 @@ int main( int argc, char **argv ) {
 
             printf("(%d) A: ", i );
             for( auto j = 0; j < sizeA; j++ )
-                printf("%5.3f ", A->matrix()[j] );
+                printf("%5.3f ", A.matrix()[j] );
             printf("\n");
 
             printf("(%d) B: ", i );
             for( auto j = 0; j < sizeB; j++ )
-                printf("%5.3f ", B->matrix()[j] );
+                printf("%5.3f ", B.matrix()[j] );
             printf("\n");
 
             printf("(%d) C: ", i );
             for( auto j = 0; j < sizeC; j++ )
-                printf("%5.3f ", C->matrix()[j] );
+                printf("%5.3f ", C.matrix()[j] );
             printf("\n");
         }
         MPI_Barrier( MPI_COMM_WORLD );
     }
 #endif //DEBUG
-
-    free(A);
-    free(B);
-    free(C);
 
     if (communicator::rank() == 0) {
         communicator::finalize();

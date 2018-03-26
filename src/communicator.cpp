@@ -21,7 +21,7 @@ namespace communicator {
         MPI_Comm_free(&comm);
     }
 
-    int finalize() {
+    void finalize() {
         MPI_Finalize();
     }
 
@@ -127,7 +127,7 @@ namespace communicator {
         }
 
 #ifdef DEBUG
-        std::cout<<"Content of the copied matrix in rank "<<rank<<" is now: "
+        std::cout<<"Content of the copied matrix in rank "<<rank()<<" is now: "
         <<std::endl;
         for (int j=0; j<sum; j++) {
             std::cout<<out[j]<<" , ";
@@ -146,9 +146,6 @@ namespace communicator {
                 int beta,
                 MPI_Comm comm) {
         MPI_Comm subcomm = split_in_comm_rings(comm, P, div);
-
-        int total_size = 0;
-
         int gp, off;
         std::tie(gp, off) = group_and_offset(P, div);
 
