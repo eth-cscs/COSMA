@@ -57,7 +57,6 @@ namespace communicator {
 
         MPI_Comm new_comm;
         MPI_Comm_split(comm, gp, off, &new_comm);
-        std::cout << "rank = " << r << " gp = " << gp << " offset = " << off << std::endl;
         return new_comm;
     }
 
@@ -67,7 +66,6 @@ namespace communicator {
 
         MPI_Comm new_comm;
         MPI_Comm_split(comm, off, gp, &new_comm);
-        std::cout << "rank = " << r << " gp = " << gp << " offset = " << off << std::endl;
         return new_comm;
     }
 
@@ -94,7 +92,6 @@ namespace communicator {
         std::vector<int> total_size(div);
         std::vector<int> dspls(div);
         int off = offset(P, div);
-        std::cout << "P divided by " << div << " of rank " << rank() << " gives offset = " << off << std::endl;
 
         for (int i = 0; i < div; ++i) {
             int target = rank_outside_ring(P, div, off, i);
@@ -110,7 +107,6 @@ namespace communicator {
 
         MPI_Allgatherv(in, local_size, MPI_DOUBLE, receiving_buffer.data(),
                        total_size.data(), dspls.data(), MPI_DOUBLE, subcomm);
-        std::cout << "rank = " << rank() << " Relative rank = " << relative_rank(P) << std::endl;
         int n_buckets = size_before[relative_rank(P)].size();
         int index = 0;
         std::vector<int> bucket_offset(div);
