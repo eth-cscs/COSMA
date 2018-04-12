@@ -123,7 +123,7 @@ void Mapper::compute_sizes(Interval m, Interval n, Interval P, int step) {
             }
             // don't go in other branches if dividing over absent dimension
             // it is still necessary to run the recursive step at least once
-            // because rank_to_range_ fill up only at the end of the recursion
+            // because rank_to_range_ fills up only at the end of the recursion
             // and is being modified on the way back
             if (divm * divn == 1) {
                 break;
