@@ -11,7 +11,7 @@ set(sources
     layout.cpp
     mapper.cpp
     statistics.hpp
-    strategy.hpp
+    strategy.cpp
 )
 
 ###################
