@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
-
 project(carma)
+
 set(PROJECT_NAME carma CXX C)
 set(CMAKE_CXX_STANDARD 14)
 
@@ -38,6 +38,27 @@ include_directories("${PRJ_ROOT_DIR}/profiler")
 include_directories("${PRJ_ROOT_DIR}/profiler/include/semiprof")
 
 #################################
+#        COVERAGE TEST          #
+#################################
+option(CARMA_COVERAGE_TEST "use lcov for the code coverage test" OFF)
+if(CARMA_COVERAGE_TEST)
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
+    set(CMAKE_LD_FLAGS "${CMAKE_LD_FLAGS} --coverage")
+
+    add_custom_target("coverage"
+                      COMMAND lcov --capture --directory ${CMAKE_CURRENT_BINARY_DIR} --output-file coverage.info
+                      COMMAND genhtml coverage.info --output-directory ${CMAKE_CURRENT_BINARY_DIR}/coverage
+                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+  else ()
+    message(WARNING "Coverage test can be used only with GCC.")
+    set(CARMA_COVERAGE_TEST "OFF" FORCE)
+  endif()
+endif()
+
+
+#################################
 #  Generic Compilation options  #
 #################################
 #Compiler must support c++14
@@ -49,26 +70,6 @@ if (CMAKE_COMPILER_IS_GNUCXX)
     endif ()
     add_compile_options(${CXX_FLAGS})
 endif ()
-
-#################################
-#        COVERAGE TEST          #
-#################################
-option(CARMA_COVERAGE_TEST "use lcov for the code coverage test" OFF)
-if(CARMA_COVERAGE_TEST)
-  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
-    set(CMAKE_LD_FLAGS "${CMAKE_LD_FLAGS} --coverage")
-
-    add_custom_target("coverage"
-                      COMMAND lcov --capture --directory ${CMAKE_BINARY_DIR} --output-file coverage.info
-                      COMMAND genhtml coverage.info --output-directory ${CMAKE_BINARY_DIR}/coverage
-                      WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-
-  else ()
-    message(WARNING "Coverage test can be used only with GCC.")
-    set(CARMA_COVERAGE_TEST "OFF" FORCE)
-  endif()
-endif()
 
 ############
 # MPI Part #

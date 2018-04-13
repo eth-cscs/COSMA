@@ -107,6 +107,7 @@ namespace communicator {
 
         MPI_Allgatherv(in, local_size, MPI_DOUBLE, receiving_buffer.data(),
                        total_size.data(), dspls.data(), MPI_DOUBLE, subcomm);
+
         int n_buckets = size_before[relative_rank(P)].size();
         int index = 0;
         std::vector<int> bucket_offset(div);
@@ -132,6 +133,13 @@ namespace communicator {
 
 #endif
         communicator::free(subcomm);
+    }
+
+    // adds vector b to vector a
+    void add(double* a, double* b, int n) {
+        for(int i = 0; i < n; ++i) {
+            a[i] += b[i];
+        }
     }
 
     void reduce(int div, Interval& P, double* LC, double* C,
@@ -184,11 +192,9 @@ namespace communicator {
         MPI_Reduce_scatter(send_buffer.data(), receiving_buffer, recvcnts.data(), MPI_DOUBLE, MPI_SUM, subcomm);
 
         if (beta > 0) {
-            for (int i = 0; i < recvcnts[gp]; ++i) {
-                C[i] += receiving_buffer[i];
-            }
+            // sum up receiving_buffer with C
+            add(C, receiving_buffer, recvcnts[gp]);
         }
-
         communicator::free(subcomm);
     }
 
