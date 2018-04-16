@@ -5,15 +5,15 @@ namespace communicator {
         MPI_Init(argc, argv);
     }
 
-    int rank() {
+    int rank(MPI_Comm comm) {
         int r;
-        MPI_Comm_rank(MPI_COMM_WORLD, &r);
+        MPI_Comm_rank(comm, &r);
         return r;
     }
 
-    int size() {
+    int size(MPI_Comm comm) {
         int s;
-        MPI_Comm_size(MPI_COMM_WORLD, &s);
+        MPI_Comm_size(comm, &s);
         return s;
     }
 
@@ -199,4 +199,3 @@ namespace communicator {
     }
 
 };
-

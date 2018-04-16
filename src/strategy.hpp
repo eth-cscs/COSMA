@@ -25,6 +25,9 @@ public:
     std::string split_dimension;
     // describes whether step is DFS (d) or BFS (b) for each step
     std::string step_type;
+    // if true, MPI will try to relabel ranks such that
+    // the ranks which communicate are physically close to each other
+    bool topology;
 
     // constructors
     Strategy();
@@ -38,7 +41,7 @@ public:
     Strategy(int argc, char** argv);
 
     Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
-             std::string& dims, std::string& types);
+             std::string& dims, std::string& types, bool top = false);
 
     void initialize(const std::string& cmd_line);
 
@@ -53,6 +56,11 @@ public:
     // if flag is not found in the line.
     size_t find_flag(const std::string& short_flag, const std::string& long_flag, 
                      const std::string& message, const std::string& line);
+
+    // looks for the defined flag in the line
+    // if found return true, otherwise returns false
+    bool find_bool_flag(const std::string& short_flag, const std::string& long_flag, 
+            const std::string& message, const std::string& line);
 
     // finds the next int after start in the line
     int next_int(size_t start, const std::string& line);

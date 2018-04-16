@@ -14,9 +14,9 @@ namespace communicator {
 
     void free(MPI_Comm comm = MPI_COMM_WORLD);
 
-    int rank();
+    int rank(MPI_Comm comm = MPI_COMM_WORLD);
 
-    int size();
+    int size(MPI_Comm comm = MPI_COMM_WORLD);
 
     void finalize();
 

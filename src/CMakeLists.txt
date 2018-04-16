@@ -12,6 +12,7 @@ set(sources
     mapper.cpp
     statistics.hpp
     strategy.cpp
+    topology.cpp
 )
 
 ###################

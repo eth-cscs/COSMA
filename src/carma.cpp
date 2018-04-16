@@ -14,14 +14,19 @@
 
 // this is just a wrapper to initialize and call the recursive function
 void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
-        const Strategy& strategy) {
+        const Strategy& strategy, MPI_Comm comm) {
     Interval mi = Interval(0, strategy.m-1);
     Interval ni = Interval(0, strategy.n-1);
     Interval ki = Interval(0, strategy.k-1);
     Interval Pi = Interval(0, strategy.P-1);
 
+    // construct topology aware communicator
+    if (strategy.topology) {
+        comm = adapted_communicator(comm, strategy);
+    }
+
     multiply(matrixA, matrixB, matrixC,
-            mi, ni, ki, Pi, 0, strategy, 0.0, MPI_COMM_WORLD);
+            mi, ni, ki, Pi, 0, strategy, 0.0, comm);
 
     if (communicator::rank() == 0) {
         PP();

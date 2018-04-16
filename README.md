@@ -80,6 +80,8 @@ The flags have the following meaning:
 
 - `s`: string of triplets divided by comma. Each triplet defines one step of the algorithm. The first character in the triplet defines whether it is BFS (b) or DFS (d) step. The second character defines the dimension that is splitted in this step. The third parameter is an integer which defines the divisor.
 
+- `t`: if this flag is present, then ranks might be relabelled such that the ranks which communicate are physically closer to each other. This flag therefore determines whether the topology is communication-aware.
+
 In addition to this miniapp, after compilation, in the same directory (./build/miniapp/) there will be an executable called `carma-statistics` which simulates the algorithm (without actually computing the matrix multiplication) in order to get the total volume of the communication, the maximum volume of computation done in a single branch and the maximum required buffer size that the algorithm requires.
 
 ### Example:
@@ -142,7 +144,6 @@ The precentage is always relative to the first level above. All time measurement
 ### Requirements
 CARMA algorithm uses:
   - `MPI`
-  - `OpenMP`
   - `dgemm` that is provided either through `MKL` (Intel Parallel Studio XE), or through `openblas`.
 
 

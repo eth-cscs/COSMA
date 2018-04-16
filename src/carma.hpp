@@ -9,9 +9,10 @@
 #include <omp.h>
 #include <semiprof.hpp>
 #include "strategy.hpp"
+#include "topology.hpp"
 
 void multiply(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
-              const Strategy& strategy);
+              const Strategy& strategy, MPI_Comm comm=MPI_COMM_WORLD);
 
 void multiply(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
     Interval& m, Interval& n, Interval& k, Interval& P, size_t step,

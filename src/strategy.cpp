@@ -20,7 +20,8 @@ Strategy::Strategy(int argc, char** argv) {
 }
 
 Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
-        std::string& dims, std::string& types) : m(mm), n(nn), k(kk), P(PP) {
+        std::string& dims, std::string& types, bool top) : m(mm), n(nn), k(kk), P(PP),
+        topology(top) {
     divisors = divs;
     split_dimension = dims;
     step_type = types;
@@ -32,6 +33,8 @@ void Strategy::initialize(const std::string& cmd_line) {
     auto n_it = find_flag("-n", "--n_dimension", "Dimension n has to be defined.", cmd_line);
     auto k_it = find_flag("-k", "--k_dimension", "Dimension k has to be defined.", cmd_line);
     auto P_it = find_flag("-P", "--processors", "Number of processors has to be defined.", cmd_line);
+    topology = find_bool_flag("-t", "--topology", "If true, MPI topology will be adapted\
+            to the communication.", cmd_line);
     auto steps_it = find_flag("-s", "--steps", "Division steps have to be defined.", cmd_line);
     m = next_int(m_it, cmd_line);
     n = next_int(n_it, cmd_line);
@@ -87,6 +90,20 @@ size_t Strategy::find_flag(const std::string& short_flag, const std::string& lon
     }
     while (line[position + length] == ' ') length++;
     return position + length;
+}
+
+// looks for the defined flag in the line
+// if found return true, otherwise returns false
+bool Strategy::find_bool_flag(const std::string& short_flag, const std::string& long_flag, 
+        const std::string& message, const std::string& line) {
+    auto position = line.find(short_flag);
+    if (position == std::string::npos) {
+        position = line.find(long_flag);
+        if (position == std::string::npos) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // finds the next int after start in the line
