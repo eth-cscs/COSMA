@@ -7,6 +7,7 @@
 #include <regex>
 #include <sstream>
 #include <iostream>
+#include <math.h> 
 
 class Strategy {
 public:
@@ -46,6 +47,14 @@ public:
     void initialize(const std::string& cmd_line);
 
     void process_steps(size_t start, const std::string& line);
+    // default strategy using only BFS steps
+    // greates common divisor of a and b
+    int gcd(int a, int b);
+    // prime decomposition of n
+    std::vector<int> decompose(int n);
+    // round to next multiple
+    int next_multiple_of(int n_to_round, int multiple);
+    void default_strategy();
 
     // token is a triplet e.g. bm3 (denoting BFS (m / 3) step)
     void process_token(const std::string& step_triplet);

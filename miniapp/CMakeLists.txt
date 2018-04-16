@@ -23,5 +23,10 @@ add_lib_executable(carma-statistics
   carma
   ${carma_deps})
 
+add_lib_executable(temp-miniapp
+  carma
+  ${carma_deps})
+
 target_link_libraries(carma-miniapp semiprof)
 target_link_libraries(carma-statistics semiprof)
+target_link_libraries(temp-miniapp semiprof)

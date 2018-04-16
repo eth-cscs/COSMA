@@ -21,29 +21,38 @@ Strategy::Strategy(int argc, char** argv) {
 
 Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
         std::string& dims, std::string& types, bool top) : m(mm), n(nn), k(kk), P(PP),
-        topology(top) {
-    divisors = divs;
-    split_dimension = dims;
-    step_type = types;
-    n_steps = divisors.size();
+    topology(top) {
+        divisors = divs;
+        split_dimension = dims;
+        step_type = types;
+        n_steps = divisors.size();
 }
 
 void Strategy::initialize(const std::string& cmd_line) {
     auto m_it = find_flag("-m", "--m_dimension", "Dimension m has to be defined.", cmd_line);
     auto n_it = find_flag("-n", "--n_dimension", "Dimension n has to be defined.", cmd_line);
     auto k_it = find_flag("-k", "--k_dimension", "Dimension k has to be defined.", cmd_line);
-    auto P_it = find_flag("-P", "--processors", "Number of processors has to be defined.", cmd_line);
-    topology = find_bool_flag("-t", "--topology", "If true, MPI topology will be adapted\
-            to the communication.", cmd_line);
-    auto steps_it = find_flag("-s", "--steps", "Division steps have to be defined.", cmd_line);
+    auto P_it = find_flag("-P", "--processors", 
+            "Number of processors has to be defined.", cmd_line);
     m = next_int(m_it, cmd_line);
     n = next_int(n_it, cmd_line);
     k = next_int(k_it, cmd_line);
     P = next_int(P_it, cmd_line);
 
-    process_steps(steps_it, cmd_line);
-    n_steps = divisors.size();
+    topology = find_bool_flag("-t", "--topology", "If true, MPI topology will be adapted\
+            to the communication.", cmd_line);
 
+    bool steps_predefined = find_bool_flag("-s", "--steps",
+            "Division steps have to be defined.", cmd_line);
+    if (steps_predefined) {
+        auto steps_it = find_flag("-s", "--steps", "Division steps have to be defined.", cmd_line);
+        process_steps(steps_it, cmd_line);
+    }
+    else {
+        default_strategy();
+    }
+
+    n_steps = divisors.size();
     check_if_valid();
 }
 
@@ -60,6 +69,101 @@ void Strategy::process_steps(size_t start, const std::string& line) {
     while (std::getline(stream, token, ',')) {
         process_token(token);
     }
+}
+
+int Strategy::gcd(int a, int b) {
+    return b == 0 ? a : gcd(b, a % b);
+}
+
+int Strategy::next_multiple_of(int n_to_round, int multiple) {
+    if (multiple == 0)
+        return n_to_round;
+
+    int remainder = n_to_round % multiple;
+    if (remainder == 0)
+        return n_to_round;
+
+    return n_to_round + multiple - remainder;
+}
+
+// find all prime factors of a given number n
+std::vector<int> Strategy::decompose(int n) {
+    std::vector<int> factors;
+
+    // number of 2s that divide n
+    while (n%2 == 0) {
+        factors.push_back(2);
+        n = n/2;
+    }
+
+    // n must be odd at this point. 
+    // we can skip one element
+    for (int i = 3; i <= sqrt(n); i = i+2) {
+        // while i divides n, print i and divide n
+        while (n%i == 0) {
+            factors.push_back(i);
+            n = n/i;
+        }
+    }
+
+    // This condition is to handle the case when n
+    // is a prime number greater than 2
+    if (n > 2) {
+        factors.push_back(n);
+    }
+    return factors;
+}
+
+void Strategy::default_strategy() {
+    std::vector<int> factors = decompose(P);
+    int r = factors.size();
+    std::vector<int> dims = {m, n, k};
+    int max_index = -1;
+    int divide_by = 1;
+    int i = 0;
+
+    while (i < r) {
+        auto ptr_to_max = max_element(dims.begin(), dims.end());
+        if (*ptr_to_max <= 1) return;
+        int index = std::distance(dims.begin(), ptr_to_max);
+        // if the same largest dimension as in the previous step
+        // just accumulate divide_by
+        if (index == max_index)  {
+            divide_by *= factors[i];
+            dims[index] /= factors[i];
+        } else {
+            // divide by the accumulated divide_by
+            // and restart the divide_by
+            if (divide_by != 1) {
+                // add BFS step to the pattern
+                step_type += "b";
+                if (max_index == 0)
+                    split_dimension += "m";
+                else if (max_index == 1)
+                    split_dimension += "n";
+                else
+                    split_dimension += "k";
+                divisors.push_back(divide_by);
+            }
+            divide_by = factors[i];
+            max_index = index;
+            dims[index] /= divide_by;
+        }
+        // if last step, perform the division immediately
+        if (i == r - 1) {
+            // add BFS step to the pattern
+            step_type += "b";
+            if (index == 0)
+                split_dimension += "m";
+            else if (index == 1)
+                split_dimension += "n";
+            else
+                split_dimension += "k";
+            divisors.push_back(divide_by);
+        }
+        ++i;
+    }
+
 }
 
 // token is a triplet e.g. bm3 (denoting BFS (m / 3) step
@@ -260,7 +364,7 @@ std::ostream& operator<<(std::ostream& os, const Strategy& other) {
         << other.k << ")\n";
     os << "Number of processors: " << other.P << "\n";
     if (other.topology) {
-            os << "Communication-aware topology turned on.\n";
+        os << "Communication-aware topology turned on.\n";
     }
     os << "Divisions strategy: \n";
     for (size_t i = 0; i < other.n_steps; ++i) {

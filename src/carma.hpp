@@ -6,7 +6,6 @@
 #include "communicator.hpp"
 #include "blas.h"
 #include "matrix.hpp"
-#include <omp.h>
 #include <semiprof.hpp>
 #include "strategy.hpp"
 #include "topology.hpp"
