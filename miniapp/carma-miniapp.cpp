@@ -52,11 +52,10 @@ int main( int argc, char **argv ) {
     fillInt(B.matrix());
 
     multiply(A, B, C, strategy);
-    /*
+
     output_matrix(A);
     output_matrix(B);
     output_matrix(C);
-    */
 
     communicator::finalize();
 
