@@ -10,17 +10,19 @@
 #include <tuple>
 
 namespace communicator {
+    static MPI_Comm global_communicator = MPI_COMM_WORLD;
+
     void initialize(int * argc, char ***argv);
 
-    void free(MPI_Comm comm = MPI_COMM_WORLD);
+    void free(MPI_Comm comm = global_communicator);
 
-    int rank(MPI_Comm comm = MPI_COMM_WORLD);
+    int rank(MPI_Comm comm = global_communicator);
 
-    int size(MPI_Comm comm = MPI_COMM_WORLD);
+    int size(MPI_Comm comm = global_communicator);
 
     void finalize();
 
-    void barrier(MPI_Comm comm = MPI_COMM_WORLD);
+    void barrier(MPI_Comm comm = global_communicator);
 
     int offset(Interval& P, int div, int r = rank());
 

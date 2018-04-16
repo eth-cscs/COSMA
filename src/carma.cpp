@@ -1,4 +1,5 @@
 #include "carma.hpp"
+
 /*
     Compute C = A * B
     m = #rows of A,C
@@ -24,6 +25,8 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     if (strategy.topology) {
         comm = adapted_communicator(comm, strategy);
     }
+
+    communicator::global_communicator = comm;
 
     multiply(matrixA, matrixB, matrixC,
             mi, ni, ki, Pi, 0, strategy, 0.0, comm);

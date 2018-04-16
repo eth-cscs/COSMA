@@ -43,7 +43,6 @@ void get_edges(int rank, const Strategy& strategy,
 
 MPI_Comm adapted_communicator(MPI_Comm comm, const Strategy& strategy) {
     MPI_Comm graph;
-
     int rank = communicator::rank();
     int n_sources = 1;
     int source[1] = {rank};
@@ -61,7 +60,31 @@ MPI_Comm adapted_communicator(MPI_Comm comm, const Strategy& strategy) {
 
     MPI_Dist_graph_create(comm, n_sources, source,
             degrees, dest.data(), weight.data(), MPI_INFO_NULL, true, &graph);
+    /*
+    std::vector<int> temp_dest;
+    std::vector<int> all_dest;
+    std::vector<int> all_degree;
 
+    std::vector<int> weight;
+
+    for (int i = 0; i < communicator::size(comm); ++i) {
+        temp_dest = std::vector<int>();
+        weight = std::vector<int>();
+        get_edges(i, strategy, temp_dest, weight);
+        all_dest.resize(all_dest.size() + temp_dest.size());
+        for (auto& v : temp_dest) {
+            all_dest.push_back(v);
+        }
+        all_degree.push_back(temp_dest.size() + ((i > 0) ? all_degree[i-1] : 0));
+    }
+
+    MPI_Graph_create(comm, communicator::size(comm), all_degree.data(), all_dest.data(), true, &graph);
+
+    int newrank;
+    MPI_Graph_map(comm, communicator::size(comm), all_degree.data(), all_dest.data(), &newrank);
+
+    std::cout << "rank " << communicator::rank() << " is now " << newrank << std::endl;
+    */
     return graph;
 }
 

@@ -259,8 +259,8 @@ std::ostream& operator<<(std::ostream& os, const Strategy& other) {
     os << "Matrix dimensions (m, n, k) = (" << other.m << ", " << other.n << ", " 
         << other.k << ")\n";
     os << "Number of processors: " << other.P << "\n";
-    if (topology) {
-            os << "Communication-aware topology turned on.\n"
+    if (other.topology) {
+            os << "Communication-aware topology turned on.\n";
     }
     os << "Divisions strategy: \n";
     for (size_t i = 0; i < other.n_steps; ++i) {
