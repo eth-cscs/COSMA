@@ -129,26 +129,35 @@ namespace communicator {
             total_size[i] = temp_size;
         }
 
-        std::vector<double> receiving_buffer(total_after);
-
-        MPI_Allgatherv(in, local_size, MPI_DOUBLE, receiving_buffer.data(),
-                       total_size.data(), dspls.data(), MPI_DOUBLE, subcomm);
-
         int n_buckets = size_before[relative_rank(P)].size();
-        int index = 0;
-        std::vector<int> bucket_offset(div);
-        // order all first DFS parts of all groups first and so on..
-        for (int bucket = 0; bucket < n_buckets; bucket++) {
-            for (int rank = 0; rank < div; rank++) {
-                int target = rank_outside_ring(P, div, off, rank);
-                int dsp = dspls[rank] + bucket_offset[rank];
-                int b_size = size_before[target][bucket];
-                std::copy(receiving_buffer.begin() + dsp, receiving_buffer.begin() + dsp + b_size, out + index);
-                index += b_size;
-                bucket_offset[rank] += b_size;
-            }
+        double* buffer_pointer;
+        std::vector<double> receiving_buffer;
+
+        if (n_buckets > 1) {
+            receiving_buffer = std::vector<double>(total_after);
+            buffer_pointer = receiving_buffer.data();
+        } else {
+            buffer_pointer = out;
         }
 
+        MPI_Allgatherv(in, local_size, MPI_DOUBLE, buffer_pointer,
+                       total_size.data(), dspls.data(), MPI_DOUBLE, subcomm);
+
+        if (n_buckets > 1) {
+            int index = 0;
+            std::vector<int> bucket_offset(div);
+            // order all first DFS parts of all groups first and so on..
+            for (int bucket = 0; bucket < n_buckets; bucket++) {
+                for (int rank = 0; rank < div; rank++) {
+                    int target = relative_rank(P, subgroup[rank]);
+                    int dsp = dspls[rank] + bucket_offset[rank];
+                    int b_size = size_before[target][bucket];
+                    std::copy(receiving_buffer.begin() + dsp, receiving_buffer.begin() + dsp + b_size, out + index);
+                    index += b_size;
+                    bucket_offset[rank] += b_size;
+                }
+            }
+        }
 #ifdef DEBUG
         std::cout<<"Content of the copied matrix in rank "<<rank()<<" is now: "
         <<std::endl;
@@ -184,9 +193,10 @@ namespace communicator {
 
         // reorder the elements as:
         // first all buckets that should be sent to rank 0 then all buckets for rank 1 and so on...
-        std::vector<double> send_buffer(c_total_expanded[off]);
         int n_buckets = c_expanded[off].size();
         std::vector<int> bucket_offset(n_buckets);
+        std::vector<double> send_buffer;
+        double* buffer_pointer;
 
         int sum = 0;
         for (int i = 0; i < n_buckets; ++i) {
@@ -196,18 +206,27 @@ namespace communicator {
 
         std::vector<int> recvcnts(div);
 
+        if (n_buckets > 1) {
+            send_buffer = std::vector<double>(c_total_expanded[off]);
+            buffer_pointer = send_buffer.data();
+        } else {
+            buffer_pointer = LC;
+        }
+
         int index = 0;
         // go through the communication ring
         for (int i = 0; i < div; i++) {
             int target = relative_rank(P, subgroup[i]);
             recvcnts[i] = c_total_current[target];
 
-            for (int bucket = 0; bucket < n_buckets; ++bucket) {
-                int b_offset = bucket_offset[bucket];
-                int b_size = c_current[target][bucket];
-                std::copy(LC + b_offset, LC + b_offset + b_size, send_buffer.begin() + index);
-                index += b_size;
-                bucket_offset[bucket] += b_size;
+            if (n_buckets > 1) {
+                for (int bucket = 0; bucket < n_buckets; ++bucket) {
+                    int b_offset = bucket_offset[bucket];
+                    int b_size = c_current[target][bucket];
+                    std::copy(LC + b_offset, LC + b_offset + b_size, send_buffer.begin() + index);
+                    index += b_size;
+                    bucket_offset[bucket] += b_size;
+                }
             }
         }
 
@@ -218,7 +237,7 @@ namespace communicator {
             receiving_buffer = (double*) malloc(sizeof(double) * recvcnts[gp]);
         }
 
-        MPI_Reduce_scatter(send_buffer.data(), receiving_buffer, recvcnts.data(), MPI_DOUBLE, MPI_SUM, subcomm);
+        MPI_Reduce_scatter(buffer_pointer, receiving_buffer, recvcnts.data(), MPI_DOUBLE, MPI_SUM, subcomm);
 
         if (beta > 0) {
             // sum up receiving_buffer with C
