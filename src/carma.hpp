@@ -15,15 +15,15 @@ void multiply(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
 
 void multiply(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
     Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
-    const Strategy& strategy, double beta, MPI_Comm comm);
+    const Strategy& strategy, double beta, MPI_Comm comm, MPI_Group comm_group);
 
 void local_multiply(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
     int m, int n, int k, double beta);
 
 void DFS(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
     Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
-    const Strategy& strategy, double beta, MPI_Comm comm);
+    const Strategy& strategy, double beta, MPI_Comm comm, MPI_Group comm_group);
 
 void BFS(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
     Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
-    const Strategy& strategy, double beta, MPI_Comm comm);
+    const Strategy& strategy, double beta, MPI_Comm comm, MPI_Group comm_group);

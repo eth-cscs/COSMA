@@ -10,19 +10,18 @@
 #include <tuple>
 
 namespace communicator {
-    static MPI_Comm global_communicator = MPI_COMM_WORLD;
-
     void initialize(int * argc, char ***argv);
 
-    void free(MPI_Comm comm = global_communicator);
+    void free(MPI_Comm comm = MPI_COMM_WORLD);
+    void free(MPI_Group comm_group);
 
-    int rank(MPI_Comm comm = global_communicator);
+    int rank(MPI_Comm comm = MPI_COMM_WORLD);
 
-    int size(MPI_Comm comm = global_communicator);
+    int size(MPI_Comm comm = MPI_COMM_WORLD);
 
     void finalize();
 
-    void barrier(MPI_Comm comm = global_communicator);
+    void barrier(MPI_Comm comm = MPI_COMM_WORLD);
 
     int offset(Interval& P, int div, int r = rank());
 
@@ -42,6 +41,10 @@ namespace communicator {
 
     MPI_Comm split_in_comm_rings(MPI_Comm comm, Interval& P, int div, int r = rank());
 
+    MPI_Comm create_comm_ring(MPI_Comm comm, MPI_Group comm_group,
+                              std::vector<int>& ranks,
+                              Interval& P, int div, int r = rank());
+
     int rank_inside_ring(Interval& P, int div, int global_rank=rank());
 
     int rank_outside_ring(Interval& P, int div, int off, int i);
@@ -51,7 +54,7 @@ namespace communicator {
     void copy(int div, Interval& P, double* in, double* out,
               std::vector<std::vector<int>>& size_before,
               std::vector<int>& total_before,
-              int total_after, MPI_Comm comm);
+              int total_after, MPI_Comm comm, MPI_Group comm_group);
 
     void reduce(int div, Interval& P, double* LC, double* C,
                 std::vector<std::vector<int>>& c_current,
@@ -59,6 +62,6 @@ namespace communicator {
                 std::vector<std::vector<int>>& c_expanded,
                 std::vector<int>& c_total_expanded,
                 int beta,
-                MPI_Comm comm);
+                MPI_Comm comm, MPI_Group comm_group);
 };
 #endif

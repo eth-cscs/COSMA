@@ -20,8 +20,7 @@ add_lib_executable(carma-miniapp
   ${carma_deps})
 
 add_lib_executable(carma-statistics
-  carma
-  ${carma_deps})
+  carma)
 
 add_lib_executable(temp-miniapp
   carma

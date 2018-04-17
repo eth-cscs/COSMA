@@ -26,10 +26,13 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
         comm = adapted_communicator(comm, strategy);
     }
 
-    communicator::global_communicator = comm;
+    MPI_Group comm_group;
+    MPI_Comm_group(comm, &comm_group);
 
     multiply(matrixA, matrixB, matrixC,
-            mi, ni, ki, Pi, 0, strategy, 0.0, comm);
+            mi, ni, ki, Pi, 0, strategy, 0.0, comm, comm_group);
+
+    communicator::free(comm_group);
 
     if (communicator::rank() == 0) {
         PP();
@@ -40,7 +43,8 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
 // dispatch to local call, BFS, or DFS as appropriate
 void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
               Interval& m, Interval& n, Interval& k, Interval& P,
-              size_t step, const Strategy& strategy, double beta, MPI_Comm comm) {
+              size_t step, const Strategy& strategy, double beta,
+              MPI_Comm comm, MPI_Group comm_group) {
 
     PE(multiply_layout);
     // current submatrices that are being computed
@@ -75,9 +79,9 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
         local_multiply(matrixA, matrixB, matrixC, m.length(), n.length(), k.length(), beta);
     else {
         if (strategy.bfs_step(step))
-            BFS(matrixA, matrixB, matrixC, m, n, k, P, step, strategy, beta, comm);
+            BFS(matrixA, matrixB, matrixC, m, n, k, P, step, strategy, beta, comm, comm_group);
         else
-            DFS(matrixA, matrixB, matrixC, m, n, k, P, step, strategy, beta, comm);
+            DFS(matrixA, matrixB, matrixC, m, n, k, P, step, strategy, beta, comm, comm_group);
     }
     PE(multiply_layout);
 
@@ -136,13 +140,14 @@ void local_multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& mat
 */
 void DFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
         Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
-        const Strategy& strategy, double beta, MPI_Comm comm) {
+        const Strategy& strategy, double beta, MPI_Comm comm, MPI_Group comm_group) {
     // split the dimension but not the processors, all P processors are taking part
     // in each recursive call.
     if (strategy.split_m(step)) {
         for (int M = 0; M < strategy.divisor(step); ++M) {
             Interval newm = m.subinterval(strategy.divisor(step), M);
-            multiply(matrixA, matrixB, matrixC, newm, n, k, P, step+1, strategy, beta, comm);
+            multiply(matrixA, matrixB, matrixC, newm, n, k, P, step+1, strategy, beta,
+                     comm, comm_group);
         }
         return;
     }
@@ -150,7 +155,8 @@ void DFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     if (strategy.split_n(step)) {
         for (int N = 0; N < strategy.divisor(step); ++N) {
             Interval newn = n.subinterval(strategy.divisor(step), N);
-            multiply(matrixA, matrixB, matrixC, m, newn, k, P, step+1, strategy, beta, comm);
+            multiply(matrixA, matrixB, matrixC, m, newn, k, P, step+1, strategy, beta,
+                     comm, comm_group);
         }
         return;
     }
@@ -162,7 +168,7 @@ void DFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     if (strategy.split_k(step)) {
         for (int K = 0; K < strategy.divisor(step); ++K) {
             Interval newk = k.subinterval(strategy.divisor(step), K);
-            multiply(matrixA, matrixB, matrixC, m, n, newk, P, step+1, strategy, (K==0)&&(beta==0) ? 0 : 1, comm);
+            multiply(matrixA, matrixB, matrixC, m, n, newk, P, step+1, strategy, (K==0)&&(beta==0) ? 0 : 1, comm, comm_group);
         }
         return;
     } 
@@ -220,7 +226,7 @@ T which_is_expanded(T&& A, T&& B, T&& C, const Strategy& strategy, size_t step) 
 */
 void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
              Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
-             const Strategy& strategy, double beta, MPI_Comm comm) {
+             const Strategy& strategy, double beta, MPI_Comm comm, MPI_Group comm_group) {
     int divisor = strategy.divisor(step);
     int divisor_m = strategy.divisor_m(step);
     int divisor_n = strategy.divisor_n(step);
@@ -241,7 +247,7 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
 
     // New communicator splitting P processors into div groups of newP.length() rocessors
     // This communicator will be used in the recursive call.
-    MPI_Comm newcomm = communicator::split_in_groups(comm, P, divisor);
+    // MPI_Comm newcomm = communicator::split_in_groups(comm, P, divisor);
 
     PE(multiply_layout);
     /*
@@ -329,7 +335,8 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     if (strategy.split_m(step) || strategy.split_n(step)) {
         // copy the matrix that wasn't divided in this step
         communicator::copy(divisor, P, original_matrix, expanded_matrix,
-                size_before_expansion, total_before_expansion, new_size, comm);
+                size_before_expansion, total_before_expansion, new_size,
+                           comm, comm_group);
         /*
           observe that here we use the communicator "comm" and not "newcomm"
           this is because newcomm contains only ranks inside newP
@@ -354,7 +361,8 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     // observe that we have only one recursive call here (we are not entering a loop
     // of recursive calls as in DFS steps since the current rank will only enter
     // into one recursive call since ranks are split).
-    multiply(matrixA, matrixB, matrixC, newm, newn, newk, newP, step+1, strategy, new_beta, newcomm);
+    multiply(matrixA, matrixB, matrixC, newm, newn, newk, newP, step+1, strategy, new_beta,
+             comm, comm_group);
     // revert the current matrix
     matrixA.set_current_matrix(A);
     matrixB.set_current_matrix(B);
@@ -363,7 +371,8 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     PE(multiply_communication_reduce);
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
-        communicator::reduce(divisor, P, expanded_matrix, original_matrix, size_before_expansion, total_before_expansion, size_after_expansion, total_after_expansion, beta, comm);
+        communicator::reduce(divisor, P, expanded_matrix, original_matrix, size_before_expansion, total_before_expansion, size_after_expansion, total_after_expansion, beta,
+                             comm, comm_group);
     }
     PL();
 
@@ -374,5 +383,5 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     PL();
 
     free(expanded_matrix);
-    MPI_Comm_free(&newcomm);
+    // MPI_Comm_free(&newcomm);
 }

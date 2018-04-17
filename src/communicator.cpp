@@ -21,6 +21,10 @@ namespace communicator {
         MPI_Comm_free(&comm);
     }
 
+    void free(MPI_Group group) {
+        MPI_Group_free(&group);
+    }
+
     void finalize() {
         MPI_Finalize();
     }
@@ -69,6 +73,27 @@ namespace communicator {
         return new_comm;
     }
 
+    MPI_Comm create_comm_ring(MPI_Comm comm, MPI_Group comm_group, 
+            std::vector<int>& ranks, Interval&P, int div, int r) {
+        MPI_Group subgroup;
+        MPI_Comm newcomm;
+
+        int gp, off;
+        std::tie(gp, off) = group_and_offset(P, div, r);
+
+        for (int i = 0; i < div; ++i) {
+            ranks[i] = P.first() + rank_outside_ring(P, div, off, i);
+        }
+        int curr_size;
+        MPI_Group_size(comm_group, &curr_size);
+        MPI_Group_incl(comm_group, div, ranks.data(), &subgroup);
+        MPI_Comm_create(comm, subgroup, &newcomm);
+
+        free(subgroup);
+
+        return newcomm;
+    }
+
     int rank_inside_ring(Interval& P, int div, int global_rank) {
         return group(P, div, global_rank);
     }
@@ -85,7 +110,7 @@ namespace communicator {
     void copy(int div, Interval& P, double* in, double* out,
               std::vector<std::vector<int>>& size_before,
               std::vector<int>& total_before,
-              int total_after, MPI_Comm comm) {
+              int total_after, MPI_Comm comm, MPI_Group comm_group) {
         int local_size = total_before[relative_rank(P)];
 
         int sum = 0;
@@ -93,8 +118,11 @@ namespace communicator {
         std::vector<int> dspls(div);
         int off = offset(P, div);
 
+        std::vector<int> subgroup(div);
+        MPI_Comm subcomm = create_comm_ring(comm, comm_group, subgroup, P, div);
+
         for (int i = 0; i < div; ++i) {
-            int target = rank_outside_ring(P, div, off, i);
+            int target = relative_rank(P, subgroup[i]);
             int temp_size = total_before[target];
             dspls[i] = sum;
             sum += temp_size;
@@ -102,8 +130,6 @@ namespace communicator {
         }
 
         std::vector<double> receiving_buffer(total_after);
-
-        MPI_Comm subcomm = split_in_comm_rings(comm, P, div);
 
         MPI_Allgatherv(in, local_size, MPI_DOUBLE, receiving_buffer.data(),
                        total_size.data(), dspls.data(), MPI_DOUBLE, subcomm);
@@ -148,8 +174,11 @@ namespace communicator {
                 std::vector<std::vector<int>>& c_expanded,
                 std::vector<int>& c_total_expanded,
                 int beta,
-                MPI_Comm comm) {
-        MPI_Comm subcomm = split_in_comm_rings(comm, P, div);
+                MPI_Comm comm, MPI_Group comm_group) {
+
+        std::vector<int> subgroup(div);
+        MPI_Comm subcomm = create_comm_ring(comm, comm_group, subgroup, P, div);
+
         int gp, off;
         std::tie(gp, off) = group_and_offset(P, div);
 
@@ -170,7 +199,7 @@ namespace communicator {
         int index = 0;
         // go through the communication ring
         for (int i = 0; i < div; i++) {
-            int target = rank_outside_ring(P, div, off, i);
+            int target = relative_rank(P, subgroup[i]);
             recvcnts[i] = c_total_current[target];
 
             for (int bucket = 0; bucket < n_buckets; ++bucket) {
