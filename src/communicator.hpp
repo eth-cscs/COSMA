@@ -13,7 +13,7 @@ namespace communicator {
     void initialize(int * argc, char ***argv);
 
     void free(MPI_Comm comm = MPI_COMM_WORLD);
-    void free(MPI_Group comm_group);
+    void free_group(MPI_Group comm_group);
 
     int rank(MPI_Comm comm = MPI_COMM_WORLD);
 

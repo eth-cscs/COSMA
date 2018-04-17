@@ -21,7 +21,7 @@ namespace communicator {
         MPI_Comm_free(&comm);
     }
 
-    void free(MPI_Group group) {
+    void free_group(MPI_Group group) {
         MPI_Group_free(&group);
     }
 
@@ -89,7 +89,7 @@ namespace communicator {
         MPI_Group_incl(comm_group, div, ranks.data(), &subgroup);
         MPI_Comm_create(comm, subgroup, &newcomm);
 
-        free(subgroup);
+        free_group(subgroup);
 
         return newcomm;
     }

@@ -32,7 +32,7 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     multiply(matrixA, matrixB, matrixC,
             mi, ni, ki, Pi, 0, strategy, 0.0, comm, comm_group);
 
-    communicator::free(comm_group);
+    communicator::free_group(comm_group);
 
     if (communicator::rank() == 0) {
         PP();
