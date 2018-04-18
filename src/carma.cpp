@@ -13,6 +13,23 @@
     Assumption: we assume that at each step only 1 dimension is split
  */
 
+// invoke some dummy computation of blas, just so that it initializes
+// the threading mechanism
+void initialize_blas() {
+    int dim = 256;
+    int n_runs = 3;
+    std::vector<double> a(dim*dim);
+    std::vector<double> c(dim*dim);
+
+    double one = 1.;
+    double zero = 0.;
+    char N = 'N';
+
+    for (int i = 0; i < n_runs; ++i) {
+        dgemm_(&N, &N, &dim, &dim, &dim, &one, a.data(), &dim, a.data(), &dim, &zero, c.data(), &dim);
+    }
+}
+
 // this is just a wrapper to initialize and call the recursive function
 void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
         const Strategy& strategy, MPI_Comm comm) {
@@ -20,6 +37,8 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     Interval ni = Interval(0, strategy.n-1);
     Interval ki = Interval(0, strategy.k-1);
     Interval Pi = Interval(0, strategy.P-1);
+
+    initialize_blas();
 
     // construct topology aware communicator
     if (strategy.topology) {

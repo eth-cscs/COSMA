@@ -144,6 +144,7 @@ The precentage is always relative to the first level above. All time measurement
 ### Requirements
 CARMA algorithm uses:
   - `MPI`
+  - `OpenMP`
   - `dgemm` that is provided either through `MKL` (Intel Parallel Studio XE), or through `openblas`.
 
 

@@ -27,3 +27,7 @@ void DFS(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
 void BFS(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
     Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
     const Strategy& strategy, double beta, MPI_Comm comm, MPI_Group comm_group);
+
+// to achieve the maximum performance, blas should be invoked few times
+// with a dummy computation, just so that it initializes the threading mechanism
+void initialize_blas();
