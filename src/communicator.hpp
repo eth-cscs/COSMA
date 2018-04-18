@@ -40,9 +40,10 @@ namespace communicator {
     MPI_Comm split_in_groups(MPI_Comm comm, Interval& P, int div, int r = rank());
 
     MPI_Comm split_in_comm_rings(MPI_Comm comm, Interval& P, int div, int r = rank());
+    MPI_Comm split_in_comm_rings(MPI_Comm comm, std::vector<int>& ranks,
+                                 Interval& P, int div, int r = rank());
 
-    MPI_Comm create_comm_ring(MPI_Comm comm, MPI_Group comm_group,
-                              std::vector<int>& ranks,
+    MPI_Comm create_comm_ring(MPI_Comm comm, std::vector<int>& ranks,
                               Interval& P, int div, int r = rank());
 
     int rank_inside_ring(Interval& P, int div, int global_rank=rank());
@@ -54,14 +55,13 @@ namespace communicator {
     void copy(int div, Interval& P, double* in, double* out,
               std::vector<std::vector<int>>& size_before,
               std::vector<int>& total_before,
-              int total_after, MPI_Comm comm, MPI_Group comm_group);
+              int total_after, MPI_Comm comm);
 
     void reduce(int div, Interval& P, double* LC, double* C,
                 std::vector<std::vector<int>>& c_current,
                 std::vector<int>& c_total_current,
                 std::vector<std::vector<int>>& c_expanded,
                 std::vector<int>& c_total_expanded,
-                int beta,
-                MPI_Comm comm, MPI_Group comm_group);
+                int beta, MPI_Comm comm);
 };
 #endif

@@ -73,10 +73,26 @@ namespace communicator {
         return new_comm;
     }
 
-    MPI_Comm create_comm_ring(MPI_Comm comm, MPI_Group comm_group, 
-            std::vector<int>& ranks, Interval&P, int div, int r) {
+    MPI_Comm split_in_comm_rings(MPI_Comm comm, std::vector<int>& ranks, Interval& P, int div, int r) {
+        int gp, off;
+        std::tie(gp, off) = group_and_offset(P, div, r);
+
+        MPI_Comm new_comm;
+        MPI_Comm_split(comm, off, gp, &new_comm);
+
+        for (int i = 0; i < div; ++i) {
+            ranks[i] = rank_outside_ring(P, div, off, i);
+        }
+
+        return new_comm;
+    }
+
+    MPI_Comm create_comm_ring(MPI_Comm comm, std::vector<int>& ranks,
+                              Interval&P, int div, int r) {
         MPI_Group subgroup;
         MPI_Comm newcomm;
+        MPI_Group comm_group;
+        MPI_Comm_group(comm, &comm_group);
 
         int gp, off;
         std::tie(gp, off) = group_and_offset(P, div, r);
@@ -110,7 +126,7 @@ namespace communicator {
     void copy(int div, Interval& P, double* in, double* out,
               std::vector<std::vector<int>>& size_before,
               std::vector<int>& total_before,
-              int total_after, MPI_Comm comm, MPI_Group comm_group) {
+              int total_after, MPI_Comm comm) {
         int local_size = total_before[relative_rank(P)];
 
         int sum = 0;
@@ -119,10 +135,10 @@ namespace communicator {
         int off = offset(P, div);
 
         std::vector<int> subgroup(div);
-        MPI_Comm subcomm = create_comm_ring(comm, comm_group, subgroup, P, div);
+        MPI_Comm subcomm = split_in_comm_rings(comm, subgroup, P, div);
 
         for (int i = 0; i < div; ++i) {
-            int target = relative_rank(P, subgroup[i]);
+            int target = subgroup[i];
             int temp_size = total_before[target];
             dspls[i] = sum;
             sum += temp_size;
@@ -149,7 +165,7 @@ namespace communicator {
             // order all first DFS parts of all groups first and so on..
             for (int bucket = 0; bucket < n_buckets; bucket++) {
                 for (int rank = 0; rank < div; rank++) {
-                    int target = relative_rank(P, subgroup[rank]);
+                    int target = subgroup[rank];
                     int dsp = dspls[rank] + bucket_offset[rank];
                     int b_size = size_before[target][bucket];
                     std::copy(receiving_buffer.begin() + dsp, receiving_buffer.begin() + dsp + b_size, out + index);
@@ -167,7 +183,7 @@ namespace communicator {
         std::cout<<std::endl;
 
 #endif
-        communicator::free(subcomm);
+        free(subcomm);
     }
 
     // adds vector b to vector a
@@ -182,11 +198,10 @@ namespace communicator {
                 std::vector<int>& c_total_current,
                 std::vector<std::vector<int>>& c_expanded,
                 std::vector<int>& c_total_expanded,
-                int beta,
-                MPI_Comm comm, MPI_Group comm_group) {
+                int beta, MPI_Comm comm) {
 
         std::vector<int> subgroup(div);
-        MPI_Comm subcomm = create_comm_ring(comm, comm_group, subgroup, P, div);
+        MPI_Comm subcomm = split_in_comm_rings(comm, subgroup, P, div);
 
         int gp, off;
         std::tie(gp, off) = group_and_offset(P, div);
@@ -216,7 +231,7 @@ namespace communicator {
         int index = 0;
         // go through the communication ring
         for (int i = 0; i < div; i++) {
-            int target = relative_rank(P, subgroup[i]);
+            int target = subgroup[i];
             recvcnts[i] = c_total_current[target];
 
             if (n_buckets > 1) {
@@ -243,7 +258,7 @@ namespace communicator {
             // sum up receiving_buffer with C
             add(C, receiving_buffer, recvcnts[gp]);
         }
-        communicator::free(subcomm);
+        free(subcomm);
     }
 
 };
