@@ -40,8 +40,10 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
 
     initialize_blas();
 
+    PE(preprocessing);
     communicator carma_comm(strategy, comm);
-
+    PL();
+    
     multiply(matrixA, matrixB, matrixC,
             mi, ni, ki, Pi, 0, strategy, 0.0, carma_comm);
 
