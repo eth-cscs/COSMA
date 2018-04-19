@@ -29,6 +29,8 @@ public:
     // if true, MPI will try to relabel ranks such that
     // the ranks which communicate are physically close to each other
     bool topology;
+    int n_bfs_steps;
+    int n_dfs_steps;
 
     // constructors
     Strategy();
@@ -43,6 +45,9 @@ public:
 
     Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
              std::string& dims, std::string& types, bool top = false);
+
+    // TODO: add memory constraint
+    Strategy(int mm, int nn, int kk, size_t PP, bool top = false);
 
     void initialize(const std::string& cmd_line);
 

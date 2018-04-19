@@ -21,11 +21,19 @@ Strategy::Strategy(int argc, char** argv) {
 
 Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
         std::string& dims, std::string& types, bool top) : m(mm), n(nn), k(kk), P(PP),
-    topology(top) {
-        divisors = divs;
-        split_dimension = dims;
-        step_type = types;
-        n_steps = divisors.size();
+        topology(top) {
+    divisors = divs;
+    split_dimension = dims;
+    step_type = types;
+    n_steps = divisors.size();
+    check_if_valid();
+}
+
+Strategy::Strategy(int mm, int nn, int kk, size_t PP, bool top) : m(mm), n(nn), k(kk), P(PP),
+                   topology(top) {
+    default_strategy();
+    n_steps = divisors.size();
+    check_if_valid();
 }
 
 void Strategy::initialize(const std::string& cmd_line) {
@@ -314,6 +322,7 @@ void Strategy::check_if_valid() {
         }
 
         if (step_type[i] == 'b') {
+            n_bfs_steps++;
             if (Pi <= 1) {
                 throw_exception("Not enough processors for this division strategy \
                         The product of all divisors in a BFS step should be equal \
@@ -326,6 +335,8 @@ void Strategy::check_if_valid() {
             }
 
             Pi /= divisors[i];
+        } else {
+            n_dfs_steps++;
         }
 
         if (split_dimension[i] == 'm') {

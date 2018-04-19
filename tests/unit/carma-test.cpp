@@ -26,25 +26,30 @@ int main( int argc, char **argv ) {
     int n = strategy.n;
     int k = strategy.k;
 
-    communicator::initialize(&argc, &argv);
+    MPI_Init(&argc, &argv);
 
-    int P = communicator::size();
+    int P, rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &P);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     if (P != strategy.P) {
         throw(std::runtime_error("Number of processors available not equal \
                                  to the number of processors specified by flag P"));
     }
 
-    if (communicator::rank() == 0) {
+    if (rank == 0) {
         std::cout << strategy << std::endl;
     }
 
-    bool isOK;
-
     //Declare A,B and C CARMA matrices objects
-    CarmaMatrix A('A', strategy, communicator::rank());
-    CarmaMatrix B('B', strategy, communicator::rank());
-    CarmaMatrix C('C', strategy, communicator::rank());
+    CarmaMatrix A('A', strategy, rank);
+    CarmaMatrix B('B', strategy, rank);
+    CarmaMatrix C('C', strategy, rank);
+
+    // fill the matrices with random data
+    srand48(rank);
+    fillInt(A.matrix());
+    fillInt(B.matrix());
 
     // initial sizes
     auto sizeA=A.initial_size();
@@ -52,13 +57,15 @@ int main( int argc, char **argv ) {
     auto sizeC=C.initial_size();
 
     // fill the matrices with random data
-    srand48(communicator::rank());
+    srand48(rank);
     fillInt(A.matrix());
     fillInt(B.matrix());
 
+    bool isOK;
+
     //Then rank0 ask for other ranks data
     std::vector<double> As,Bs;
-    if (communicator::rank()==0) {
+    if (rank==0) {
         As=std::vector<double>(m*k);
         std::copy(A.matrix().cbegin(),A.matrix().cend(),As.begin());
         Bs=std::vector<double>(k*n);
@@ -81,18 +88,18 @@ int main( int argc, char **argv ) {
         }
     }
     //Rank i send data
-    if (communicator::rank() > 0) {
+    if (rank > 0) {
         MPI_Send(A.matrix_pointer(), sizeA, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
         MPI_Send(B.matrix_pointer(), sizeB, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
     }
 
-    communicator::barrier();
+    MPI_Barrier(MPI_COMM_WORLD);
 
     //Then rank 0 must reorder data locally
     std::vector<double> globA;
     std::vector<double> globB;
     std::vector<double> globCcheck;
-    if (communicator::rank()==0) {
+    if (rank==0) {
         globA.resize(m*k);
         globB.resize(k*n);
         globCcheck.resize(m*n);
@@ -159,12 +166,12 @@ int main( int argc, char **argv ) {
 #endif
     }
 
-    multiply(A, B, C, strategy);
-    communicator::barrier();
+    multiply(A, B, C, strategy, MPI_COMM_WORLD);
+    ;
 
     //Then rank0 ask for other ranks data
     std::vector<double> Cs;
-    if (communicator::rank()==0) {
+    if (rank==0) {
         Cs=std::vector<double>(m*n);
         std::copy(C.matrix().cbegin(),C.matrix().cend(),Cs.begin());
 
@@ -179,15 +186,15 @@ int main( int argc, char **argv ) {
         }
     }
     //Rank i send data
-    if (communicator::rank() > 0) {
+    if (rank > 0) {
         MPI_Send(C.matrix_pointer(), sizeC, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
     }
 
-    communicator::barrier();
+    MPI_Barrier(MPI_COMM_WORLD);
 
     //Then rank 0 must reorder data locally
     std::vector<double> globC;
-    if (communicator::rank()==0) {
+    if (rank==0) {
         globC.resize(m*n);
         int offsetC = 0;
 
@@ -228,7 +235,7 @@ int main( int argc, char **argv ) {
 
 #ifdef DEBUG
     for( int i = 0; i < P; i++ ) {
-        if( communicator::rank() == i ) {
+        if( rank == i ) {
 
             printf("(%d) A: ", i );
             for( auto j = 0; j < sizeA; j++ )
@@ -249,11 +256,11 @@ int main( int argc, char **argv ) {
     }
 #endif //DEBUG
 
-    if (communicator::rank() == 0) {
-        communicator::finalize();
+    if (rank == 0) {
+        MPI_Finalize();
         return !isOK;
     }
 
-    communicator::finalize();
+    MPI_Finalize();
     return 0;
 }

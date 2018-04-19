@@ -21,32 +21,34 @@ void fillInt(T& in) {
 
 int main( int argc, char **argv ) {
     Strategy strategy(argc, argv);
-    communicator::initialize(&argc, &argv);
+    MPI_Init(&argc, &argv);
 
-    int P = communicator::size();
+    int P, rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &P);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     if (P != strategy.P) {
         throw(std::runtime_error("Number of processors available not equal \
                                  to the number of processors specified by flag P"));
     }
 
-    if (communicator::rank() == 0) {
+    if (rank == 0) {
         std::cout << strategy << std::endl;
     }
 
     //Declare A,B and C CARMA matrices objects
-    CarmaMatrix A('A', strategy, communicator::rank());
-    CarmaMatrix B('B', strategy, communicator::rank());
-    CarmaMatrix C('C', strategy, communicator::rank());
+    CarmaMatrix A('A', strategy, rank);
+    CarmaMatrix B('B', strategy, rank);
+    CarmaMatrix C('C', strategy, rank);
 
     // fill the matrices with random data
-    srand48(communicator::rank());
+    srand48(rank);
     fillInt(A.matrix());
     fillInt(B.matrix());
 
-    multiply(A, B, C, strategy);
+    multiply(A, B, C, strategy, MPI_COMM_WORLD);
 
-    communicator::finalize();
+    MPI_Finalize();
 
     return 0;
 }

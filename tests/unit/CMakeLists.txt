@@ -9,8 +9,7 @@ set(TEST_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 #  Lib Dependancy  #
 ####################
 
-#include_directories( "${PRJ_ROOT_DIR}/tests" )
-include_directories( "${PRJ_ROOT_DIR}/src" )
+include_directories("${PRJ_ROOT_DIR}/src")
 
 ################
 #  Build test  #
@@ -25,9 +24,7 @@ target_link_libraries(carma-test semiprof)
 ################
 #  unit gtests #
 ################
-set(TEST_SOURCES
-test_mapper.cpp
-unit_test.cpp)
+set(TEST_SOURCES test_mapper.cpp unit_test.cpp)
 
 set(target unit_test.exe)
 add_executable(unit_test.exe ${TEST_SOURCES})
@@ -36,7 +33,7 @@ target_link_libraries(${target} carma)
 add_test(layout-and-mapper-tests unit_test.exe)
 
 # debug with
-# mpirun -np 1 xterm -e lldb -o run -- ./Carma-lib-test  ...
+# mpirun -np 1 xterm -e lldb -o run -- ./carma-test  ...
 
 if (MPI_FOUND)
 # test the correctness of carma
