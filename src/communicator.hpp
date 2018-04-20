@@ -54,13 +54,14 @@ public:
     // size of the initial communicator
     int comm_size();
 
-    static void free_comm(MPI_Comm comm);
-    static void free_group(MPI_Group comm_group);
+    static void free_comm(MPI_Comm& comm);
+    static void free_group(MPI_Group& comm_group);
 
     static void finalize();
 
 private:
     std::vector<MPI_Comm> comm_ring_;
+    std::vector<MPI_Comm> comm_subproblem_;
     int rank_;
     const Strategy& strategy_;
     std::vector<int> step_to_comm_index_;
@@ -86,7 +87,10 @@ private:
     static int rank_outside_ring(Interval& P, int div, int off, int i);
 
     void create_communicators(MPI_Comm comm);
-    MPI_Comm create_comm_ring(MPI_Comm comm, MPI_Group comm_group, std::vector<int>& subgroup);
+    // same as create just uses MPI_Comm_split instead of MPI_Comm_create
+    void split_communicators(MPI_Comm comm);
+    MPI_Comm create_comm_ring(MPI_Comm comm, Interval& P, int offset, int div);
+    MPI_Comm create_comm_subproblem(MPI_Comm comm, Interval& P, Interval& newP);
 
     void free_comms();
 };

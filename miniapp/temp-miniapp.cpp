@@ -46,6 +46,7 @@ int main( int argc, char **argv ) {
     fillInt(A.matrix());
     fillInt(B.matrix());
 
+    MPI_Barrier(MPI_COMM_WORLD);
     multiply(A, B, C, strategy, MPI_COMM_WORLD);
 
     MPI_Finalize();

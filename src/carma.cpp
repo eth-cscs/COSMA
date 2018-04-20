@@ -1,4 +1,5 @@
 #include "carma.hpp"
+#include <chrono>
 
 /*
     Compute C = A * B
@@ -38,12 +39,14 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     Interval ki = Interval(0, strategy.k-1);
     Interval Pi = Interval(0, strategy.P-1);
 
+    PE(blasinit);
     initialize_blas();
+    PL();
 
-    PE(preprocessing);
+    PE(preprocessing_communicators);
     communicator carma_comm(strategy, comm);
     PL();
-    
+
     multiply(matrixA, matrixB, matrixC,
             mi, ni, ki, Pi, 0, strategy, 0.0, carma_comm);
 
@@ -58,7 +61,6 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
               Interval& m, Interval& n, Interval& k, Interval& P,
               size_t step, const Strategy& strategy, double beta,
               communicator& comm) {
-
     PE(multiply_layout);
     // current submatrices that are being computed
     Interval2D a_range(m, k);

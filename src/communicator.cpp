@@ -12,6 +12,7 @@ communicator::communicator(const Strategy& strategy, MPI_Comm comm):
     }
 
     create_communicators(full_comm_);
+    // split_communicators(full_comm_);
 
     step_to_comm_index_ = std::vector<int>(strategy_.n_steps);
     int idx = 0;
@@ -255,11 +256,11 @@ int communicator::comm_size() {
 }
 
 
-void communicator::free_comm(MPI_Comm comm) {
+void communicator::free_comm(MPI_Comm& comm) {
     MPI_Comm_free(&comm);
 }
 
-void communicator::free_group(MPI_Group group) {
+void communicator::free_group(MPI_Group& group) {
     MPI_Group_free(&group);
 }
 
@@ -322,9 +323,8 @@ int communicator::rank_outside_ring(Interval& P, int div, int off, int i) {
     return i * subset_size + off;
 }
 
-void communicator::create_communicators(MPI_Comm comm) {
-    MPI_Group comm_group;
-    MPI_Comm_group(comm, &comm_group);
+void communicator::split_communicators(MPI_Comm comm) {
+    //MPI_Comm_group(comm, &comm_group);
     Interval P(0, strategy_.P - 1);
     // iterate through all steps and for each bfs
     // step, create a suitable subcommunicator
@@ -335,28 +335,76 @@ void communicator::create_communicators(MPI_Comm comm) {
             Interval newP = P.subinterval(div, partition_idx);
             int group, offset;
             std::tie(group, offset) = group_and_offset(P, div, rank_);
-
-            std::vector<int> subgroup(div);
-            for (int gp = 0; gp < div; ++gp) {
-                int rank = P.first() + rank_outside_ring(P, div, offset, gp);
-                subgroup[gp] = rank;
-            }
-
-            comm_ring_.push_back(create_comm_ring(comm, comm_group, subgroup));
+            MPI_Comm comm_ring, comm_subproblem;
+            MPI_Comm_split(comm, group, offset, &comm_subproblem);
+            MPI_Comm_split(comm, offset, group, &comm_ring);
+            comm_ring_.push_back(comm_ring);
+            comm_subproblem_.push_back(comm_subproblem);
+            comm = comm_subproblem;
             P = newP;
         }
     }
 }
 
-MPI_Comm communicator::create_comm_ring(MPI_Comm comm, MPI_Group comm_group,
-        std::vector<int>& ranks) {
-    MPI_Group subgroup;
+void communicator::create_communicators(MPI_Comm comm) {
+    //MPI_Comm_group(comm, &comm_group);
+    Interval P(0, strategy_.P - 1);
+    // iterate through all steps and for each bfs
+    // step, create a suitable subcommunicator
+    for (int step = 0; step < strategy_.n_steps; ++step) {
+        if (strategy_.bfs_step(step)) {
+            int div = strategy_.divisor(step);
+            int partition_idx = P.partition_index(div, rank_);
+            Interval newP = P.subinterval(div, partition_idx);
+            int group, offset;
+            std::tie(group, offset) = group_and_offset(P, div, rank_);
+            comm_ring_.push_back(create_comm_ring(comm, P, offset, div));
+            MPI_Comm comm_subproblem = create_comm_subproblem(comm, P, newP);
+            comm_subproblem_.push_back(comm_subproblem);
+            comm = comm_subproblem;
+            P = newP;
+        }
+    }
+}
+
+MPI_Comm communicator::create_comm_ring(MPI_Comm comm, Interval& P, int offset, int div) {
     MPI_Comm newcomm;
+    MPI_Group subgroup;
+
+    MPI_Group comm_group;
+    MPI_Comm_group(comm, &comm_group);
+
+    std::vector<int> ranks(div);
+    for (int i = 0; i < div; ++i) {
+        ranks[i] = rank_outside_ring(P, div, offset, i);
+    }
 
     MPI_Group_incl(comm_group, ranks.size(), ranks.data(), &subgroup);
     MPI_Comm_create(comm, subgroup, &newcomm);
 
     free_group(subgroup);
+    free_group(comm_group);
+
+    return newcomm;
+}
+
+MPI_Comm communicator::create_comm_subproblem(MPI_Comm comm, Interval& P, Interval& newP) {
+    MPI_Comm newcomm;
+    MPI_Group subgroup;
+
+    MPI_Group comm_group;
+    MPI_Comm_group(comm, &comm_group);
+
+    std::vector<int> ranks(newP.length());
+    for (int i = 0; i < ranks.size(); ++i) {
+        ranks[i] = relative_rank(P, newP.first() + i);
+    }
+
+    MPI_Group_incl(comm_group, ranks.size(), ranks.data(), &subgroup);
+    MPI_Comm_create(comm, subgroup, &newcomm);
+
+    free_group(subgroup);
+    free_group(comm_group);
 
     return newcomm;
 }
@@ -364,6 +412,10 @@ MPI_Comm communicator::create_comm_ring(MPI_Comm comm, MPI_Group comm_group,
 void communicator::free_comms() {
     for (int i = 0; i < comm_ring_.size(); ++i) {
         free_comm(comm_ring_[i]);
+    }
+
+    for (int i = 0; i < comm_subproblem_.size(); ++i) {
+        free_comm(comm_subproblem_[i]);
     }
 }
 

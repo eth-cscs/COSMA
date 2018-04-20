@@ -2,7 +2,7 @@
 
 CarmaMatrix::CarmaMatrix(char label, const Strategy& strategy, int rank) :
         label_(label), rank_(rank) {
-    PE(preprocessing);
+    PE(preprocessing_matrices);
     if (label_ == 'A') {
         m_ = strategy.m;
         n_ = strategy.k;
