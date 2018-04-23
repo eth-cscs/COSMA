@@ -51,7 +51,7 @@ int main( int argc, char **argv ) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     int base_size = 1500000;
-    int var = base_size/10;
+    int var = 100000;
     int local_size = base_size + ((rank % 2 == 0) ? var : 0);
     int max_size = -1;
     int total_size = 0;
