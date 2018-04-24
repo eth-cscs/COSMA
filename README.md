@@ -46,7 +46,7 @@ cd build
 cmake
   -DCMAKE_BUILD_TYPE=Release \
   -DCARMA_LAPACK_TYPE=MKL \
-  -DMKL_THREADING="Intel OpenMP" \
+  -DMKL_THREADING="Sequential" \
   ..
 make -j 4
 ```

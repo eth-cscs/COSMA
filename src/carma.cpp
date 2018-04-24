@@ -319,7 +319,8 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     int new_size = total_after_expansion[comm.relative_rank(newP)];
 
     // new allocated space for the expanded matrix
-    double* expanded_space = (double*) malloc(new_size * sizeof(double));
+    std::vector<double> expanded_vector(new_size);
+    double* expanded_space = expanded_vector.data();
 
     // LM = M if M was not expanded
     // LM = expanded_space if M was expanded
@@ -347,14 +348,6 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
         // copy the matrix that wasn't divided in this step
         comm.copy(P, original_matrix, expanded_matrix,
                 size_before_expansion, total_before_expansion, new_size, step);
-        /*
-          observe that here we use the communicator "comm" and not "newcomm"
-          this is because newcomm contains only ranks inside newP
-          however, we need to communicate with all the ranks from the communication
-          ring to make sure that the group of processors newP now owns everything 
-          that was previously owned by P processors and can thus continue
-          the execution independently of the other processors in "comm"
-        */
     }
     PL();
 
@@ -367,10 +360,7 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     if (strategy.split_k(step) && beta > 0) {
         new_beta = 0;
     }
-    // invoke recursion with the new communicator containing ranks from newP
-    // observe that we have only one recursive call here (we are not entering a loop
-    // of recursive calls as in DFS steps since the current rank will only enter
-    // into one recursive call since ranks are split).
+
     multiply(matrixA, matrixB, matrixC, newm, newn, newk, newP, step+1, strategy, new_beta, comm);
     // revert the current matrix
     matrixA.set_current_matrix(A);
@@ -389,6 +379,4 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     // (the values at the beginning of this BFS step)
     expanded_mat.set_sizes(newP, size_before_expansion, newP.first() - P.first());
     PL();
-
-    free(expanded_matrix);
 }
