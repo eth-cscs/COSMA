@@ -131,14 +131,14 @@ void local_multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& mat
     if (beta > 0) {
         std::cout << "C (before) = " << std::endl;
         printMat(m, n, matrixC.current_matrix(), 'C');
-        double* C_partial = (double*) malloc(sizeof(double) * m * n);
-        dgemm_( &N, &N, &m, &n, &k, &one, matrixA.current_matrix(), &m, matrixB.current_matrix(), &k, &zero, C_partial, &m );
+        auto C_partial = std::unique_ptr<double[]>(new double[m * n]);
+        dgemm_(&N, &N, &m, &n, &k, &one, matrixA.current_matrix(), &m, matrixB.current_matrix(), &k, &zero, C_partial.get(), &m);
         std::cout << "C (partial) = " << std::endl;
-        printMat(m, n, C_partial, 'C');
+        printMat(m, n, C_partial.get(), 'C');
     }
 #endif
     PE(multiply_computation);
-    dgemm_( &N, &N, &m, &n, &k, &one, matrixA.current_matrix(), &m, matrixB.current_matrix(), &k, &beta, matrixC.current_matrix(), &m );
+    dgemm_(&N, &N, &m, &n, &k, &one, matrixA.current_matrix(), &m, matrixB.current_matrix(), &k, &beta, matrixC.current_matrix(), &m);
     PL();
 #ifdef DEBUG
     std::cout << "After multiplication: " << std::endl;
@@ -319,8 +319,8 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     int new_size = total_after_expansion[comm.relative_rank(newP)];
 
     // new allocated space for the expanded matrix
-    std::vector<double> expanded_vector(new_size);
-    double* expanded_space = expanded_vector.data();
+    auto expanded_array = std::unique_ptr<double[]>(new double[new_size]);
+    double* expanded_space = expanded_array.get();
 
     // LM = M if M was not expanded
     // LM = expanded_space if M was expanded
