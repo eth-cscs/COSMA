@@ -42,6 +42,8 @@ void communicator::copy(Interval& P, double* in, double* out,
     int off = offset(P, div);
 
     std::vector<int> subgroup(div);
+    bool same_size = true;
+    int max_size = 0;
 
     for (int i = 0; i < div; ++i) {
         int target = rank_outside_ring(P, div, off, i);
@@ -49,6 +51,8 @@ void communicator::copy(Interval& P, double* in, double* out,
         dspls[i] = sum;
         sum += temp_size;
         total_size[i] = temp_size;
+        same_size &= temp_size == local_size;
+        max_size = std::max(max_size, temp_size);
     }
 
     int n_buckets = size_before[relative_rank(P)].size();
@@ -62,8 +66,14 @@ void communicator::copy(Interval& P, double* in, double* out,
         buffer_pointer = out;
     }
 
-    MPI_Allgatherv(in, local_size, MPI_DOUBLE, buffer_pointer,
-            total_size.data(), dspls.data(), MPI_DOUBLE, subcomm);
+    if (same_size) {
+        MPI_Allgather(in, local_size, MPI_DOUBLE, buffer_pointer, local_size, 
+                MPI_DOUBLE, subcomm);
+    } else {
+        // pad vectors with 0s
+        MPI_Allgatherv(in, local_size, MPI_DOUBLE, buffer_pointer,
+                total_size.data(), dspls.data(), MPI_DOUBLE, subcomm);
+    }
 
     if (n_buckets > 1) {
         int index = 0;

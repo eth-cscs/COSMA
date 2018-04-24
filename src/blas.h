@@ -1,5 +1,5 @@
-#ifndef BLAS_H
-#define BLAS_H
+#ifndef _BLAS_H_
+#define _BLAS_H_
 
 extern "C" {
     void dpotrf_(char*, int*, double*, int*, int*);

@@ -12,9 +12,9 @@ CarmaMatrix* matrixA;
 CarmaMatrix* matrixB;
 CarmaMatrix* matrixC;
 
-int total_communication = 0;
-int max_buffer_size = 0;
-int max_total_computation = 0;
+long long total_communication = 0;
+long long max_buffer_size = 0;
+long long max_total_computation = 0;
 int local_m = 0;
 int local_n = 0;
 int local_k = 0;
@@ -65,7 +65,7 @@ void multiply(const Strategy& strategy) {
     free(matrixB);
     free(matrixC);
 
-    std::cout << "Total communication units: " << total_communication << std::endl;
+    std::cout << "Total communication units per rank: " << 1.0*total_communication/strategy.P << std::endl;
     std::cout << "Total computation units: " << max_total_computation << std::endl;
     std::cout << "Max buffer size: " << max_buffer_size << std::endl;
     std::cout << "Local m = " << local_m << std::endl;
@@ -113,8 +113,9 @@ void multiply(Interval& m, Interval& n, Interval& k, Interval& P, int step,
 }
 
 void local_multiply(int m, int n, int k, double beta) {
-    if (m*n*k > max_total_computation) {
-        max_total_computation = m * n * k;
+    long long comp = m * n * k;
+    if (comp > max_total_computation) {
+        max_total_computation = comp;
         local_m = m;
         local_n = n;
         local_k = k;
@@ -253,7 +254,7 @@ void BFS(Interval& m, Interval& n, Interval& k, Interval& P, int step,
     // this is the sum of sizes of all the buckets after expansion
     // that the current rank will own.
     // which is also the size of the matrix after expansion
-    int new_size = total_after_expansion[offset];
+    long long new_size = total_after_expansion[offset];
     max_buffer_size = std::max(max_buffer_size, new_size);
     int received_volume = new_size - total_before_expansion[rank - P.first()];
     total_communication += received_volume;
