@@ -78,7 +78,7 @@ The flags have the following meaning:
 
 - `P`: number of processors (i.e. ranks)
 
-- `s`: string of triplets divided by comma. Each triplet defines one step of the algorithm. The first character in the triplet defines whether it is BFS (b) or DFS (d) step. The second character defines the dimension that is splitted in this step. The third parameter is an integer which defines the divisor.
+- `s`: string of triplets divided by comma defining the splitting strategy. Each triplet defines one step of the algorithm. The first character in the triplet defines whether it is BFS (b) or DFS (d) step. The second character defines the dimension that is splitted in this step. The third parameter is an integer which defines the divisor. This parameter can be omitted. In that case the default strategy will be used.
 
 - `t`: if this flag is present, then ranks might be relabelled such that the ranks which communicate are physically closer to each other. This flag therefore determines whether the topology is communication-aware.
 
