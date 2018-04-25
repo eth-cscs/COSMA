@@ -1,5 +1,4 @@
 #include "carma.hpp"
-#include <chrono>
 
 /*
     Compute C = A * B
@@ -47,8 +46,11 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     communicator carma_comm(strategy, comm);
     PL();
 
-    multiply(matrixA, matrixB, matrixC,
-            mi, ni, ki, Pi, 0, strategy, 0.0, carma_comm);
+    {
+        Timer timer(1, "CARMA multiply");
+        multiply(matrixA, matrixB, matrixC,
+                mi, ni, ki, Pi, 0, strategy, 0.0, carma_comm);
+    }
 
     if (carma_comm.rank() == 0) {
         PP();

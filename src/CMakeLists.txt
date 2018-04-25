@@ -12,6 +12,8 @@ set(sources
     mapper.cpp
     statistics.hpp
     strategy.cpp
+    interval.cpp
+    timer.hpp
 )
 
 ###################

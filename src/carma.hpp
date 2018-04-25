@@ -8,6 +8,7 @@
 #include "matrix.hpp"
 #include <semiprof.hpp>
 #include "strategy.hpp"
+#include "timer.hpp"
 
 void multiply(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
               const Strategy& strategy, MPI_Comm comm=MPI_COMM_WORLD);
