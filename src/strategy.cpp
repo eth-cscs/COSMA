@@ -42,16 +42,26 @@ void Strategy::initialize(const std::string& cmd_line) {
     auto k_it = find_flag("-k", "--k_dimension", "Dimension k has to be defined.", cmd_line);
     auto P_it = find_flag("-P", "--processors", 
             "Number of processors has to be defined.", cmd_line);
+    auto M_it = find_flag("-M", "--memory", 
+            "Memory limit: maximum number of elements each rank can own.", cmd_line, false);
     m = next_int(m_it, cmd_line);
     n = next_int(n_it, cmd_line);
     k = next_int(k_it, cmd_line);
     P = next_int(P_it, cmd_line);
+    memory_limit = next_int(M_it, cmd_line);
+
+    // if memory limit not given, assume we have infinity
+    // (i.e. assume that each rank can store all 3 matrices)
+    if (memory_limit < 0) {
+        memory_limit = m*n + k*m + k*n;
+    }
 
     topology = find_bool_flag("-t", "--topology", "If true, MPI topology will be adapted\
             to the communication.", cmd_line);
 
     bool steps_predefined = find_bool_flag("-s", "--steps",
             "Division steps have to be defined.", cmd_line);
+
     if (steps_predefined) {
         auto steps_it = find_flag("-s", "--steps", "Division steps have to be defined.", cmd_line);
         process_steps(steps_it, cmd_line);
@@ -124,54 +134,112 @@ std::vector<int> Strategy::decompose(int n) {
 
 void Strategy::default_strategy() {
     std::vector<int> factors = decompose(P);
-    int r = factors.size();
-    std::vector<int> dims = {m, n, k};
-    int max_index = -1;
-    int divide_by = 1;
-    int i = 0;
+    int m = this->m;
+    int n = this->n;
+    int k = this->k;
+    int P = this->P;
 
-    while (i < r) {
-        auto ptr_to_max = max_element(dims.begin(), dims.end());
-        if (*ptr_to_max <= 1) return;
-        int index = std::distance(dims.begin(), ptr_to_max);
-        // if the same largest dimension as in the previous step
-        // just accumulate divide_by
-        if (index == max_index)  {
-            divide_by *= factors[i];
-            dims[index] /= factors[i];
-        } else {
-            // divide by the accumulated divide_by
-            // and restart the divide_by
-            if (divide_by != 1) {
-                // add BFS step to the pattern
-                step_type += "b";
-                if (max_index == 0)
-                    split_dimension += "m";
-                else if (max_index == 1)
-                    split_dimension += "n";
-                else
-                    split_dimension += "k";
-                divisors.push_back(divide_by);
-            }
-            divide_by = factors[i];
-            max_index = index;
-            dims[index] /= divide_by;
+    int needed_memory = m*n/P + k*n/P + m*k/P;
+
+    for (int i = 0; i < factors.size(); ++i) {
+        bool did_bfs = false;
+        int accumulated_div = 1;
+        int next_div = factors[i];
+
+        // m largest => split it
+        while (m/accumulated_div >= std::max(n, k) 
+              && needed_memory + k*n*next_div/P <= memory_limit) {
+            accumulated_div = next_div;
+            did_bfs = true;
+            ++i;
+            if (i >= factors.size()) break;
+            next_div *= factors[i];
         }
-        // if last step, perform the division immediately
-        if (i == r - 1) {
-            // add BFS step to the pattern
+
+        if (did_bfs) {
+            i--;
             step_type += "b";
-            if (index == 0)
-                split_dimension += "m";
-            else if (index == 1)
-                split_dimension += "n";
-            else
-                split_dimension += "k";
-            divisors.push_back(divide_by);
+            split_dimension += "m";
+            divisors.push_back(accumulated_div);
+            needed_memory += k*n*accumulated_div/P;
+            m /= accumulated_div;
+            P /= accumulated_div;
+            continue;
         }
-        ++i;
-    }
 
+        // n largest => split it
+        while (n/accumulated_div >= std::max(m, k) 
+              && needed_memory + k*m*next_div/P <= memory_limit) {
+            accumulated_div = next_div;
+            did_bfs = true;
+            ++i;
+            if (i >= factors.size()) break;
+            next_div *= factors[i];
+        }
+
+        if (did_bfs) {
+            i--;
+            step_type += "b";
+            split_dimension += "n";
+            divisors.push_back(accumulated_div);
+            needed_memory += k*m*accumulated_div/P;
+            n /= accumulated_div;
+            P /= accumulated_div;
+            continue;
+        }
+
+        // k largest => split it
+        while (k/accumulated_div >= std::max(m, n) 
+              && needed_memory + n*m*next_div/P <= memory_limit) {
+            accumulated_div = next_div;
+            did_bfs = true;
+            ++i;
+            if (i >= factors.size()) break;
+            next_div *= factors[i];
+        }
+
+        if (did_bfs) {
+            i--;
+            step_type += "b";
+            split_dimension += "k";
+            divisors.push_back(accumulated_div);
+            needed_memory += m*n*accumulated_div/P;
+            k /= accumulated_div;
+            P /= accumulated_div;
+            continue;
+        }
+
+        // if BFS steps were not possible
+        // then perform DFS step first
+        if (!did_bfs) {
+            // don't count this iteration
+            i--;
+            step_type += "d";
+            int div = 2;
+            divisors.push_back(div);
+
+            // if m largest => split it
+            if (m >= std::max(k, n)) {
+                split_dimension += "m";
+                m /= div;
+                continue;
+            }
+
+            // if n largest => split it
+            if (n >= std::max(m, k)) {
+                split_dimension += "n";
+                n /= div;
+                continue;
+            }
+
+            // if n largest => split it
+            if (k >= std::max(m, n)) {
+                split_dimension += "k";
+                k /= div;
+                continue;
+            }
+        }
+    }
 }
 
 // token is a triplet e.g. bm3 (denoting BFS (m / 3) step
@@ -189,15 +257,18 @@ void Strategy::throw_exception(const std::string& message) {
 
 // finds the position after the defined flag or throws an exception 
 // if flag is not found in the line.
-size_t Strategy::find_flag(const std::string& short_flag, const std::string& long_flag, 
-        const std::string& message, const std::string& line) {
+int Strategy::find_flag(const std::string& short_flag, const std::string& long_flag, 
+        const std::string& message, const std::string& line, bool compulsory) {
     auto position = line.find(short_flag);
     auto length = short_flag.length();
     if (position == std::string::npos) {
         position = line.find(long_flag);
         length = long_flag.length();
         if (position == std::string::npos) {
-            throw_exception(message);
+            if (compulsory)
+                throw_exception(message);
+            else 
+                return -1;
         }
     }
     while (line[position + length] == ' ') length++;
@@ -219,7 +290,9 @@ bool Strategy::find_bool_flag(const std::string& short_flag, const std::string& 
 }
 
 // finds the next int after start in the line
-int Strategy::next_int(size_t start, const std::string& line) {
+int Strategy::next_int(int start, const std::string& line) {
+    if (start < 0) 
+        return -1;
     std::regex int_expr("([0-9]+)");
     auto it = std::sregex_iterator(line.begin() + start, line.end(), int_expr);
     int result = std::stoi(it->str());
@@ -298,6 +371,36 @@ const bool Strategy::final_step(size_t i) const {
     return i == n_steps;
 }
 
+int Strategy::required_memory(Strategy& strategy) {
+    int m = strategy.m;
+    int n = strategy.n;
+    int k = strategy.k;
+    int P = strategy.P;
+
+    int initial_size = m*k/P + k*n/P + m*n/P;
+
+    for (int step = 0; step < strategy.n_steps; ++step) {
+        int div = strategy.divisor(step);
+
+        if (strategy.bfs_step(step)) {
+            P /= strategy.divisor(step);
+
+            if (strategy.split_m(step))
+                initial_size += k*n/P;
+            else if (strategy.split_n(step))
+                initial_size += m*k/P;
+            else
+                initial_size += m*n/P;
+        }
+
+        m /= strategy.divisor_m(step);
+        n /= strategy.divisor_n(step);
+        k /= strategy.divisor_k(step);
+    }
+
+    return initial_size;
+}
+
 // checks if the strategy is well-defined
 void Strategy::check_if_valid() {
     int mi = m;
@@ -367,6 +470,20 @@ void Strategy::check_if_valid() {
     if (Pi != 1) {
         throw_exception("Too many processors. The number of processors should be \
                 equal to the product of divisors in all BFS steps.");
+    }
+
+    // check if we have enough memory for this splitting strategy
+    int needed_memory = required_memory(*this);
+    if (memory_limit < 0) {
+        memory_limit = needed_memory;
+    } else {
+        if (memory_limit < needed_memory) {
+            throw_exception("The splitting strategy requires memory for roughly " 
+                    + std::to_string(needed_memory) + " elements, but the memory limit is only " 
+                    + std::to_string(memory_limit) + " elements. Either increase the memory limit \
+                    or change the strategy. (Hint: you could use some sequential (DFS) \
+                    steps to decrease the required memory.)");
+        }
     }
 }
 

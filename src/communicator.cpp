@@ -208,12 +208,12 @@ void communicator::get_topology_edges(std::vector<int>& dest, std::vector<int>& 
                 dest.push_back(neighbor);
 
                 int communication_size = 0;
-                if (strategy_.split_A(step))
-                    communication_size = m * k;
-                else if (strategy_.split_B(step))
-                    communication_size = k * n;
+                if (strategy_.split_n(step))
+                    communication_size = m * k / newP.length();
+                else if (strategy_.split_m(step))
+                    communication_size = k * n / newP.length();
                 else
-                    communication_size = m * n;
+                    communication_size = m * n / newP.length();
 
                 weight.push_back(communication_size);
             }

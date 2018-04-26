@@ -29,6 +29,7 @@ public:
     // if true, MPI will try to relabel ranks such that
     // the ranks which communicate are physically close to each other
     bool topology;
+    int memory_limit;
     int n_bfs_steps;
     int n_dfs_steps;
 
@@ -68,8 +69,9 @@ public:
 
     // finds the position after the defined flag or throws an exception 
     // if flag is not found in the line.
-    size_t find_flag(const std::string& short_flag, const std::string& long_flag, 
-                     const std::string& message, const std::string& line);
+    int find_flag(const std::string& short_flag, const std::string& long_flag, 
+                     const std::string& message, const std::string& line, 
+                     bool throw_exception=true);
 
     // looks for the defined flag in the line
     // if found return true, otherwise returns false
@@ -77,7 +79,7 @@ public:
             const std::string& message, const std::string& line);
 
     // finds the next int after start in the line
-    int next_int(size_t start, const std::string& line);
+    int next_int(int start, const std::string& line);
 
     const bool split_m(size_t i) const;
     const bool split_n(size_t i) const;
@@ -99,6 +101,8 @@ public:
     const int divisor_col(char matrix, size_t i) const;
 
     const bool final_step(size_t i) const;
+
+    static int required_memory(Strategy& strategy);
 
     // checks if the strategy is well-defined
     void check_if_valid();
