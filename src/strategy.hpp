@@ -8,6 +8,7 @@
 #include <sstream>
 #include <iostream>
 #include <math.h> 
+#include <limits>
 
 class Strategy {
 public:
@@ -29,7 +30,8 @@ public:
     // if true, MPI will try to relabel ranks such that
     // the ranks which communicate are physically close to each other
     bool topology;
-    int memory_limit;
+    long long memory_limit;
+    long long memory_used;
     int n_bfs_steps;
     int n_dfs_steps;
 
@@ -47,8 +49,8 @@ public:
     Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
              std::string& dims, std::string& types, bool top = false);
 
-    // TODO: add memory constraint
-    Strategy(int mm, int nn, int kk, size_t PP, bool top = false);
+    Strategy(int mm, int nn, int kk, size_t PP, 
+            long long mem_limit = std::numeric_limits<long long>::max(), bool top = false);
 
     void initialize(const std::string& cmd_line);
 
@@ -75,11 +77,12 @@ public:
 
     // looks for the defined flag in the line
     // if found return true, otherwise returns false
-    bool find_bool_flag(const std::string& short_flag, const std::string& long_flag, 
-            const std::string& message, const std::string& line);
+    bool flag_exists(const std::string& short_flag, const std::string& long_flag, 
+            const std::string& line);
 
     // finds the next int after start in the line
     int next_int(int start, const std::string& line);
+    long long next_long_long(int start, const std::string& line);
 
     const bool split_m(size_t i) const;
     const bool split_n(size_t i) const;
@@ -102,7 +105,8 @@ public:
 
     const bool final_step(size_t i) const;
 
-    static int required_memory(Strategy& strategy);
+    static long long initial_memory(long long m, long long n, long long k, int P);
+    static long long required_memory(Strategy& strategy);
 
     // checks if the strategy is well-defined
     void check_if_valid();
