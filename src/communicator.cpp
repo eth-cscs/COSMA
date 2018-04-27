@@ -70,7 +70,6 @@ void communicator::copy(Interval& P, double* in, double* out,
         MPI_Allgather(in, local_size, MPI_DOUBLE, receive_pointer, local_size, 
                 MPI_DOUBLE, subcomm);
     } else {
-        // pad vectors with 0s
         MPI_Allgatherv(in, local_size, MPI_DOUBLE, receive_pointer,
                 total_size.data(), dspls.data(), MPI_DOUBLE, subcomm);
     }
