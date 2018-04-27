@@ -80,7 +80,7 @@ The flags have the following meaning:
 
 - `-s (--steps, optional)`: string of triplets divided by comma defining the splitting strategy. Each triplet defines one step of the algorithm. The first character in the triplet defines whether it is BFS (b) or DFS (d) step. The second character defines the dimension that is splitted in this step. The third parameter is an integer which defines the divisor. This parameter can be omitted. In that case the default strategy will be used.
 
-- `-L (--memory, optional)`: memory limit, describes how many elements at most each rank can own. If not set, infinite memory will be assume and the default strategy will only consist of parallel (BFS) steps.
+- `-L (--memory, optional)`: memory limit, describes how many elements at most each rank can own. If not set, infinite memory will be assumed and the default strategy will only consist of parallel (BFS) steps.
 
 - `-t (--topology, optional)`: if this flag is present, then ranks might be relabelled such that the ranks which communicate are physically closer to each other. This flag therefore determines whether the topology is communication-aware.
 
