@@ -30,8 +30,8 @@ Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
 
 Strategy::Strategy(int mm, int nn, int kk, size_t PP, long long mem_limit, bool top) : 
     m(mm), n(nn), k(kk), P(PP), memory_limit(mem_limit), topology(top) {
-    spartition_strategy();
-    // default_strategy();
+    // spartition_strategy();
+    default_strategy();
     n_steps = divisors.size();
     check_if_valid();
 }
@@ -65,8 +65,8 @@ void Strategy::initialize(const std::string& cmd_line) {
         process_steps(steps_it, cmd_line);
     }
     else {
-        spartition_strategy();
-        // default_strategy();
+        // spartition_strategy();
+        default_strategy();
     }
 
     n_steps = divisors.size();
@@ -311,33 +311,91 @@ void Strategy::spartition_strategy() {
 
     // be careful when dividing, since the product mnk can be very large
     double target_tile_size = std::cbrt(1.0*dimensions[1]*dimensions[2] / P * dimensions[0]);
-    std::cout << "target_tile_size = " << target_tile_size << std::endl;
     int divm = closest_divisor(P, this->m, target_tile_size);
-    std::cout << "divm = " << divm << std::endl;
     P /= divm;
-
-    if (divm > 1) {
-        split_dimension += "m";
-        step_type += "b";
-        divisors.push_back(divm);
-    }
-
     int divn = closest_divisor(P, this->n, target_tile_size);
     P /= divn;
-    std::cout << "divn = " << divn << std::endl;
-
-    if (divn > 1) {
-        split_dimension += "n";
-        step_type += "b";
-        divisors.push_back(divn);
-    }
-
     int divk = P;
 
-    if (divk > 1) {
-        split_dimension += "k";
-        step_type += "b";
-        divisors.push_back(divk);
+    std::vector<int> divm_factors = decompose(divm);
+    std::vector<int> divn_factors = decompose(divn);
+    std::vector<int> divk_factors = decompose(divk);
+
+    int mi, ni, ki;
+    mi = ni = ki = 0;
+
+    int total_divisors = divm_factors.size() + divn_factors.size()
+        + divk_factors.size();
+
+    for (int i = 0; i < total_divisors; ++i) {
+        int accumulated_div = 1;
+        int next_div = 1;
+
+        if (m >= std::max(n, k))
+            next_div = divm_factors[mi];
+        else if (n >= std::max(m, k))
+            next_div = divn_factors[ni];
+        else
+            next_div = divk_factors[ki];
+
+        bool did_bfs = false;
+
+        // if m largest => split it
+        while (m/accumulated_div >= std::max(n, k)) {
+            accumulated_div = next_div;
+            did_bfs = true;
+            mi++;
+            i++;
+            if (mi >= divm_factors.size() && i >= total_divisors) break;
+            next_div *= divm_factors[mi];
+        }
+
+        if (did_bfs) {
+            i--;
+            m /= accumulated_div;
+            split_dimension += "m";
+            step_type += "b";
+            divisors.push_back(accumulated_div);
+            continue;
+        }
+
+        // if n largest => split it
+        while (n/accumulated_div >= std::max(m, k)) {
+            accumulated_div = next_div;
+            did_bfs = true;
+            ni++;
+            i++;
+            if (ni >= divn_factors.size() && i >= total_divisors) break;
+            next_div *= divn_factors[ni];
+        }
+
+        if (did_bfs) {
+            i--;
+            n /= accumulated_div;
+            split_dimension += "n";
+            step_type += "b";
+            divisors.push_back(accumulated_div);
+            continue;
+        }
+
+        // if k largest => split it
+        while (k/accumulated_div >= std::max(m, n)) {
+            accumulated_div = next_div;
+            did_bfs = true;
+            ki++;
+            i++;
+            if (ki >= divk_factors.size() && i >= total_divisors) break;
+            next_div *= divk_factors[ki];
+        }
+
+        if (did_bfs) {
+            i--;
+            k /= accumulated_div;
+            split_dimension += "k";
+            step_type += "b";
+            divisors.push_back(accumulated_div);
+            continue;
+        }
     }
 }
 
