@@ -1,15 +1,13 @@
 #ifndef _COMMUNICATOR_H_
 #define _COMMUNICATOR_H_
-
 #include "blas.h"
 #include "interval.hpp"
-#include "strategy.hpp"
-
 #include <mpi.h>
 #include <stdlib.h>
 #include <algorithm>
 #include <iostream>
 #include <tuple>
+#include "strategy.hpp"
 
 class communicator {
 public:

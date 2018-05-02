@@ -1,6 +1,5 @@
 #include "communicator.hpp"
 
-
 communicator::communicator(const Strategy& strategy, MPI_Comm comm): 
         strategy_(strategy), full_comm_(comm) {
 

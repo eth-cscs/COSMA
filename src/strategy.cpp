@@ -20,8 +20,7 @@ Strategy::Strategy(int argc, char** argv) {
 }
 
 Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
-        std::string& dims, std::string& types, bool top) : m(mm), n(nn), k(kk), P(PP),
-        topology(top) {
+        std::string& dims, std::string& types, long long mem_limit, bool top) : m(mm), n(nn), k(kk), P(PP), memory_limit(mem_limit), topology(top) {
     divisors = divs;
     split_dimension = dims;
     step_type = types;
@@ -31,7 +30,8 @@ Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
 
 Strategy::Strategy(int mm, int nn, int kk, size_t PP, long long mem_limit, bool top) : 
     m(mm), n(nn), k(kk), P(PP), memory_limit(mem_limit), topology(top) {
-    default_strategy();
+    spartition_strategy();
+    // default_strategy();
     n_steps = divisors.size();
     check_if_valid();
 }
@@ -65,7 +65,8 @@ void Strategy::initialize(const std::string& cmd_line) {
         process_steps(steps_it, cmd_line);
     }
     else {
-        default_strategy();
+        spartition_strategy();
+        // default_strategy();
     }
 
     n_steps = divisors.size();
@@ -91,6 +92,10 @@ int Strategy::gcd(int a, int b) {
     return b == 0 ? a : gcd(b, a % b);
 }
 
+long long Strategy::divide_and_round_up(long long x, long long y) {
+    return 1 + ((x - 1) / y);
+}
+
 int Strategy::next_multiple_of(int n_to_round, int multiple) {
     if (multiple == 0)
         return n_to_round;
@@ -100,6 +105,17 @@ int Strategy::next_multiple_of(int n_to_round, int multiple) {
         return n_to_round;
 
     return n_to_round + multiple - remainder;
+}
+
+// find all divisors of a given number n
+std::vector<int> Strategy::find_divisors(int n) {
+    std::vector<int> divs;
+    for (int i = 1; i < n; ++i) {
+        if (n % i == 0) {
+            divs.push_back(i);
+        }
+    }
+    return divs;
 }
 
 // find all prime factors of a given number n
@@ -130,8 +146,22 @@ std::vector<int> Strategy::decompose(int n) {
     return factors;
 }
 
-long long divide_and_round_up(long long x, long long y) {
-    return 1 + ((x - 1) / y);
+int Strategy::closest_divisor(int P, int dimension, double target) {
+    int divisor = 1;
+    int error;
+    int best_error = std::numeric_limits<int>::max();
+    int best_div = 1;
+
+    for (int i : find_divisors(P)) {
+        error = std::abs(dimension / i - target);
+
+        if (error < best_error) {
+            best_div = i;
+            best_error = error;
+        }
+    }
+
+    return best_div;
 }
 
 long long Strategy::initial_memory(long long m, long long n, long long k, int P) {
@@ -248,7 +278,7 @@ void Strategy::default_strategy() {
                 continue;
             }
 
-            // if n largest => split it
+            // if k largest => split it
             if (k >= std::max(m, n)) {
                 split_dimension += "k";
                 k /= div;
@@ -256,10 +286,62 @@ void Strategy::default_strategy() {
             }
         }
     }
-    memory_used = needed_memory;
 }
 
-// token is a triplet e.g. bm3 (denoting BFS (m / 3) step
+void Strategy::spartition_strategy() {
+    long long m = this->m;
+    long long n = this->n;
+    long long k = this->k;
+    int P = this->P;
+
+    long long needed_memory = initial_memory(m, n, k, P);
+
+    if (memory_limit < needed_memory) {
+        throw_exception(std::string("This multiplication requires the memory ")
+                + "for at least " + std::to_string(needed_memory)
+                + " units, but only " + std::to_string(memory_limit)
+                + " units are allowed. Either increase the memory limit "
+                + "or change the strategy by using more Sequential (DFS) "
+                + "steps.");
+    }
+
+    // sort the dimensions 
+    std::vector<long long> dimensions = {m, n, k};
+    std::sort(dimensions.begin(), dimensions.end());
+
+    // be careful when dividing, since the product mnk can be very large
+    double target_tile_size = std::cbrt(1.0*dimensions[1]*dimensions[2] / P * dimensions[0]);
+    std::cout << "target_tile_size = " << target_tile_size << std::endl;
+    int divm = closest_divisor(P, this->m, target_tile_size);
+    std::cout << "divm = " << divm << std::endl;
+    P /= divm;
+
+    if (divm > 1) {
+        split_dimension += "m";
+        step_type += "b";
+        divisors.push_back(divm);
+    }
+
+    int divn = closest_divisor(P, this->n, target_tile_size);
+    P /= divn;
+    std::cout << "divn = " << divn << std::endl;
+
+    if (divn > 1) {
+        split_dimension += "n";
+        step_type += "b";
+        divisors.push_back(divn);
+    }
+
+    int divk = P;
+
+    if (divk > 1) {
+        split_dimension += "k";
+        step_type += "b";
+        divisors.push_back(divk);
+    }
+}
+
+// token is a triplet e.g. bm3 (denoting BFS (m / 3) step)
 void Strategy::process_token(const std::string& step_triplet) {
     if (step_triplet.length() < 3) return;
     step_type += step_triplet[0];

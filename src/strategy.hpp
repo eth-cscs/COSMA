@@ -47,22 +47,39 @@ public:
     Strategy(int argc, char** argv);
 
     Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
-             std::string& dims, std::string& types, bool top = false);
+             std::string& dims, std::string& types,
+             long long mem_limit = std::numeric_limits<long long>::max(),
+             bool top = false);
 
     Strategy(int mm, int nn, int kk, size_t PP, 
-            long long mem_limit = std::numeric_limits<long long>::max(), bool top = false);
+            long long mem_limit = std::numeric_limits<long long>::max(),
+            bool top = false);
 
     void initialize(const std::string& cmd_line);
 
     void process_steps(size_t start, const std::string& line);
-    // default strategy using only BFS steps
     // greates common divisor of a and b
     int gcd(int a, int b);
-    // prime decomposition of n
-    std::vector<int> decompose(int n);
+
+    // divides and rounds up long long integers
+    static long long divide_and_round_up(long long x, long long y);
+
     // round to next multiple
     int next_multiple_of(int n_to_round, int multiple);
+
+    // find all divisors of n
+    std::vector<int> find_divisors(int n);
+
+    // prime decomposition of n
+    std::vector<int> decompose(int n);
+
+    // finds divisor of P closest to dimensions/target
+    int closest_divisor(int P, int dimension, double target);
+
+    // default strategy dividing always the largest dimension in that step
     void default_strategy();
+    // strategy that tries to make each base case as square as possible
+    void spartition_strategy();
 
     // token is a triplet e.g. bm3 (denoting BFS (m / 3) step)
     void process_token(const std::string& step_triplet);
