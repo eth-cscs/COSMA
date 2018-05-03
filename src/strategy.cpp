@@ -132,7 +132,7 @@ std::tuple<int, int, int> Strategy::balanced_divisors(long long m, long long n, 
     P /= divn;
     int divm = P;
 
-    return {divm, divn, divk};
+    return std::make_tuple(divm, divn, divk);
 }
 
 // find all prime factors of a given number n
