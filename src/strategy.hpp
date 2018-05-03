@@ -7,8 +7,9 @@
 #include <regex>
 #include <sstream>
 #include <iostream>
-#include <math.h> 
+#include <math.h>
 #include <limits>
+#include <tuple>
 
 class Strategy {
 public:
@@ -58,6 +59,7 @@ public:
     void initialize(const std::string& cmd_line);
 
     void process_steps(size_t start, const std::string& line);
+
     // greates common divisor of a and b
     int gcd(int a, int b);
 
@@ -69,6 +71,9 @@ public:
 
     // find all divisors of n
     std::vector<int> find_divisors(int n);
+    // finds divm, divn and divk such that m/divm = n/divn = k/divk = cubic_root(mnk/P)
+    // or at least as close as possible to this such that divm*divn*divk = P
+    std::tuple<int, int, int> balanced_divisors(long long m, long long n, long long k, int P);
 
     // prime decomposition of n
     std::vector<int> decompose(int n);
@@ -79,7 +84,7 @@ public:
     // default strategy dividing always the largest dimension in that step
     void default_strategy();
     // strategy that tries to make each base case as square as possible
-    void spartition_strategy();
+    void square_strategy();
 
     // token is a triplet e.g. bm3 (denoting BFS (m / 3) step)
     void process_token(const std::string& step_triplet);
