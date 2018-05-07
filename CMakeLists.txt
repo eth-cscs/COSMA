@@ -108,12 +108,11 @@ set(blas_deps ${CARMA_LAPACK_LIBRARY})
 ################
 # CUDA support #
 ################
-set(CARMA_WITH_CUDA FALSE)
 option(CARMA_WITH_CUDA "use CUDA GPU backend for base case" OFF)
-
 if(CARMA_WITH_CUDA)
     find_package(CUDA REQUIRED)
     add_definitions(-DCARMA_HAVE_GPU)
+    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-arch=sm_60;-std=c++11;-Xcompiler -fPIC)
     set(cuda_deps ${CUDA_LIBRARIES})
 else()
     set(cuda_deps "")

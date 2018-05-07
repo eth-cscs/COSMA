@@ -15,17 +15,25 @@ include_directories("${PRJ_ROOT_DIR}/src")
 #  Build test  #
 ################
 
-add_lib_executable(carma-miniapp
-  carma
-  ${carma_deps})
-
 add_lib_executable(carma-statistics
   carma)
 
-add_lib_executable(temp-miniapp
-  carma
-  ${carma_deps})
+if (CARMA_WITH_CUDA)
+    cuda_add_lib_executable(carma-miniapp
+      carma
+      carmacu
+      ${carma_deps})
 
-target_link_libraries(carma-miniapp semiprof)
-target_link_libraries(carma-statistics semiprof)
-target_link_libraries(temp-miniapp semiprof)
+    cuda_add_lib_executable(temp-miniapp
+      carma
+      carmacu
+      ${carma_deps})
+else()
+    add_lib_executable(carma-miniapp
+      carma
+      ${carma_deps})
+
+    add_lib_executable(temp-miniapp
+      carma
+      ${carma_deps})
+endif()

@@ -1,8 +1,10 @@
-#ifdef CARMA_HAVE_GPU
 #include <iostream>
 #include <cmath>
 #include <cstdio>
 #include "util.hpp"
+#include "cuda_stream.hpp"
+#include "cuda_event.hpp"
+#include "gemm.hpp"
 
 using value_type = double;
 using size_type  = size_t;
@@ -27,9 +29,6 @@ void gpu_dgemm_(double* a, double*b, double*c,
         copy_to_device_async<value_type>(c, c_device, m*n, stream.stream());
     }
     auto H2D_event = stream.enqueue_event();
-
-    value_type alpha{1.};
-    value_type beta{1.};
 
     cublasDgemm(
             get_cublas_handle(),
@@ -56,4 +55,3 @@ void gpu_dgemm_(double* a, double*b, double*c,
     cudaFree(b_device);
     cudaFree(c_device);
 }
-#endif

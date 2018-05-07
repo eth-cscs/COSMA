@@ -1,12 +1,10 @@
 #pragma once
-
 #include <cmath>
 #include <iostream>
 #include <mutex>
-
-#ifdef CARMA_HAVE_GPU
 #include <cublas_v2.h>
 #include <cuda_profiler_api.h>
+#include <cuda.h>
 
 // helper for initializing cublas
 // use only for demos: not threadsafe
@@ -141,6 +139,3 @@ void stop_nvprof() {
     }
     is_running_nvprof = false;
 }
-
-
-#endif

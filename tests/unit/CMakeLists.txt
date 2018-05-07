@@ -15,11 +15,16 @@ include_directories("${PRJ_ROOT_DIR}/src")
 #  Build test  #
 ################
 
-add_lib_executable(carma-test
-  carma
-  ${carma_deps})
-
-target_link_libraries(carma-test semiprof)
+if (CARMA_WITH_CUDA)
+    cuda_add_lib_executable(carma-test
+        carma
+        carmacu
+        ${carma_deps})
+else()
+    add_lib_executable(carma-test
+        carma
+        ${carma_deps})
+endif()
 
 ################
 #  unit gtests #

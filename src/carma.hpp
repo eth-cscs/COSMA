@@ -9,11 +9,7 @@
 #include <semiprof.hpp>
 #include "strategy.hpp"
 #include "timer.hpp"
-
-#ifdef CARMA_HAVE_GPU
-#include "./gpu/util.hpp"
-#include "./gpu/gemm.cu"
-#endif
+#include "gpu/gemm.hpp"
 
 void multiply(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
               const Strategy& strategy, MPI_Comm comm=MPI_COMM_WORLD);
