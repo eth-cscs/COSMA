@@ -140,7 +140,11 @@ void local_multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& mat
     }
 #endif
     PE(multiply_computation);
+#ifdef CARMA_HAVE_GPU
+    gpu_dgemm_(matrixA.current_matrix(), matrixB.current_matrix(), matrixC.current_matrix(), m, n, k, beta);
+#else
     dgemm_(&N, &N, &m, &n, &k, &one, matrixA.current_matrix(), &m, matrixB.current_matrix(), &k, &beta, matrixC.current_matrix(), &m);
+#endif
     PL();
 #ifdef DEBUG
     std::cout << "After multiplication: " << std::endl;
