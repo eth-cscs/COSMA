@@ -67,6 +67,14 @@ Interval Interval::subinterval(int divisor, int box_index) {
     return Interval(start_ + start, start_ + end);
 }
 
+int Interval::largest_subinterval_length(int divisor) {
+    return length() / divisor + (length() % divisor == 0 ? 0 : 1);
+}
+
+int Interval::smallest_subinterval_length(int divisor) {
+    return length() / divisor;
+}
+
 std::ostream& operator<<(std::ostream& os, const Interval& inter) {
     os << '[' << inter.start_ << ", " << inter.end_ << ']';
     return os;

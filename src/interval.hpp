@@ -33,6 +33,12 @@ public:
     // returns the box_index-th interval
     Interval subinterval(int divisor, int box_index);
 
+    // returns the largest subinterval when divided by divisor
+    int largest_subinterval_length(int divisor);
+
+    // returns the smallest subinterval when divided by divisor
+    int smallest_subinterval_length(int divisor);
+
     bool contains(int num);
     bool contains(Interval other);
     bool before(Interval& other);

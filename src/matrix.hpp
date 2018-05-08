@@ -31,6 +31,8 @@ public:
 
     const int initial_size() const;
 
+    const long long max_buffer_size() const;
+
     // (gi, gj) -> (local_id, rank)
     std::pair<int, int> local_coordinates(int gi, int gj);
 
@@ -39,7 +41,6 @@ public:
     // local_id -> (gi, gj) for local elements on the current rank
     // runtime: constant (pre-computed)
     const std::pair<int, int> global_coordinates(int local_index) const;
-
 
     char which_matrix();
 
@@ -89,14 +90,24 @@ public:
     double* matrix_pointer();
     std::vector<double>& matrix();
 
+    // copies data from matrix() to send_buffer
+    void load_data();
+    void unload_data();
+    double* send_buffer();
+    double* receive_buffer();
     double* current_matrix();
     void set_current_matrix(double* mat);
+    void swap_buffers();
 
 protected:
     // A, B or C
     char label_;
     /// local matrix
     std::vector<double> matrix_;
+    /// local send buffer
+    std::vector<double> send_buffer_;
+    /// local receive buffer
+    std::vector<double> receive_buffer_;
     /// temporary local matrix
     double* current_mat;
     /// Number of rows of the global atrix

@@ -30,8 +30,8 @@ Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
 
 Strategy::Strategy(int mm, int nn, int kk, size_t PP, long long mem_limit, bool top) : 
     m(mm), n(nn), k(kk), P(PP), memory_limit(mem_limit), topology(top) {
-    // square_strategy();
-    default_strategy();
+    square_strategy();
+    // default_strategy();
     n_steps = divisors.size();
     check_if_valid();
 }
@@ -65,8 +65,8 @@ void Strategy::initialize(const std::string& cmd_line) {
         process_steps(steps_it, cmd_line);
     }
     else {
-        // square_strategy();
-        default_strategy();
+        square_strategy();
+        // default_strategy();
     }
 
     n_steps = divisors.size();

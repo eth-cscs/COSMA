@@ -7,7 +7,7 @@ Mapper::Mapper(char label, int m, int n, size_t P, const Strategy& strategy, int
     mi_ = Interval(0, m-1);
     ni_ = Interval(0, n-1);
     Pi_ = Interval(0, P-1);
-    compute_sizes(mi_, ni_, Pi_, 0);
+    max_buffer_size_ = compute_sizes(mi_, ni_, Pi_, 0);
     initial_buffer_size_ = std::vector<size_t>(P);
     range_offset_ = std::vector<std::vector<int>>(P, std::vector<int>());
 
@@ -80,14 +80,15 @@ void Mapper::output_layout() {
 }
 
 // finds the initial data layout
-void Mapper::compute_sizes(Interval m, Interval n, Interval P, int step) {
+long long Mapper::compute_sizes(Interval m, Interval n, Interval P, int step) {
     Interval2D submatrix(m, n);
 
     // base case
     if (strategy_.final_step(step)) {
         auto submatrices = rank_to_range_[P.first()];
         rank_to_range_[P.first()].push_back(submatrix);
-        return;
+        // remember the lagest matrix in the base case
+        return 1LL * m.length() * n.length();
     }
 
     int divm = strategy_.divisor_row(label_, step);
@@ -105,6 +106,8 @@ void Mapper::compute_sizes(Interval m, Interval n, Interval P, int step) {
         }
     }
 
+    long long largest_buffer = 0;
+
     for (int i = 0; i < div; ++i) {
         Interval newP = P.subinterval(div, i);
         // intervals of M, N and K that the current processor subinterval is taking care of
@@ -113,7 +116,7 @@ void Mapper::compute_sizes(Interval m, Interval n, Interval P, int step) {
 
         if (strategy_.dfs_step(step)) {
             // invoke recursion
-            compute_sizes(newm, newn, P, step+1);
+            long long largest_buffer_subproblem = compute_sizes(newm, newn, P, step+1);
             // skip these elements in rank_to_range_ to make the next DFS step independent
             // we assume that this many subranges are fixed in this DFS and we don't want
             // that next DFS step pop up some of the subranges stored in this DFS step
@@ -126,17 +129,22 @@ void Mapper::compute_sizes(Interval m, Interval n, Interval P, int step) {
             // because rank_to_range_ fills up only at the end of the recursion
             // and is being modified on the way back
             if (divm * divn == 1) {
+                largest_buffer = largest_buffer_subproblem;
                 break;
+            } else {
+                largest_buffer += largest_buffer_subproblem;
             }
         } else {
             // no-copy case
             // here each recursive step will fill up different part of the sizes vector
             if (divm * divn > 1) {
-                compute_sizes(newm, newn, newP, step+1);
+                long long largest_buffer_subproblem = compute_sizes(newm, newn, newP, step+1);
+                largest_buffer = std::max(largest_buffer, largest_buffer_subproblem);
             }
             // copy case
             else {
-                compute_sizes(m, n, newP, step+1);
+                long long largest_buffer_subproblem = compute_sizes(m, n, newP, step+1);
+                largest_buffer = largest_buffer_subproblem;
 
                 for (int shift = 0; shift < newP.length(); ++shift) {
                     int rank = newP.first() + shift;
@@ -173,6 +181,8 @@ void Mapper::compute_sizes(Interval m, Interval n, Interval P, int step) {
             skip_ranges_[i] = prev_skip_ranges[i - P.first()];
         }
     }
+
+    return largest_buffer;
 }
 
 const size_t Mapper::initial_size(int rank) const {
@@ -181,6 +191,10 @@ const size_t Mapper::initial_size(int rank) const {
 
 const size_t Mapper::initial_size() const {
     return initial_size(rank_);
+}
+
+const long long Mapper::max_buffer_size() const {
+    return max_buffer_size_;
 }
 
 const std::vector<Interval2D>& Mapper::initial_layout(int rank) const {

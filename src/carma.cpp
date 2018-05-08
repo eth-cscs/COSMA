@@ -13,23 +13,6 @@
     Assumption: we assume that at each step only 1 dimension is split
  */
 
-// invoke some dummy computation of blas, just so that it initializes
-// the threading mechanism
-void initialize_blas() {
-    int dim = 256;
-    int n_runs = 3;
-    std::vector<double> a(dim*dim);
-    std::vector<double> c(dim*dim);
-
-    double one = 1.;
-    double zero = 0.;
-    char N = 'N';
-
-    for (int i = 0; i < n_runs; ++i) {
-        dgemm_(&N, &N, &dim, &dim, &dim, &one, a.data(), &dim, a.data(), &dim, &zero, c.data(), &dim);
-    }
-}
-
 // this is just a wrapper to initialize and call the recursive function
 void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
         const Strategy& strategy, MPI_Comm comm) {
@@ -38,19 +21,20 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     Interval ki = Interval(0, strategy.k-1);
     Interval Pi = Interval(0, strategy.P-1);
 
-    PE(blasinit);
-    initialize_blas();
-    PL();
-
     PE(preprocessing_communicators);
     communicator carma_comm(strategy, comm);
     PL();
+
+    matrixA.load_data();
+    matrixB.load_data();
 
     {
         Timer timer(1, "CARMA multiply");
         multiply(matrixA, matrixB, matrixC,
                 mi, ni, ki, Pi, 0, strategy, 0.0, carma_comm);
     }
+
+    matrixC.unload_data();
 
     if (carma_comm.rank() == 0) {
         PP();
@@ -262,10 +246,6 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     Interval newn = n.subinterval(divisor_n, divisor_n>1 ? partition_idx : 0);
     Interval newk = k.subinterval(divisor_k, divisor_k>1 ? partition_idx : 0);
 
-    double* A = matrixA.current_matrix();
-    double* B = matrixB.current_matrix();
-    double* C = matrixC.current_matrix();
-
     PE(multiply_layout);
     /*
      * size_before_expansion:
@@ -324,26 +304,8 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     // which is also the size of the matrix after expansion
     int new_size = total_after_expansion[comm.relative_rank(newP)];
 
-    // new allocated space for the expanded matrix
-    auto expanded_array = std::unique_ptr<double[]>(new double[new_size]);
-    double* expanded_space = expanded_array.get();
-
-    // LM = M if M was not expanded
-    // LM = expanded_space if M was expanded
-    double* LA = strategy.split_A(step) ? A : expanded_space;
-    double* LB = strategy.split_B(step) ? B : expanded_space;
-    double* LC = strategy.split_C(step) ? C : expanded_space;
-
-    // if divm > 1 => original_matrix=B, expanded_matrix=LB
-    // if divn > 1 => original_matrix=A, expanded_matrix=LA
-    // if divk > 1 => original_matrix=C, expanded_matrix=LC
-    double* original_matrix = which_is_expanded(A, B, C, strategy, step);
-    double* expanded_matrix = which_is_expanded(LA, LB, LC, strategy, step);
-
-    // pack the data for the next recursive call
-    matrixA.set_current_matrix(LA);
-    matrixB.set_current_matrix(LB);
-    matrixC.set_current_matrix(LC);
+    double* original_matrix = expanded_mat.current_matrix();
+    double* expanded_matrix = expanded_mat.receive_buffer();
     PL();
 
     PE(multiply_communication_copy);
@@ -367,7 +329,15 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
         new_beta = 0;
     }
 
+    // pack the data for the next recursive call
+    double* A = matrixA.current_matrix();
+    double* B = matrixB.current_matrix();
+    double* C = matrixC.current_matrix();
+    expanded_mat.set_current_matrix(expanded_matrix);
+    expanded_mat.swap_buffers();
+
     multiply(matrixA, matrixB, matrixC, newm, newn, newk, newP, step+1, strategy, new_beta, comm);
+    expanded_mat.swap_buffers();
     // revert the current matrix
     matrixA.set_current_matrix(A);
     matrixB.set_current_matrix(B);
@@ -376,12 +346,13 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     PE(multiply_communication_reduce);
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
-        comm.reduce(P, expanded_matrix, original_matrix, size_before_expansion, total_before_expansion, size_after_expansion, total_after_expansion, beta, step);
+        comm.reduce(P, expanded_matrix, original_matrix, size_before_expansion,
+                total_before_expansion, size_after_expansion, total_after_expansion, beta, step);
     }
     PL();
 
     PE(multiply_layout);
-    // after the memory is freed, the buffer sizes are back to the previous values 
+    // the buffer sizes should be back to the previous values
     // (the values at the beginning of this BFS step)
     expanded_mat.set_sizes(newP, size_before_expansion, newP.first() - P.first());
     PL();

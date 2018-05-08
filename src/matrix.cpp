@@ -19,7 +19,12 @@ CarmaMatrix::CarmaMatrix(char label, const Strategy& strategy, int rank) :
     mapper_ = std::make_unique<Mapper>(label, m_, n_, P_, strategy, rank);
     layout_ = std::make_unique<Layout>(label, m_, n_, P_, rank, mapper_->complete_layout());
     matrix_ = std::vector<double>(mapper_->initial_size(rank));
-    current_mat = matrix_.data();
+
+    send_buffer_ = std::vector<double>(mapper_->max_buffer_size());
+    receive_buffer_ = std::vector<double>(mapper_->max_buffer_size());
+
+    current_mat = send_buffer_.data();
+
     PL();
 }
 
@@ -37,6 +42,10 @@ const int CarmaMatrix::initial_size(int rank) const {
 
 const int CarmaMatrix::initial_size() const {
     return mapper_->initial_size();
+}
+
+const long long CarmaMatrix::max_buffer_size() const {
+    return mapper_->max_buffer_size();
 }
 
 const std::vector<Interval2D>& CarmaMatrix::initial_layout(int rank) const {
@@ -68,14 +77,6 @@ double* CarmaMatrix::matrix_pointer() {
 
 std::vector<double>& CarmaMatrix::matrix() {
     return matrix_;
-}
-
-double* CarmaMatrix::current_matrix() {
-    return current_mat;
-}
-
-void CarmaMatrix::set_current_matrix(double* mat) {
-    current_mat = mat;
 }
 
 char CarmaMatrix::which_matrix() {
@@ -165,4 +166,33 @@ std::ostream& operator<<(std::ostream& os, const CarmaMatrix& mat) {
         os << row << " " << col << " " << value << std::endl; 
     }
     return os;
+}
+
+void CarmaMatrix::load_data() {
+    std::copy(matrix_.begin(), matrix_.end(), send_buffer_.begin());
+}
+
+void CarmaMatrix::unload_data() {
+    std::copy(send_buffer_.begin(), send_buffer_.begin() + initial_size(), matrix_.begin());
+}
+
+double* CarmaMatrix::send_buffer() {
+    return send_buffer_.data();
+}
+
+double* CarmaMatrix::receive_buffer() {
+    return receive_buffer_.data();
+}
+
+double* CarmaMatrix::current_matrix() {
+    return current_mat;
+}
+
+void CarmaMatrix::set_current_matrix(double* mat) {
+    current_mat = mat;
+}
+
+void CarmaMatrix::swap_buffers() {
+    send_buffer_.swap(receive_buffer_);
+    //current_mat = send_buffer_.data();
 }
