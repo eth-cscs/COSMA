@@ -124,6 +124,7 @@ protected:
 
     long long max_send_buffer_size_;
     long long max_recv_buffer_size_;
+    bool swapped_buffers_;
 
     Interval mi_;
     Interval ni_;

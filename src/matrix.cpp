@@ -32,6 +32,7 @@ CarmaMatrix::CarmaMatrix(char label, const Strategy& strategy, int rank) :
     }
 
     current_mat = send_buffer_.data();
+    swapped_buffers_ = false;
 
     PL();
 }
@@ -346,11 +347,11 @@ void CarmaMatrix::unload_data() {
 }
 
 double* CarmaMatrix::send_buffer() {
-    return send_buffer_.data();
+    return !swapped_buffers_ ? send_buffer_.data() : receive_buffer_.data();
 }
 
 double* CarmaMatrix::receive_buffer() {
-    return receive_buffer_.data();
+    return !swapped_buffers_ ? receive_buffer_.data() : send_buffer_.data();
 }
 
 double* CarmaMatrix::current_matrix() {
@@ -362,6 +363,5 @@ void CarmaMatrix::set_current_matrix(double* mat) {
 }
 
 void CarmaMatrix::swap_buffers() {
-    send_buffer_.swap(receive_buffer_);
-    //current_mat = send_buffer_.data();
+    swapped_buffers_ = !swapped_buffers_;
 }
