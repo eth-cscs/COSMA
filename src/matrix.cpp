@@ -22,9 +22,6 @@ CarmaMatrix::CarmaMatrix(char label, const Strategy& strategy, int rank) :
 
     max_buffer_size_ = (long long) initial_size();
     compute_max_buffer_size(strategy);
-    //max_buffer_size_ += 8;
-
-    std::cout << "Rank " << rank_ << " uses buffers size = " << max_buffer_size_ << std::endl;
 
     send_buffer_ = std::vector<double>(max_buffer_size_);
     receive_buffer_ = std::vector<double>(max_buffer_size_);
