@@ -330,18 +330,14 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     }
 
     // pack the data for the next recursive call
-    double* A = matrixA.current_matrix();
-    double* B = matrixB.current_matrix();
-    double* C = matrixC.current_matrix();
     expanded_mat.set_current_matrix(expanded_matrix);
     expanded_mat.swap_buffers();
 
     multiply(matrixA, matrixB, matrixC, newm, newn, newk, newP, step+1, strategy, new_beta, comm);
-    expanded_mat.swap_buffers();
+    
     // revert the current matrix
-    matrixA.set_current_matrix(A);
-    matrixB.set_current_matrix(B);
-    matrixC.set_current_matrix(C);
+    expanded_mat.swap_buffers();
+    expanded_mat.set_current_matrix(original_matrix);
 
     PE(multiply_communication_reduce);
     // if division by k do additional reduction of C
