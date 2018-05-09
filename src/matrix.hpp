@@ -33,7 +33,8 @@ public:
 
     void compute_max_buffer_size(const Strategy& strategy);
 
-    const long long max_buffer_size() const;
+    const long long max_send_buffer_size() const;
+    const long long max_recv_buffer_size() const;
 
     // (gi, gj) -> (local_id, rank)
     std::pair<int, int> local_coordinates(int gi, int gj);
@@ -121,7 +122,8 @@ protected:
 
     int rank_;
 
-    long long max_buffer_size_;
+    long long max_send_buffer_size_;
+    long long max_recv_buffer_size_;
 
     Interval mi_;
     Interval ni_;

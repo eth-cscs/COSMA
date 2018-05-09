@@ -20,11 +20,16 @@ CarmaMatrix::CarmaMatrix(char label, const Strategy& strategy, int rank) :
     layout_ = std::make_unique<Layout>(label, m_, n_, P_, rank, mapper_->complete_layout());
     matrix_ = std::vector<double>(mapper_->initial_size(rank));
 
-    max_buffer_size_ = (long long) initial_size();
+    max_send_buffer_size_ = (long long) initial_size();
+    max_recv_buffer_size_ = (long long) initial_size();
     compute_max_buffer_size(strategy);
 
-    send_buffer_ = std::vector<double>(max_buffer_size_);
-    receive_buffer_ = std::vector<double>(max_buffer_size_);
+    send_buffer_ = std::vector<double>(max_send_buffer_size_);
+    receive_buffer_ = std::vector<double>(max_recv_buffer_size_);
+
+    if (max_send_buffer_size_ < max_recv_buffer_size_) {
+        std::cout << "less by a factor of " << 1.0 * max_recv_buffer_size_ / max_send_buffer_size_ << std::endl;
+    }
 
     current_mat = send_buffer_.data();
 
@@ -86,14 +91,22 @@ void CarmaMatrix::compute_max_buffer_size(Interval& m, Interval& n, Interval& k,
 
     // recursively invoke BFS or DFS:
     if (strategy.final_step(step)) {
+        long long max_size = 0;
         if (label_ == 'A') {
-            max_buffer_size_ = std::max(max_buffer_size_, 1LL * m.length() * k.length());
+            max_size = 1LL * m.length() * k.length();
         }
         else if (label_ == 'B') {
-            max_buffer_size_ = std::max(max_buffer_size_, 1LL * k.length() * n.length());
+            max_size = 1LL * k.length() * n.length();
         }
         else {
-            max_buffer_size_ = std::max(max_buffer_size_, 1LL * m.length() * n.length());
+            max_size = 1LL * m.length() * n.length();
+        }
+
+        if (max_size > max_recv_buffer_size_) {
+            max_send_buffer_size_ = max_recv_buffer_size_;
+            max_recv_buffer_size_ = max_size;
+        } else if (max_size > max_send_buffer_size_) {
+            max_send_buffer_size_ = max_size;
         }
     } else if (strategy.dfs_step(step)) {
         int div = strategy.divisor(step);
@@ -174,8 +187,13 @@ void CarmaMatrix::compute_max_buffer_size(Interval& m, Interval& n, Interval& k,
             // which is also the size of the matrix after expansion
             long long old_size = total_before_expansion[rank - P.first()];
             long long new_size = total_after_expansion[rank - newP.first()];
-            max_buffer_size_ = std::max(max_buffer_size_, old_size);
-            max_buffer_size_ = std::max(max_buffer_size_, new_size);
+            long long max_size = std::max(old_size, new_size);
+            if (max_size > max_recv_buffer_size_) {
+                max_send_buffer_size_ = max_recv_buffer_size_;
+                max_recv_buffer_size_ = max_size;
+            } else if (max_size > max_send_buffer_size_) {
+                max_send_buffer_size_ = max_size;
+            }
         }
 
         // invoke the recursion
@@ -192,8 +210,11 @@ void CarmaMatrix::compute_max_buffer_size(Interval& m, Interval& n, Interval& k,
     set_dfs_buckets(P, buckets);
 }
 
-const long long CarmaMatrix::max_buffer_size() const {
-    return max_buffer_size_;
+const long long CarmaMatrix::max_send_buffer_size() const {
+    return max_send_buffer_size_;
+}
+const long long CarmaMatrix::max_recv_buffer_size() const {
+    return max_recv_buffer_size_;
 }
 
 const std::vector<Interval2D>& CarmaMatrix::initial_layout(int rank) const {
