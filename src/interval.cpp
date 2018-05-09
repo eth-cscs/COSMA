@@ -1,7 +1,7 @@
 #include "interval.hpp"
 
 // interval of consecutive numbers
-Interval::Interval() {}
+Interval::Interval() = default;
 
 Interval::Interval(int start, int end) : start_(start), end_(end) {}
 
@@ -96,6 +96,7 @@ bool Interval::operator==(const Interval &other) const {
     return start_ == other.start_ && end_ == other.end_;
 }
 
+Interval2D::Interval2D() = default;
 Interval2D::Interval2D(Interval row, Interval col) : rows(row), cols(col) {}
 
 Interval2D::Interval2D(int row_start, int row_end, int col_start, int col_end) {

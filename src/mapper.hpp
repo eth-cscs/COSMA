@@ -23,8 +23,6 @@ public:
 
     const size_t initial_size() const;
 
-    const long long max_buffer_size() const;
-
     // rank -> list of ranges it owns initially
     const std::vector<Interval2D>& initial_layout(int rank) const;
     const std::vector<Interval2D>& initial_layout() const;
@@ -72,8 +70,6 @@ protected:
     Interval ni_;
     Interval Pi_;
 
-    long long max_buffer_size_;
-
 private:
     // used by DFS.
     // rank -> number of submatrices fixed by the previous DFS step
@@ -86,10 +82,9 @@ private:
 
     std::vector<std::pair<int, int>> global_coord;
 
-    long long compute_sizes(Interval m, Interval n, Interval P, int step);
+    void compute_sizes(Interval m, Interval n, Interval P, int step);
     void output_layout();
     void compute_range_to_rank();
 
     void compute_global_coord();
-
 };

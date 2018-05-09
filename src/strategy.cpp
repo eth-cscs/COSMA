@@ -30,8 +30,8 @@ Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
 
 Strategy::Strategy(int mm, int nn, int kk, size_t PP, long long mem_limit, bool top) : 
     m(mm), n(nn), k(kk), P(PP), memory_limit(mem_limit), topology(top) {
-    square_strategy();
-    // default_strategy();
+    // square_strategy();
+    default_strategy();
     n_steps = divisors.size();
     check_if_valid();
 }
@@ -65,8 +65,8 @@ void Strategy::initialize(const std::string& cmd_line) {
         process_steps(steps_it, cmd_line);
     }
     else {
-        square_strategy();
-        // default_strategy();
+        // square_strategy();
+        default_strategy();
     }
 
     n_steps = divisors.size();
@@ -347,13 +347,6 @@ void Strategy::square_strategy() {
         for (int i = 0; i < total_divisors; ++i) {
             int accumulated_div = 1;
             int next_div = 1;
-
-            if (mi < divm_factors.size() && m >= std::max(n, k))
-                next_div = divm_factors[mi];
-            else if (ni < divn_factors.size() && n >= std::max(m, k))
-                next_div = divn_factors[ni];
-            else
-                next_div = divk_factors[ki];
 
             bool did_bfs = false;
 

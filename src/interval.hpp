@@ -53,6 +53,7 @@ public:
     Interval rows;
     Interval cols;
 
+    Interval2D();
     Interval2D(Interval row, Interval col);
     Interval2D(int row_start, int row_end, int col_start, int col_end);
 

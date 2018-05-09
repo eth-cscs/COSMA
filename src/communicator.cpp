@@ -66,7 +66,8 @@ void communicator::copy(Interval& P, double* in, double* out,
     }
 
     if (same_size) {
-        MPI_Allgather(in, local_size, MPI_DOUBLE, receive_pointer, local_size, 
+        std::cout << "local_size = " << local_size << " and total_size " << total_after << std::endl;
+        MPI_Allgather(in, local_size, MPI_DOUBLE, receive_pointer, local_size,
                 MPI_DOUBLE, subcomm);
     } else {
         MPI_Allgatherv(in, local_size, MPI_DOUBLE, receive_pointer,
@@ -82,6 +83,7 @@ void communicator::copy(Interval& P, double* in, double* out,
                 int target = rank_outside_ring(P, div, off, rank);
                 int dsp = dspls[rank] + bucket_offset[rank];
                 int b_size = size_before[target][bucket];
+                std::cout << "dsp = " << dsp << " and dsp + b_size " << dsp + b_size << std::endl;
                 std::copy(receiving_buffer.get() + dsp, receiving_buffer.get() + dsp + b_size, out + index);
                 index += b_size;
                 bucket_offset[rank] += b_size;

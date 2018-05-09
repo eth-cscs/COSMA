@@ -31,6 +31,8 @@ public:
 
     const int initial_size() const;
 
+    void compute_max_buffer_size(const Strategy& strategy);
+
     const long long max_buffer_size() const;
 
     // (gi, gj) -> (local_id, rank)
@@ -119,10 +121,15 @@ protected:
 
     int rank_;
 
+    long long max_buffer_size_;
+
     Interval mi_;
     Interval ni_;
     Interval Pi_;
 
     std::unique_ptr<Mapper> mapper_;
     std::unique_ptr<Layout> layout_;
+
+    void compute_max_buffer_size(Interval& m, Interval& n, Interval& k, Interval& P, 
+            int step, const Strategy& strategy, int rank);
 };

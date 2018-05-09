@@ -20,8 +20,14 @@ CarmaMatrix::CarmaMatrix(char label, const Strategy& strategy, int rank) :
     layout_ = std::make_unique<Layout>(label, m_, n_, P_, rank, mapper_->complete_layout());
     matrix_ = std::vector<double>(mapper_->initial_size(rank));
 
-    send_buffer_ = std::vector<double>(mapper_->max_buffer_size());
-    receive_buffer_ = std::vector<double>(mapper_->max_buffer_size());
+    max_buffer_size_ = (long long) initial_size();
+    compute_max_buffer_size(strategy);
+    //max_buffer_size_ += 8;
+
+    std::cout << "Rank " << rank_ << " uses buffers size = " << max_buffer_size_ << std::endl;
+
+    send_buffer_ = std::vector<double>(max_buffer_size_);
+    receive_buffer_ = std::vector<double>(max_buffer_size_);
 
     current_mat = send_buffer_.data();
 
@@ -44,8 +50,153 @@ const int CarmaMatrix::initial_size() const {
     return mapper_->initial_size();
 }
 
+void CarmaMatrix::compute_max_buffer_size(const Strategy& strategy) {
+    Interval m(0, strategy.m - 1);
+    Interval n(0, strategy.n - 1);
+    Interval k(0, strategy.k - 1);
+    Interval P(0, strategy.P - 1);
+
+    compute_max_buffer_size(m, n, k, P, 0, strategy, rank_);
+}
+
+void CarmaMatrix::compute_max_buffer_size(Interval& m, Interval& n, Interval& k, Interval& P, 
+    int step, const Strategy& strategy, int rank) {
+    // current submatrices that are being computed
+    Interval2D a_range(m, k);
+    Interval2D b_range(k, n);
+    Interval2D c_range(m, n);
+
+    // For each of P processors remember which DFS bucket we are currently on
+    std::vector<int> buckets = dfs_buckets(P);
+    // Skip all buckets that are "before" the current submatrices. 
+    // the relation submatrix1 <before> submatrix2 is defined in Interval2D.
+    // Intuitively, this will skip all the buckets that are "above" or "on the left" 
+    // of the current submatrices. We say "before" because whenever we split in DFS
+    // sequentially, we always first start with the "above" submatrix 
+    // (if the splitting is horizontal) or with the left one (if the splitting is vertical).
+    // which explains the name of the relation "before".
+    if (label_ == 'A') {
+        update_buckets(P, a_range);
+    }
+    else if (label_ == 'B') {
+        update_buckets(P, b_range);
+    }
+    else {
+        update_buckets(P, c_range);
+    }
+
+    //int offset = shift(buckets[rank - P.first()]);
+
+    // recursively invoke BFS or DFS:
+    if (strategy.final_step(step)) {
+        if (label_ == 'A') {
+            max_buffer_size_ = std::max(max_buffer_size_, 1LL * m.length() * k.length());
+        }
+        else if (label_ == 'B') {
+            max_buffer_size_ = std::max(max_buffer_size_, 1LL * k.length() * n.length());
+        }
+        else {
+            max_buffer_size_ = std::max(max_buffer_size_, 1LL * m.length() * n.length());
+        }
+    } else if (strategy.dfs_step(step)) {
+        int div = strategy.divisor(step);
+        int divm = strategy.divisor_m(step);
+        int divn = strategy.divisor_n(step);
+        int divk = strategy.divisor_k(step);
+
+        for (int i = 0; i < div; ++i) {
+            Interval newm = m.subinterval(divm, divm>1 ? i : 0);
+            Interval newn = n.subinterval(divn, divn>1 ? i : 0);
+            Interval newk = k.subinterval(divk, divk>1 ? i : 0);
+            compute_max_buffer_size(newm, newn, newk, P, step+1, strategy, rank);
+
+            // if dividing over absent dimension, then all the branches are the same
+            // so skip the rest
+            if ((label_ == 'A' && !strategy.split_A(step))
+                    || (label_ == 'B' && !strategy.split_B(step))
+                    || (label_ == 'C' && !strategy.split_C(step))) {
+                break;
+            }
+        }
+    } else {
+        int div = strategy.divisor(step);
+        int divm = strategy.divisor_m(step);
+        int divn = strategy.divisor_n(step);
+        int divk = strategy.divisor_k(step);
+        // processor subinterval which the current rank belongs to
+        int partition_idx = P.partition_index(div, rank);
+        Interval newP = P.subinterval(div, partition_idx);
+        // intervals of M, N and K that the current rank is in charge of,
+        // together with other ranks from its group.
+        // (see the definition of group and offset below)
+        Interval newm = m.subinterval(divm, divm>1 ? partition_idx : 0);
+        Interval newn = n.subinterval(divn, divn>1 ? partition_idx : 0);
+        Interval newk = k.subinterval(divk, divk>1 ? partition_idx : 0); 
+        bool expanded = false;
+
+        int offset = rank - newP.first();
+
+        std::vector<std::vector<int>> size_before_expansion(P.length());
+        std::vector<int> total_before_expansion(P.length());
+        std::vector<std::vector<int>> size_after_expansion(newP.length());
+        std::vector<int> total_after_expansion(newP.length());
+
+        if ((label_ == 'A' && !strategy.split_A(step))
+                || (label_ == 'B' && !strategy.split_B(step))
+                || (label_ == 'C' && !strategy.split_C(step))) {
+
+            expanded = true;
+
+            /*
+             * this gives us the 2D interval of the matrix that will be expanded:
+                 if divm > 1 => matrix B expanded => Interval2D(k, n)
+                 if divn > 1 => matrix A expanded => Interval2D(m, k)
+                 if divk > 1 => matrix C expanded => Interval2D(m, n)
+            */
+            Interval2D range;
+
+            if (divm > 1)
+                range = Interval2D(k, n);
+            else if (divn > 1)
+                range = Interval2D(m, k);
+            else
+                range = Interval2D(m, n);
+
+            buffers_before_expansion(P, range,
+                size_before_expansion, total_before_expansion);
+
+            buffers_after_expansion(P, newP,
+                size_before_expansion, total_before_expansion,
+                size_after_expansion, total_after_expansion);
+
+            // increase the buffer sizes before the recursive call
+            set_sizes(newP, size_after_expansion);
+
+            // this is the sum of sizes of all the buckets after expansion
+            // that the current rank will own.
+            // which is also the size of the matrix after expansion
+            long long old_size = total_before_expansion[rank - P.first()];
+            long long new_size = total_after_expansion[rank - newP.first()];
+            max_buffer_size_ = std::max(max_buffer_size_, old_size);
+            max_buffer_size_ = std::max(max_buffer_size_, new_size);
+        }
+
+        // invoke the recursion
+        compute_max_buffer_size(newm, newn, newk, newP, step+1, strategy, rank);
+
+        if (expanded) {
+            // the buffer sizes are back to the previous values
+            // (the values at the beginning of this BFS step)
+            set_sizes(newP, size_before_expansion, newP.first() - P.first());
+        }
+    }
+
+    //unshift(offset);
+    set_dfs_buckets(P, buckets);
+}
+
 const long long CarmaMatrix::max_buffer_size() const {
-    return mapper_->max_buffer_size();
+    return max_buffer_size_;
 }
 
 const std::vector<Interval2D>& CarmaMatrix::initial_layout(int rank) const {

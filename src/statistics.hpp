@@ -198,7 +198,6 @@ void BFS(Interval& m, Interval& n, Interval& k, Interval& P, int step,
     Interval newk = k.subinterval(divk, divk>1 ? partition_idx : 0);
 
     int offset = rank - newP.first();
-    int gp = (rank - P.first()) / newP.length();
 
     /*
      * size_before_expansion:
