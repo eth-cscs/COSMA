@@ -42,6 +42,9 @@ add_test(layout-and-mapper-tests unit_test.exe)
 
 if (MPI_FOUND)
 # test the correctness of carma
+    add_test(NAME carma-test-buffers-test COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
+        ${MPIEXEC_NUMPROC_FLAG} 4 carma-test -m 4 -n 4 -k 4 -P 4 -s dm2,bn2,bn2)
+
     add_test(NAME carma-test-bbdd-s COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
         ${MPIEXEC_NUMPROC_FLAG} 4 carma-test -m 30 -n 35 -k 40 -P 4 -s bm2,bn2,dk2,dm2)
     add_test(NAME carma-test-bbdd COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
