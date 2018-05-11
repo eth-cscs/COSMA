@@ -23,6 +23,7 @@ public:
 
     int m();
     int n();
+    char label();
 
     // **********************************************
     // METHODS FROM mapper.hpp
@@ -93,14 +94,19 @@ public:
     double* matrix_pointer();
     std::vector<double>& matrix();
 
+    // initializes send buffer to be of size send_buffer_size 
+    // and also sets current matrix to point to the send buffer
+    void initialize_send_buffer(long long send_buffer_size);
     // copies data from matrix() to send_buffer
     void load_data();
+    // copies data from send_buffer to matrix()
     void unload_data();
-    double* send_buffer();
-    double* receive_buffer();
+    // pointer to send buffer
+    double* send_buffer_ptr();
+    std::vector<double>& send_buffer();
+    // pointer to current matrix (send buffer)
     double* current_matrix();
     void set_current_matrix(double* mat);
-    void swap_buffers();
 
 protected:
     // A, B or C
@@ -109,8 +115,6 @@ protected:
     std::vector<double> matrix_;
     /// local send buffer
     std::vector<double> send_buffer_;
-    /// local receive buffer
-    std::vector<double> receive_buffer_;
     /// temporary local matrix
     double* current_mat;
     /// Number of rows of the global atrix
@@ -124,7 +128,6 @@ protected:
 
     long long max_send_buffer_size_;
     long long max_recv_buffer_size_;
-    bool swapped_buffers_;
 
     Interval mi_;
     Interval ni_;

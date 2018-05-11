@@ -26,7 +26,8 @@ void initialize_blas() {
     char N = 'N';
 
     for (int i = 0; i < n_runs; ++i) {
-        dgemm_(&N, &N, &dim, &dim, &dim, &one, a.data(), &dim, a.data(), &dim, &zero, c.data(), &dim);
+        dgemm_(&N, &N, &dim, &dim, &dim, &one,
+                a.data(), &dim, a.data(), &dim, &zero, c.data(), &dim);
     }
 }
 
@@ -44,12 +45,35 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
 
     initialize_blas();
 
+    long long receiving_buffer_size = matrixA.max_recv_buffer_size();
+    receiving_buffer_size = std::max(receiving_buffer_size, matrixB.max_recv_buffer_size());
+    receiving_buffer_size = std::max(receiving_buffer_size, matrixC.max_recv_buffer_size());
+
+    long long send_buffer_size = matrixA.max_send_buffer_size();
+    send_buffer_size = std::max(send_buffer_size, matrixB.max_send_buffer_size());
+    send_buffer_size = std::max(send_buffer_size, matrixC.max_send_buffer_size());
+
+    std::vector<double> receiving_buffer(receiving_buffer_size);
+
+    /* 
+    matrixA.initialize_send_buffer(send_buffer_size);
+    matrixB.initialize_send_buffer(send_buffer_size);
+    matrixC.initialize_send_buffer(send_buffer_size);
+    */
+
+    matrixA.initialize_send_buffer(receiving_buffer_size);
+    matrixB.initialize_send_buffer(receiving_buffer_size);
+    matrixC.initialize_send_buffer(receiving_buffer_size);
+
     matrixA.load_data();
     matrixB.load_data();
-
+    for (auto& i : matrixA.send_buffer()) {
+        std::cout << i << " , ";
+    }
+    std::cout << std::endl;
     {
         Timer timer(1, "CARMA multiply");
-        multiply(matrixA, matrixB, matrixC,
+        multiply(matrixA, matrixB, matrixC, receiving_buffer,
                 mi, ni, ki, Pi, 0, strategy, 0.0, carma_comm);
     }
 
@@ -63,9 +87,8 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
 
 // dispatch to local call, BFS, or DFS as appropriate
 void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
-        Interval& m, Interval& n, Interval& k, Interval& P,
-        size_t step, const Strategy& strategy, double beta,
-        communicator& comm) {
+        std::vector<double>& receiving_buffer, Interval& m, Interval& n, Interval& k, 
+        Interval& P, size_t step, const Strategy& strategy, double beta, communicator& comm) {
     PE(multiply_layout);
     // current submatrices that are being computed
     Interval2D a_range(m, k);
@@ -99,9 +122,11 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
         local_multiply(matrixA, matrixB, matrixC, m.length(), n.length(), k.length(), beta);
     else {
         if (strategy.bfs_step(step))
-            BFS(matrixA, matrixB, matrixC, m, n, k, P, step, strategy, beta, comm);
+            BFS(matrixA, matrixB, matrixC, receiving_buffer,
+                    m, n, k, P, step, strategy, beta, comm);
         else
-            DFS(matrixA, matrixB, matrixC, m, n, k, P, step, strategy, beta, comm);
+            DFS(matrixA, matrixB, matrixC, receiving_buffer,
+                    m, n, k, P, step, strategy, beta, comm);
     }
     PE(multiply_layout);
 
@@ -163,15 +188,15 @@ void local_multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& mat
    sequentially by all P processors.
    */
 void DFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
-        Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
-        const Strategy& strategy, double beta, communicator& comm) {
+        std::vector<double>& receiving_buffer, Interval& m, Interval& n, Interval& k, Interval& P,
+        size_t step, const Strategy& strategy, double beta, communicator& comm) {
     // split the dimension but not the processors, all P processors are taking part
     // in each recursive call.
     if (strategy.split_m(step)) {
         for (int M = 0; M < strategy.divisor(step); ++M) {
             Interval newm = m.subinterval(strategy.divisor(step), M);
-            multiply(matrixA, matrixB, matrixC, newm, n, k, P, step+1, strategy, beta,
-                    comm);
+            multiply(matrixA, matrixB, matrixC, receiving_buffer, newm, n, k, P,
+                    step+1, strategy, beta, comm);
         }
         return;
     }
@@ -179,8 +204,8 @@ void DFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     if (strategy.split_n(step)) {
         for (int N = 0; N < strategy.divisor(step); ++N) {
             Interval newn = n.subinterval(strategy.divisor(step), N);
-            multiply(matrixA, matrixB, matrixC, m, newn, k, P, step+1, strategy, beta,
-                    comm);
+            multiply(matrixA, matrixB, matrixC, receiving_buffer, m, newn, k, P,
+                    step+1, strategy, beta, comm);
         }
         return;
     }
@@ -192,7 +217,8 @@ void DFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     if (strategy.split_k(step)) {
         for (int K = 0; K < strategy.divisor(step); ++K) {
             Interval newk = k.subinterval(strategy.divisor(step), K);
-            multiply(matrixA, matrixB, matrixC, m, n, newk, P, step+1, strategy, (K==0)&&(beta==0) ? 0 : 1, comm);
+            multiply(matrixA, matrixB, matrixC, receiving_buffer, m, n, newk, P,
+                    step+1, strategy, (K==0)&&(beta==0) ? 0 : 1, comm);
         }
         return;
     } 
@@ -249,8 +275,8 @@ T which_is_expanded(T&& A, T&& B, T&& C, const Strategy& strategy, size_t step) 
  should own what was previously owned by newP ranks - thus local matrices are shrinked.
  */
 void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
-        Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
-        const Strategy& strategy, double beta, communicator& comm) {
+        std::vector<double>& receiving_buffer, Interval& m, Interval& n, Interval& k, Interval& P,
+        size_t step, const Strategy& strategy, double beta, communicator& comm) {
     int divisor = strategy.divisor(step);
     int divisor_m = strategy.divisor_m(step);
     int divisor_n = strategy.divisor_n(step);
@@ -324,8 +350,14 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     int new_size = total_after_expansion[comm.relative_rank(newP)];
 
     double* original_matrix = expanded_mat.current_matrix();
-    double* expanded_matrix = expanded_mat.receive_buffer();
+    double* expanded_matrix = receiving_buffer.data();
     PL();
+
+    std::cout << "Receive buffer before copy of " << expanded_mat.label() << ": \n";
+    for (auto& i : receiving_buffer) {
+        std::cout << i << " , ";
+    }
+    std::cout << std::endl;
 
     PE(multiply_communication_copy);
     // if divided along m or n then copy original matrix inside communication ring
@@ -338,6 +370,11 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     }
     PL();
 
+    std::cout << "Receive buffer after copy: " << expanded_mat.label() << "\n";
+    for (auto& i : receiving_buffer) {
+        std::cout << i << " , ";
+    }
+    std::cout << std::endl;
     // if division by k, and we are in the branch where beta > 0, then
     // reset beta to 0, but keep in mind that on the way back from the recursion
     // we will have to sum the result with the local data in C
@@ -350,13 +387,21 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
 
     // pack the data for the next recursive call
     expanded_mat.set_current_matrix(expanded_matrix);
-    expanded_mat.swap_buffers();
+    receiving_buffer.swap(expanded_mat.send_buffer());
 
-    multiply(matrixA, matrixB, matrixC, newm, newn, newk, newP, step+1, strategy, new_beta, comm);
+    std::cout << "Receive buffer after swap: " << expanded_mat.label() << "\n";
+    for (auto& i : receiving_buffer) {
+        std::cout << i << " , ";
+    }
+    std::cout << std::endl;
+
+    multiply(matrixA, matrixB, matrixC, receiving_buffer,
+            newm, newn, newk, newP, step+1, strategy, new_beta, comm);
 
     // revert the current matrix
-    expanded_mat.swap_buffers();
+    receiving_buffer.swap(expanded_mat.send_buffer());
     expanded_mat.set_current_matrix(original_matrix);
+    //receiving_buffer.swap(expanded_mat.send_buffer());
 
     PE(multiply_communication_reduce);
     // if division by k do additional reduction of C

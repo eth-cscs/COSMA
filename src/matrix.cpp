@@ -24,16 +24,6 @@ CarmaMatrix::CarmaMatrix(char label, const Strategy& strategy, int rank) :
     max_recv_buffer_size_ = (long long) initial_size();
     compute_max_buffer_size(strategy);
 
-    send_buffer_ = std::vector<double>(max_send_buffer_size_);
-    receive_buffer_ = std::vector<double>(max_recv_buffer_size_);
-
-    if (max_send_buffer_size_ < max_recv_buffer_size_) {
-        std::cout << "less by a factor of " << 1.0 * max_recv_buffer_size_ / max_send_buffer_size_ << std::endl;
-    }
-
-    current_mat = send_buffer_.data();
-    swapped_buffers_ = false;
-
     PL();
 }
 
@@ -43,6 +33,10 @@ int CarmaMatrix::m() {
 
 int CarmaMatrix::n() {
     return n_;
+}
+
+char CarmaMatrix::label() {
+    return label_;
 }
 
 const int CarmaMatrix::initial_size(int rank) const {
@@ -338,6 +332,11 @@ std::ostream& operator<<(std::ostream& os, const CarmaMatrix& mat) {
     return os;
 }
 
+void CarmaMatrix::initialize_send_buffer(long long send_buffer_size) {
+    send_buffer_ = std::vector<double>(send_buffer_size);
+    current_mat = send_buffer_.data();
+}
+
 void CarmaMatrix::load_data() {
     std::copy(matrix_.begin(), matrix_.end(), send_buffer_.begin());
 }
@@ -346,12 +345,12 @@ void CarmaMatrix::unload_data() {
     std::copy(send_buffer_.begin(), send_buffer_.begin() + initial_size(), matrix_.begin());
 }
 
-double* CarmaMatrix::send_buffer() {
-    return !swapped_buffers_ ? send_buffer_.data() : receive_buffer_.data();
+double* CarmaMatrix::send_buffer_ptr() {
+    return send_buffer_.data();
 }
 
-double* CarmaMatrix::receive_buffer() {
-    return !swapped_buffers_ ? receive_buffer_.data() : send_buffer_.data();
+std::vector<double>& CarmaMatrix::send_buffer() {
+    return send_buffer_;
 }
 
 double* CarmaMatrix::current_matrix() {
@@ -362,6 +361,3 @@ void CarmaMatrix::set_current_matrix(double* mat) {
     current_mat = mat;
 }
 
-void CarmaMatrix::swap_buffers() {
-    swapped_buffers_ = !swapped_buffers_;
-}
