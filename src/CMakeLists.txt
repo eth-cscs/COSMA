@@ -14,6 +14,7 @@ set(sources
     strategy.cpp
     interval.cpp
     timer.hpp
+    scheduleGenerator.cpp
 )
 
 set (cuda_sources 
