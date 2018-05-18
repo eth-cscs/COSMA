@@ -37,7 +37,8 @@ Schedule GenerateSchedule(ProblemParameters params) {
 	}
 	else {
 		//TODO : out of range problems
-        int cubicTileSize = std::cbrtl((long double)((params.k / params.P)  * params.m * params.n ));
+        int cubicTileSize = (int) std::cbrt(1LL * params.k * params.m * params.n / params.P);
+        std::assert(cubicTileSize > 0);
 
 		sched.numTilesM = (params.m - 1) / cubicTileSize + 1;
 		sched.numTilesN = (params.n - 1) / cubicTileSize + 1;
@@ -48,6 +49,10 @@ Schedule GenerateSchedule(ProblemParameters params) {
 			int newTileSizeN = sched.numTilesN == 1 ? MAX_SIZE : (params.n - 1) / (sched.numTilesN - 1) + 1;
 			int newTileSizeK = sched.numTilesK == 1 ? MAX_SIZE : (params.k - 1) / (sched.numTilesK - 1) + 1;
 			cubicTileSize = std::min(std::min(newTileSizeM, newTileSizeN), newTileSizeK);
+            std::assert(newTileSizeM > 0);
+            std::assert(newTileSizeN > 0);
+            std::assert(newTileSizeK > 0);
+            std::assert(cubicTileSize > 0);
 			sched.numTilesM = (params.m - 1) / cubicTileSize + 1;
 			sched.numTilesN = (params.n - 1) / cubicTileSize + 1;
 			sched.numTilesK = (params.k - 1) / cubicTileSize + 1;
