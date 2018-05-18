@@ -1,6 +1,15 @@
 #include "../gtest.h"
 #include <mapper.hpp>
 
+TEST(strategy, spartition) {
+    int m = 64000;
+    int n = 64000;
+    int k = 64000;
+    int P = 2304;
+
+    Strategy strategy(m, n, k, P);
+}
+
 TEST(mapper, bdb) {
     auto m = 8u;
     auto n = 4u;

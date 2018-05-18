@@ -20,7 +20,7 @@ std::vector<int> Factorize(int input) {
 Schedule GenerateSchedule(ProblemParameters params) {
 	Schedule sched;
 	if (params.schedule == schedType::S2D) {
-        int squaretileSize = std::sqrt(params.m*params.n / params.P);
+        int squaretileSize = (int) std::sqrt(1LL * params.m*params.n / params.P);
 		sched.numTilesM = (params.m - 1) / squaretileSize + 1;
 		sched.numTilesN = (params.n - 1) / squaretileSize + 1;
 		while (sched.numTilesM * sched.numTilesN > params.P) {
@@ -38,21 +38,21 @@ Schedule GenerateSchedule(ProblemParameters params) {
 	else {
 		//TODO : out of range problems
         int cubicTileSize = (int) std::cbrt(1LL * params.k * params.m * params.n / params.P);
-        std::assert(cubicTileSize > 0);
+        assert(cubicTileSize > 0);
 
 		sched.numTilesM = (params.m - 1) / cubicTileSize + 1;
 		sched.numTilesN = (params.n - 1) / cubicTileSize + 1;
 		sched.numTilesK = (params.k - 1) / cubicTileSize + 1;
-		while (sched.numTilesM * sched.numTilesN * sched.numTilesK > params.P)
+		while (1LL * sched.numTilesM * sched.numTilesN * sched.numTilesK > params.P)
 		{
 			int newTileSizeM = sched.numTilesM == 1 ? MAX_SIZE : (params.m - 1) / (sched.numTilesM - 1) + 1;
 			int newTileSizeN = sched.numTilesN == 1 ? MAX_SIZE : (params.n - 1) / (sched.numTilesN - 1) + 1;
 			int newTileSizeK = sched.numTilesK == 1 ? MAX_SIZE : (params.k - 1) / (sched.numTilesK - 1) + 1;
 			cubicTileSize = std::min(std::min(newTileSizeM, newTileSizeN), newTileSizeK);
-            std::assert(newTileSizeM > 0);
-            std::assert(newTileSizeN > 0);
-            std::assert(newTileSizeK > 0);
-            std::assert(cubicTileSize > 0);
+            assert(newTileSizeM > 0);
+            assert(newTileSizeN > 0);
+            assert(newTileSizeK > 0);
+            assert(cubicTileSize > 0);
 			sched.numTilesM = (params.m - 1) / cubicTileSize + 1;
 			sched.numTilesN = (params.n - 1) / cubicTileSize + 1;
 			sched.numTilesK = (params.k - 1) / cubicTileSize + 1;

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iostream>
 #include <cmath>
+#include <assert.h>
 
 #define MAX_SIZE 2147483640 
 
@@ -30,7 +31,7 @@ namespace spartition {
 
     struct ProblemParameters {
         int m, n, k; //dimensions
-        int S; //size of local memory
+        long long S; //size of local memory
         int N; //number of cores per node
         int P; //number of processes (ranks)
         schedType schedule; //generates 2d or 3d schedule (parallelization in k dimension)

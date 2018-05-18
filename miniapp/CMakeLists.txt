@@ -15,8 +15,9 @@ include_directories("${PRJ_ROOT_DIR}/src")
 #  Build test  #
 ################
 
-add_lib_executable(carma-statistics
-  carma)
+add_lib_executable(carma-statistics carma)
+
+add_lib_executable(test-strategy carma)
 
 if (CARMA_WITH_CUDA)
     cuda_add_lib_executable(carma-miniapp

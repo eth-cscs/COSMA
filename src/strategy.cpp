@@ -476,6 +476,8 @@ void Strategy::spartition_strategy() {
     params.schedule = spartition::schedType::S3D;
     spartition::Schedule schedule = spartition::GenerateSchedule(params);
 
+    this->P = schedule.numTilesM * schedule.numTilesN * schedule.numTilesK;
+
     for (auto step : schedule.divisions) {
         if (step.Dim == spartition::dim::dimM) {
             split_dimension += "m";
