@@ -1,10 +1,11 @@
 #include "scheduleGenerator.h"
 
 namespace spartition {
-std::vector<int> Factorize(int input) {
-	std::vector<int> factors;
-	int i = 2;
-    while (i <= std::sqrt(input)){
+
+std::vector<unsigned> Factorize(unsigned input) {
+	std::vector<unsigned> factors;
+	unsigned i = 2;
+	while (i <= sqrt(input)){
 		if (input % i == 0) {
 			factors.push_back(i);
 			input /= i;
@@ -15,6 +16,66 @@ std::vector<int> Factorize(int input) {
 	}
 	if (input > 1) factors.push_back(input);
 	return factors;
+}
+
+Schedule GetDFSSchedule(unsigned localM, unsigned localN, unsigned localK, unsigned S, DFSSchedule DFSsched) {
+	unsigned a, b, c;
+	if (DFSsched == DFSSchedule::DFScubic) {
+		unsigned cubicSide = std::floor(std::sqrt(S / 3.0));
+		a = std::min(cubicSide, localM);
+		b = std::min(cubicSide, localN);
+		c = std::min(cubicSide, localK);
+	}
+	else if (DFSsched == DFSSchedule::DFSsquare) {
+		unsigned squareSide = std::floor(std::sqrt(S + 1.0) - 1);
+		a = std::min(squareSide, localM);
+		b = std::min(squareSide, localN);
+		c = std::min(std::max((unsigned)1, (unsigned)std::floor((S - a * b) / (a + b))), localK);
+	}
+	Schedule sched;
+	sched.tileSizeK = c;
+	sched.tileSizeM = a;
+	sched.tileSizeN = b;
+	sched.divisions = std::vector<SingleStep>(3);
+	sched.divisions[0].Dim = dim::dimM;
+	sched.divisions[0].SplitType = splitType::DFS;
+	sched.divisions[0].SplitSize = (localM-1) / a + 1;
+
+	sched.divisions[1].Dim = dim::dimN;
+	sched.divisions[1].SplitType = splitType::DFS;
+	sched.divisions[1].SplitSize = (localN - 1) / b + 1;
+
+	sched.divisions[2].Dim = dim::dimK;
+	sched.divisions[2].SplitType = splitType::DFS;
+	sched.divisions[2].SplitSize = (localK - 1) / c + 1;
+//#if (DFS_SCHEDULE == NATIVE_DFS)
+//#endif
+	return sched;
+}
+
+std::vector<unsigned> Intersect(std::vector<unsigned> &v1, std::vector<unsigned> &v2) {
+	std::vector<unsigned> v3;
+	sort(v1.begin(), v1.end());
+	sort(v2.begin(), v2.end());
+
+	set_intersection(v1.begin(), v1.end(), v2.begin(), v2.end(), std::back_inserter(v3));
+
+	return v3;
+}
+
+unsigned FitRanks(unsigned numCoresPerNode, unsigned desiredNumRanks, unsigned maxRankReduction = 6) {
+	unsigned bestFit = desiredNumRanks;
+	unsigned maxCommonDivisors = 0;
+	auto numCoresFact = Factorize(numCoresPerNode);
+	auto x = Factorize(13);
+	for (unsigned i = 0; i < maxRankReduction; i++){
+		auto curCommonDivisors = Intersect(numCoresFact, Factorize(desiredNumRanks - i)).size();
+		if (curCommonDivisors > maxCommonDivisors) {
+			bestFit = desiredNumRanks - i;
+			maxCommonDivisors = curCommonDivisors;
+		}
+	}
+	return bestFit;
 }
 
 Schedule GenerateSchedule(ProblemParameters params) {
