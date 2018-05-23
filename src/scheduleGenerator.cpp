@@ -38,37 +38,35 @@ Schedule GenerateSchedule(ProblemParameters params) {
 	else {
 		//TODO : out of range problems
         int cubicTileSize = (int) std::cbrt(1LL * params.k * params.m * params.n / params.P);
-        assert(cubicTileSize > 0);
-
+       
 		sched.numTilesM = (params.m - 1) / cubicTileSize + 1;
 		sched.numTilesN = (params.n - 1) / cubicTileSize + 1;
 		sched.numTilesK = (params.k - 1) / cubicTileSize + 1;
-		while (1LL * sched.numTilesM * sched.numTilesN * sched.numTilesK > params.P)
+		while (sched.numTilesM * sched.numTilesN * sched.numTilesK > params.P)
 		{
-			int newTileSizeM = sched.numTilesM == 1 ? MAX_SIZE : (params.m - 1) / (sched.numTilesM - 1) + 1;
-			int newTileSizeN = sched.numTilesN == 1 ? MAX_SIZE : (params.n - 1) / (sched.numTilesN - 1) + 1;
-			int newTileSizeK = sched.numTilesK == 1 ? MAX_SIZE : (params.k - 1) / (sched.numTilesK - 1) + 1;
+			unsigned newTileSizeM = sched.numTilesM == 1 ? MAX_SIZE : (params.m - 1) / (sched.numTilesM - 1) + 1;
+			unsigned newTileSizeN = sched.numTilesN == 1 ? MAX_SIZE : (params.n - 1) / (sched.numTilesN - 1) + 1;
+			unsigned newTileSizeK = sched.numTilesK == 1 ? MAX_SIZE : (params.k - 1) / (sched.numTilesK - 1) + 1;
 			cubicTileSize = std::min(std::min(newTileSizeM, newTileSizeN), newTileSizeK);
-            assert(newTileSizeM > 0);
-            assert(newTileSizeN > 0);
-            assert(newTileSizeK > 0);
-            assert(cubicTileSize > 0);
 			sched.numTilesM = (params.m - 1) / cubicTileSize + 1;
 			sched.numTilesN = (params.n - 1) / cubicTileSize + 1;
 			sched.numTilesK = (params.k - 1) / cubicTileSize + 1;
 		}
-		sched.tileSizeM = (params.m - 1) / sched.numTilesM + 1;
-		sched.tileSizeN = (params.n - 1) / sched.numTilesN + 1;
-		sched.tileSizeK = (params.k - 1) / sched.numTilesK + 1;
 	}
 
-	//TODO:: physical num cores refinement
+	//physical num cores refinement
+	sched.numTilesM = FitRanks(params.numCores, sched.numTilesM);
+	sched.numTilesN = FitRanks(params.numCores, sched.numTilesN);
+	sched.numTilesK = FitRanks(params.numCores, sched.numTilesK);
+	
+	sched.tileSizeM = (params.m - 1) / sched.numTilesM + 1;
+	sched.tileSizeN = (params.n - 1) / sched.numTilesN + 1;
+	sched.tileSizeK = (params.k - 1) / sched.numTilesK + 1;
 
-	int localMemCapacity = params.S / std::max(sched.tileSizeM, sched.tileSizeN);
-	int numDFSsteps = (sched.tileSizeK - 1) / localMemCapacity; // = 0 if S is big enough, otherwise > 0
+	unsigned localMemCapacity = params.S / std::max(sched.tileSizeM, sched.tileSizeN);
 
 	if (params.divStrat == DivisionStrategy::oneStep) {
-		sched.divisions = std::vector<SingleStep>(3 + (numDFSsteps > 0 ? 1 : 0));
+		sched.divisions = std::vector<SingleStep>(3);
 		sched.divisions[0].Dim = dim::dimM;
 		sched.divisions[0].SplitSize = sched.numTilesM;
 		sched.divisions[0].SplitType = splitType::BFS;
@@ -80,28 +78,21 @@ Schedule GenerateSchedule(ProblemParameters params) {
 		sched.divisions[2].Dim = dim::dimK;
 		sched.divisions[2].SplitSize = sched.numTilesK;
 		sched.divisions[2].SplitType = splitType::BFS;
-
-		//TODO:: what is the direction of DFS split?
-		if (numDFSsteps > 0) {
-			sched.divisions[3].Dim = dim::dimM; // ?????
-			sched.divisions[3].SplitSize = numDFSsteps + 1;
-			sched.divisions[3].SplitType = splitType::DFS;
-		}
 	}
 
 	else {
-		std::vector<int> divisionsM = Factorize(sched.numTilesM);
-		std::vector<int> divisionsN = Factorize(sched.numTilesN);
-		std::vector<int> divisionsK = Factorize(sched.numTilesK);
+		std::vector<unsigned> divisionsM = Factorize(sched.numTilesM);
+		std::vector<unsigned> divisionsN = Factorize(sched.numTilesN);
+		std::vector<unsigned> divisionsK = Factorize(sched.numTilesK);
 
 		//TODO: should we split the DFS steps too?
 
-		//std::vector<int> divisionsDFS = Factorize(numDFSsteps);
-		std::vector<int> sortedDivisions  =  { (int)divisionsM.size(), (int)divisionsN.size(), (int)divisionsK.size() };
+		//std::vector<unsigned> divisionsDFS = Factorize(numDFSsteps);
+		std::vector<unsigned> sortedDivisions  =  { (unsigned)divisionsM.size(), (unsigned)divisionsN.size(), (unsigned)divisionsK.size() };
 		std::sort(sortedDivisions.begin(), sortedDivisions.end());
-		sched.divisions = std::vector<SingleStep>(divisionsM.size() + divisionsN.size() + divisionsK.size() + (numDFSsteps > 0 ? 1 : 0));
+		sched.divisions = std::vector<SingleStep>(divisionsM.size() + divisionsN.size() + divisionsK.size());
 
-		int counter = 0;
+		unsigned counter = 0;
 		//TODO: does the order matter?
 		for (size_t i = 0; i < sortedDivisions[2]; i++)
 		{
@@ -124,14 +115,12 @@ Schedule GenerateSchedule(ProblemParameters params) {
 				counter++;
 			}
 		}
-		//TODO:: what is the direction of DFS split?
-		if (numDFSsteps > 0) {
-			sched.divisions[counter].Dim = dim::dimM; // ?????
-			sched.divisions[counter].SplitSize = numDFSsteps + 1;
-			sched.divisions[counter].SplitType = splitType::DFS;
-		}
 	}
 
-	return sched;
-}
+	Schedule dfsSched = GetDFSSchedule(sched.tileSizeM, sched.tileSizeN, sched.tileSizeK, params.S, params.dfsSched);
+	sched.divisions.insert(sched.divisions.end(), dfsSched.divisions.begin(), dfsSched.divisions.end());
+	sched.tileSizeM = dfsSched.tileSizeM;
+	sched.tileSizeN = dfsSched.tileSizeN;
+	sched.tileSizeK = dfsSched.tileSizeK;
+		return sched;
 }
