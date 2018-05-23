@@ -8,6 +8,8 @@ Strategy::Strategy(Strategy&& other) = default;
 // constructs the Strategy from the command line
 Strategy::Strategy(const std::string& cmd_line) {
     initialize(cmd_line);
+    n_steps = divisors.size();
+    check_if_valid();
 }
 
 // constructs the Strategy form the command line
@@ -17,6 +19,8 @@ Strategy::Strategy(int argc, char** argv) {
         input += argv[i];
     }
     initialize(input);
+    n_steps = divisors.size();
+    check_if_valid();
 }
 
 Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
@@ -30,9 +34,9 @@ Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
 
 Strategy::Strategy(int mm, int nn, int kk, size_t PP, long long mem_limit, bool top) : 
     m(mm), n(nn), k(kk), P(PP), memory_limit(mem_limit), topology(top) {
-    //square_strategy();
+    square_strategy();
     //default_strategy();
-    spartition_strategy();
+    // spartition_strategy();
     n_steps = divisors.size();
     check_if_valid();
 }
@@ -66,13 +70,10 @@ void Strategy::initialize(const std::string& cmd_line) {
         process_steps(steps_it, cmd_line);
     }
     else {
-        //square_strategy();
+        square_strategy();
         //default_strategy();
-        spartition_strategy();
+        //spartition_strategy();
     }
-
-    n_steps = divisors.size();
-    check_if_valid();
 }
 
 void Strategy::process_steps(size_t start, const std::string& line) {
@@ -323,7 +324,6 @@ void Strategy::square_strategy() {
                 + "or change the strategy by using more Sequential (DFS) "
                 + "steps.");
     }
-
 
     while (P > 1) {
         int divm, divn, divk;

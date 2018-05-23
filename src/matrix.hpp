@@ -85,6 +85,7 @@ public:
     // NEW METHODS
     // **********************************************
     double& operator[](const std::vector<double>::size_type index);
+    double operator[](const std::vector<double>::size_type index) const;
 
     // outputs matrix in a format:
     //      row, column, value
@@ -93,31 +94,31 @@ public:
 
     double* matrix_pointer();
     std::vector<double>& matrix();
+    const std::vector<double>& matrix() const;
 
-    // initializes send buffer to be of size send_buffer_size 
-    // and also sets current matrix to point to the send buffer
-    void initialize_send_buffer(long long send_buffer_size);
-    // copies data from matrix() to send_buffer
-    void load_data();
-    // copies data from send_buffer to matrix()
-    void unload_data();
     // pointer to send buffer
-    double* send_buffer_ptr();
-    std::vector<double>& send_buffer();
+    //double* buffer_ptr();
+    //std::vector<double>& buffer();
     // pointer to current matrix (send buffer)
     double* current_matrix();
     void set_current_matrix(double* mat);
+
+    void advance_buffer();
+    int buffer_index();
+    void set_buffer_index(int idx);
+    double* receiving_buffer();
 
 protected:
     // A, B or C
     char label_;
     /// local matrix
-    std::vector<double> matrix_;
+    //std::vector<double> matrix_;
     /// local send buffer
-    std::vector<double> send_buffer_;
+    std::vector<std::vector<double>> buffers_;
+    int current_buffer_;
     /// temporary local matrix
     double* current_mat;
-    /// Number of rows of the global atrix
+    /// Number of rows of the global matrix
     int m_;
     /// Number of columns of the global matrix
     int n_;
@@ -125,6 +126,8 @@ protected:
     size_t P_;
 
     int rank_;
+
+    const Strategy& strategy_;
 
     long long max_send_buffer_size_;
     long long max_recv_buffer_size_;
@@ -135,6 +138,21 @@ protected:
 
     std::unique_ptr<Mapper> mapper_;
     std::unique_ptr<Layout> layout_;
+
+    // computes the number of buckets in the current step
+    // the number of buckets in some step i is equal to the 
+    // product of all divisors in DFS steps that follow step i
+    // in which the current matrix was divided
+    std::vector<int> n_buckets_;
+    std::vector<bool> expanded_after_;
+
+    void compute_n_buckets();
+
+    void initialize_buffers();
+    std::vector<long long> compute_buffer_size(const Strategy& strategy);
+
+    std::vector<long long> compute_buffer_size(Interval& m, Interval& n, Interval& k, Interval& P, 
+            int step, const Strategy& strategy, int rank);
 
     void compute_max_buffer_size(Interval& m, Interval& n, Interval& k, Interval& P, 
             int step, const Strategy& strategy, int rank);

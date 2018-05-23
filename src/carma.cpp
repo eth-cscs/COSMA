@@ -324,26 +324,14 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     // which is also the size of the matrix after expansion
     int new_size = total_after_expansion[comm.relative_rank(newP)];
 
-    // new allocated space for the expanded matrix
-    auto expanded_array = std::unique_ptr<double[]>(new double[new_size]);
-    double* expanded_space = expanded_array.get();
+    int buffer_idx = expanded_mat.buffer_index();
+    expanded_mat.advance_buffer();
 
-    // LM = M if M was not expanded
-    // LM = expanded_space if M was expanded
-    double* LA = strategy.split_A(step) ? A : expanded_space;
-    double* LB = strategy.split_B(step) ? B : expanded_space;
-    double* LC = strategy.split_C(step) ? C : expanded_space;
-
-    // if divm > 1 => original_matrix=B, expanded_matrix=LB
-    // if divn > 1 => original_matrix=A, expanded_matrix=LA
-    // if divk > 1 => original_matrix=C, expanded_matrix=LC
-    double* original_matrix = which_is_expanded(A, B, C, strategy, step);
-    double* expanded_matrix = which_is_expanded(LA, LB, LC, strategy, step);
+    double* original_matrix = expanded_mat.current_matrix();
+    double* expanded_matrix = expanded_mat.receiving_buffer();
 
     // pack the data for the next recursive call
-    matrixA.set_current_matrix(LA);
-    matrixB.set_current_matrix(LB);
-    matrixC.set_current_matrix(LC);
+    expanded_mat.set_current_matrix(expanded_matrix);
     PL();
 
     PE(multiply_communication_copy);
@@ -369,9 +357,8 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
 
     multiply(matrixA, matrixB, matrixC, newm, newn, newk, newP, step+1, strategy, new_beta, comm);
     // revert the current matrix
-    matrixA.set_current_matrix(A);
-    matrixB.set_current_matrix(B);
-    matrixC.set_current_matrix(C);
+    expanded_mat.set_buffer_index(buffer_idx);
+    expanded_mat.set_current_matrix(original_matrix);
 
     PE(multiply_communication_reduce);
     // if division by k do additional reduction of C
