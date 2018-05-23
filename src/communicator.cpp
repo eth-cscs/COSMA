@@ -54,9 +54,6 @@ void communicator::copy(Interval& P, double* in, double* out,
         max_size = std::max(max_size, temp_size);
     }
 
-    std::cout << "In size = " << local_size << std::endl;
-    std::cout << "Out size = " << total_after << std::endl;
-
     int n_buckets = size_before[relative_rank(P)].size();
     double* receive_pointer;
     std::unique_ptr<double[]> receiving_buffer;

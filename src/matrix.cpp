@@ -98,7 +98,6 @@ void CarmaMatrix::initialize_buffers() {
 }
 
 void CarmaMatrix::advance_buffer() {
-    std::cout << "Advancing buffer for matrix " << which_matrix() << std::endl;
     if (current_buffer_ == buffers_.size() - 1)
         current_buffer_--;
     else
@@ -110,7 +109,6 @@ void CarmaMatrix::advance_buffer() {
 }
 
 int CarmaMatrix::buffer_index() {
-    std::cout << "Buffer index of matrix " << which_matrix() << " = " << current_buffer_ << std::endl;
     return current_buffer_;
 }
 
@@ -128,19 +126,12 @@ std::vector<long long> CarmaMatrix::compute_buffer_size(const Strategy& strategy
     Interval k(0, strategy.k - 1);
     Interval P(0, strategy.P - 1);
 
-    std::vector<long long> buffer_sizes = compute_buffer_size(m, n, k, P, 0, strategy, rank_);
-    //buffer_sizes[0] = std::max(buffer_sizes[0], 1LL * initial_size());
-    std::cout << "Required buffers sizes are: \n";
-    for (int i = 0; i < buffer_sizes.size(); ++i) {
-        std::cout << buffer_sizes[i] << " ";
-    }
-    std::cout << std::endl;
-    return buffer_sizes;
+    return compute_buffer_size(m, n, k, P, 0, strategy, rank_);
 }
 
 std::vector<long long> CarmaMatrix::compute_buffer_size(Interval& m, Interval& n, Interval& k, 
     Interval& P, int step, const Strategy& strategy, int rank) {
-
+    if (strategy.final_step(step)) return {};
     std::vector<long long> sizes;
     // current submatrices that are being computed
     Interval2D a_range(m, k);
@@ -166,20 +157,8 @@ std::vector<long long> CarmaMatrix::compute_buffer_size(Interval& m, Interval& n
         update_buckets(P, c_range);
     }
 
+
     // recursively invoke BFS or DFS:
-    if (strategy.final_step(step)) {
-        long long max_size = 0;
-        if (label_ == 'A') {
-            max_size = 1LL * m.length() * k.length();
-        }
-        else if (label_ == 'B') {
-            max_size = 1LL * k.length() * n.length();
-        }
-        else {
-            max_size = 1LL * m.length() * n.length();
-        }
-        return {};
-    }
     if (n_buckets_[step] == 1) {
         compute_max_buffer_size(m, n, k, P, step, strategy, rank);
         if (expanded_after_[step])
@@ -282,7 +261,6 @@ std::vector<long long> CarmaMatrix::compute_buffer_size(Interval& m, Interval& n
             long long old_size = total_before_expansion[rank - P.first()];
             long long new_size = total_after_expansion[rank - newP.first()];
             max_size = std::max(old_size, new_size);
-            std::cout << "Max size of matrix " << which_matrix() << " is " << max_size << std::endl;
         }
 
         // invoke the recursion
