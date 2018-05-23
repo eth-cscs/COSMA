@@ -9,36 +9,53 @@
 
 namespace spartition {
 
-    enum dim {dimM, dimN, dimK};
+   enum dim { dimM, dimN, dimK };
 
-    enum splitType {BFS, DFS};
+enum splitType { BFS, DFS };
 
-    enum schedType {S2D, S3D};
+enum schedType { S2D, S3D, S25D };
 
-    enum DivisionStrategy { oneStep, recursive };
+enum DivisionStrategy { oneStep, recursive };
 
-    struct SingleStep {
-        dim Dim;
-        splitType SplitType;
-        int SplitSize;
-    };
+enum DFSSchedule { DFScubic, DFSsquare };
 
-    struct Schedule {
-        std::vector<SingleStep> divisions;
-        int tileSizeM, tileSizeN, tileSizeK;
-        int numTilesM, numTilesN, numTilesK;
-    };
+struct SingleStep {
+	dim Dim;
+	splitType SplitType;
+	unsigned SplitSize;
+};
 
-    struct ProblemParameters {
-        int m, n, k; //dimensions
-        long long S; //size of local memory
-        int N; //number of cores per node
-        int P; //number of processes (ranks)
-        schedType schedule; //generates 2d or 3d schedule (parallelization in k dimension)
-        DivisionStrategy divStrat; //e.g., if schedule should look like 16 or 2, 2, 2, 2
-    };
+struct Schedule {
+	std::vector<SingleStep> divisions;
+	unsigned tileSizeM, tileSizeN, tileSizeK;
+	unsigned numTilesM, numTilesN, numTilesK;
 
-    std::vector<int> Factorize(int);
+	void Print() {
+		std::cout << "\nTile size [" << tileSizeM << " x " << tileSizeN << " x " << tileSizeK << "]. Number of tiles "
+			<< numTilesM << " x " << numTilesN << " x " << numTilesK << "\n";
+		std::cout << "\nDivision strategy:\n[dim] ; [size] ; [BFS/DFS]\n";
+		for (auto step : divisions) {
+			if (step.Dim == dimM) std::cout << "m ; ";
+			if (step.Dim == dimN) std::cout << "n ; ";
+			if (step.Dim == dimK) std::cout << "k ; ";
+			std::cout << step.SplitSize << " ; ";
+			if (step.SplitType == BFS) std::cout << "BFS\n";
+			if (step.SplitType == DFS) std::cout << "DFS\n";
+		}
+	}
+};
 
-    Schedule GenerateSchedule(ProblemParameters params);
+struct ProblemParameters {
+	long long  m, n, k; //dimensions
+	long long S; //size of local memory
+	long long  numCores; //number of cores per node
+	long long  P; //number of processes (ranks)
+	schedType schedule; //generates 2d or 3d schedule (parallelization in k dimension)
+	DivisionStrategy divStrat; //e.g., if schedule should look like 16 or 2, 2, 2, 2
+	DFSSchedule dfsSched; //cubic vs square tiling
+};
+
+std::vector<unsigned> Factorize(unsigned);
+
+Schedule GenerateSchedule(ProblemParameters params);
 }
