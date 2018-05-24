@@ -130,10 +130,12 @@ assessing
 analytical data movement lower bounds, together with deriving optimal 
 sequential and parallel scheduling. Our "bottom-up" parallelization technique, 
 opposed to state of the art "top-down" approaches is naturally agnostic to 
-problem dimensions and is provably optimal in all scenarios. With our 
+problem dimensions and is provably optimal in all scenarios, resulting in up to 
+$\sqrt{3}$ times reduction in communication volume. With our 
 fine-tuned data layout 
 transformations, we are able to achieve X \% peak FLOP/s running on up to Y 
-nodes on the Piz Daint supercomputer.
+nodes on the Piz Daint supercomputer, beating currently fastest-known 
+algorithms by a factor of Z.
 %Based on an existing pebble game 
 %abstraction, we come 
 %to fundamental observations about parallel scheduling and data reuse, deriving 
@@ -160,8 +162,13 @@ nodes on the Piz Daint supercomputer.
 	lower bounds for all configurations of dimensions and intra-node memory 
 	sizes, the recursive structure of the algorithm is not suitable for 
 	scenarios when the number of processes is not the power of two. 
-	Furthermore, we are able to outperform the current state-of-the art 
-	implementations in all scenarios by a factor of up to X. The implementation 
+	Furthermore, we emphasize that in practical considerations, asymptotic 
+	complexity is insufficient, as constants may play crucial role in 
+	applicability of algorithms (confront, e.g., Coppersmith–Winograd algorithm 
+	(cite) ). We are able to outperform the current state-of-the art 
+	implementations in all scenarios by a factor of up to $\sqrt{3}$ in terms 
+	of communication volume and up to X in the total runtime. The 
+	implementation 
 	also addresses the challenges of recursive data layout of CARMA which 
 	prohibits transparent integration with ScaLAPACK format and yields 
 	suboptimal computation throughput.
@@ -224,57 +231,12 @@ nodes on the Piz Daint supercomputer.
 %	
 %	(TBD)
 %	
-	\subsection{Related work}
-	\greg{TODO}
-	
-%	To the best of our knowledge, in the literature there is a disparity 
-%	between the work-centric and communication-centric scheduling. The former 
-%	one focuses on minimizing the execution critical path by reordering and 
-%	splitting tasks among the processing units (\cite{schedulingNP}). Many 
-%	related scheduling problems are formulated as knapsack  
-%	\cite{knapsackSched}, 
-%	\cite{knapsackQuadSched} or partially ordered 
-%	knapsack \cite{POKSched} optimization. Communication-centric (or 
-%	communication-avoiding) approach tries to minimize the number and volume of 
-%	messages exchanged across processes (e.g, \cite{SchedMaxFlow}). Many 
-%	problem-specific methods are 
-%	known, e.g. in linear algebra \cite{mmmSched}, \cite{communicationOptMMM}, 
-%	\cite{Cholesky}, PDE solvers \cite{MeshPart} or 
-%	stencil computations \cite{modesto}. For 
-%	general DAG scheduling, however, the focus is mostly on different variants 
-%	of balanced min-cuts of graphs \cite{balancedGraphPart}, 
-%	\cite{dagPartitioningTrees}. This approach 
-%	indeed lowers the 
-%	communication overhead while trying to distribute work evenly. Even though 
-%	balanced graph partition is also known to be NP-hard 
-%	\cite{schedHardness}, \cite{partitioningHardness}, much work 
-%	has been done to improve the efficiency of approximation algorithms 
-%	\cite{approximatingCuts}, \cite{balancedGraphPart}.
 %	
-%	I/O minimizing scheduling focuses on maximizing data reuse - both spatial 
-%	and temporal. Spatial data reuse orbits around vectorization and alignment 
-%	techniques. Temporal reuse requires instruction reordering, like loop 
-%	tiling or loop fusion. Those techniques are widely used in stencil 
-%	computations (\cite{modesto}) and linear algebra 
-%	(\cite{comm-avoiding-triang}). Abstractions like polyhedral model 
-%	(\cite{polyhedralModel}) 
-%	give powerful 
-%	mathematical tools to e.g., minimize reuse distance, but they are 
-%	limited to only particular class of programs. Elango et. al 
-%	(\cite{redbluewhite}) worked on general class represented by CDAG, but the 
-%	authors 
-%	focused on I/O lower bound, without assessing its tightness or generating 
-%	schedules.
-%	In this work, we try to combine those two approaches. In the work-centric 
-%	view, a computation DAG is viewed in a context of dependencies between the 
-%	tasks and a goal is to minimize the depth - therefore, partitions tend to 
-%	be aligned with a critical path. In the communication centric view, a cut 
-%	size is minimized, which can result in partitions perpendicular to a 
-%	critical path - loosing the grasp on the overall execution time.
-%	
-	\section{Red-blue pebble game and S-partition}
-	\subsection{Background}
+	\section{Background}
+	\subsection{I/O complexity- pebble games and S-partition}
 	\label{sec:background}
+	\greg{Drastically reduce this section. What are the parts that should stay?}
+	
 	This model bases on the work of the red-blue pebble game by Hong and Kong 
 	(\cite{redblue}), which was later extended to red-blue-white pebble game by 
 	Elango (\cite{redbluewhite}). In this model, computation of a given DAG is 
@@ -325,7 +287,7 @@ nodes on the Piz Daint supercomputer.
 		all its immediate predecessors have red pebbles on them, a
 		red pebble along with a white pebble may be placed on v.}
 	
-	\subsubsection{Pebble game and I/O complexity}
+%	\subsubsection{Pebble game and I/O complexity}
 	Each valid pebble game corresponds to the valid schedule of I/O operations. 
 	As many of the scheduling problems, the general case is NP hard 
 	\cite{RedBlueHard}. 
@@ -407,10 +369,16 @@ nodes on the Piz Daint supercomputer.
 		at least 4 I/O operations are required to execute this subset.}
 		\label{fig:spart-stencil}
 	\end{figure}
-	
 
-\subsection{NP-hardness proof of the S-partition problem}
+\subsection{Matrix multiplication?}
+\greg{I'm not sure if we need background on this. Maybe linear algebra in 
+general?}	
+
+\section{NP-hardness proof of the S-partition problem}
 \label{sec:np-hard}
+
+\greg{I think we don't need this at all here}
+
 In this section we show the polynomial time reduction of the well-known bin 
 packing problem, which is strongly NP-hard
 (\cite{computersIntractability}), to the S-partition problem.
@@ -518,6 +486,9 @@ gadget $i$ is contained.
 
 	\section{2S-Partition, S-Partition and data reuse}
 \label{sec:Svs2S}
+
+\greg{I think this can be also skipped}
+
 The reasoning behind 2S-Partition accounts for an upper bound of data 
 reuse 
 between subsets.
@@ -563,6 +534,13 @@ and rewrite the observation (4) as $|V_{R,i}| - |R(S)| \le S$ \qed
 %	
 \subsection{Data reuse and a subset shape}
 \label{sec:partitionShape}
+
+\greg{Although this is an old work from the spartition paper, it's easy to show 
+that CARMA asymptotically reaches \textbf{cubic} scheme, which can be up to 
+$\sqrt{3}$ times slower than \textbf{par. in ijk dim}. Therefore, I would 
+rewrite 
+this section, but not remove it.}.
+
 The key difference between the original lower bound lemma (inequality 
 \ref{eq:redbluebound}) and the lemma presented in this paper (inequality 
 \ref{eq:reusebound}) is the explicit notion of reuse. 
@@ -741,20 +719,95 @@ subsets.
 \section{CARMA 2.0 ?}
 \greg{This whole section is mostly about Marko's work}
 \subsection{Recursive vs single step}
-\greg{Discussion about the communicators, manual reduction tree, designing 
-communication pattern and data layout crafted for this}
+\begin{enumerate}
+	\item \greg{Recursive steps determine data layout.}
+	\item \greg{Manual reduction tree vs MPI collectives. Conclusion: We 
+	implemented both, but on Piz daint recursive is faster, possibly due to 
+	static knowledge about spatial data locality}
+\end{enumerate}
 \subsection{Local buffer reuse}
-\greg{How we use two buffers instead of $\log P$}
+\greg{We use two buffers instead of $\log P$}
 \subsection{Block recursive data layout}
-\greg{Faster, doesn't require reshuffling in each step}
+\begin{enumerate}
+	\item \greg{Faster, doesn't require reshuffling in each step}
+	\item \greg{Better suitable for integration with ScaLAPACK ?}
+\end{enumerate}
+
 
 \section{Evaluation}
 \subsection{Test cases}
 \greg{Describe where do the skinny matrices show up, why they are important, 
-why strong scaling (even suboptimal) is important}
+why strong scaling (even suboptimal) is important.}
 \subsection{Environment}
 \greg{Piz daint description}
 \subsection{Results}
+\greg{I believe the scenarios should cover, both weak and strong scaling (I 
+don't know in which order):
+\begin{itemize}
+	\item "Standard" square scenario. Marko - we are still the fastest even for 
+	square case?
+	\item "CARMA" scenarios. Power of 2, one and two "large dimensions"
+	\item "Our case" scenarios. Non power of 2, rectangular matrices. Is it 
+	fair to assume that original CARMA pads matrices with zeros to match the 
+	closest power of 2?
+\end{itemize}
+Should we add intra node evaluation too? Or do we care only about the 
+distributed case?
+}
+
+\section{Related work}
+\begin{enumerate}
+	\item \greg{I/O minimization in general, starting from pebble games, to 
+	communication minimization in linear algebra.}
+	\item \greg{Asymptotic complexity and the importance of constants.}
+	\item \greg{Matrix multiplication algorithms.}
+\end{enumerate}
+
+
+%	To the best of our knowledge, in the literature there is a disparity 
+%	between the work-centric and communication-centric scheduling. The former 
+%	one focuses on minimizing the execution critical path by reordering and 
+%	splitting tasks among the processing units (\cite{schedulingNP}). Many 
+%	related scheduling problems are formulated as knapsack  
+%	\cite{knapsackSched}, 
+%	\cite{knapsackQuadSched} or partially ordered 
+%	knapsack \cite{POKSched} optimization. Communication-centric (or 
+%	communication-avoiding) approach tries to minimize the number and volume of 
+%	messages exchanged across processes (e.g, \cite{SchedMaxFlow}). Many 
+%	problem-specific methods are 
+%	known, e.g. in linear algebra \cite{mmmSched}, \cite{communicationOptMMM}, 
+%	\cite{Cholesky}, PDE solvers \cite{MeshPart} or 
+%	stencil computations \cite{modesto}. For 
+%	general DAG scheduling, however, the focus is mostly on different variants 
+%	of balanced min-cuts of graphs \cite{balancedGraphPart}, 
+%	\cite{dagPartitioningTrees}. This approach 
+%	indeed lowers the 
+%	communication overhead while trying to distribute work evenly. Even though 
+%	balanced graph partition is also known to be NP-hard 
+%	\cite{schedHardness}, \cite{partitioningHardness}, much work 
+%	has been done to improve the efficiency of approximation algorithms 
+%	\cite{approximatingCuts}, \cite{balancedGraphPart}.
+%	
+%	I/O minimizing scheduling focuses on maximizing data reuse - both spatial 
+%	and temporal. Spatial data reuse orbits around vectorization and alignment 
+%	techniques. Temporal reuse requires instruction reordering, like loop 
+%	tiling or loop fusion. Those techniques are widely used in stencil 
+%	computations (\cite{modesto}) and linear algebra 
+%	(\cite{comm-avoiding-triang}). Abstractions like polyhedral model 
+%	(\cite{polyhedralModel}) 
+%	give powerful 
+%	mathematical tools to e.g., minimize reuse distance, but they are 
+%	limited to only particular class of programs. Elango et. al 
+%	(\cite{redbluewhite}) worked on general class represented by CDAG, but the 
+%	authors 
+%	focused on I/O lower bound, without assessing its tightness or generating 
+%	schedules.
+%	In this work, we try to combine those two approaches. In the work-centric 
+%	view, a computation DAG is viewed in a context of dependencies between the 
+%	tasks and a goal is to minimize the depth - therefore, partitions tend to 
+%	be aligned with a critical path. In the communication centric view, a cut 
+%	size is minimized, which can result in partitions perpendicular to a 
+%	critical path - loosing the grasp on the overall execution time.
 
 \section{Conclusions}
 
