@@ -7,12 +7,12 @@ class Timer {
 public:
     using time_point = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
+    int n_rep_;
+    std::string region;
     MPI_Comm comm_;
     time_point start;
-    std::string region;
-    int n_rep_;
 
-    Timer(int n_rep, std::string reg = "", MPI_Comm comm = MPI_COMM_WORLD) : n_rep_(n_rep), comm_(comm), region(reg) {
+    Timer(int n_rep, std::string reg = "", MPI_Comm comm = MPI_COMM_WORLD) : n_rep_(n_rep), region(reg), comm_(comm) {
         MPI_Barrier(comm);
         start = std::chrono::high_resolution_clock::now();
     }
