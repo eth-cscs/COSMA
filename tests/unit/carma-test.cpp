@@ -11,7 +11,7 @@
 #include <blas.h>
 
 // Local
-#include <carma.hpp>
+#include <multiply.hpp>
 #include <strategy.hpp>
 
 template<typename T>

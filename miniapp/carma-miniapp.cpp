@@ -11,7 +11,7 @@
 #include "blas.h"
 
 // Local
-#include <carma.hpp>
+#include <multiply.hpp>
 
 template<typename T>
 void fillInt(T& in) {

@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.5)
 
 set(sources
     communicator.cpp
-    carma.cpp
+    multiply.cpp
     matrix.cpp
     layout.cpp
     mapper.cpp

@@ -85,7 +85,10 @@ double* Buffer::initial_buffer_ptr() {
     return initial_buffer().data();
 }
 
+// increases the index of the current buffer
 void Buffer::advance_buffer() {
+    // if we are at the last buffer, we then "swap" it with the pre-last buffer.
+    // we do this by letting the current index point to the pre-last buffer.
     if (current_buffer_ == buffers_.size() - 1)
         current_buffer_--;
     else
@@ -154,14 +157,16 @@ std::vector<long long> Buffer::compute_buffer_size(Interval& m, Interval& n, Int
             Interval newn = n.subinterval(divn, divn>1 ? i : 0);
             Interval newk = k.subinterval(divk, divk>1 ? i : 0);
 
-            std::vector<long long> subsizes = compute_buffer_size(newm, newn, newk, P, step+1, rank);
+            // recursive call
+            std::vector<long long> subsizes = compute_buffer_size(newm, newn, newk, P, 
+                    step+1, rank);
 
+            // initialize the sizes vector in the first branch of DFS
             if (i == 0) {
                 sizes = std::vector<long long>(subsizes.size());
             }
 
-            //sizes[0] += subsizes[0];
-
+            // finds the maximum buffer size for each step among all DFS branches
             for (int j = 0; j < sizes.size(); ++j) {
                 sizes[j] = std::max(sizes[j], subsizes[j]);
             }

@@ -1,4 +1,4 @@
-#include "carma.hpp"
+#include "multiply.hpp"
 
 /*
  Compute C = A * B
