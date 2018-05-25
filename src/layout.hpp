@@ -17,6 +17,7 @@
 class Layout {
 
 public:
+    Layout() = default;
     Layout(char label, int m, int n, size_t P,
            int rank, std::vector<std::vector<Interval2D>> rank_to_range);
 

@@ -16,6 +16,7 @@
 #include "layout.hpp"
 #include <semiprof.hpp>
 #include "strategy.hpp"
+#include "buffer.hpp"
 
 class CarmaMatrix {
 public:
@@ -29,17 +30,10 @@ public:
     // METHODS FROM mapper.hpp
     // **********************************************
     const int initial_size(int rank) const;
-
     const int initial_size() const;
-
-    void compute_max_buffer_size(const Strategy& strategy);
-
-    const long long max_send_buffer_size() const;
-    const long long max_recv_buffer_size() const;
 
     // (gi, gj) -> (local_id, rank)
     std::pair<int, int> local_coordinates(int gi, int gj);
-
     // (local_id, rank) -> (gi, gj)
     std::pair<int, int> global_coordinates(int local_index, int rank);
     // local_id -> (gi, gj) for local elements on the current rank
@@ -82,6 +76,20 @@ public:
     void set_sizes(int rank, std::vector<int>& sizes, int start);
 
     // **********************************************
+    // METHODS FROM buffer.hpp
+    // **********************************************
+    // prepares next buffer
+    void advance_buffer();
+    // returns the current buffer id
+    int buffer_index();
+    // sets the current buffer to idx
+    void set_buffer_index(int idx);
+    // returns the pointer to the current buffer
+    double* buffer_ptr();
+    std::vector<double>& buffer();
+    const std::vector<double>& buffer() const;
+
+    // **********************************************
     // NEW METHODS
     // **********************************************
     double& operator[](const std::vector<double>::size_type index);
@@ -103,21 +111,9 @@ public:
     double* current_matrix();
     void set_current_matrix(double* mat);
 
-    void advance_buffer();
-    int buffer_index();
-    void set_buffer_index(int idx);
-    double* receiving_buffer();
-
 protected:
     // A, B or C
     char label_;
-    /// local matrix
-    //std::vector<double> matrix_;
-    /// local send buffer
-    std::vector<std::vector<double>> buffers_;
-    int current_buffer_;
-    /// temporary local matrix
-    double* current_mat;
     /// Number of rows of the global matrix
     int m_;
     /// Number of columns of the global matrix
@@ -129,31 +125,14 @@ protected:
 
     const Strategy& strategy_;
 
-    long long max_send_buffer_size_;
-    long long max_recv_buffer_size_;
+    /// temporary local matrix
+    double* current_mat;
 
     Interval mi_;
     Interval ni_;
     Interval Pi_;
 
-    std::unique_ptr<Mapper> mapper_;
-    std::unique_ptr<Layout> layout_;
-
-    // computes the number of buckets in the current step
-    // the number of buckets in some step i is equal to the 
-    // product of all divisors in DFS steps that follow step i
-    // in which the current matrix was divided
-    std::vector<int> n_buckets_;
-    std::vector<bool> expanded_after_;
-
-    void compute_n_buckets();
-
-    void initialize_buffers();
-    std::vector<long long> compute_buffer_size(const Strategy& strategy);
-
-    std::vector<long long> compute_buffer_size(Interval& m, Interval& n, Interval& k, Interval& P, 
-            int step, const Strategy& strategy, int rank);
-
-    void compute_max_buffer_size(Interval& m, Interval& n, Interval& k, Interval& P, 
-            int step, const Strategy& strategy, int rank);
+    Mapper mapper_;
+    Layout layout_;
+    Buffer buffer_;
 };

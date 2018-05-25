@@ -262,10 +262,6 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     Interval newn = n.subinterval(divisor_n, divisor_n>1 ? partition_idx : 0);
     Interval newk = k.subinterval(divisor_k, divisor_k>1 ? partition_idx : 0);
 
-    double* A = matrixA.current_matrix();
-    double* B = matrixB.current_matrix();
-    double* C = matrixC.current_matrix();
-
     PE(multiply_layout);
     /*
      * size_before_expansion:
@@ -328,7 +324,7 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     expanded_mat.advance_buffer();
 
     double* original_matrix = expanded_mat.current_matrix();
-    double* expanded_matrix = expanded_mat.receiving_buffer();
+    double* expanded_matrix = expanded_mat.buffer_ptr();
 
     // pack the data for the next recursive call
     expanded_mat.set_current_matrix(expanded_matrix);

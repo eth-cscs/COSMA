@@ -53,7 +53,7 @@ Schedule GetDFSSchedule(unsigned localM, unsigned localN, unsigned localK, unsig
 	return sched;
 }
 
-std::vector<unsigned> Intersect(std::vector<unsigned> &v1, std::vector<unsigned> &v2) {
+std::vector<unsigned> Intersect(std::vector<unsigned> v1, std::vector<unsigned> v2) {
 	std::vector<unsigned> v3;
 	sort(v1.begin(), v1.end());
 	sort(v2.begin(), v2.end());
@@ -184,4 +184,5 @@ Schedule GenerateSchedule(ProblemParameters params) {
 	sched.tileSizeN = dfsSched.tileSizeN;
 	sched.tileSizeK = dfsSched.tileSizeK;
 		return sched;
+};
 }

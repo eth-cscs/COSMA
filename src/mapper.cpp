@@ -1,13 +1,13 @@
 #include "mapper.hpp"
 
 Mapper::Mapper(char label, int m, int n, size_t P, const Strategy& strategy, int rank) :
-        label_(label), m_(m), n_(n), P_(P), strategy_(strategy), rank_(rank) {
+        label_(label), m_(m), n_(n), P_(P), rank_(rank) {
     skip_ranges_ = std::vector<int>(P);
     rank_to_range_ = std::vector<std::vector<Interval2D>>(P, std::vector<Interval2D>());
     mi_ = Interval(0, m-1);
     ni_ = Interval(0, n-1);
     Pi_ = Interval(0, P-1);
-    compute_sizes(mi_, ni_, Pi_, 0);
+    compute_sizes(mi_, ni_, Pi_, 0, strategy);
     initial_buffer_size_ = std::vector<size_t>(P);
     range_offset_ = std::vector<std::vector<int>>(P, std::vector<int>());
 
@@ -80,26 +80,26 @@ void Mapper::output_layout() {
 }
 
 // finds the initial data layout
-void Mapper::compute_sizes(Interval m, Interval n, Interval P, int step) {
+void Mapper::compute_sizes(Interval m, Interval n, Interval P, int step, const Strategy& strategy) {
     Interval2D submatrix(m, n);
 
     // base case
-    if (strategy_.final_step(step)) {
+    if (strategy.final_step(step)) {
         auto submatrices = rank_to_range_[P.first()];
         rank_to_range_[P.first()].push_back(submatrix);
         return;
     }
 
-    int divm = strategy_.divisor_row(label_, step);
-    int divn = strategy_.divisor_col(label_, step);
-    int div = strategy_.divisor(step);
+    int divm = strategy.divisor_row(label_, step);
+    int divn = strategy.divisor_col(label_, step);
+    int div = strategy.divisor(step);
 
     // remember the previous number of fixed subranges
     // for each rank. this is only used in DFS step
     // we want the next DFS step to NOT modify the
     // subranges from the previous DFS step
     std::vector<int> prev_skip_ranges;
-    if (strategy_.dfs_step(step)) {
+    if (strategy.dfs_step(step)) {
         for (int i = P.first(); i <= P.last(); ++i) {
             prev_skip_ranges.push_back(skip_ranges_[i]);
         }
@@ -111,9 +111,9 @@ void Mapper::compute_sizes(Interval m, Interval n, Interval P, int step) {
         Interval newm = m.subinterval(divm, divm>1 ? i : 0);
         Interval newn = n.subinterval(divn, divn>1 ? i : 0);
 
-        if (strategy_.dfs_step(step)) {
+        if (strategy.dfs_step(step)) {
             // invoke recursion
-            compute_sizes(newm, newn, P, step+1);
+            compute_sizes(newm, newn, P, step+1, strategy);
             // skip these elements in rank_to_range_ to make the next DFS step independent
             // we assume that this many subranges are fixed in this DFS and we don't want
             // that next DFS step pop up some of the subranges stored in this DFS step
@@ -132,11 +132,11 @@ void Mapper::compute_sizes(Interval m, Interval n, Interval P, int step) {
             // no-copy case
             // here each recursive step will fill up different part of the sizes vector
             if (divm * divn > 1) {
-                compute_sizes(newm, newn, newP, step+1);
+                compute_sizes(newm, newn, newP, step+1, strategy);
             }
             // copy case
             else {
-                compute_sizes(m, n, newP, step+1);
+                compute_sizes(m, n, newP, step+1, strategy);
 
                 for (int shift = 0; shift < newP.length(); ++shift) {
                     int rank = newP.first() + shift;
@@ -167,7 +167,7 @@ void Mapper::compute_sizes(Interval m, Interval n, Interval P, int step) {
     // skip the subranges after all DFS steps since maybe the first copy case
     // wants to modify all the elements from the beginning of DFS
     // (to subdivide all the matrices as above)
-    if (strategy_.dfs_step(step)) {
+    if (strategy.dfs_step(step)) {
         // clean after yourself, once all DFS steps have finished
         for (int i = P.first(); i <= P.last(); ++i) {
             skip_ranges_[i] = prev_skip_ranges[i - P.first()];
@@ -191,7 +191,7 @@ const std::vector<Interval2D>& Mapper::initial_layout() const {
     return initial_layout(rank_);
 }
 
-std::vector<std::vector<Interval2D>> Mapper::complete_layout(){
+std::vector<std::vector<Interval2D>>& Mapper::complete_layout(){
     return rank_to_range_;
 }
 
