@@ -56,8 +56,10 @@ public:
             long long mem_limit = std::numeric_limits<long long>::max(),
             bool top = false);
 
+    // parses the command line options and initializes the varialbes
     void initialize(const std::string& cmd_line);
 
+    // parses steps if defined manually by the user
     void process_steps(size_t start, const std::string& line);
 
     // greates common divisor of a and b
@@ -82,8 +84,13 @@ public:
     int closest_divisor(int P, int dimension, double target);
 
     // default strategy dividing always the largest dimension in that step
+    // if there is enough memory uses BFS step, if not uses DFS step
     void default_strategy();
     // strategy that tries to make each base case as square as possible
+    // it always uses all the resources (all P available ranks) but tries to find
+    // divm, divn and divk such that divm * divn * divk = P and m/divm = n/divn = k/divk.
+    // if there is not enough memory in some step, then DFS step is performed and new
+    // divm, divn and divk are found that correspond to the new subproblem.
     void square_strategy();
 
     // token is a triplet e.g. bm3 (denoting BFS (m / 3) step)
