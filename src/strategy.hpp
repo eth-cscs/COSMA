@@ -10,6 +10,7 @@
 #include <math.h>
 #include <limits>
 #include <tuple>
+#include "scheduleGenerator.h"
 
 class Strategy {
 public:
@@ -85,6 +86,9 @@ public:
     void default_strategy();
     // strategy that tries to make each base case as square as possible
     void square_strategy();
+
+    // spartition strategy
+    void spartition_strategy();
 
     // token is a triplet e.g. bm3 (denoting BFS (m / 3) step)
     void process_token(const std::string& step_triplet);

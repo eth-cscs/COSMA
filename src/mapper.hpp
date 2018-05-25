@@ -17,6 +17,7 @@
 
 class Mapper {
 public:
+    Mapper() = default;
     Mapper(char label, int m, int n, size_t P, const Strategy& strategy, int rank);
 
     const size_t initial_size(int rank) const;
@@ -26,7 +27,7 @@ public:
     // rank -> list of ranges it owns initially
     const std::vector<Interval2D>& initial_layout(int rank) const;
     const std::vector<Interval2D>& initial_layout() const;
-    std::vector<std::vector<Interval2D>> complete_layout();
+    std::vector<std::vector<Interval2D>>& complete_layout();
 
     // (gi, gj) -> (local_id, rank)
     std::pair<int, int> local_coordinates(int gi, int gj);
@@ -49,8 +50,6 @@ protected:
     int n_;
     /// Maximum number of rank in the global communicator
     size_t P_;
-    /// division strategy
-    const Strategy& strategy_;
     int rank_;
 
     // rank -> list of submatrices that this rank owns
@@ -82,7 +81,7 @@ private:
 
     std::vector<std::pair<int, int>> global_coord;
 
-    void compute_sizes(Interval m, Interval n, Interval P, int step);
+    void compute_sizes(Interval m, Interval n, Interval P, int step, const Strategy& strategy);
     void output_layout();
     void compute_range_to_rank();
 

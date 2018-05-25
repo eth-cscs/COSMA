@@ -8,6 +8,8 @@ Strategy::Strategy(Strategy&& other) = default;
 // constructs the Strategy from the command line
 Strategy::Strategy(const std::string& cmd_line) {
     initialize(cmd_line);
+    n_steps = divisors.size();
+    check_if_valid();
 }
 
 // constructs the Strategy form the command line
@@ -17,6 +19,8 @@ Strategy::Strategy(int argc, char** argv) {
         input += argv[i];
     }
     initialize(input);
+    n_steps = divisors.size();
+    check_if_valid();
 }
 
 Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
@@ -30,8 +34,9 @@ Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
 
 Strategy::Strategy(int mm, int nn, int kk, size_t PP, long long mem_limit, bool top) : 
     m(mm), n(nn), k(kk), P(PP), memory_limit(mem_limit), topology(top) {
-    //square_strategy();
-    default_strategy();
+    square_strategy();
+    //default_strategy();
+    // spartition_strategy();
     n_steps = divisors.size();
     check_if_valid();
 }
@@ -65,12 +70,10 @@ void Strategy::initialize(const std::string& cmd_line) {
         process_steps(steps_it, cmd_line);
     }
     else {
-        //square_strategy();
-        default_strategy();
+        square_strategy();
+        //default_strategy();
+        //spartition_strategy();
     }
-
-    n_steps = divisors.size();
-    check_if_valid();
 }
 
 void Strategy::process_steps(size_t start, const std::string& line) {
@@ -147,7 +150,7 @@ std::vector<int> Strategy::decompose(int n) {
 
     // n must be odd at this point. 
     // we can skip one element
-    for (int i = 3; i <= sqrt(n); i = i+2) {
+    for (int i = 3; i <= std::sqrt(n); i = i+2) {
         // while i divides n, print i and divide n
         while (n%i == 0) {
             factors.push_back(i);
@@ -322,7 +325,6 @@ void Strategy::square_strategy() {
                 + "steps.");
     }
 
-
     while (P > 1) {
         int divm, divn, divk;
         std::tie(divm, divn, divk) = balanced_divisors(m, n, k, P);
@@ -460,6 +462,37 @@ void Strategy::square_strategy() {
                 }
             }
         }
+    }
+}
+
+void Strategy::spartition_strategy() {
+    spartition::ProblemParameters params;
+    params.m = m;
+    params.n = n;
+    params.k = k;
+    params.divStrat = spartition::DivisionStrategy::recursive;
+    params.P = P;
+    params.S = memory_limit;
+    params.schedule = spartition::schedType::S3D;
+    spartition::Schedule schedule = spartition::GenerateSchedule(params);
+
+    this->P = schedule.numTilesM * schedule.numTilesN * schedule.numTilesK;
+
+    for (auto step : schedule.divisions) {
+        if (step.Dim == spartition::dim::dimM) {
+            split_dimension += "m";
+        } else if (step.Dim == spartition::dim::dimN) {
+            split_dimension += "n";
+        } else {
+            split_dimension += "k";
+        }
+
+        divisors.push_back(step.SplitSize);
+
+        if (step.SplitType == spartition::splitType::BFS)
+            step_type += "b";
+        else
+            step_type += "d";
     }
 }
 

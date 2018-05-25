@@ -1,17 +1,17 @@
 #include "carma.hpp"
 
 /*
-   Compute C = A * B
-   m = #rows of A,C
-   n = #columns of B,C
-   k = #columns of A, #rows of B
-   P = #processors involved
-   r = #recursive steps
-   patt = array of 'B' and 'D' indicating BFS or DFS steps; length r
-   divPatt = array of how much each of m,n,k are divided by at each recursive step; length 3*r
+ Compute C = A * B
+ m = #rows of A,C
+ n = #columns of B,C
+ k = #columns of A, #rows of B
+ P = #processors involved
+ r = #recursive steps
+ patt = array of 'B' and 'D' indicating BFS or DFS steps; length r
+ divPatt = array of how much each of m,n,k are divided by at each recursive step; length 3*r
 
-Assumption: we assume that at each step only 1 dimension is split
-*/
+ Assumption: we assume that at each step only 1 dimension is split
+ */
 
 // invoke some dummy computation of blas, just so that it initializes
 // the threading mechanism
@@ -32,28 +32,25 @@ void initialize_blas() {
 
 // this is just a wrapper to initialize and call the recursive function
 void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
-        const Strategy& strategy, MPI_Comm comm) {
+              const Strategy& strategy, MPI_Comm comm) {
     Interval mi = Interval(0, strategy.m-1);
     Interval ni = Interval(0, strategy.n-1);
     Interval ki = Interval(0, strategy.k-1);
     Interval Pi = Interval(0, strategy.P-1);
 
+    PE(blasinit);
+    initialize_blas();
+    PL();
+
     PE(preprocessing_communicators);
     communicator carma_comm(strategy, comm);
     PL();
 
-    initialize_blas();
-
-    matrixA.load_data();
-    matrixB.load_data();
-
     {
         Timer timer(1, "CARMA multiply");
         multiply(matrixA, matrixB, matrixC,
-                mi, ni, ki, Pi, 0, strategy, 0.0, carma_comm);
+                 mi, ni, ki, Pi, 0, strategy, 0.0, carma_comm);
     }
-
-    matrixC.unload_data();
 
     if (carma_comm.rank() == 0) {
         PP();
@@ -63,9 +60,9 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
 
 // dispatch to local call, BFS, or DFS as appropriate
 void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
-        Interval& m, Interval& n, Interval& k, Interval& P,
-        size_t step, const Strategy& strategy, double beta,
-        communicator& comm) {
+              Interval& m, Interval& n, Interval& k, Interval& P,
+              size_t step, const Strategy& strategy, double beta,
+              communicator& comm) {
     PE(multiply_layout);
     // current submatrices that are being computed
     Interval2D a_range(m, k);
@@ -77,18 +74,18 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     std::vector<int> bucketB = matrixB.dfs_buckets(P);
     std::vector<int> bucketC = matrixC.dfs_buckets(P);
 
-    // Skip all buckets that are "before" the current submatrices. 
+    // Skip all buckets that are "before" the current submatrices.
     // the relation submatrix1 <before> submatrix2 is defined in Interval2D.
-    // Intuitively, this will skip all the buckets that are "above" or "on the left" 
+    // Intuitively, this will skip all the buckets that are "above" or "on the left"
     // of the current submatrices. We say "before" because whenever we split in DFS
-    // sequentially, we always first start with the "above" submatrix 
+    // sequentially, we always first start with the "above" submatrix
     // (if the splitting is horizontal) or with the left one (if the splitting is vertical).
     // which explains the name of the relation "before".
     matrixA.update_buckets(P, a_range);
     matrixB.update_buckets(P, b_range);
     matrixC.update_buckets(P, c_range);
 
-    // This iterates over the skipped buckets and sums up their sizes, 
+    // This iterates over the skipped buckets and sums up their sizes,
     // and increases the pointer of the current matrix for the offset
     int offsetA = matrixA.shift(bucketA[comm.relative_rank(P)]);
     int offsetB = matrixB.shift(bucketB[comm.relative_rank(P)]);
@@ -159,19 +156,19 @@ void local_multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& mat
 }
 
 /*
-   In each DFS step, one of the dimensions is split, and each of the subproblems is solved
-   sequentially by all P processors.
-   */
+ In each DFS step, one of the dimensions is split, and each of the subproblems is solved
+ sequentially by all P processors.
+ */
 void DFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
-        Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
-        const Strategy& strategy, double beta, communicator& comm) {
+         Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
+         const Strategy& strategy, double beta, communicator& comm) {
     // split the dimension but not the processors, all P processors are taking part
     // in each recursive call.
     if (strategy.split_m(step)) {
         for (int M = 0; M < strategy.divisor(step); ++M) {
             Interval newm = m.subinterval(strategy.divisor(step), M);
             multiply(matrixA, matrixB, matrixC, newm, n, k, P, step+1, strategy, beta,
-                    comm);
+                     comm);
         }
         return;
     }
@@ -180,7 +177,7 @@ void DFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
         for (int N = 0; N < strategy.divisor(step); ++N) {
             Interval newn = n.subinterval(strategy.divisor(step), N);
             multiply(matrixA, matrixB, matrixC, m, newn, k, P, step+1, strategy, beta,
-                    comm);
+                     comm);
         }
         return;
     }
@@ -195,7 +192,7 @@ void DFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
             multiply(matrixA, matrixB, matrixC, m, n, newk, P, step+1, strategy, (K==0)&&(beta==0) ? 0 : 1, comm);
         }
         return;
-    } 
+    }
 }
 
 template<typename T>
@@ -220,28 +217,28 @@ T which_is_expanded(T&& A, T&& B, T&& C, const Strategy& strategy, size_t step) 
 }
 
 /*
-   In BFS step one of the dimensions is split into "div" pieces.
-   Also, ranks P are split into "div" groups of "newP" processors 
-   such that each group of ranks is in charge of one piece of the split matrix.
+ In BFS step one of the dimensions is split into "div" pieces.
+ Also, ranks P are split into "div" groups of "newP" processors
+ such that each group of ranks is in charge of one piece of the split matrix.
 
  * if m split:
- Split matrix A and copy matrix B such that each of the "div" groups with newP processors 
- contains the whole matrix B (that was previously owned by P processors). 
- Communication is necessary since we want that newP<P processors own what was previously 
+ Split matrix A and copy matrix B such that each of the "div" groups with newP processors
+ contains the whole matrix B (that was previously owned by P processors).
+ Communication is necessary since we want that newP<P processors own what was previously
  owned by P processors After the communication, each group of processors will contain
  identical data of matrix B in exactly the same order in all groups.
 
  * if n split:
- Split matrix B and copy matrix A such that each of the "div" groups with newP processors 
- contains the whole matrix A (that was previously owned by P processors). 
- Communication is necessary since we want that newP<P processors own what was previously 
+ Split matrix B and copy matrix A such that each of the "div" groups with newP processors
+ contains the whole matrix A (that was previously owned by P processors).
+ Communication is necessary since we want that newP<P processors own what was previously
  owned by P processors After the communication, each group of processors will contain
  identical data of matrix A in exactly the same order in all groups.
 
  * if k split:
- Split both matrices A and B (since both of these matrices own dimension k). 
+ Split both matrices A and B (since both of these matrices own dimension k).
  After the recursive call, each of "div" groups with newP processors will own
- a partial result of matrix C which should all be summed up (reduced) and splitted 
+ a partial result of matrix C which should all be summed up (reduced) and splitted
  equally among all P processors. Thus, here we first sum up all the partial results
  that are owned by newP processors, and then we split it equally among P processors.
  While in the previous two cases we had to expand local matrices (since newP processors
@@ -249,8 +246,8 @@ T which_is_expanded(T&& A, T&& B, T&& C, const Strategy& strategy, size_t step) 
  should own what was previously owned by newP ranks - thus local matrices are shrinked.
  */
 void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
-        Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
-        const Strategy& strategy, double beta, communicator& comm) {
+         Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
+         const Strategy& strategy, double beta, communicator& comm) {
     int divisor = strategy.divisor(step);
     int divisor_m = strategy.divisor_m(step);
     int divisor_n = strategy.divisor_n(step);
@@ -277,7 +274,7 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
      * size_after_expansion:
      maps rank i from interval newP to the vector of [bucket1.size(), bucket2.size()...]
      but each bucket here is expanded, i.e. each bucket size in this vector
-     is actually the sum of the sizes of this bucket in all the ranks 
+     is actually the sum of the sizes of this bucket in all the ranks
      from the communication ring of the current rank.
 
      * total_after_expansion:
@@ -305,16 +302,16 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
      if divk > 1 => matrix C is expanded
      */
     CarmaMatrix& expanded_mat = which_is_expanded(matrixA, matrixB, matrixC,
-            strategy, step);
+                                                  strategy, step);
     // gets the buffer sizes before and after expansion.
     // this still does not modify the buffer sizes inside layout
     // it just tells us what they would be.
     expanded_mat.buffers_before_expansion(P, range,
-            size_before_expansion, total_before_expansion);
+                                          size_before_expansion, total_before_expansion);
 
     expanded_mat.buffers_after_expansion(P, newP,
-            size_before_expansion, total_before_expansion,
-            size_after_expansion, total_after_expansion);
+                                         size_before_expansion, total_before_expansion,
+                                         size_after_expansion, total_after_expansion);
 
     // increase the buffer sizes before the recursive call
     expanded_mat.set_sizes(newP, size_after_expansion);
@@ -323,8 +320,14 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     // which is also the size of the matrix after expansion
     int new_size = total_after_expansion[comm.relative_rank(newP)];
 
+    int buffer_idx = expanded_mat.buffer_index();
+    expanded_mat.advance_buffer();
+
     double* original_matrix = expanded_mat.current_matrix();
-    double* expanded_matrix = expanded_mat.receive_buffer();
+    double* expanded_matrix = expanded_mat.buffer_ptr();
+
+    // pack the data for the next recursive call
+    expanded_mat.set_current_matrix(expanded_matrix);
     PL();
 
     PE(multiply_communication_copy);
@@ -334,7 +337,7 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     if (strategy.split_m(step) || strategy.split_n(step)) {
         // copy the matrix that wasn't divided in this step
         comm.copy(P, original_matrix, expanded_matrix,
-                size_before_expansion, total_before_expansion, new_size, step);
+                  size_before_expansion, total_before_expansion, new_size, step);
     }
     PL();
 
@@ -348,26 +351,20 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
         new_beta = 0;
     }
 
-    // pack the data for the next recursive call
-    expanded_mat.set_current_matrix(expanded_matrix);
-    expanded_mat.swap_buffers();
-
     multiply(matrixA, matrixB, matrixC, newm, newn, newk, newP, step+1, strategy, new_beta, comm);
-
     // revert the current matrix
-    expanded_mat.swap_buffers();
+    expanded_mat.set_buffer_index(buffer_idx);
     expanded_mat.set_current_matrix(original_matrix);
 
     PE(multiply_communication_reduce);
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
-        comm.reduce(P, expanded_matrix, original_matrix, size_before_expansion,
-                total_before_expansion, size_after_expansion, total_after_expansion, beta, step);
+        comm.reduce(P, expanded_matrix, original_matrix, size_before_expansion, total_before_expansion, size_after_expansion, total_after_expansion, beta, step);
     }
     PL();
 
     PE(multiply_layout);
-    // the buffer sizes should be back to the previous values
+    // after the memory is freed, the buffer sizes are back to the previous values
     // (the values at the beginning of this BFS step)
     expanded_mat.set_sizes(newP, size_before_expansion, newP.first() - P.first());
     PL();
