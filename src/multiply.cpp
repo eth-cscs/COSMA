@@ -301,8 +301,7 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
      if divn > 1 => matrix A is expanded
      if divk > 1 => matrix C is expanded
      */
-    CarmaMatrix& expanded_mat = which_is_expanded(matrixA, matrixB, matrixC,
-                                                  strategy, step);
+    CarmaMatrix& expanded_mat = which_is_expanded(matrixA, matrixB, matrixC, strategy, step);
     // gets the buffer sizes before and after expansion.
     // this still does not modify the buffer sizes inside layout
     // it just tells us what they would be.
@@ -359,7 +358,8 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     PE(multiply_communication_reduce);
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
-        comm.reduce(P, expanded_matrix, original_matrix, size_before_expansion, total_before_expansion, size_after_expansion, total_after_expansion, beta, step);
+        comm.reduce(P, expanded_matrix, original_matrix, size_before_expansion, 
+                total_before_expansion, size_after_expansion, total_after_expansion, beta, step);
     }
     PL();
 
