@@ -42,10 +42,10 @@ ax.bar(index + bar_width + gap, means_scalapack_naive, bar_width,
 
 ax.bar(index + bar_width + bar_width + gap + gap, means_scalapack_opt, bar_width,
     alpha=opacity, color="orangered",
-    label='ScaLAPACK (tuned)')
+    label='ScaLAPACK (tuned) *')
 
-ax.axhline(y=1209, linewidth=2, color = "k", alpha=0.8)
-ax.annotate('peak node throughput', xy=(2, 1), xytext=(3, 1240))
+ax.axhline(y=1209, linewidth=1, color = "green")
+ax.annotate('peak throughput per node', xy=(2, 1), xytext=(3, 1240), color="green")
 
 ax.set_ylabel('Throughput per node (GFlops/s)', fontsize=14)
 ax.set_title('CARMA vs ScaLAPACK on 64 nodes on Piz Daint', fontsize=14)
