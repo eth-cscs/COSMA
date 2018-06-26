@@ -4,6 +4,8 @@
 #include <vector>
 #include "interval.hpp"
 #include "communicator.hpp"
+#include "one_sided_communicator.hpp"
+#include "two_sided_communicator.hpp"
 #include "blas.h"
 #include "matrix.hpp"
 #include <semiprof.hpp>

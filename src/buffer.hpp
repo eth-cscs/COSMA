@@ -4,6 +4,7 @@
 #include <vector>
 #include "mapper.hpp"
 #include "layout.hpp"
+#include "allocator.hpp"
 
 /*
  * This class wrapps up a vector of buffers representing single matrix (A, B or C).
@@ -38,18 +39,18 @@ public:
     // returns the pointer to the current buffer
     double* buffer_ptr();
     // returns a reference to the current buffer
-    std::vector<double>& buffer();
-    const std::vector<double>& buffer() const;
+    std::vector<double, allocator<double>>& buffer();
+    const std::vector<double, allocator<double>>& buffer() const;
 
     // returns the initial buffer (i.e. with index 0)
     // this buffer owns the initial matrix data
     double* initial_buffer_ptr();
-    std::vector<double>& initial_buffer();
-    const std::vector<double>& initial_buffer() const;
+    std::vector<double, allocator<double>>& initial_buffer();
+    const std::vector<double, allocator<double>>& initial_buffer() const;
 
     // we can access i-th buffer of this class with [] operator
-    std::vector<double>& operator[](const std::vector<double>::size_type index);
-    std::vector<double> operator[](const std::vector<double>::size_type index) const;
+    std::vector<double, allocator<double>>& operator[](const std::vector<double, allocator<double>>::size_type index);
+    std::vector<double, allocator<double>> operator[](const std::vector<double, allocator<double>>::size_type index) const;
 
     // can be A, B or C, determining the matrix
     char label_;
@@ -100,7 +101,7 @@ protected:
 
     // vector of buffers being used for the current matrix (given by label) 
     // by the current rank (determined by variable rank_)
-    std::vector<std::vector<double>> buffers_;
+    std::vector<std::vector<double, allocator<double>>> buffers_;
     // pointer to the current buffer being used in the previous vector of buffers
     int current_buffer_;
 

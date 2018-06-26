@@ -43,7 +43,7 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     PL();
 
     PE(preprocessing_communicators);
-    communicator carma_comm(strategy, comm);
+    one_sided_communicator carma_comm(strategy, comm);
     PL();
 
     {
@@ -334,6 +334,7 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     // to get the expanded matrix (all ranks inside communication ring should own
     // exactly the same data in the expanded matrix.
     if (strategy.split_m(step) || strategy.split_n(step)) {
+        comm.synchronize();
         // copy the matrix that wasn't divided in this step
         comm.copy(P, original_matrix, expanded_matrix,
                   size_before_expansion, total_before_expansion, new_size, step);
@@ -358,6 +359,7 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     PE(multiply_communication_reduce);
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
+        comm.synchronize();
         comm.reduce(P, expanded_matrix, original_matrix, size_before_expansion, 
                 total_before_expansion, size_after_expansion, total_after_expansion, beta, step);
     }
