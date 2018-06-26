@@ -14,8 +14,15 @@ public:
 
         int local_size = total_before[relative_rank(P)];
 
+        MPI_Info info ;
+        MPI_Info_create(&info); 
+        MPI_Info_set(info, "no_locks", "true");
+        MPI_Info_set(info, "accumulate_ops", "same_op");
+        MPI_Info_set(info, "accumulate_ordering", "none");
+
         MPI_Win win;
-        MPI_Win_create(in, local_size*sizeof(double), sizeof(double), MPI_INFO_NULL, subcomm, &win);
+        MPI_Win_create(in, local_size*sizeof(double), sizeof(double), info, subcomm, &win);
+        MPI_Info_free(&info);
         MPI_Win_fence(MPI_MODE_NOPRECEDE + MPI_MODE_NOPUT, win);
 
         int sum = 0;
@@ -147,31 +154,23 @@ public:
             memset(receive_pointer, 0, local_size*sizeof(double));
         }
 
+        MPI_Info info ;
+        MPI_Info_create(&info); 
+        MPI_Info_set(info, "no_locks", "true");
+        MPI_Info_set(info, "accumulate_ops", "same_op");
+        MPI_Info_set(info, "accumulate_ordering", "none");
+
         MPI_Win win;
-        // this allocates new buffer, which should not be the case
-        // it should use the previously allocated buffer C without new allocations
-        // PROBLEM: MPI_Win_attach only accepts the memory that is allocated with MPI_Win_alloc
-        // MPI_Win_create(receive_pointer, local_size*sizeof(double), sizeof(double),
-        //    MPI_INFO_NULL, subcomm, &win);
+        MPI_Win_create(receive_pointer, local_size*sizeof(double), sizeof(double),
+            info, subcomm, &win);
+
+        MPI_Info_free(&info);
+        /*
         MPI_Win_create_dynamic(MPI_INFO_NULL, subcomm, &win);
-        MPI_Win_set_errhandler(win, MPI_ERRORS_RETURN);
         MPI_Barrier(subcomm);
         MPI_Win_attach(win, receive_pointer, local_size*sizeof(double));
-        int disp_unit;
-        int flag;
-        MPI_Win_get_attr(win, MPI_WIN_DISP_UNIT, &disp_unit, &flag);
-        std::cout << "before flag = " << flag << " and disp_unit = " << disp_unit << std::endl;
-        disp_unit = 1;
-        int error = MPI_Win_set_attr(win, MPI_WIN_DISP_UNIT, &disp_unit);
-        MPI_Win_get_attr(win, MPI_WIN_DISP_UNIT, &disp_unit, &flag);
-        std::cout << "after flag = " << flag << " and disp_unit = " << disp_unit << std::endl;
-        if (error != MPI_SUCCESS) {
-            char error_string[BUFSIZ];
-            int length_of_error_string;
-            MPI_Error_string(error, error_string, &length_of_error_string);
-            std::cout << "got error string: " << error_string << std::endl;
-        }
         MPI_Barrier(subcomm);
+        */
         MPI_Win_fence(MPI_MODE_NOPRECEDE + MPI_MODE_NOSTORE, win);
 
         for (int i = 0; i < div; ++i) {
@@ -180,8 +179,7 @@ public:
         }
 
         MPI_Win_fence(MPI_MODE_NOSUCCEED, win);
-        MPI_Barrier(subcomm);
-        MPI_Win_detach(win, receive_pointer);
+        // MPI_Win_detach(win, receive_pointer);
         MPI_Win_free(&win);
     }
 
