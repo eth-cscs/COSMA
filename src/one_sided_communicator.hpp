@@ -93,7 +93,6 @@ public:
             std::vector<std::vector<int>>& c_expanded,
             std::vector<int>& c_total_expanded,
             int beta, int step) override {
-        std::cout << "Invoking reduce of one sided backend" << std::endl;
         int div = strategy_->divisor(step);
         MPI_Comm subcomm = active_comm(step);
 
