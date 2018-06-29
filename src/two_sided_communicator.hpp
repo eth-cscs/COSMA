@@ -148,7 +148,4 @@ public:
             add(C, receive_pointer, recvcnts[gp]);
         }
     }
-
-    // no need to synchronize anything since copy and reduce are blocking calls
-    void synchronize() {}
 };
