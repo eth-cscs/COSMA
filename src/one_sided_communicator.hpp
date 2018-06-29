@@ -2,14 +2,13 @@
 
 class one_sided_communicator: public communicator {
 public:
-    one_sided_communicator(const Strategy& strategy, MPI_Comm comm): communicator(strategy, comm) {}
+    one_sided_communicator(const Strategy* strategy, MPI_Comm comm): communicator(strategy, comm) {}
 
     void copy(Interval& P, double* in, double* out,
             std::vector<std::vector<int>>& size_before,
             std::vector<int>& total_before,
             int total_after, int step) override {
-
-        int div = strategy_.divisor(step);
+        int div = strategy_->divisor(step);
         MPI_Comm subcomm = active_comm(step);
 
         int local_size = total_before[relative_rank(P)];
@@ -94,7 +93,8 @@ public:
             std::vector<std::vector<int>>& c_expanded,
             std::vector<int>& c_total_expanded,
             int beta, int step) override {
-        int div = strategy_.divisor(step);
+        std::cout << "Invoking reduce of one sided backend" << std::endl;
+        int div = strategy_->divisor(step);
         MPI_Comm subcomm = active_comm(step);
 
         std::vector<int> subgroup(div);

@@ -87,8 +87,8 @@ public:
     // returns the pointer to the current buffer
     double* buffer_ptr();
 
-    std::vector<double, allocator<double>>& buffer();
-    const std::vector<double, allocator<double>>& buffer() const;
+    std::vector<double, mpi_allocator<double>>& buffer();
+    const std::vector<double, mpi_allocator<double>>& buffer() const;
 
     // **********************************************
     // NEW METHODS
@@ -102,12 +102,12 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const CarmaMatrix& mat);
 
     double* matrix_pointer();
-    std::vector<double, allocator<double>>& matrix();
-    const std::vector<double, allocator<double>>& matrix() const;
+    std::vector<double, mpi_allocator<double>>& matrix();
+    const std::vector<double, mpi_allocator<double>>& matrix() const;
 
     // pointer to send buffer
     //double* buffer_ptr();
-    //std::vector<double, allocator<double>>& buffer();
+    //std::vector<double, mpi_allocator<double>>& buffer();
     // pointer to current matrix (send buffer)
     double* current_matrix();
     void set_current_matrix(double* mat);

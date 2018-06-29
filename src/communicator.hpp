@@ -11,7 +11,8 @@
 
 class communicator {
 public:
-    communicator(const Strategy& strategy, MPI_Comm comm=MPI_COMM_WORLD);
+    communicator() = default;
+    communicator(const Strategy* strategy, MPI_Comm comm=MPI_COMM_WORLD);
     ~communicator();
 
     virtual void copy(Interval& P, double* in, double* out,
@@ -25,8 +26,6 @@ public:
         std::vector<std::vector<int>>& c_expanded,
         std::vector<int>& c_total_expanded,
         int beta, int step) = 0;
-
-    virtual void synchronize() = 0;
 
     // adds two vectors of size n and stores the result in a (a += b)
     void add(double* a, double* b, int n);
@@ -66,7 +65,7 @@ protected:
     std::vector<MPI_Comm> comm_ring_;
     std::vector<MPI_Comm> comm_subproblem_;
     int rank_;
-    const Strategy& strategy_;
+    const Strategy* strategy_;
     std::vector<int> step_to_comm_index_;
     MPI_Comm full_comm_;
     int comm_size_;

@@ -20,31 +20,19 @@ void fillInt(T& in) {
     [](){ return (int) (10*drand48()); });
 }
 
-int main( int argc, char **argv ) {
-    Strategy strategy(argc, argv);
-    int m = strategy.m;
-    int n = strategy.n;
-    int k = strategy.k;
-
-    MPI_Init(&argc, &argv);
-
-    int P, rank;
-    MPI_Comm_size(MPI_COMM_WORLD, &P);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    if (P != strategy.P) {
-        throw(std::runtime_error("Number of processors available not equal \
-                                 to the number of processors specified by flag P"));
-    }
-
-    if (rank == 0) {
-        std::cout << strategy << std::endl;
-    }
+bool run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD, bool one_sided_communication = false) {
+    int rank, size;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &size);
+    int m = s.m;
+    int n = s.n;
+    int k = s.k;
+    int P = s.P;
 
     //Declare A,B and C CARMA matrices objects
-    CarmaMatrix A('A', strategy, rank);
-    CarmaMatrix B('B', strategy, rank);
-    CarmaMatrix C('C', strategy, rank);
+    CarmaMatrix A('A', s, rank);
+    CarmaMatrix B('B', s, rank);
+    CarmaMatrix C('C', s, rank);
 
     // fill the matrices with random data
     srand48(rank);
@@ -78,9 +66,9 @@ int main( int argc, char **argv ) {
             int receive_size_A = A.initial_size(i);
             int receive_size_B = B.initial_size(i);
             //Rank 0 receive data
-            MPI_Recv(As.data()+offsetA, receive_size_A, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,
+            MPI_Recv(As.data()+offsetA, receive_size_A, MPI_DOUBLE, i, 0, comm,
                 MPI_STATUSES_IGNORE);
-            MPI_Recv(Bs.data()+offsetB, receive_size_B, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,
+            MPI_Recv(Bs.data()+offsetB, receive_size_B, MPI_DOUBLE, i, 0, comm,
                 MPI_STATUSES_IGNORE);
 
             offsetA += receive_size_A;
@@ -89,11 +77,11 @@ int main( int argc, char **argv ) {
     }
     //Rank i send data
     if (rank > 0) {
-        MPI_Send(A.matrix_pointer(), sizeA, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-        MPI_Send(B.matrix_pointer(), sizeB, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+        MPI_Send(A.matrix_pointer(), sizeA, MPI_DOUBLE, 0, 0, comm);
+        MPI_Send(B.matrix_pointer(), sizeB, MPI_DOUBLE, 0, 0, comm);
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
 
     //Then rank 0 must reorder data locally
     std::vector<double> globA;
@@ -166,8 +154,7 @@ int main( int argc, char **argv ) {
 #endif
     }
 
-    multiply(A, B, C, strategy, MPI_COMM_WORLD);
-    ;
+    multiply(A, B, C, s, comm, one_sided_communication);
 
     //Then rank0 ask for other ranks data
     std::vector<double> Cs;
@@ -180,17 +167,17 @@ int main( int argc, char **argv ) {
         for( int i = 1; i < P; i++ ) {
             int receive_size_C = C.initial_size(i);
             //Rank 0 receive data
-            MPI_Recv(Cs.data()+offsetC, receive_size_C, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,
+            MPI_Recv(Cs.data()+offsetC, receive_size_C, MPI_DOUBLE, i, 0, comm,
                 MPI_STATUSES_IGNORE);
             offsetC += receive_size_C;
         }
     }
     //Rank i send data
     if (rank > 0) {
-        MPI_Send(C.matrix_pointer(), sizeC, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+        MPI_Send(C.matrix_pointer(), sizeC, MPI_DOUBLE, 0, 0, comm);
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
 
     //Then rank 0 must reorder data locally
     std::vector<double> globC;
@@ -232,7 +219,6 @@ int main( int argc, char **argv ) {
             std::cout <<"Result is OK"<<std::endl;
         }
     }
-
 #ifdef DEBUG
     for( int i = 0; i < P; i++ ) {
         if( rank == i ) {
@@ -252,9 +238,35 @@ int main( int argc, char **argv ) {
                 printf("%5.3f ", C.matrix()[j] );
             printf("\n");
         }
-        MPI_Barrier( MPI_COMM_WORLD );
+        MPI_Barrier( comm );
     }
 #endif //DEBUG
+    return rank > 0 || isOK;
+}
+
+int main( int argc, char **argv ) {
+    Strategy strategy(argc, argv);
+
+    MPI_Init(&argc, &argv);
+
+    int P, rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &P);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    if (P != strategy.P) {
+        throw(std::runtime_error("Number of processors available not equal \
+                                 to the number of processors specified by flag P"));
+    }
+
+    if (rank == 0) {
+        std::cout << strategy << std::endl;
+    }
+
+    // first run with two-sided communication backend
+    bool isOK = run(strategy, MPI_COMM_WORLD, false);
+    MPI_Barrier(MPI_COMM_WORLD);
+    // then run it with one-sided communication backend
+    isOK = isOK && run(strategy, MPI_COMM_WORLD, true);
 
     if (rank == 0) {
         MPI_Finalize();

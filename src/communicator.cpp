@@ -1,23 +1,23 @@
 #include "communicator.hpp"
 
-communicator::communicator(const Strategy& strategy, MPI_Comm comm): 
+communicator::communicator(const Strategy* strategy, MPI_Comm comm):
         strategy_(strategy), full_comm_(comm) {
 
     MPI_Comm_rank(comm, &rank_);
     MPI_Comm_size(comm, &comm_size_);
 
-    if (strategy_.topology) {
+    if (strategy_->topology) {
         add_topology();
     }
 
     create_communicators(full_comm_);
     // split_communicators(full_comm_);
 
-    step_to_comm_index_ = std::vector<int>(strategy_.n_steps);
+    step_to_comm_index_ = std::vector<int>(strategy_->n_steps);
     int idx = 0;
-    for (int i = 0; i < strategy_.n_steps; ++i) {
+    for (int i = 0; i < strategy_->n_steps; ++i) {
         step_to_comm_index_[i] = idx;
-        if (strategy_.bfs_step(i)) idx++;
+        if (strategy_->bfs_step(i)) idx++;
     }
 }
 
@@ -37,19 +37,19 @@ void communicator::add(double* a, double* b, int n) {
 // this functions finds all edges for the current rank
 // weight of the edge is given by the amount of communicated data
 void communicator::get_topology_edges(std::vector<int>& dest, std::vector<int>& weight) {
-    int m = strategy_.m;
-    int n = strategy_.n;
-    int k = strategy_.k;
-    Interval P(0, strategy_.P-1);
-    int n_steps = strategy_.n_steps;
+    int m = strategy_->m;
+    int n = strategy_->n;
+    int k = strategy_->k;
+    Interval P(0, strategy_->P-1);
+    int n_steps = strategy_->n_steps;
 
     for (int step = 0; step < n_steps; ++step) {
-        m /= strategy_.divisor_m(step);
-        n /= strategy_.divisor_n(step);
-        k /= strategy_.divisor_k(step);
+        m /= strategy_->divisor_m(step);
+        n /= strategy_->divisor_n(step);
+        k /= strategy_->divisor_k(step);
 
-        if (strategy_.bfs_step(step)) {
-            int div = strategy_.divisor(step);
+        if (strategy_->bfs_step(step)) {
+            int div = strategy_->divisor(step);
             int partition_idx = P.partition_index(div, rank_);
             Interval newP = P.subinterval(div, partition_idx);
             int group, offset;
@@ -61,9 +61,9 @@ void communicator::get_topology_edges(std::vector<int>& dest, std::vector<int>& 
                 dest.push_back(neighbor);
 
                 int communication_size = 0;
-                if (strategy_.split_n(step))
+                if (strategy_->split_n(step))
                     communication_size = m * k / newP.length();
-                else if (strategy_.split_m(step))
+                else if (strategy_->split_m(step))
                     communication_size = k * n / newP.length();
                 else
                     communication_size = m * n / newP.length();
@@ -190,12 +190,12 @@ int communicator::rank_outside_ring(Interval& P, int div, int off, int i) {
 
 void communicator::split_communicators(MPI_Comm comm) {
     //MPI_Comm_group(comm, &comm_group);
-    Interval P(0, strategy_.P - 1);
+    Interval P(0, strategy_->P - 1);
     // iterate through all steps and for each bfs
     // step, create a suitable subcommunicator
-    for (int step = 0; step < strategy_.n_steps; ++step) {
-        if (strategy_.bfs_step(step)) {
-            int div = strategy_.divisor(step);
+    for (int step = 0; step < strategy_->n_steps; ++step) {
+        if (strategy_->bfs_step(step)) {
+            int div = strategy_->divisor(step);
             int partition_idx = P.partition_index(div, rank_);
             Interval newP = P.subinterval(div, partition_idx);
             int group, offset;
@@ -213,12 +213,12 @@ void communicator::split_communicators(MPI_Comm comm) {
 
 void communicator::create_communicators(MPI_Comm comm) {
     //MPI_Comm_group(comm, &comm_group);
-    Interval P(0, strategy_.P - 1);
+    Interval P(0, strategy_->P - 1);
     // iterate through all steps and for each bfs
     // step, create a suitable subcommunicator
-    for (int step = 0; step < strategy_.n_steps; ++step) {
-        if (strategy_.bfs_step(step)) {
-            int div = strategy_.divisor(step);
+    for (int step = 0; step < strategy_->n_steps; ++step) {
+        if (strategy_->bfs_step(step)) {
+            int div = strategy_->divisor(step);
             int partition_idx = P.partition_index(div, rank_);
             Interval newP = P.subinterval(div, partition_idx);
             int group, offset;

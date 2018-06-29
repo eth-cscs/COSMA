@@ -32,7 +32,7 @@ void initialize_blas() {
 
 // this is just a wrapper to initialize and call the recursive function
 void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
-              const Strategy& strategy, MPI_Comm comm) {
+              const Strategy& strategy, MPI_Comm comm, bool one_sided_communication) {
     Interval mi = Interval(0, strategy.m-1);
     Interval ni = Interval(0, strategy.n-1);
     Interval ki = Interval(0, strategy.k-1);
@@ -43,16 +43,22 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     PL();
 
     PE(preprocessing_communicators);
-    one_sided_communicator carma_comm(strategy, comm);
+    std::unique_ptr<communicator> carma_comm;
+    if (one_sided_communication) {
+        carma_comm = std::make_unique<one_sided_communicator>(&strategy, comm);
+
+    } else {
+        carma_comm = std::make_unique<two_sided_communicator>(&strategy, comm);
+    }
     PL();
 
     {
         Timer timer(1, "CARMA multiply");
         multiply(matrixA, matrixB, matrixC,
-                 mi, ni, ki, Pi, 0, strategy, 0.0, carma_comm);
+                 mi, ni, ki, Pi, 0, strategy, 0.0, *carma_comm);
     }
 
-    if (carma_comm.rank() == 0) {
+    if (carma_comm->rank() == 0) {
         PP();
     }
 
@@ -334,7 +340,6 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     // to get the expanded matrix (all ranks inside communication ring should own
     // exactly the same data in the expanded matrix.
     if (strategy.split_m(step) || strategy.split_n(step)) {
-        comm.synchronize();
         // copy the matrix that wasn't divided in this step
         comm.copy(P, original_matrix, expanded_matrix,
                   size_before_expansion, total_before_expansion, new_size, step);
@@ -359,7 +364,6 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     PE(multiply_communication_reduce);
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
-        comm.synchronize();
         comm.reduce(P, expanded_matrix, original_matrix, size_before_expansion, 
                 total_before_expansion, size_after_expansion, total_after_expansion, beta, step);
     }

@@ -14,7 +14,7 @@
 #include "gpu/gemm.hpp"
 
 void multiply(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
-              const Strategy& strategy, MPI_Comm comm=MPI_COMM_WORLD);
+              const Strategy& strategy, MPI_Comm comm=MPI_COMM_WORLD, bool one_sided_communication=false);
 
 void multiply(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
               Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
