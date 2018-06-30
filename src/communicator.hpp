@@ -15,11 +15,110 @@ public:
     communicator(const Strategy* strategy, MPI_Comm comm=MPI_COMM_WORLD);
     ~communicator();
 
+    /* In each communication step, processors are split and the communication is performed.
+     * P processors are split into d groups (d = divisor in this step),
+     * where each group consists of P/d processors.
+     *
+     * Communication rings are then created by taking 1 processor from each group
+     * with the same offset within that group. 
+     * ------------------------------------------------------------------------------
+     * Example: P = 12, d = 3:
+     *    - 3 groups with 4 elements: [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]
+     *    - 4 communication rings: [0, 4, 8], [1, 5, 9], [2, 6, 10], [3, 7, 11]
+     *
+     * For this reason, to each rank, we assign two numbers: (gp, offset) 
+     * describing which group this rank belongs to and what offset within
+     * its group this rank has. The offset uniquely determines the 
+     * communication rink that the rank belongs to.
+     * ------------------------------------------------------------------------------
+     * Example: P = 12, d = 3:
+     *    - rank 1 belongs to group 1 and has offset 0 within this group.
+     *    - rank 4 belongs to group 0 and has offset 1 within this group.
+     *    - rank 10 belongs to group 2 and has offset 2 within this group.
+     * ------------------------------------------------------------------------------
+     */
+
+    /* Performs all-gather type of communication within each communiction ring.
+     *
+     * During the communication, ranks exchange the contents of "in" buffers.
+     * After the communication, all ranks within the same communication ring
+     * have exactly the same content in their "out" buffers, that contains 
+     * the result of the all-gather communication. This means that after 
+     * the communication, all the ranks within the same communication ring
+     * become completely independent of each other, since they have the same 
+     * data regarding the communicated matrix.
+     * ------------------------------------------------------------------------------
+     * Example: P = 12, d = 3, first communication ring performs the following communication:
+     * ------------------------------------------------------------------------------
+     * BEFORE COMMUNICATION: 
+     * rank 0: 
+     *      buffer "in": a1, a2, a3 (different blocks)
+     * rank 4:
+     *      buffer "in": b1, b2, b3
+     * rank 8:
+     *      buffer "in": c1, c2, c3
+     * ------------------------------------------------------------------------------
+     * AFTER COMMUNICATION:
+     * ranks 0, 4, 8 have identical out buffer with the following content:
+     *      buffer "out": a1, b1, c1, a2, b2, c2, a3, b3, c3
+     * ------------------------------------------------------------------------------
+     * All ranks in the same communication ring have the same number of blocks, but
+     * all blocks can potentially have different sizes.
+     * The total number of blocks per rank is equal to the product of all divisors
+     * in DFS steps (only in DFS steps) in which this matrix was split. 
+     * However, not all the blocks that a rank owns are necessarily exchanged 
+     * in a single invocation of this function. Only blocks belonging to the 
+     * current submatrix are being exchanged within a single invocation of copy.
+     */
     virtual void copy(Interval& P, double* in, double* out,
         std::vector<std::vector<int>>& size_before,
         std::vector<int>& total_before,
         int total_after, int step) = 0;
 
+    /* Performs reduce-scatter type of communication within each communiction ring.
+     * This can be thought as the inverse of copy, because here all ranks in the same
+     * communication ring have exactly the same number of elements in their "in" buffers.
+     *
+     * Each rank splits the data they have into equal number of blocks and then each rank 
+     * reduces only a subset of blocks over all the ranks. Therefore, in copy the local buffers 
+     * expand after the communication, whereas here the local buffers shrink because
+     * the rank wants to keep only a subset of blocks.
+     * ------------------------------------------------------------------------------
+     * Example: P = 12, d = 3, first communication ring performs the following communication:
+     * ------------------------------------------------------------------------------
+     * BEFORE COMMUNICATION: 
+     * Each rank has the same structure of data: the same number of equally-sized blocks.
+     * This data represents the partial results of the matrix C that should be reduced.
+     * Here, block a1 in rank 0 and in rank 4 can have (and probably will) different 
+     * content (different partial results) but the size of the block a1 will be the same
+     * in all the ranks of the same communication ring. 
+     *
+     * rank 0: 
+     *      buffer "in": a1, b1, c1, a2, b2, c2, a3, b3, c3
+     * rank 4:
+     *      buffer "in": a1, b1, c1, a2, b2, c2, a3, b3, c3
+     * rank 8:
+     *      buffer "in": a1, b1, c1, a2, b2, c2, a3, b3, c3
+     * ------------------------------------------------------------------------------
+     * AFTER COMMUNICATION:
+     * rank 0: 
+     *      buffer "in": a1, a2, a3 (summed over ranks)
+     * rank 4:
+     *      buffer "in": b1, b2, b3 (summed over ranks)
+     * rank 8:
+     *      buffer "in": c1, c2, c3 (summed over ranks)
+     *
+     * where each block after the communication (say block a1) is actually the sum 
+     * of all a1-blocks in all the ranks of this communication ring 
+     * ------------------------------------------------------------------------------
+     * All ranks in the same communication ring have the same number of blocks, but
+     * all blocks can potentially have different sizes.
+     * The total number of blocks per rank is equal to the product of all divisors
+     * in DFS steps (only in DFS steps) in which this matrix was split. 
+     * However, not all the blocks that a rank owns are necessarily exchanged 
+     * in a single invocation of this function. Only blocks belonging to the 
+     * current submatrix are being exchanged within a single invocation of copy.
+     */
     virtual void reduce(Interval& P, double* in, double* out,
         std::vector<std::vector<int>>& c_current,
         std::vector<int>& c_total_current,

@@ -43,7 +43,8 @@ public:
                 int target = rank_outside_ring(P, div, off, rank);
                 int b_size = size_before[target][block];
 
-                MPI_Get(out + displacement, b_size, MPI_DOUBLE, rank, rank_offset[rank], b_size, MPI_DOUBLE, win);
+                MPI_Get(out + displacement, b_size, MPI_DOUBLE, 
+                        rank, rank_offset[rank], b_size, MPI_DOUBLE, win);
 
                 rank_offset[rank] += b_size;
                 displacement += b_size;

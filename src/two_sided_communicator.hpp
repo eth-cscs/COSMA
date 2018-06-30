@@ -34,11 +34,11 @@ public:
             max_size = std::max(max_size, temp_size);
         }
 
-        int n_buckets = size_before[relative_rank(P)].size();
+        int n_blocks = size_before[relative_rank(P)].size();
         double* receive_pointer;
         std::unique_ptr<double[]> receiving_buffer;
 
-        if (n_buckets > 1) {
+        if (n_blocks > 1) {
             receiving_buffer = std::unique_ptr<double[]>(new double[total_after]);
             receive_pointer = receiving_buffer.get();
         } else {
@@ -53,18 +53,18 @@ public:
                     total_size.data(), dspls.data(), MPI_DOUBLE, subcomm);
         }
 
-        if (n_buckets > 1) {
+        if (n_blocks > 1) {
             int index = 0;
-            std::vector<int> bucket_offset(div);
+            std::vector<int> block_offset(div);
             // order all first DFS parts of all groups first and so on..
-            for (int bucket = 0; bucket < n_buckets; bucket++) {
+            for (int block = 0; block < n_blocks; block++) {
                 for (int rank = 0; rank < div; rank++) {
                     int target = rank_outside_ring(P, div, off, rank);
-                    int dsp = dspls[rank] + bucket_offset[rank];
-                    int b_size = size_before[target][bucket];
+                    int dsp = dspls[rank] + block_offset[rank];
+                    int b_size = size_before[target][block];
                     std::copy(receiving_buffer.get() + dsp, receiving_buffer.get() + dsp + b_size, out + index);
                     index += b_size;
-                    bucket_offset[rank] += b_size;
+                    block_offset[rank] += b_size;
                 }
             }
         }
@@ -94,21 +94,21 @@ public:
         std::tie(gp, off) = group_and_offset(P, div);
 
         // reorder the elements as:
-        // first all buckets that should be sent to rank 0 then all buckets for rank 1 and so on...
-        int n_buckets = c_expanded[off].size();
-        std::vector<int> bucket_offset(n_buckets);
+        // first all blocks that should be sent to rank 0 then all blocks for rank 1 and so on...
+        int n_blocks = c_expanded[off].size();
+        std::vector<int> block_offset(n_blocks);
         std::unique_ptr<double[]> send_buffer;
         double* send_pointer;
 
         int sum = 0;
-        for (int i = 0; i < n_buckets; ++i) {
-            bucket_offset[i] = sum;
+        for (int i = 0; i < n_blocks; ++i) {
+            block_offset[i] = sum;
             sum += c_expanded[off][i];
         }
 
         std::vector<int> recvcnts(div);
 
-        if (n_buckets > 1) {
+        if (n_blocks > 1) {
             send_buffer = std::unique_ptr<double[]>(new double[c_total_expanded[off]]);
             send_pointer = send_buffer.get();
         } else {
@@ -121,13 +121,13 @@ public:
             int target = rank_outside_ring(P, div, off, i);
             recvcnts[i] = c_total_current[target];
 
-            if (n_buckets > 1) {
-                for (int bucket = 0; bucket < n_buckets; ++bucket) {
-                    int b_offset = bucket_offset[bucket];
-                    int b_size = c_current[target][bucket];
+            if (n_blocks > 1) {
+                for (int block = 0; block < n_blocks; ++block) {
+                    int b_offset = block_offset[block];
+                    int b_size = c_current[target][block];
                     std::copy(LC + b_offset, LC + b_offset + b_size, send_buffer.get() + index);
                     index += b_size;
-                    bucket_offset[bucket] += b_size;
+                    block_offset[block] += b_size;
                 }
             }
         }
