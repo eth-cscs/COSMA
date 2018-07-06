@@ -31,6 +31,9 @@ public:
     // if true, MPI will try to relabel ranks such that
     // the ranks which communicate are physically close to each other
     bool topology;
+    // if true, one sided communication backend will be used
+    // otherwise, two sided communication backend is used
+    bool one_sided_communication;
     long long memory_limit;
     long long memory_used;
     int n_bfs_steps;

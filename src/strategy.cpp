@@ -62,6 +62,8 @@ void Strategy::initialize(const std::string& cmd_line) {
 
     topology = flag_exists("-t", "--topology", cmd_line);
 
+    one_sided_communication = flag_exists("-o", "--one_sided_communication", cmd_line);
+
     bool steps_predefined = flag_exists("-s", "--steps", cmd_line);
 
     if (steps_predefined) {
@@ -719,6 +721,11 @@ std::ostream& operator<<(std::ostream& os, const Strategy& other) {
     os << "Number of processors: " << other.P << "\n";
     if (other.topology) {
         os << "Communication-aware topology turned on.\n";
+    }
+    if (other.one_sided_communication) {
+        os << "Communication backend: one-sided.\n";
+    } else {
+        os << "Communication backend: two-sided.\n";
     }
     os << "Divisions strategy: \n";
     for (size_t i = 0; i < other.n_steps; ++i) {

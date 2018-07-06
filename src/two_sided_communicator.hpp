@@ -6,6 +6,18 @@ public:
     two_sided_communicator(const Strategy* strategy, MPI_Comm comm): 
         communicator::communicator(strategy, comm) {}
 
+    /*
+     * (first see the comment in communicator.hpp)
+     * The idea is the following:
+     *      - if only 1 block per rank should be communicated: 
+     *        don't allocate new space, just perform all-gather
+     *
+     *      - if more than 1 blocks per rank should be communicated:
+     *        allocate new space and let the all-gather be performed 
+     *        on the level of all blocks per rank. After the communication,
+     *        reshuffle the local data by putting first blocks from each rank first,
+     *        then all second blocks from each rank and so on.
+     */ 
     void copy(Interval& P, double* in, double* out,
             std::vector<std::vector<int>>& size_before,
             std::vector<int>& total_before,
@@ -22,7 +34,6 @@ public:
 
         std::vector<int> subgroup(div);
         bool same_size = true;
-        int max_size = 0;
 
         for (int i = 0; i < div; ++i) {
             int target = rank_outside_ring(P, div, off, i);
@@ -31,7 +42,6 @@ public:
             sum += temp_size;
             total_size[i] = temp_size;
             same_size &= temp_size == local_size;
-            max_size = std::max(max_size, temp_size);
         }
 
         int n_blocks = size_before[relative_rank(P)].size();
@@ -131,6 +141,7 @@ public:
                 }
             }
         }
+
         std::unique_ptr<double[]> receiving_buffer;
         double* receive_pointer;
 

@@ -87,7 +87,8 @@ public:
      * Example: P = 12, d = 3, first communication ring performs the following communication:
      * ------------------------------------------------------------------------------
      * BEFORE COMMUNICATION: 
-     * Each rank has the same structure of data: the same number of equally-sized blocks.
+     * Each rank has the same structure of data: the same number of equally-sized blocks,
+     * but with possibly (almost surely) different content inside blocks.
      * This data represents the partial results of the matrix C that should be reduced.
      * Here, block a1 in rank 0 and in rank 4 can have (and probably will) different 
      * content (different partial results) but the size of the block a1 will be the same
@@ -117,7 +118,7 @@ public:
      * in DFS steps (only in DFS steps) in which this matrix was split. 
      * However, not all the blocks that a rank owns are necessarily exchanged 
      * in a single invocation of this function. Only blocks belonging to the 
-     * current submatrix are being exchanged within a single invocation of copy.
+     * current submatrix are being exchanged within a single invocation of reduce.
      */
     virtual void reduce(Interval& P, double* in, double* out,
         std::vector<std::vector<int>>& c_current,

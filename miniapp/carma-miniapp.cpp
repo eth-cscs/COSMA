@@ -42,7 +42,7 @@ int run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD) {
     fillInt(B.matrix());
 
     MPI_Barrier(comm);
-    multiply(A, B, C, s, comm);
+    multiply(A, B, C, s, comm, s.one_sided_communication);
 
     output_matrix(A, rank);
     output_matrix(B, rank);
