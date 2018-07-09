@@ -1,0 +1,28 @@
+====================================
+
+m = n = k = 64k
+
+T(one_sided) = 8.550 s
+T(two_sided) = 8.049 s
+
+delta T / T(two_sided) = 6 %
+
+====================================
+
+m = n = k = 8k
+
+T(one_sided) = 78 ms
+T(two_sided) = 64 ms
+
+delta T / T(two_sided) = 22 %
+
+====================================
+
+m = k = 8k, n = 64k
+
+T(one_sided) = 227 ms
+T(two_sided) = 289 ms
+
+delta T / T(two_sided) = 27 %
+
+====================================
