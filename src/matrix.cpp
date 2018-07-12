@@ -57,11 +57,11 @@ double* CarmaMatrix::buffer_ptr() {
     return buffer_.buffer_ptr();
 }
 
-std::vector<double>& CarmaMatrix::buffer() {
+std::vector<double, mpi_allocator<double>>& CarmaMatrix::buffer() {
     return buffer_.buffer();
 }
 
-const std::vector<double>& CarmaMatrix::buffer() const {
+const std::vector<double, mpi_allocator<double>>& CarmaMatrix::buffer() const {
     return buffer_.buffer();
 }
 
@@ -97,12 +97,12 @@ double* CarmaMatrix::matrix_pointer() {
     return buffer_.initial_buffer_ptr();
 }
 
-std::vector<double>& CarmaMatrix::matrix() {
+std::vector<double, mpi_allocator<double>>& CarmaMatrix::matrix() {
     //return matrix_;
     return buffer_.initial_buffer();
 }
 
-const std::vector<double>& CarmaMatrix::matrix() const {
+const std::vector<double, mpi_allocator<double>>& CarmaMatrix::matrix() const {
     //return matrix_;
     return buffer_.initial_buffer();
 }

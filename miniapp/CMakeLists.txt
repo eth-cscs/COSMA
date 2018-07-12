@@ -19,6 +19,8 @@ add_lib_executable(carma-statistics carma)
 
 add_lib_executable(test-strategy carma)
 
+add_lib_executable(mpi_bug ${mpi_deps})
+
 if (CARMA_WITH_CUDA)
     cuda_add_lib_executable(carma-miniapp
       carma
