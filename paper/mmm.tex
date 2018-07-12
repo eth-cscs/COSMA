@@ -268,8 +268,6 @@ employing RDMA mechanisms for communication-computation overlap.
 	\section{Background}
 	\subsection{I/O complexity- pebble games and S-partition}
 	\label{sec:background}
-	\greg{Drastically reduce this section. What are the parts that should stay?}
-	
 	Our I/O model bases on the work of the red-blue pebble game by Hong and 
 	Kung 
 	(\cite{redblue}), which was later extended to red-blue-white pebble game by 
@@ -291,7 +289,7 @@ employing RDMA mechanisms for communication-computation overlap.
 	
 	As it was shown by Liu (\cite{redbluecomplete}, following the proof in 
 	\cite{pebblegameregister}), finding optimal pebbling strategy is PSPACE 
-	complete. Therefore, Hong and Kung introduced the \textit{S-Partitioning} 
+	complete. Therefore, Hong and Kung introduced the \textit{S-Partition} 
 	abstraction, which 
 	divides the whole computation DAG into consecutive subcomputations which 
 	requires at least fixed amount of I/O operations. Red-blue-white pebble 
@@ -304,9 +302,88 @@ employing RDMA mechanisms for communication-computation overlap.
 	\cite{loomisWhitney} is used in linear algebra for bounding the I/O 
 	\cite{loomisApplied}, as it also reasons about surface (communication) to 
 	volume (computation) ratio. Using this technique, the first I/O bound for 
-	matrix multiplication $\Omega(n^3/\sqrt{M})$ and FFT $\Omega(n 
-	\log(n)/\log(M)$, for fast memory size $M$, was derived in the original 
+	matrix multiplication, FFT, or odd-even transposition sorting was derived 
+	in the original 
 	paper (\cite{redblue}).
+	
+	For the completeness of this paper, we bring back the definition of the 
+	S-partition:
+		DEFINITION 1:  (S-partitioning of a CDAG \cite{redblue}).
+	Let $G = (V,E)$ be a computation DAG (CDAG). An S-partition of $G$ 
+	is a collection of $h$ subsets of $V$ such that:
+	
+	\begin{itemize}
+		\item P1: $\forall_{1 \le i,j \le h} V_i \cap V_j =\emptyset$ and 
+		$\bigcup_{i=1}^{h} V_i=V$
+		\item P2: $\forall i, |Dom(V_i)| \le S$
+		\item P3: $\forall i, |Min(V_i)| \le S$
+		\item P4: there is no cyclic dependence between subsets.
+	\end{itemize}
+	where $Dom(V_i)$ is the \textit{dominator set}, that is, the set of all 
+	vertices in V such that every path from an input of G to a vertex in $V_i$ 
+	contains some vertex in the set, and
+	$Min(V_i) = \{u \in V_i: \exists{v \in V - V_i} (u,v) \in E \}$ is the 
+	\textit{minimum set}.
+	
+	If the size of the fast memory is $S$, we create a \textit{2S-partitioning} 
+	of the graph, that is, each subcomputation $V_i$ will require 2S input 
+	elements (dominator set) to perform the computation. Because at most S 
+	elements could already be in the fast memory from the previous computation, 
+	the remaining S elements have to be loaded from the slow memory. Similarly, 
+	Because $V_i$ has 2S output elements (minimum set), but only S can be 
+	immediately consumed by the next computation, remaining S elements will 
+	have to be stored. By finding the minimum number of 
+	valid S-partition subsets, we can derive the I/O lower bound:
+	
+	LEMMA 1: (Lower bound on I/O \cite{redblue}). Let $H(2S)$ be the minimal 
+	number of 
+	vertex sets for any valid 2S-partition of a given CDAG. Then the minimal 
+	number Q of I/O operations for any valid execution of the CDAG is bounded 
+	by	
+	\begin{equation}
+	\label{eq:redbluebound}
+	Q \ge S \times (H(2S) - 1)
+	\end{equation}
+		We refer a reader to the original paper for a complete proof, but here 
+		we 
+		sketch the idea: Let's assume that we know the optimal schedule of the 
+		CDAG. Now divide the computation into $h$ consecutive subcomputations 
+		$C_1, C_2..., C_h$, such that during the execution of $C_i$ , $i < h$ 
+		there are exactly $S$ I/O operations, and in $C_h$ there are no more 
+		than $S$ operations. Now for each of the subcalculations $C_i$ of the 
+		input DAG, we define two 
+		subsets 
+		of $V$, $V_{R,i}$ and $V_{BR,i}$ as 
+		follows:
+		\begin{enumerate}
+			\item $V_{R,i}$ consists of those vertices that have red pebbles 
+			placed 
+			on 
+			them just before subcalculation $C_i$ begins.
+			\item $V_{BR,i}$ consists of those vertices that have blue pebbles 
+			placed 
+			on them just before subcalculation $C_i$ begins and have red 
+			pebbles 
+			placed on them during $C_i$.
+		\end{enumerate}
+		
+		Then, we can derive the following observations:
+		\begin{enumerate}
+			\item $V_{R,i} \cup V_{BR,i} = Dom(V_i)$
+			\item $|V_{R,i}| \le S$
+			\item $|V_{BR,i}| \le S$
+			\item $|V_{R,i} \cup V_{BR,i}| \le |V_{R,i}| + |V_{BR,i}| \le 2S$
+		\end{enumerate}
+	
+	which shows that $C_1, ...C_h$ is a valid 2S-partition of the graph.
+	In the Section \ref{sec:datareuse} we show how we can tighten this bound by 
+	reasoning about the set $V_{R,i}$, that is, the data reuse between the 
+	computations. 
+	
+	
+	
+%	
+%	
 %	
 %	DEFINITION 1: (Red-Blue pebble game \cite{redblue}).
 %	Given a DAG $C = (I,V,E,O)$
@@ -353,7 +430,7 @@ employing RDMA mechanisms for communication-computation overlap.
 %	\cite{RedBlueHard}. 
 %	Furthermore, to the best of our knowledge, there is no closed form 
 %	optimization function that represents the optimal pebble game.
-	
+%	
 %	Hong and Kung introduced the concept of \textit{S-Partitioning}, which 
 %	divides the whole computation DAG into consecutive subcomputations which 
 %	requires at least fixed amount of I/O operations. Red-blue-white pebble 
@@ -364,7 +441,7 @@ employing RDMA mechanisms for communication-computation overlap.
 %	V$ be the set 
 %	of vertices with fan-out 0. Then:
 %	
-%	DEFINITION 2:  (S-partition of a CDAG \cite{redbluewhite}).
+%	DEFINITION 2:  (S-partitioning of a CDAG \cite{redbluewhite}).
 %	Let $G = (I,V,E,O)$ be a computation DAG (CDAG). An S-partition of $G$ 
 %	is a 
 %	collection of 
@@ -547,16 +624,53 @@ employing RDMA mechanisms for communication-computation overlap.
 %	multiplicative factor off the optimal solution. We will present such 
 %	algorithm and its correctness proof in Section \ref{sec:approx-algo}.
 %\end{enumerate}
-%
-	\section{2S-Partition, S-Partition and data reuse}
-\label{sec:datareuse}
+
+\section{Sequential and parallel optimality}
+	\label{sec:datareuse}
+Hong and Kung \cite{redblue} proved nearly 30 years ago sequential I/O lower 
+bound for matrix multiplication to be $\Omega(n^3/\sqrt{S})$ in their two-level 
+memory model, where $S$ is the size of the fast memory. Irony et al. 
+\cite{IronyMMM} extended those results to parallel machine. While it has been 
+shown that those bounds are asymptotically attainable by algorithms like 
+Cannon's \cite{Cannon} (for square matrices) or CARMA \cite{CARMA} (for all 
+matrix shapes), we argue that asymptotic analysis is not sufficient for 
+practical comparison between algorithms, as constants may play crucial role, as 
+discussed in the Introduction.
+
+In this Section we show how starting from Hong's S-partition, we prove tight 
+bounds for sequential, and then parallel execution, deriving all constant terms 
+for memory dependent and independent bounds. We then show a very natural 
+schedule emerging from the analysis, that is proved optimal and independent of 
+any combination of problem parameters. For example, it is optimal even for the 
+cases when the matrix sizes or number of processes is not a power of 2, which 
+is one of the limitations of CARMA algorithm. Furthermore, it avoids recursive 
+decomposition, which leads to runtime overheads and complicated data layout.
+
+\vspace{0.5cm}
+\textbf{Top-down vs bottom-up approach}
+
+To obtain our schedule and prove its optimality, we use "bottom-up" approach, 
+that is, defining the finest-granularity task for a single process and then 
+identifying parallelization opportunities. In contrast, most of the current 
+state-of-the-art algorithms, like Cannon's \cite{Cannon}, SUMMA \cite{summa}, 
+"3D" SUMMA \cite{summa3d} or 2.5D algorithm \cite{25d} use "top-down" approach, 
+that is, aim for decomposing the global domain evenly into p processes. The 
+"bottom-up" approach shares similarities with task-based programming 
+\cite{taskparalelism}, which has also be used in the context of linear algebra 
+\cite{taskMMM}. The difference, however is in the granularity, as a task is a 
+single, I/O optimal, rank-1 update, instead of coarser grained rank-k updates 
+in recursive algorithms, like CARMA \cite{CARMA}.
+
+\subsection{2S-partition, S-partition and data reuse}
+
 
 \greg{I think this can be also skipped}
 
 The reasoning behind 2S-Partition accounts for an upper bound of data 
 reuse 
 between subsets.
-This, however, can lead to underestimation. With a slight modification of 
+This, however, can lead to an I/O underestimation. With a slight modification 
+of 
 the original proof, we show that finding the minimum number of subsets in 
 S-Partition 
 (instead of 
@@ -609,7 +723,7 @@ The key difference between the original lower bound lemma (inequality
 \ref{eq:redbluebound}) and the lemma presented in this paper (inequality 
 \ref{eq:reusebound}) is the explicit notion of reuse. 
 If S-partition is to be used for scheduling, instead of just deriving 
-(not tight) I/O lower bounds, a problem of fundamental nature occurs.
+(possibly not tight) I/O lower bounds, a problem of fundamental nature occurs.
 S-partition approach, as many other methods (e.g., \cite{IronyMMM}, 
 \cite{MMM_LW}, \cite{elangoSymbolic}), focuses on maximizing computational 
 intensity, 
@@ -820,6 +934,27 @@ don't know in which order):
 Should we add intra node evaluation too? Or do we care only about the 
 distributed case?
 }
+
+
+\begin{multline}
+\\
+G = (V,E) \\
+|V| = n \\
+|E| = m \\
+p partitions \\
+\forall_{i = 1..p} P_i \in V \\
+\bigcup_{i = 1..p} P_i = V \\
+\bigcap_{i = 1..p} P_i = \emptyset \\
+\forall_{i = 1..p} BE_i \in E = \{(u,v) : u \in P_i \land v \notin P_i\} \\
+\forall_{i = 1..p} BV_i \in V = \{u : (u,v) \in BE_i\} \\
+pl_i(u,v) = \{e \in E \cap (P_i \times P_i) : \text{edges connect u and v} \} - 
+\text{local path between u and v} \\
+pr_i(u,v) = \{e \notin E \cap (P_i \times P_i) : \text{edges connect u and v} 
+\} - \text{remote path between u and v} \\
+\end{multline}
+\begin{enumerate}
+	\item For each $P_i$:
+\end{enumerate}
 
 \section{Related work}
 \begin{enumerate}
