@@ -38,9 +38,9 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     Interval ki = Interval(0, strategy.k-1);
     Interval Pi = Interval(0, strategy.P-1);
 
-    PE(blasinit);
-    initialize_blas();
-    PL();
+    // PE(blasinit);
+    // initialize_blas();
+    // PL();
 
     PE(preprocessing_communicators);
     std::unique_ptr<communicator> carma_comm;
@@ -52,11 +52,8 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     }
     PL();
 
-    {
-        Timer timer(1, "CARMA multiply");
-        multiply(matrixA, matrixB, matrixC,
-                 mi, ni, ki, Pi, 0, strategy, 0.0, *carma_comm);
-    }
+    multiply(matrixA, matrixB, matrixC,
+             mi, ni, ki, Pi, 0, strategy, 0.0, *carma_comm);
 
     if (carma_comm->rank() == 0) {
         PP();

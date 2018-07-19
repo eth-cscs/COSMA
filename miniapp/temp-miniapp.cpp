@@ -6,6 +6,8 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <chrono>
+#include <limits>
 
 //Blas
 #include "blas.h"
@@ -26,7 +28,7 @@ void output_matrix(CarmaMatrix& M, int rank) {
     local_file.close();
 }
 
-int run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD) {
+long run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD) {
     int rank, size;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
@@ -42,7 +44,12 @@ int run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD) {
     fillInt(B.matrix());
 
     MPI_Barrier(comm);
+    auto start = std::chrono::steady_clock::now();
     multiply(A, B, C, s, comm, s.one_sided_communication);
+    MPI_Barrier(comm);
+    auto end = std::chrono::steady_clock::now();
+
+    return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 }
 
 int main( int argc, char **argv ) {
@@ -62,7 +69,17 @@ int main( int argc, char **argv ) {
         std::cout << strategy << std::endl;
     }
 
-    run(strategy, MPI_COMM_WORLD);
+    int n_iter = 5;
+    long time = std::numeric_limits<long>::max();
+    for (int i = 0; i < n_iter+1; ++i) {
+        long t_run = run(strategy, MPI_COMM_WORLD);
+        if (i == 0) continue;
+        time = std::min(time, t_run);
+    }
+
+    if (rank == 0) {
+        std::cout << "CARMA MIN TIME [ms] = " << time << std::endl;
+    }
 
     MPI_Finalize();
 
