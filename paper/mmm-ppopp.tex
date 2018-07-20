@@ -1708,9 +1708,15 @@ $a = \big(\frac{MNK}{p}\big)^{1/3}$
  		thresholds 
  		$nm/S$ and $3nm/S$ (Table \ref{tab:mmmEfficiency}).}
  \end{figure*}
-
-\section{CARMA 2.0 ?}
+ 
+\section{Implementation Insights}
 \label{sec:implementation}
+
+\subsection{Synchronous and Asynchronous Versions}
+We offer two versions of the algorithm: an \emph{asynchronous} version using the one-sided communication backend and a \emph{synchronous} version using the two-sided communication. The choise of the version to be used can be made at the runtime of the algorithm. In the asynchronous version, each rank has a read-only buffer that holds the initial data and the data from this buffer can be fetched by any processor at any time without any synchronization between processors. This allows a natural separation of the logic behind the initial data layout and the computation: what a processor computes as the output might be independent of what data this processor initially owns, thus allowing an overlap of communication and computation. The drawback of this approach is that a processor cannot use this initial buffer, they are read-only and they only serve to allow the access to this data for any process that might need it. In the two-sided version, the communication happens in synchronously: whenever a processor has to compute some subproblem, it will first collect all the necessary input data and then perform the computation. Here, instead of always exchanging just the content of the \emph{initial}, read-only buffers (as in the one-sided version), the processors exchange the content of the current, \emph{working} buffers, which they also actively use. For this reason, we want to avoid the need of local data reshuffling in these \emph{working} buffers which might be needed after the communication. This can be achieved by carefully corellating the initial data layout with the order of the data exchanges throughout the algorithm, which is explained in the next section. 
+
+\subsection{Reducing Local Data Movements with Blocked Data Layout}
+
  \greg{Computation and communication overlap. will add this once we have it.}
 \subsection{Recursive vs single step}
 \begin{enumerate}
