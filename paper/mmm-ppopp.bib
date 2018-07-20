@@ -1,90 +1,3 @@
-@book{meyer2000matrix,
-  title={Matrix analysis and applied linear algebra},
-    author={Meyer, Carl D},
-      volume={71},
-        year={2000},
-          publisher={Siam}
-}
-
-@book{chatelin2012eigenvalues,
-  title={Eigenvalues of Matrices: Revised Edition},
-    author={Chatelin, Fran{\`a}oise},
-      volume={71},
-        year={2012},
-          publisher={Siam}
-}
-
-@book{cormen2009introduction,
-  title={Introduction to algorithms},
-    author={Cormen, Thomas H and Leiserson, Charles E and Rivest, Ronald L and Stein, Clifford},
-      year={2009},
-        publisher={MIT press}
-}
-
-@inproceedings{azad2015parallel,
-  title={Parallel triangle counting and enumeration using matrix algebra},
-    author={Azad, Ariful and Bulu{\c{c}}, Aydin and Gilbert, John},
-      booktitle={2015 IEEE International Parallel and Distributed Processing Symposium Workshop (IPDPSW)},
-        pages={804--811},
-          year={2015},
-            organization={IEEE}
-}
-
-@article{kepner2016mathematical,
-  title={Mathematical foundations of the GraphBLAS},
-    author={Kepner, Jeremy and Aaltonen, Peter and Bader, David and Bulu{\c{c}}, Ayd{\i}n and Franchetti, Franz and Gilbert, John and Hutchison, Dylan and Kumar, Manoj and Lumsdaine, Andrew and Meyerhenke, Henning and others},
-      journal={arXiv preprint arXiv:1606.05790},
-        year={2016}
-}
-
-@article{bulucc2011combinatorial,
-  title={The Combinatorial BLAS: Design, implementation, and applications},
-    author={Bulu{\c{c}}, Ayd{\i}n and Gilbert, John R},
-      journal={The International Journal of High Performance Computing Applications},
-        volume={25},
-          number={4},
-            pages={496--509},
-              year={2011},
-                publisher={Sage Publications Sage UK: London, England}
-}
-
-@inproceedings{ng2002spectral,
-  title={On spectral clustering: Analysis and an algorithm},
-    author={Ng, Andrew Y and Jordan, Michael I and Weiss, Yair},
-      booktitle={Advances in neural information processing systems},
-        pages={849--856},
-          year={2002}
-}
-
-@inproceedings{abadi2016tensorflow,
-  title={Tensorflow: a system for large-scale machine learning.},
-    author={Abadi, Mart{\'\i}n and Barham, Paul and Chen, Jianmin and Chen, Zhifeng and Davis, Andy and Dean, Jeffrey and Devin, Matthieu and Ghemawat, Sanjay and Irving, Geoffrey and Isard, Michael and others},
-      booktitle={OSDI},
-        volume={16},
-          pages={265--283},
-            year={2016}
-}
-
-@inproceedings{lee1997generalized,
-  title={Generalized Cannon's algorithm for parallel matrix multiplication},
-    author={Lee, Hyuk-Jae and Robertson, James P and Fortes, Jos{\'e} AB},
-      booktitle={Proceedings of the 11th international conference on Supercomputing},
-        pages={44--51},
-          year={1997},
-            organization={ACM}
-}
-
-@article{van1997summa,
-  title={SUMMA: Scalable universal matrix multiplication algorithm},
-    author={Van De Geijn, Robert A and Watts, Jerrell},
-      journal={Concurrency: Practice and Experience},
-        volume={9},
-          number={4},
-            pages={255--274},
-              year={1997},
-                publisher={Wiley Online Library}
-}
-
 @inproceedings{logGP,
   author = "Alexandrov, Albert and Ionescu, Mihai F. and Schauser, Klaus E. and Scheiman, Chris",
   title = "{LogGP}: Incorporating Long Messages into the LogP Model\&Mdash;One Step Closer Towards a Realistic Model for Parallel Computation",
@@ -806,7 +719,6 @@ year={2013},
 volume={},
 number={},
 pages={261-272},
-keywords={cache storage;digital arithmetic;distributed shared memory systems;matrix multiplication;parallel algorithms;NUMA domains;cache-network-oblivious algorithm;communication-optimal algorithms;communication-optimal parallel recursive rectangular matrix multiplication;dimension-splitting technique;distributed-memory machines;distributed-memory supercomputer;parallel linear algebra libraries;recursive BFS-DFS approach;shared memory machines;square matrix multiplication;Algorithm design and analysis;Bandwidth;Layout;Libraries;Linear algebra;Memory management;Program processors;linear algebra;matrix multiplication;ommunication-avoiding algorithms},
 doi={10.1109/IPDPS.2013.80},
 ISSN={1530-2075},
 month={May},}
@@ -839,8 +751,6 @@ number = "9",
 pages = "1017 - 1026",
 year = "2004",
 issn = "0743-7315",
-doi = "https://doi.org/10.1016/j.jpdc.2004.03.021",
-url = "http://www.sciencedirect.com/science/article/pii/S0743731504000437",
 author = "Dror Irony and Sivan Toledo and Alexander Tiskin",
 keywords = "Communication, Lower bounds, Distributed memory, Matrix multiplication"
 }
@@ -906,7 +816,6 @@ year="2011",
 publisher="Springer Berlin Heidelberg",
 address="Berlin, Heidelberg",
 pages="90--109",
-abstract="Extra memory allows parallel matrix multiplication to be done with asymptotically less communication than Cannon's algorithm and be faster in practice. ``3D'' algorithms arrange the p processors in a 3D array, and store redundant copies of the matrices on each of p                1/3 layers. `2D'' algorithms such as Cannon's algorithm store a single copy of the matrices on a 2D array of processors. We generalize these 2D and 3D algorithms by introducing a new class of ``2.5D algorithms''. For matrix multiplication, we can take advantage of any amount of extra memory to store c copies of the data, for any                                                                           {\$}c {\backslash}in{\backslash}{\{}1,2,...,{\backslash}lfloor p^{\{}1/3{\}}{\backslash}rfloor{\backslash}{\}}{\$}                , to reduce the bandwidth cost of Cannon's algorithm by a factor of c                1/2 and the latency cost by a factor c                3/2. We also show that these costs reach the lower bounds, modulo polylog(p) factors. We introduce a novel algorithm for 2.5D LU decomposition. To the best of our knowledge, this LU algorithm is the first to minimize communication along the critical path of execution in the 3D case. Our 2.5D LU algorithm uses communication-avoiding pivoting, a stable alternative to partial-pivoting. We prove a novel lower bound on the latency cost of 2.5D and 3D LU factorization, showing that while c copies of the data can also reduce the bandwidth by a factor of c                1/2, the latency must increase by a factor of c                1/2, so that the 2D LU algorithm (c{\thinspace}={\thinspace}1) in fact minimizes latency. We provide implementations and performance results for 2D and 2.5D versions of all the new algorithms. Our results demonstrate that 2.5D matrix multiplication and LU algorithms strongly scale more efficiently than 2D algorithms. Each of our 2.5D algorithms performs over 2X faster than the corresponding 2D algorithm for certain problem sizes on 65,536 cores of a BG/P supercomputer.",
 isbn="978-3-642-23397-5"
 }
 
@@ -947,7 +856,7 @@ isbn="978-3-642-23397-5"
 }
 
 
-@inproceedings{tiling,
+@inproceedings{tiling2,
  author = {Wolf, Michael E. and Lam, Monica S.},
  title = {A Data Locality Optimizing Algorithm},
  booktitle = {Proceedings of the ACM SIGPLAN 1991 Conference on Programming Language Design and Implementation},
@@ -1022,3 +931,183 @@ eprint = {
 } 
 
 
+@article{tightMMM,
+  author    = {Tyler Michael Smith and
+               Robert A. van de Geijn},
+  title     = {Pushing the Bounds for Matrix-Matrix Multiplication},
+  journal   = {CoRR},
+  volume    = {abs/1702.02017},
+  year      = {2017},
+  url       = {http://arxiv.org/abs/1702.02017},
+  archivePrefix = {arXiv},
+  eprint    = {1702.02017},
+  timestamp = {Wed, 07 Jun 2017 14:42:03 +0200},
+  biburl    = {https://dblp.org/rec/bib/journals/corr/SmithG17},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+
+@article{Goto,
+ author = {Goto, Kazushige and Geijn, Robert A. van de},
+ title = {Anatomy of High-performance Matrix Multiplication},
+ journal = {ACM Trans. Math. Softw.},
+ issue_date = {May 2008},
+ volume = {34},
+ number = {3},
+ month = may,
+ year = {2008},
+ issn = {0098-3500},
+ pages = {12:1--12:25},
+ articleno = {12},
+ numpages = {25},
+ url = {http://doi.acm.org/10.1145/1356052.1356053},
+ doi = {10.1145/1356052.1356053},
+ acmid = {1356053},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {Linear algebra, basic linear algebra subprogrms, matrix multiplication},
+} 
+
+@article{anotherPebble,
+title = "Pebble game algorithms and sparse graphs",
+journal = "Discrete Mathematics",
+volume = "308",
+number = "8",
+pages = "1425 - 1437",
+year = "2008",
+note = "Third European Conference on Combinatorics",
+issn = "0012-365X",
+author = "Audrey Lee and Ileana Streinu",
+keywords = "Sparse graph, Pebble game, Henneberg sequence, Matroid, Circuit, Rigidity"
+}
+
+@inproceedings{redblueHard,
+  title={Red-Blue and Standard Pebble Games : Complexity and Applications in the Sequential and Parallel Models},
+  author={Quanquan Liu},
+  year={2018}
+}
+
+@article{dymond2playerpebblegame,
+title = "Speedups of deterministic machines by synchronous parallel machines",
+journal = "Journal of Computer and System Sciences",
+volume = "30",
+number = "2",
+pages = "149 - 161",
+year = "1985",
+issn = "0022-0000",
+doi = "https://doi.org/10.1016/0022-0000(85)90011-X",
+url = "http://www.sciencedirect.com/science/article/pii/002200008590011X",
+author = "Patrick W. Dymond and Martin Tompa"
+}
+
+@Article{pebbleTradeoffs,
+author="Paul, W. J.
+and Tarjan, R. E.",
+title="Time-space trade-offs in a pebble game",
+journal="Acta Informatica",
+year="1978",
+month="Jun",
+day="01",
+volume="10",
+number="2",
+pages="111--115",
+issn="1432-0525",
+doi="10.1007/BF00289150"
+}
+
+@INPROCEEDINGS{justApebbleGame,
+author={S. M. Chan},
+booktitle={2013 IEEE Conference on Computational Complexity},
+title={Just a Pebble Game},
+year={2013},
+volume={},
+number={},
+pages={133-143},
+doi={10.1109/CCC.2013.22},
+ISSN={1093-0159},
+month={June},}
+
+@inproceedings{tiling,
+ author = {Wolfe, M.},
+ title = {More Iteration Space Tiling},
+ booktitle = {Proceedings of the 1989 ACM/IEEE Conference on Supercomputing},
+ series = {Supercomputing '89},
+ year = {1989},
+ isbn = {0-89791-341-8},
+ location = {Reno, Nevada, USA},
+ pages = {655--664},
+ numpages = {10},
+ doi = {10.1145/76263.76337},
+ acmid = {76337},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+} 
+
+@inproceedings{loopFusion,
+  title={Maximizing loop parallelism and improving data locality via loop fusion and distribution},
+  author={Kennedy, Ken and McKinley, Kathryn S},
+  booktitle={International Workshop on Languages and Compilers for Parallel Computing},
+  pages={301--320},
+  year={1993},
+  organization={Springer}
+}
+
+@inproceedings{loopFusionComplexity,
+  title={On the complexity of loop fusion},
+  author={Darte, Alain},
+  booktitle={Parallel Architectures and Compilation Techniques, 1999. Proceedings. 1999 International Conference on},
+  pages={149--157},
+  year={1999},
+  organization={IEEE}
+}
+
+@INPROCEEDINGS{MManalysis,
+author={A. Gupta and V. Kumar},
+booktitle={Parallel Processing, 1993. ICPP 1993. International Conference on},
+title={Scalability of Parallel Algorithms for Matrix Multiplication},
+year={1993},
+volume={3},
+number={},
+pages={115-123},
+keywords={Algorithm design and analysis;Computer science;Concurrent computing;Hypercubes;Matrix decomposition;Parallel algorithms;Parallel processing;Performance analysis;Scalability;Sparse matrices},
+doi={10.1109/ICPP.1993.160},
+ISSN={0190-3918},
+month={Aug},}
+
+@inproceedings{recursiveMM,
+  title={An analysis of dag-consistent distributed shared-memory algorithms},
+  author={Blumofe, Robert D and Frigo, Matteo and Joerg, Christopher F and Leiserson, Charles E and Randall, Keith H},
+  booktitle={Proceedings of the eighth annual ACM symposium on Parallel algorithms and architectures},
+  pages={297--308},
+  year={1996},
+  organization={ACM}
+}
+
+@INPROCEEDINGS{recursiveRectangularMM,
+author={M. Frigo and C. E. Leiserson and H. Prokop and S. Ramachandran},
+booktitle={40th Annual Symposium on Foundations of Computer Science (Cat. No.99CB37039)},
+title={Cache-oblivious algorithms},
+year={1999},
+volume={},
+number={},
+pages={285-297},
+ISSN={0272-5428},
+month={},}
+
+@article{joost,
+  title={Enabling simulation at the fifth rung of DFT: Large scale RPA calculations with excellent time to solution},
+  author={Del Ben, Mauro and Sch{\"u}tt, Ole and Wentz, Tim and Messmer, Peter and Hutter, J{\"u}rg and VandeVondele, Joost},
+  journal={Computer Physics Communications},
+  volume={187},
+  pages={120--129},
+  year={2015},
+  publisher={Elsevier}
+}
+
+@inproceedings{temporalLocality,
+  title={Architecture of virtual machines},
+  author={Goldberg, Robert P},
+  booktitle={Proceedings of the workshop on virtual computer systems},
+  pages={74--112},
+  year={1973},
+  organization={ACM}
+}
