@@ -8,6 +8,9 @@
 #include <vector>
 #include <chrono>
 #include <limits>
+#include <cstdlib>
+#include <iostream>
+#include <sstream>
 
 //Blas
 #include "blas.h"
@@ -19,6 +22,17 @@ template<typename T>
 void fillInt(T& in) {
   std::generate(in.begin(), in.end(),
     [](){ return (int) (10*drand48()); });
+}
+
+int get_n_iter() {
+    const char* value = std::getenv("n_iter");
+    std::stringstream strValue;
+    strValue << value;
+
+    unsigned int intValue;
+    strValue >> intValue;
+
+    return intValue;
 }
 
 void output_matrix(CarmaMatrix& M, int rank) {
@@ -69,16 +83,21 @@ int main( int argc, char **argv ) {
         std::cout << strategy << std::endl;
     }
 
-    int n_iter = 5;
-    long time = std::numeric_limits<long>::max();
+    int n_iter = get_n_iter();
+    std::vector<long> times;
     for (int i = 0; i < n_iter+1; ++i) {
         long t_run = run(strategy, MPI_COMM_WORLD);
         if (i == 0) continue;
-        time = std::min(time, t_run);
+        times.push_back(t_run);
     }
+    std::sort(times.begin(), times.end());
 
     if (rank == 0) {
-        std::cout << "CARMA MIN TIME [ms] = " << time << std::endl;
+        std::cout << "CARMA TIMES [ms] = ";
+        for (auto& time : times) {
+            std::cout << time << " ";
+        }
+        std::cout << std::endl;
     }
 
     MPI_Finalize();
