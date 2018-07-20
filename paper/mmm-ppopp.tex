@@ -166,7 +166,7 @@ of Dimensions: Data Movement Optimal Dimensionless Matrix Multiplication}
 
 \begin{abstract}
 %
-\mac{I did not touch the abstract yet, better to leave it for the very end.}
+\greg{Old sketch of the abstract. To be done at the end}
 %
 In this paper we address an allegedly well-known problem of distributed Matrix
 Matrix Multiplication and show new optimizations both from theoretical and
@@ -206,7 +206,8 @@ employing RDMA mechanisms for communication-computation overlap.
 %large bulk of text - not good. I split into paragraphs below. Double check if
 %you understand *exactly* why the division into paragraphs is like this.
 
-Matrix multiplication (MM) is one of the most fundamental building blocks in
+Matrix-matrix multiplication (MMM) is one of the most fundamental building 
+blocks in
 scientific computing. It is widely used not only in virtually all linear
 algebra algorithms (Cholesky and LU decomposition~\cite{meyer2000matrix},
 eigenvalue factorization~\cite{chatelin2012eigenvalues}, triangular
@@ -239,7 +240,14 @@ This issue is tackled by the recent work by Demmel et al.~\cite{CARMA}, who
 introduced CARMA, an algorithm that achieves asymptotic lower bounds for all 
 configurations of dimensions and intra-node memory sizes.
 
-Unfortunately, we first observe that the recursive structure of CARMA is
+Unfortunately, we observe several weaknesses of the current state-of-the art 
+methods, like ScaLAPACK~\cite{scalapack}, Cyclops~\cite{cyclops} or 
+CARMA~\cite{CARMA}. We first observe that ScaLAPACK 
+requires a user to fine-tune 
+parameters 
+like block sizes or process decomposition, Cyclops is not optimal for 
+rectangular matrices and the recursive 
+structure of CARMA is
 unsuitable for scenarios when the number of processes is not the power of two,
 a common case in practice. For example, Del Ben et al.~\cite{joost} used "tall 
 and skinny" matrices to simulate water molecules' interaction. Matrix dimension 
@@ -347,8 +355,9 @@ Now they're really vague. Will try to fix it later.}
 
 \begin{itemize}[leftmargin=1em]
 %
-\item Extending classical analysis of I/O complexity, we provide 
-constant terms for data movement lower bound and present a schedule 
+\item Extending classical analysis of I/O complexity, we show a new proof of  
+data movement lower bound of MMM with the tight constant factors and present a 
+schedule 
 achieving it for all combinations of parameters, both for distributed and 
 shared memory machines (Section \ref{sec:datareuse}),
 %
@@ -359,17 +368,17 @@ existing state-of-the art 2D and 3D matrix multiplication variants
 \item we present various data layout optimizations, which reduce memory 
 footprint for communication buffers and guarantees minimal reshuffling 
 of input data, providing better compatibility with ScaLAPACK format 
-than CARMA (Section \label{sec:implementation}),
+than CARMA (Section \ref{sec:implementation}),
 %
 \item we detach the communication granularity from computation, 
 yielding flexible computation-communication overlap leveraging RDMA 
-mechanism (Section \label{sec:implementation}),
+mechanism (Section \ref{sec:implementation}),
 %
-\item we perform extensive evaluation on Piz Daint \greg{and others?} 
-machine of all possible combinations of problem dimensions, memory size 
+\item we perform extensive evaluation on Piz Daint
+machine with different combinations of problem dimensions, memory size 
 and number of processes, showing the speedup of up to ?? (?? on average), 
 compared to the current state-of-the-art implementations
-(Section \label{sec:evaluation}).
+(Section \ref{sec:evaluation}).
 %
 \end{itemize}
 
@@ -493,7 +502,7 @@ compared to the current state-of-the-art implementations
 %
 \toprule
 %
- & \textbf{2D~\cite{summa}} & \textbf{2.5D \& 3D~\cite{25d}} & 
+ & \textbf{2D~\cite{summa}} & \textbf{2.5D~\cite{25d}} & 
  \textbf{CARMA~\cite{CARMA}} & \textbf{Our work~[Section 
  \ref{sec:seqScheduling}]} \\
 %
@@ -1012,6 +1021,7 @@ that is, after $H(S)$ steps, we have $H(S) |V_{max}| \ge |V|$.
 \end{proof}
 
 \subsection{I/O Bounds and Computational Intensity}
+\label{sec:compIntensity}
 \mac{This subsection seems very detached from the rest. I strongly suggest
 a clear motivation in the first 1-2 sentences on WHY we need this part
 and these concepts below} \greg{edited}
@@ -1288,6 +1298,7 @@ Restricting the solution to the integer lattice ($\alpha, \beta, \gamma \in
 \mathbb{Z}$) we get the optimal shape of the subcomputation:
 
 \begin{multline}
+\label{eq:seqSolution}
 \\
 |\phi_{ij}(\alpha)| = |\phi_{ik}(\alpha)|  = |\phi_{ij}(\beta)| = 
 |\phi_{kj}(\beta)|= \sqrt{S + 1} - 1 \\
@@ -1296,9 +1307,16 @@ Restricting the solution to the integer lattice ($\alpha, \beta, \gamma \in
 \end{multline}
 
 This corresponds to a single column of $A$ and row of $B$ of length $\sqrt{S + 
-1} - 1$ and a square subset of $C$ of $(\sqrt{S + 1} - 1)^2$. From now on, to 
-keep the notation simpler, we approximate 
-$$\sqrt{S + 1} - 1 \approx \sqrt{S}$$
+1} - 1$ and a square subset of $C$ of $(\sqrt{S + 1} - 1)^2$. \textbf{From now 
+on, to 
+keep the notation simpler, we approximate} 
+\begin{equation}
+\label{eq:approx}
+\sqrt{S + 1} - 1 \approx \sqrt{S}
+\end{equation}
+All the following results may be easily rewritten using the precise formula and 
+are correct up to this approximation factor.
+
 
 This result immediately gives $\mathcal{V} = S, R(S) = S, \rho = 
 \sqrt{S}/2$ and finally, according to corollary \ref{cor:q}:  $Q \ge 
@@ -1431,6 +1449,18 @@ further parallelization requires either parallelizing dependent subsets,
 causing additional communication between processes, or by shrinking the size of 
 subsets, reducing the effective memory size.
 
+\macb{Note: shared vs distributed memory model}. In our work we only evaluate 
+the total data volume transfered (both horizontally and vertically). For 
+distributed machine, we assume that a network is fully connected. We 
+furthermore omit the analysis of congestion or latency. With those assumptions,
+our results hold for both shared and distributed memory machine - one can view 
+the former as the latter with $p + 1$ processes, where the 
+$(p+1)$st process mimics the shared memory - it holds the initial data and 
+performs no work. To translate the shared memory results to a distributed 
+machine, one needs to subtract the cost of transferring the initial data 
+layout. We note however, that this accounts for up to additive factor $(MK + 
+NK)/p$ of total communication volume.
+
  \begin{figure}
 	\includegraphics[width=\columnwidth]{figures/mmm_parallelization}
 	\label{fig:mmmParallelization}
@@ -1460,7 +1490,8 @@ communication optimality (Figure~\ref{fig:mmmParallelization}):
 	optimality is broken).
 	\item \textbf{par. in ijk dim:} The subset's size is 
 	constant determined by 
-	Equation \ref{eq:flat} (I/O optimality). The parallelization is done in all 
+	Equation~\ref{eq:seqSolution} (I/O optimality). The parallelization is done 
+	in all 
 	three dimensions. The reuse crossing domains of parallel processes in 
 	\textbf{k} 
 	requires sending data between them (communication optimality 
@@ -1468,8 +1499,8 @@ communication optimality (Figure~\ref{fig:mmmParallelization}):
 	\item \textbf{cubic} 
 	the local domain size is 
 	$[a_c \times a_c \times a_c]$, where $a_c = 
-	\min\{\big(\frac{MNK}{P}\big)^{1/3}, 
-	\sqrt{\frac{S}{3}}\}$ (Equation \ref{eq:cubic}) (both I/O and communication 
+	\min\Big\{\big(\frac{MNK}{P}\big)^{1/3}, 
+	\sqrt{\frac{S}{3}}\Big\}$ (both I/O and communication 
 	optimality is broken).
 \end{enumerate}
 
@@ -1498,66 +1529,181 @@ local domain is sent. Therefore, the optimal parallel schedule minimizes the
 communication, that is, sum of the inputs' sizes plus the output size, under 
 the constraint of I/O sequential schedule. More formally, if we express a local 
 domain as a cuboid of size $[a \times a \times b]$ in dimensions \textbf{i}, 
-\textbf{j} and \textbf{k}, then our optimization problem can be formulated as 
+\textbf{j} and \textbf{k}, then expressing our optimization problem using the 
+computational intensity (Section~\ref{sec:compIntensity}) can be formulated as 
 follows:
 \begin{multline}
-blablabla
+\\
+\text{maximize } \rho = \frac{a^2b}{ab + ab + a^2}\\
+\text{subject to: } \\
+a + a + a^2 \le S \text{ (I/O constraint)} \\
+a^2b = \frac{MNK}{p} \text{ (load balance constraint)} \\ 
 \end{multline}
+where $p$ is the number of processes. The inequality constraint $2a + a^2 \le 
+S$ is tight (binding) for $p \ge \frac{MNK}{S^{3/2}}$. Therefore, we have a 
+piece-wise solution to this problem (using the approximation~\ref{eq:approx}):
 
-This can be intuitively interpreted geometrically 
+\begin{multline}
+\\
+\nonumber
+a =
+\begin{cases} 
+\sqrt{S} & p < \frac{MNK}{S^{3/2}} \\
+\big(\frac{MNK}{p}\big)^{1/3} & p \ge \frac{MNK}{S^{3/2}}
+\end{cases}\\
+b =
+\begin{cases} 
+\frac{MNK}{pS} & p < \frac{MNK}{S^{3/2}} \\
+\big(\frac{MNK}{p}\big)^{1/3} & p \ge \frac{MNK}{S^{3/2}}
+\end{cases}\\
+\end{multline}
+\\
 
-\greg{The rest of this section still under development}
+This can be intuitively interpreted geometrically as follows: if we imagine the 
+optimal local domain "growing" with decreasing number of processes, then it is 
+cubic until it is still "small enough" (its side is smaller than $\sqrt{S}$). 
+After that point, its face in \textbf{ij} plane stays constant $\sqrt{S} \times 
+\sqrt{S}$ and it "grows" 
+only in the \textbf{k} dimension.
 
-More 
-formally, if $Q(p,S)$ is the communication cost per process of the algorithm 
+\macb{Parallel efficiency.} We now proceed to analyze the communication's 
+\emph{parallel efficiency} of all parallelization schemes. It is defined as a 
+ratio between  
+the total data movement required by the sequential processor (Theorem 
+\ref{thm:seqlowbounds}) and sum of data movements performed by all parallel
+processes. More 
+formally, if $Q(p,S)$ is the data movement cost per process of the algorithm 
 using $p$ 
 processes, each of local fast memory size $S$, then the parallel efficiency 
 metric for communication is defined as $E(p,S) = \frac{Q(1,S)}{pQ(p,S)}$.
 
- Due to size constraints, the thorough analysis of different parallelization 
-schemes is presented in the Appendix.  Here we show only a comparison of 
-execution time (assuming that each I/O operation takes unit time and every 
-other operation is performed instantaneously) and parallel efficiency of three 
-schemes (Table \ref{tab:mmmEfficiency} and Figure \ref{fig:mmmScaling}): 
+The results of our analysis is shown in Table \ref{tab:mmmEfficiency} and 
+Figure \ref{fig:mmmScaling}. Due to the size constraints, their derivation is 
+presented in the Appendix.
+
 
 \begin{table*}[t]
-\begin{tabular}{lllll}
-\toprule
-range & metric & par in \textbf{ij} dim & par. in \textbf{ijk} dim & cubic \\
-\midrule 
-%		& $t(p,S)$ & $E(p,S)$ & $t(p,S)$ & $E(p,S)$ & $t(p,S)$ & $E(p,S)$ \\
-\multirow{2}{*}{$p \le \frac{nm}{S}$} & $t(p,S)$ & $\frac{2nmk}{p\sqrt{S}}$ & 
-$\frac{2nmk}{p\sqrt{S}}$ & $\frac{2\sqrt{3}nmk}{p\sqrt{S}}$ \\
-& $E(p,S)$ & 1 & 1 & 	$\frac{1}{\sqrt{3}}$\\
-\midrule 
-\multirow{2}{*}{$\frac{nm}{S} < p \le \frac{3nm}{S}$} & $t(p,S)$ & $2k 
-\sqrt{\frac{nm}{p}}$ & 
-$\frac{2nmk}{p\sqrt{S}} + S$ & $\frac{2\sqrt{3}nmk}{p\sqrt{S}}$ 
-\\
-& $E(p,S)$ & $\sqrt{\frac{nm}{pS}}$ & $\frac{1}{1 + 
-\frac{pS^{3/2}}{2nmk}}$ & 	$\frac{1}{\sqrt{3}}$ \\
-\midrule \\
-\multirow{2}{*}{$\frac{3nm}{S} < p$} & $t(p,S)$ & $2k 
-\sqrt{\frac{nm}{p}}$ & 
-$\frac{2nmk}{p\sqrt{S}} + S$ & $\frac{2\sqrt{3}nmk}{p\sqrt{S}} + 
-\frac{S}{3}$\\
-& $E(p,S)$ & $\sqrt{\frac{nm}{pS}}$ & $\frac{1}{1 + 
-\frac{pS^{3/2}}{2nmk}}$ &	$\frac{1}{\sqrt{3} + 
-\frac{pS^{3/2}}{6nmk}}$
-\end{tabular}
-\caption{Running time and parallel efficiency of the Matrix-Matrix 
-multiplication for different partition schemes. Three ranges correspond 
-to thresholds above which parallelization in \textbf{k} dimension is 
-performed.}
-\label{tab:mmmEfficiency}
+	\begin{tabular}{lllll}
+		\toprule
+		range & metric & par in \textbf{ij} dim & par. in \textbf{ijk} dim & 
+		cubic \\
+		\midrule 
+		%
+		\multirow{3}{*}{$p \le \frac{MN}{S}$}
+		%
+		& loc. dom. & $[\sqrt{S} \times \sqrt{S} \times K]$ & $[\sqrt{S} 
+		\times \sqrt{S} \times K]$ & $\Big[\sqrt{\frac{S}{3}} \times 
+		\sqrt{\frac{S}{3}} \times \sqrt{\frac{S}{3}}\Big]$ \\
+		\cline{2-5}
+		%
+		& $pQ(p,S)$ & 
+		$\frac{2MNK}{\sqrt{S}} + MN$ & 
+		$\frac{2MNK}{\sqrt{S}} + MN$ & $\frac{3\sqrt{3}MNK}{\sqrt{S}}$ \\
+		\cline{2-5}
+		%
+		& $E(p,S)$ & 1 & 1 & 	$\frac{2K + 
+		\sqrt{S}}{3\sqrt{3}K}$ \\
+		\midrule 
+		%
+		\multirow{3}{*}{
+			\begin{tabular}{l}
+				$\frac{MN}{S} < p$ \\
+				$p \le \Big(\frac{3}{S}\Big)^{3/2}MNK$
+			\end{tabular}		 
+		}
+		% 
+		& loc. dom. & $\Big[\sqrt{\frac{MN}{p}} \times \sqrt{\frac{MN}{p}} 
+		\times K\Big]$ & $\Big[\sqrt{S} 
+		\times \sqrt{S} \times \frac{MNK}{Sp}\Big]$ & $\Big[\sqrt{\frac{S}{3}} 
+		\times 
+		\sqrt{\frac{S}{3}} \times \sqrt{\frac{S}{3}}\Big]$ \\
+		\cline{2-5}
+		%
+		& $pQ(p,S)$ & $2K 
+		\sqrt{pMN} + MN$ & 
+		$\frac{2MNK}{\sqrt{S}} + pS$ & $\frac{3\sqrt{3}MNK}{\sqrt{S}}$ 
+		\\
+		\cline{2-5}
+		%
+		& $E(p,S)$ & $\frac{MNK(\frac{2}{\sqrt{S}} + \frac{1}{K})}{2K\sqrt{MNp} 
+		+ MN}$ & $\frac{2MNK(1 + \frac{\sqrt{S}}{2K})}{2MNK + S^{3/2}p}$ & 	
+		$\frac{2K + 
+			\sqrt{S}}{3\sqrt{3}K}$ \\
+		\midrule \\
+		%
+		\multirow{3}{*}{$p > \Big(\frac{3}{S}\Big)^{3/2}MNK$}
+		%
+		& loc. dom. & $\Big[\sqrt{\frac{MN}{p}} \times \sqrt{\frac{MN}{p}} 
+		\times K\Big]$ & $\Big[\sqrt{S} 
+		\times \sqrt{S} \times \frac{MNK}{Sp}\Big]$ & 
+		\begin{tabular}{l}
+$\Big[a 
+\times 
+a \times 
+a\Big]$ \\
+$a = \big(\frac{MNK}{p}\big)^{1/3}$
+		\end{tabular} 
+	\\
+	\cline{2-5}
+		%
+		& $pQ(p,S)$ & $2K 
+		\sqrt{pMN} + MN$ & 
+		$\frac{2MNK}{\sqrt{S}} + pS$ & $3p\big(\frac{MNK}{p}\big)^{2/3}$ 
+		\\
+		\cline{2-5}
+		%
+		& $E(p,S)$ & $\frac{MNK(\frac{2}{\sqrt{S}} + \frac{1}{K})}{2K\sqrt{MNp} 
+			+ MN}$ & $\frac{2MNK(1 + \frac{\sqrt{S}}{2K})}{2MNK + S^{3/2}p}$ & 	
+		$\frac{2MNK(1 + \frac{\sqrt{S}}{2K})}{3p^{1/3}\sqrt{S}(MNK)^{2/3}}$ \\
+	\end{tabular}
+	\caption{Total communication volume of MMM and its parallel efficiency of 
+	the 
+	different parallelization schemes. We assume that all the respective local 
+	domain sizes divide the global matrix sizes evenly (e.g., for cubic domain 
+	in range $p \le MN/S$, we assume that $\sqrt{S/3} = a_1M = a_2N = a_3K$ for 
+	$a_1, a_2, a_3 \in \mathbb{N}$).}
+	\label{tab:mmmEfficiency}
 \end{table*}
+
+%\begin{table*}[t]
+%\begin{tabular}{lllll}
+%\toprule
+%range & metric & par in \textbf{ij} dim & par. in \textbf{ijk} dim & cubic \\
+%\midrule 
+%%		& $t(p,S)$ & $E(p,S)$ & $t(p,S)$ & $E(p,S)$ & $t(p,S)$ & $E(p,S)$ \\
+%\multirow{2}{*}{$p \le \frac{nm}{S}$} & $t(p,S)$ & $\frac{2nmk}{p\sqrt{S}}$ & 
+%$\frac{2nmk}{p\sqrt{S}}$ & $\frac{2\sqrt{3}nmk}{p\sqrt{S}}$ \\
+%& $E(p,S)$ & 1 & 1 & 	$\frac{1}{\sqrt{3}}$\\
+%\midrule 
+%\multirow{2}{*}{$\frac{nm}{S} < p \le \frac{3nm}{S}$} & $t(p,S)$ & $2k 
+%\sqrt{\frac{nm}{p}}$ & 
+%$\frac{2nmk}{p\sqrt{S}} + S$ & $\frac{2\sqrt{3}nmk}{p\sqrt{S}}$ 
+%\\
+%& $E(p,S)$ & $\sqrt{\frac{nm}{pS}}$ & $\frac{1}{1 + 
+%\frac{pS^{3/2}}{2nmk}}$ & 	$\frac{1}{\sqrt{3}}$ \\
+%\midrule \\
+%\multirow{2}{*}{$\frac{3nm}{S} < p$} & $t(p,S)$ & $2k 
+%\sqrt{\frac{nm}{p}}$ & 
+%$\frac{2nmk}{p\sqrt{S}} + S$ & $\frac{2\sqrt{3}nmk}{p\sqrt{S}} + 
+%\frac{S}{3}$\\
+%& $E(p,S)$ & $\sqrt{\frac{nm}{pS}}$ & $\frac{1}{1 + 
+%\frac{pS^{3/2}}{2nmk}}$ &	$\frac{1}{\sqrt{3} + 
+%\frac{pS^{3/2}}{6nmk}}$
+%\end{tabular}
+%\caption{Communication volume and its parallel efficiency of the Matrix-Matrix 
+%multiplication for different partition schemes. Three ranges correspond 
+%to thresholds above which parallelization in \textbf{k} dimension is 
+%performed.}
+%\label{tab:mmmEfficiency}
+%\end{table*}
 
 
  \begin{figure*}[t]
  	\hspace*{-1.5cm}
  	\includegraphics[width=2.5\columnwidth]{figures/mmmScaling}
  	\label{fig:mmmScaling}
- 	\caption{Parallel efficiency of different partition schemes for matrix 
+ 	\caption{\greg{New results, plots need to be updated!} Parallel efficiency 
+ 	of different partition schemes for matrix 
  		matrix multiplication. Two vertical dashed lines correspond to 
  		thresholds 
  		$nm/S$ and $3nm/S$ (Table \ref{tab:mmmEfficiency}).}
@@ -1586,23 +1732,31 @@ performed.}
 \label{sec:evaluation}
 
 \subsection{Test cases}
-\greg{Describe where do the skinny matrices show up, why they are important, 
-why strong scaling (even suboptimal) is important.}
-\subsection{Environment}
-\greg{Piz daint description}
-\subsection{Results}
-\greg{I believe the scenarios should cover, both weak and strong scaling (I 
-don't know in which order):
+We chose our experiments to cover the whole spectrum of possible use cases. We 
+compare
 \begin{itemize}
-	\item "Standard" square scenario. Marko - we are still the fastest even for 
-	square case?
-	\item "CARMA" scenarios. Power of 2, one and two "large dimensions"
-	\item "Our case" scenarios. Non power of 2, rectangular matrices. Is it 
-	fair to assume that original CARMA pads matrices with zeros to match the 
-	closest power of 2?
+	\item square ($M=N=K$) vs "skinny" ($M=N << K$) matrices,
+	\item different memory requirements: just enough memory to fit the inputs 
+	($S = (MK + NK)/p$) vs enough memory for $p^{1/3}$ redundant copies of data,
+	\item weak vs strong scaling,
+	\item parameter values that are powers of two vs randomly chosen vs 
+	determined by real-life problem definition.
 \end{itemize}
-Should we add intra node evaluation too? Or do we care only about the 
-distributed case?
+
+For our "skinny" matrix, as a use case we evaluate the problem of water 
+molecules interaction in the DFT
+simulation\cite{joost}. There, to simulate $w$ molecules, the sizes of the 
+matrices are $M=N=136w$ and $K = 228w^2$. For $w=64$, as it was used in their 
+work, we have $M=N=8704, K = 933888$.
+
+\subsection{Experimental setup}
+We run our experiments on CSCS Piz Daint - Cray supercomputer equipped with 
+5320 XC50 heterogeneous nodes with NVIDIA Tesla P100 and 1813 XC40 nodes with 
+dual-socket Intel Xeon E5-2695 v4 processors (3.30 GHz,45 MiB L3 shared cache), 
+interconnected with Cray Aries network.
+
+\subsection{Results}
+\greg{No results yet
 }
 
 
@@ -1683,13 +1837,13 @@ showing the
 superiority of the former both in terms of theoretical analysis and achieved 
 performance.
 
-\greg{
-	TODO: 
-	\begin{enumerate}
-		\item BSP model?
-	\end{enumerate}
-}
-
+%\greg{
+%	TODO: 
+%	\begin{enumerate}
+%		\item BSP model?
+%	\end{enumerate}
+%}
+%
 %\section{Bibliography}
 
 %% Bibliography style
@@ -1700,7 +1854,7 @@ performance.
 
 \appendix
 \section{Parallel scheduling}
-\todo{Move the whole thing to appendix? Or discard it?}
+\greg{this analysis is old and not actual. I will fix it as the last thing.}
 In this section, we start with the reuse analysis from Section 
 \ref{sec:seqScheduling} 
 to derive the execution time and parallel efficiency metric of the two tiling 
