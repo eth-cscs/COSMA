@@ -32,7 +32,7 @@ int get_n_iter() {
     unsigned int intValue;
     strValue >> intValue;
 
-    return intValue;
+    return intValue<0 ? 1 : intValue;
 }
 
 void output_matrix(CarmaMatrix& M, int rank) {
