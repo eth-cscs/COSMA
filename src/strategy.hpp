@@ -10,6 +10,7 @@
 #include <math.h>
 #include <limits>
 #include <tuple>
+#include "scheduleGenerator.h"
 
 class Strategy {
 public:
@@ -95,6 +96,8 @@ public:
     // if there is not enough memory in some step, then DFS step is performed and new
     // divm, divn and divk are found that correspond to the new subproblem.
     void square_strategy();
+
+    void spartition_strategy();
 
     // token is a triplet e.g. bm3 (denoting BFS (m / 3) step)
     void process_token(const std::string& step_triplet);

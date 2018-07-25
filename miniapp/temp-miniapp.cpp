@@ -32,7 +32,13 @@ int get_n_iter() {
     unsigned int intValue;
     strValue >> intValue;
 
-    return intValue<0 ? 1 : intValue;
+    if (intValue<0 || intValue > 100) {
+        std::cout << "Number of iteration must be in the interval [1, 100]" << std::endl;
+        std::cout << "Setting it to 1 iteration instead" << std::endl;
+        return 1;
+    }
+
+    return intValue;
 }
 
 void output_matrix(CarmaMatrix& M, int rank) {
