@@ -80,9 +80,24 @@ int main( int argc, char **argv ) {
     MPI_Comm_size(MPI_COMM_WORLD, &P);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+    if (rank >= strategy.P) {
+        MPI_Finalize();
+        return 0;
+    }
+
+    MPI_Group group;
+    MPI_Comm_group(MPI_COMM_WORLD, &group);
+    std::vector<int> exclude_ranks;
+    for (int i = strategy.P; i < P; --i) {
+        exclude_ranks.push_back(i);
+    }
+
+    MPI_Group new_group;
+    MPI_Comm new_comm;
+
     if (P != strategy.P) {
-        throw(std::runtime_error("Number of processors available not equal \
-                                 to the number of processors specified by flag P"));
+        MPI_Group_excl(group, strategy.P, exclude_ranks.data(), &new_group);
+        MPI_Comm_create_group(MPI_COMM_WORLD, new_group, 0, &new_comm);
     }
 
     if (rank == 0) {
@@ -92,7 +107,11 @@ int main( int argc, char **argv ) {
     int n_iter = get_n_iter();
     std::vector<long> times;
     for (int i = 0; i < n_iter+1; ++i) {
-        long t_run = run(strategy, MPI_COMM_WORLD);
+        long t_run = 0;
+        if (P != strategy.P) 
+            t_run = run(strategy, new_comm);
+        else 
+            t_run = run(strategy);
         if (i == 0) continue;
         times.push_back(t_run);
     }
@@ -104,6 +123,11 @@ int main( int argc, char **argv ) {
             std::cout << time << " ";
         }
         std::cout << std::endl;
+    }
+
+    if (P != strategy.P) {
+        MPI_Group_free(&new_group);
+        MPI_Comm_free(&new_comm);
     }
 
     MPI_Finalize();
