@@ -11,7 +11,7 @@
 %% For final camera-ready submission, w/ required CCS and ACM Reference
 %\documentclass[sigplan]{acmart}\settopmatter{}
 
-
+\usepackage{soul}
 
 %\usepackage{booktabs} % For formal tables
 %\documentclass{article}
@@ -24,7 +24,7 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{mathtools}
-\usepackage{amssymb}
+\usepackage{wrapfig}
 \usepackage{listings}
 \usepackage{graphicx}
 \usepackage{caption}
@@ -35,11 +35,62 @@
 %\usepackage[a4paper, total={7in, 10.5in}]{geometry}
 \usepackage[font={small}]{caption}
 %\usepackage[font={bf,sf,small}]{caption}
-\usepackage[linesnumbered,ruled]{algorithm2e}
+%\usepackage[linesnumbered,ruled]{algorithm2e}
 \usepackage{algpseudocode}
 \captionsetup{labelfont=bf,textfont=bf}
 \usepackage[font={bf,sf,scriptsize}]{subfig} 
 \usepackage{amsthm}
+
+%
+%\usepackage[utf8]{inputenc}
+%\usepackage{url}
+%\usepackage{amsmath,amsthm,amssymb,amsfonts}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{algorithmicx}
+%\usepackage{graphicx}
+%\usepackage{caption}
+%\usepackage[thinlines]{easytable}
+%\usepackage{pdfpages}
+%\usepackage{fancyhdr}
+%\usepackage{booktabs}
+%\usepackage{footnote}
+%\usepackage{footmisc}
+%\usepackage{mathtools}
+%\usepackage{multirow}
+%%\usepackage{siunitx}
+%%\usepackage{booktabs}
+%%\usepackage{blindtext}
+%%\usepackage[pdfencoding=auto,psdextra]{hyperref}
+%
+%\fancyhf{}
+%\renewcommand{\headrulewidth}{0pt}
+%\renewcommand{\footrulewidth}{0pt}
+%
+%\DeclarePairedDelimiter\abs{\lvert}{\rvert}
+%
+%\makeatletter
+%\let\oldabs\abs
+%\def\abs{\@ifstar{\oldabs}{\oldabs*}}
+%\makeatother
+%\def\E{\mathbb{E}}
+%
+%\makeatletter
+%\g@addto@macro \normalsize {%
+%	\setlength\abovedisplayskip{5pt plus 2pt minus 2pt}%
+%	\setlength\belowdisplayskip{5pt plus 2pt minus 2pt}%
+%}
+%\makeatother
+
+
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+
+\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+\def\NoNumber#1{{\def\alglinenumber##1{}\State #1}\addtocounter{ALG@line}{-1}}
+
+
+
 %\usepackage[demo]{graphicx}
 %\setlength{\footskip}{15pt}
 %\usepackage[utf8]{inputenc}
@@ -60,12 +111,12 @@
 \DeclareMathOperator*{\argmin}{arg\,min}
 
 \lstset{language=C,
-	keepspaces=true,
-	frame=tb,
-	basicstyle=\ttfamily,
-	columns=fixed,
-	morekeywords={enddo},
-	mathescape}
+  keepspaces=true,
+  frame=tb,
+  basicstyle=\ttfamily,
+  columns=fixed,
+  morekeywords={enddo},
+  mathescape}
 
 \usepackage{cleveref}
 \usepackage[utf8]{inputenc}
@@ -113,9 +164,8 @@ Practice of Parallel Programming}{February 16--20, 2019}{Washington DC, USA}
 
 %% Title information
 
-\title[Data Movement Optimal Dimensionless Matrix Multiplication]{Breaking The 
-Monopoly 
-of Dimensions: Data Movement Optimal Dimensionless Matrix Multiplication}
+\title[I/O-Optimal Dimensionless Matrix Multiplication]{Breaking The 
+Monopoly of Dimensions: Towards I/O-Optimal Matrix Multiplication}
 
 
 \author{First1 Last1}
@@ -204,100 +254,285 @@ employing RDMA mechanisms for communication-computation overlap.
 %To-G: One paragraph must serve *one* specific goal that one must be able to
 %state in one short (~10 words at most) sentence. The previous intro was one
 %large bulk of text - not good. I split into paragraphs below. Double check if
-%you understand *exactly* why the division into paragraphs is like this.
-
-Matrix-matrix multiplication (MMM) is one of the most fundamental building 
-blocks in
-scientific computing. It is widely used not only in virtually all linear
-algebra algorithms (Cholesky and LU decomposition~\cite{meyer2000matrix},
-eigenvalue factorization~\cite{chatelin2012eigenvalues}, triangular
+%you understand *exactly* why the division into paragraphs is like 
+%this.
+%\begin{figure}[!tbp]
+%  \includegraphics[width=\textwidth/2]{figures/paperOrganization}
+%  \caption{Achieving data movement optimal MMM in eleven simple 
+%    steps: (I) I/O lower bounds and red-blue pebble game, (II) 
+%    $2S$-partition lemma, (III) reuse-based lemma, (IV) MMM I/O 
+%    lower 
+%    bound, (V) I/O optimal schedule, (VI) communication optimal 
+%    parallel schedule, (VII) parallel efficiency analysis, (VIII) 
+%    buffer optimization, (IX) communication optimization, (X) 
+%    process 
+%    decomposition optimization, (XI) best time-to-solution 
+%    result. }
+%  %
+%  \label{fig:paperOrganization}
+%\end{figure}
+%
+Matrix-matrix multiplication (MMM) is one of the most fundamental building
+blocks in scientific computing. It is widely used not only in virtually all
+linear algebra algorithms (Cholesky and LU
+decomposition~\cite{meyer2000matrix}, eigenvalue
+factorization~\cite{chatelin2012eigenvalues}, triangular
 solvers~\cite{linearAlgebraLAPACK}), but also in numerous graph algorithms such
 as Breadth-First Search (BFS)~\cite{cormen2009introduction} or Triangle
 Counting~\cite{azad2015parallel} through efforts such as
-GraphBLAS~\cite{kepner2016mathematical}.  Other use cases include spectral
+GraphBLAS~\cite{kepner2016mathematical}. Other use cases include spectral
 clustering~\cite{ng2002spectral} or machine
-learning~\cite{abadi2016tensorflow}.  Thus, improving the performance or
-programmability of MM routines is of great significance for many domains.
+learning~\cite{abadi2016tensorflow}.  Thus, accelerating MMM routines is of
+great significance for many domains.
 
+Hong and Kung~\cite{redblue} proved nearly 30 years ago a sequential I/O lower
+bound for matrix multiplication to be $\Omega\left(\frac{n^3}{\sqrt{S}}\right)$
+in their two-level memory model, where $S$
+is the size of the fast memory\footnote{Throughout this paper we
+	follow the notation from~\cite{redblue} and use the symbol $S$ for the 
+	memory
+	size. In the literature, it is common to use the symbol $M$, but this may 
+	cause
+	confusion with the non-square matrix sizes, often denoted $M$, $N$ and
+	$K$.}. 
+	Irony et al.~\cite{IronyMMM} extended those
+results to the parallel machine with $p$ processes,
+each of which has a fast private memory of size~$S$, proving the
+$\Omega\left(\frac{n^3}{p\sqrt{S}}\right)$ bound on communication per process.
 %
-The evolution of MM algorithms is marked by a series of important optimizations
-and novel approaches, including Strassen-like routines~\cite{Strassen}, 
-parallelization~\cite{parallelMMM},
-and tiling~\cite{tiling}.
+%Various optimizations 
+%Ever since then, those bounds serve as a
+%driving force in developing better algorithms. \mac{This sounds a bit weird -
+%why are the bounds a driving force? You can also see them as, well, bounds? I
+%would probably remove it} This evolution includes optimizations like
+%parallelization~\cite{parallelMMM}, tiling~\cite{tiling}, 2D~\cite{summa} and
+%3D~\cite{summa3d} domain decomposition or data layout
+%optimization~\cite{scalapackLayout}.
 %
-While the largest focus has been traditionally placed on accelerating the
-multiplication of square matrices, more emphasis has recently been placed on
-non-square matrices as well. Such matrices are commonly used in a number of
+If the memory size~$S$ is bounded by the size the
+input data ($pS = \mathcal{O}(n^2)$), the bound
+$\mathcal{O}\left(\frac{n^2}{\sqrt{p}}\right)$  is asymptotically attainable by
+algorithms such as Cannon's~\cite{Cannon} or SUMMA~\cite{summa}. In the
+presence of extra memory ($pS = \mathcal{O}(p^{1/3} n^2)$), the 3D
+decomposition~\cite{summa3d} yields a better asymptotic bound
+$\mathcal{O}\left(\frac{n^2}{P^{2/3}}\right)$. The 2.5D algorithm by Solomonik
+and Demmel~\cite{25d} effectively interpolates
+between those two results, depending on the available
+memory.
+
+Another class of optimizations, based on group theory,
+are Strassen-like routines~\cite{Strassen}, which asymptotically reduce the
+number of arithmetic operations. Currently, the algorithm with the lowest
+asymptotic complexity $O(n^{2.3729}$) is by Le~Gall~\cite{LeGall}. In our work,
+however, we focus only on the ``classical'' MMM algorithms which perform $n^3$
+additions and multiplications, as they are often faster in practice on modern 
+parallel architectures with deep memory hierarchies~\cite{strassenVsClassic}.  
+
+While the largest focus has traditionally been
+placed on accelerating the multiplication of square matrices, more focus has
+recently been put on
+non-square matrices as well. Such scenarios are common in a number of
 relevant areas and problems, for example in machine learning
-\cite{rectangularML} or computational chemistry \cite{rectangularChemistry}.
+\cite{rectangularML} or computational chemistry~\cite{rectangularChemistry}.
 %
-Unlike square matrices, the dimensions of non-square matrices can vary
-significantly.
-It has been shown that algorithms optimized for squared matrices often perform 
-poorly on arbitrary dimensions~\cite{CARMA}.
+Unfortunately, it has been shown
+that algorithms optimized for squared matrices often perform poorly in cases
+when matrix sizes vary significantly~\cite{CARMA}. 
 %
-This issue is tackled by the recent work by Demmel et al.~\cite{CARMA}, who
-introduced CARMA, an algorithm that achieves asymptotic lower bounds for all 
-configurations of dimensions and intra-node memory sizes.
+This issue is tackled in the work by Demmel et al.~\cite{CARMA}, who introduced
+CARMA, an algorithm that achieves asymptotic lower bounds for all
+configurations of dimensions and memory size.  
 
-Unfortunately, we observe several weaknesses of the current state-of-the art 
-methods, like ScaLAPACK~\cite{scalapack}, Cyclops~\cite{cyclops} or 
-CARMA~\cite{CARMA}. We first observe that ScaLAPACK 
-requires a user to fine-tune 
-parameters 
-like block sizes or process decomposition, Cyclops is not optimal for 
-rectangular matrices and the recursive 
-structure of CARMA is
-unsuitable for scenarios when the number of processes is not the power of two,
-a common case in practice. For example, Del Ben et al.~\cite{joost} used "tall 
-and skinny" matrices to simulate water molecules' interaction. Matrix dimension 
-sizes are 
-determined by their number - e.g., for 64 molecules, M=N=8704 and K=933888. 
-The number of processes, on the other hand, is often determined by available 
-resources and is 
-rarely a divisor of problem size, e.g., Piz Daint, third fastest supercomputer 
-in 2017, has 1813 CPU nodes. 
-Furthermore, we emphasize that asymptotic complexity is an
-insufficient measure of speedup in practical applications as constants do play
-crucial role in applicability of algorithms. For example, the
+%\mac{You must mention CTF after
+%this e-mail exchange with Edgar} \greg{I need results from Marko}
+
+%
+%\mac{This ``intra-node memory sizes'' comes out of the blue - why do we care?
+%So far, you only motivated shapes. If this memory size parameter is crucial
+%for later sections, I would also suggest a small paragraph for this, with
+%concrete examples on why it matters}\greg{changed to just "memory" and there
+%are referenced to this}
+
+However, we observe several problems of the current state-of-the art
+algorithms, such as ScaLAPACK~\cite{scalapack} (an implementation of
+SUMMA), Cyclops Tensor Framework (CTF)~\cite{cyclops} (an implementation of the 
+2.5D MMM algorithm), or CARMA~\cite{CARMA}. ScaLAPACK supports
+only the 2D~decomposition  and requires a user to
+fine-tune parameters such as block sizes or process
+decomposition. CTF yields poor performance on matrices with 
+dimensions which are multiples of large primes
+\greg{this is what preliminary results show. Waiting for full results}, a 
+common case in, e.g,
+computational chemistry~\cite{joost}. Moreover, the recursive
+implementation of CARMA cannot directly handle scenarios when the number of
+processes is not the power of two, a common
+case, as the number of processes is usually determined by the available
+hardware resources, rarely a power of two.  For example Piz Daint, the
+third fastest supercomputer in 2017, has 1,813 CPU nodes, which are
+impossible to arrange in a cubic grid. Furthermore,we emphasize that asymptotic 
+complexity is an insufficient measure of speedup. For example, the
 Coppersmith--Winograd algorithm~\cite{coppersmith} achieves computational
 complexity of $\mathcal{O}(N^{2.376})$, but its constant terms are 
 prohibitively big and
 make it slower in practice than the classical $\mathcal{O}(N^{3})$ algorithms. 
-We later (\cref{sec:evaluation}) show that CARMA constant factors are also 
-suboptimal in terms of communication volume.
+We later (\cref{sec:evaluation}) show that CARMA suffers from similar
+overheads.
 
-\greg{update}
-In this work, we present a new approach to multiplying matrices that alleviates
-the above issues and is \emph{data movement} optimal - it minimizes both I/O 
-operations (vertical data movement across the memory hierarchy) and 
-communication between processes in distributed setting (horizontal data 
-movement). Our key idea is to ``invert'' the traditional ``top-down''
-approach for multiplying matrices, shared by all the mentioned state-of-the-art
-algorithms, that fix the domain partitioning in some predefined fashion
-(2D~\cite{Cannon}, 2.5D~\cite{25d}, or
-recursive~\cite{CARMA}).
+
+
+
+%%
+%, a common case in practice
+%\mac{Again, at least one sentence to this. Why not suitable? What happens?
+%'Unsuitable - extremely confusing word...}. For example, Del Ben et
+%al.~\cite{joost} used the "tall and skinny" matrices to simulate water
+%molecules' interaction \mac{This sentence is completely out of the place. You
+%just finished writing about why CARMA and others are bad. And suddenly an
+%example of using tall and skinny matrices. Must go elsewhere}. Matrix dimension
+%sizes are determined by their number - e.g., for 64 molecules, M=N=8704 and
+%K=933888 \mac{Some comment as above - this must go elsewhere}. The number of
+%processes, on the other hand, is often determined by available resources and is
+%rarely a divisor of the problem size. 
+
+In this work, we present COMM (Communication Optimal Matrix Multiplication): 
+an algorithm that takes a new approach to multiplying
+matrices and alleviates the above issues. COMM is I/O optimal \emph{with regard 
+to all constant factors}
+for all combinations of parameters.
 %
-Instead, we propose a ``bottom-up'' approach that (1) starts with deriving a
-provably I/O optimal sequential data movement schedule, (2) uses it to generate 
-a 
-certain
-number of parallelization strategies of a given MM product minimizing 
-communication, and finally (3)
-uses these strategies to provide an \emph{data movement optimal} parallel 
-schedule.
+To prove the optimality of our algorithm,  we (1) first provide a new 
+constructive proof of sequential I/O lower bound, improving the constant 
+factors of an existing bound 
+by Smith and van de Gein~\cite{tightMMM}, (2) derive the communication cost of  
+parallelizing the sequential
+schedule, (3) construct a
+communication optimal parallel schedule. Our algorithm reduces the data 
+movement volume up to $\sqrt{3} \approx 1.73$ times compared to CARMA and up to 
+$\max\{N,M,K\}$ times compared to the 2D
+algorithms, like Cannon's~\cite{generalCannon}
+or SUMMA~\cite{summa}. The more detailed comparison of communication cost is
+presented in Table~\ref{tab:summary}.  \mac{it would be cool to finish this
+paragraph NOT with  this table (a lot of complex info in it), but with some
+simple conclusion that shows our superiority. Maybe you could state (or
+restate) this $\sqrt{3}$ reduction argument at the very end, after referring to
+the table?}
 %
-Our schedule is based on the ``S--partitioning'' concept from the Hong and 
-Kung's 
-red--blue
-pebble game~\cite{redblue} to derive the best (i.e., optimal) partitioning
-routine that minimizes data movement for a given MM product in a parallel
-setting. The model is simplistic and it transparently applies both to 
-distributed and shared memory machines for all possible combinations of 
-parameters.
+
+Unlike CARMA that is based on the recursive data layout, our implementation
+enables transparent integration with the ScaLAPACK
+format~\cite{scalapackLayout} and delivers near-optimal computation throughput.
 %
-We illustrate an intuitive comparison of our bottom-up approach versus the
-classic top-down schemes in Figure~\ref{fig:topdown-vs-bottomup}.
+We later (\cref{sec:implementation}) illustrate that the obtained schedule 
+naturally expresses
+computation-communication overlap, 
+%
+%\mac{if it's true, I would also add here
+%``unlike the existing approaches''}\greg{not sure about this part}
+%
+ which can 
+be used for even higher speedups
+using Remote Direct Memory Access (RDMA) mechanisms.
+%
+%We further motivate our work in Figure~\ref{fig:motivation-page-1} that shows
+%the advantages of our algorithm over the state of the art \greg{what do you 
+%want to put here?}.
+%%
+Our implementation
+also uses various techniques, like buffer and layout optimization to further
+accelerate the execution time. Finally, our I/O optimal approach is
+easily generalizable to other linear algebra kernels. 
+
+We provide the following contributions:
+
+\begin{itemize}[leftmargin=1em]
+%
+\item We present COMM : the distributed MMM algorithm that is I/O optimal for 
+any combination of parameters.
+%
+%the algorithm achieving up to ?? speedup (?? on average) in
+%the total runtime of the MMM scheme over the existing state-of-the-art 
+%implementations,
+%
+\item Extending the general analysis of I/O complexity, we
+show a new proof constructive of the sequential MMM I/O lower bound,
+delivering tight constant factors (~\cref{sec:seqOptimality}. We extend this 
+proof to both distributed and shared memory machines (\cref{sec:parOptimality}),
+%
+%\item we \mac{We} confront the parallel efficiency of our schedule with 
+%existing state-of-the art 2D and 3D matrix
+%multiplication variants \mac{state what is the outcome of this confrontation,
+%we must contribute sth!} (~\cref{sec:parOptimality} \mac{use cref}),
+%
+\item We use block-cyclic data layout(~\cref{sec:datalayout}) and a static 
+buffer pre-allocation(~\cref{sec:bufferReuse}), which reduce
+memory footprint for communication buffers and guarantees minimal reshuffling
+of input data, providing better compatibility with ScaLAPACK format than CARMA
+(~\cref{sec:implementation}),
+%
+\item We naturally express the computation-communication overlap, which enables 
+even higher speedups by
+leveraging the advantages of the RDMA mechanism~(\cref{sec:implementation}),
+%
+\item We perform extensive evaluation on the Piz Daint supercomputer for an 
+extensive selection of problem
+dimensions, memory sizes, and numbers of
+processes, showing the speedup of up to ?? (?? on average), compared to 
+ScaLAPACK, CTF and CARMA (~\cref{sec:evaluation}).
+%
+\end{itemize}
+
+%
+%%
+%\mac{Also, see the long comment on top-down above. These 3 reasons here are not
+%enough to understand why this thing is called bottom-up.}.
+%%
+%Our schedule is based on the ``S--partitioning'' concept from the Hong and 
+%Kung's 
+%red--blue
+%pebble game~\cite{redblue} to derive the best (i.e., optimal) partitioning
+%routine that minimizes data movement for a given MM product in a parallel
+%setting. The model is simplistic and it transparently applies both to 
+%distributed and shared memory machines for all possible combinations of 
+%parameters.
+%%
+%We illustrate an intuitive comparison of our bottom-up approach versus the
+%classic top-down schemes in Figure~\ref{fig:topdown-vs-bottomup}.
+
+%
+%  - \mac{Using such dashes
+%is a bad idea in papers, reads bad and informal. Colons are better} it 
+%minimizes both the number of I/O 
+%operations (vertical data movement across the memory hierarchy) and 
+%communication between processes in distributed setting (horizontal data 
+%movement) \mac{I thought at this point it's somewhat weird that you combine 
+%these two
+%and name them in this way. I
+%mean, distributed *IS* actually I/O, right? Not disk I/O, but still I/O (NIC, 
+%network).
+%I would (1) think how to maybe name it a bit better, and (2) investigate
+%thoroughly the connection and the overlapping papers}. Our key idea is to 
+%``invert'' the traditional ``top-down''
+%approach for multiplying matrices, shared by all the mentioned state-of-the-art
+%algorithms, that fix the domain partitioning in some predefined fashion
+%(2D~\cite{Cannon}, 2.5D~\cite{25d}, or
+%recursive~\cite{CARMA}) \mac{The word ``invert'' and ``top-down'' is confusing.
+%You just write it down like sth obvious, but it's not obvious (calling all 
+%these
+%schemes top-down is not obvious). I would suggest to maybe first provide 1-3 
+%sentences
+%that will straightforwardly explain on why all these schemes are called 
+%``top-down'',
+%focusing (in this explanation) ALSO on the downsides of this approach. Only 
+%after, 
+%I would state that we do bottom-up, and invert the top-down, but write it in 
+%such
+%a way that it is clear WHAT EXACTLY is inverted in the top-down approach}.
+%
+
+%
+% \mac{Do *not* refer to this figure here. This figure is very very complex and
+% long. If you want a simple top-down VS bottom-up figure, it MUST focus ONLY
+% on top-down vs bottom-up. Not on everything in the paper...}
 
 \begin{figure}[!tbp]
 \centering
@@ -311,183 +546,43 @@ decomposition]{\includegraphics[width=0.22\textwidth]{figures/mmm_shape_3d}\labe
 decomposition based on 
 S--partitions]{\includegraphics[width=0.22\textwidth]{figures/mmm_shape_spart}\label{fig:f2}}
 %
-\caption{Difference between "top-down" approach, where a global domain is
+\caption{\mac{This caption is now out of sync with the intro contents. In this
+caption, you now mention top-down and bottom-up schemes, while they are not
+mentioned in the intro. This is actually bad, because the intro now lacks the
+description of the core idea behind COMM. Next thing, you also mention these
+subdomains, and they are not mentioned in the intro - bad, people will have
+difficulties understanding.} \mac{The} Difference between "top-down" approach, 
+where a global domain is
 uniformly partitioned into $p$ subdomains (a), and "bottom-up", where locally
-optimum subdomain fills the global domain (b). In this example, (b) has 25\%
-smaller input size per process. Exact comparison is presented in Table 
+optimum subdomain fills the global domain (b). In this example, (b) \mac{not 
+(b),
+but the scenario presented in~(b)} has 25\%
+smaller input size per process. Exact \mac{The exact} comparison is presented 
+in Table 
 \ref{tab:summary}. \mac{This figure might be OK for a technical report,
-but it's too complex for the submission. Also, it should be black-white.
-I also have an idea of making it in 2D. Let's discuss it when you're here.}}
+but may be too complex for the submission. I suggest you print it using
+BAD resolution and see what happens}
+\mac{Another comment: this figure is not incomprehensible - as a random reader, 
+I wouldn't
+explain what's the difference after just seeing it. HOWEVER, you can fix it 
+easily
+by adding these small pieces of text and connecting lines (like we did before).
+I would add the following example pieces of text: (1) ``\textbf{Top-down 
+approach:} decomposition
+of computation domain in a pre-defined way among selected dimensions (in this 
+example,
+among all three dimensions)'', (2) ``\textbf{Bottom-up approach:} deriving 
+locally optimal
+computation and distributing it over the whole computation domain'', (3) 
+``Number of processes
+along dimension~M'', (4) ``Number of processes along dimension~N'', (5) 
+``Number of processes
+along dimension~K'', (6) ``$n_1$ is ...'', and others along these lines.}
+}
 %
 \label{fig:topdown-vs-bottomup}
 \end{figure}
 
-Our algorithm performs from $\frac{5}{3 \sqrt[3]{4}} \approx 1.05$ to $\sqrt{3} 
-\approx 1.73$ less
-communication than CARMA for any dimension sizes and other parameters, and up
-to $\max\{N,M,K\}$ times less than algorithms that target square matrices ($M,
-N, K$ are matrix dimensions), like Cannon's~\cite{generalCannon} or 3D
-SUMMA~\cite{summa}. The comparison of communication cost is presented in
-Table~\ref{tab:summary}. 
-%
-We further motivate our work in Figure~\ref{fig:motivation-page-1} that
-shows the advantages of our algorithm over the state of the art. Our 
-implementation also uses various techniques, like buffer and layout 
-optimization to further speedup the wallclock execution 
-time. We
-obtain up to ?? speedup (?? on average) in the total runtime of the MM scheme.
-
-Unlike CARMA that is based on the recursive data layout, our implementation
-enables transparent integration with the ScaLAPACK format~\cite{cite} and
-delivers near-optimal computation throughput.
-%
-Next, as we later illustrate (\cref{sec:x}), the schedule that we obtain
-naturally expresses computation-communication overlap, which can be
-used for even higher speedups using Remote Direct Memory Access (RDMA)
-mechanisms.
-%
-Finally, our provably I/O optimal approach is easily generalizable to other
-linear algebra kernels. 
-
-We provide the following contributions:
-\mac{The contributions should reflect more or less the intro story.
-Now they're really vague. Will try to fix it later.}
-
-\begin{itemize}[leftmargin=1em]
-%
-\item Extending classical analysis of I/O complexity, we show a new proof of  
-data movement lower bound of MMM with the tight constant factors and present a 
-schedule 
-achieving it for all combinations of parameters, both for distributed and 
-shared memory machines (Section \ref{sec:datareuse}),
-%
-\item we confront the parallel efficiency metric of our schedule with 
-existing state-of-the art 2D and 3D matrix multiplication variants 
-(Section \ref{sec:datareuse}),
-%
-\item we present various data layout optimizations, which reduce memory 
-footprint for communication buffers and guarantees minimal reshuffling 
-of input data, providing better compatibility with ScaLAPACK format 
-than CARMA (Section \ref{sec:implementation}),
-%
-\item we detach the communication granularity from computation, 
-yielding flexible computation-communication overlap leveraging RDMA 
-mechanism (Section \ref{sec:implementation}),
-%
-\item we perform extensive evaluation on Piz Daint
-machine with different combinations of problem dimensions, memory size 
-and number of processes, showing the speedup of up to ?? (?? on average), 
-compared to the current state-of-the-art implementations
-(Section \ref{sec:evaluation}).
-%
-\end{itemize}
-
-%	It is a well known fact that the main emphasis on performance analysis 
-%	shifted from maximizing FLOP/s to minimizing data movement. Even though I/O 
-%	optimal schemes were being designed since the first  problems 
-%	occurred (\cite{pebblegameregister}, \cite{registerpebblecolor}, 
-%	\cite{completeRegisterProblems}, \cite{redblue}, \cite{externalMem}), 
-%	contemporary throughput-oriented architectures, like Xeon Phi 
-%	\cite{XeonPhi} and GPUs 
-%	\cite{gpumodel} leveraged the problem to higher importance than ever 
-%	(\cite{redbluewhite}, \cite{elangoSymbolic}, \cite{energyScheduling}, 
-%	\cite{communicationOptMMM}). Yet, 
-%	data movement minimization, due to its 
-%	combinatorial nature, is far more complicated than simple FLOP/s 
-%	optimization.
-%	
-%	As a starting point we revisit a method proposed by Hong and Kung nearly 40 
-%	years 
-%	ago \cite{redblue}. Their red-blue pebble game abstraction is 
-%	a simple, yet elegant and powerful tool for analyzing the I/O complexity of 
-%	computations expressed in the Computation Directed Acyclic Graph (CDAG) 
-%	format. The key result is a method of  deriving the I/O lower bound based 
-%	on a so-called \textit{S-partition} of the input CDAG.
-%	
-%	In this work we show the new NP-hardness result of the
-%	S-partition problem. We also discuss the origin of the problem 
-%	intractability and summarize cases where either polynomial time or PTAS 
-%	algorithm exists. For those cases, the polynomial time algorithm is 
-%	presented. However, we note that for many practical scenarios, the constant 
-%	$k$ in the exponent of time complexity $\mathcal{O}(n^k)$ may still be 
-%	prohibitive. To tackle 
-%	this obstacle, we derive a new ILP-based branch-and-bound algorithm 
-%	inspired by a 
-%	work of Elango et al. (\cite{redbluewhite}) that can scale to graphs with 
-%	up to (to be evaluated) vertices. 
-%	
-%	There are two major challenges with the S-partition. First one is present 
-%	in 
-%	all methods that maximizes computational intensity (the geometric 
-%	interpretation is surface-to-volume ratio minimization). The problem is 
-%	that those methods do not explicitly specify the data reuse. This leads to 
-%	suboptimal subset shapes, which we prove on the Matrix Matrix 
-%	Multiplication example.  The other challenge with S-partition lower 
-%	bound is that it does not 
-%	provide any tightness guarantees. We present a method 
-%	to assess both the tightness and scheduling feasibility derived 
-%	directly from the S-partition.  We compare our algorithm with both 
-%	well-known 
-%	results for Matrix-Matrix Multiplication, FFT and stencil computations, as 
-%	well as random uniform and Kronecker graphs.
-%	
-%	This paper is organized as follows:
-%	
-%	(TBD)
-
-%\begin{table*}
-%	\begin{tabular*}{\textwidth}{c c c c c c}
-%		\hline
-%		& 2D\cite{summa} & 2.5D\cite{25d} & 3D \cite{summa3d} & 
-%		CARMA\cite{CARMA} & S-partition[here]\\
-%		\hline
-%		\hline
-%		\begin{tabular}{c}
-%			proc decomp. \\
-%			$[p_m \times p_n \times p_k]$
-%		\end{tabular}
-%		& $[p^{\frac{1}{2}} \times p^{\frac{1}{2}} \times 1]$
-%		&
-%		\begin{tabular}{c}
-%		$[(p/c)^{\frac{1}{2}} \times (p/c)^{\frac{1}{2}} \times c]$, \\
-%		$c = \frac{MK + NK}{pS}$
-%		\end{tabular} 
-%
-%		& $[p^{\frac{1}{3}} \times p^{\frac{1}{3}} \times p^{\frac{1}{3}}]$
-%		& \begin{tabular}{c}
-%			$[{2^{a_1}} \times {2^{a_2}} \times 
-%			{2^{a_3}}]$,\\
-%			 $a_1 + 
-%			a_2 + a_3 = \log_2(p)$
-%		\end{tabular}
-%		& 
-%		\begin{tabular}{c}
-%			%$[\frac{M}{T_1} \times \frac{N}{T_1} \times \frac{K}{T_1}]$ or 
-%			$[\frac{M}{T_1} \times \frac{N}{T_1} \times \frac{K}{T_2}]$,\\
-%			 $T_1, T_2$:  Section \ref{sec:seqScheduling}
-%			%  $= \frac{MNK}{p}, T_2 \approx \sqrt{S}, T_3 = \frac{MNK}{T_2^2}$
-%			\end{tabular}\\
-%		\hline
-%		local domain size 
-%		&
-%			 $\Big[\frac{M}{p^{\frac{1}{2}}} \times 
-%			\frac{N}{p^{\frac{1}{2}}} \times K\Big]$
-%		&
-%			$\Big[\frac{M}{(p/c)^{\frac{1}{2}}} \times 
-%			\frac{N}{(p/c)^{\frac{1}{2}}} \times \frac{K}{c}\Big]$
-%		& 
-%			$\Big[\frac{M}{p^{\frac{1}{3}}} \times \frac{N}{p^{\frac{1}{3}}} 
-%			\times 
-%			\frac{K}{p^{\frac{1}{3}}}\Big]$
-%		&
-%			$[\frac{M}{2^{a_1}} \times \frac{N}{2^{a_1}} \times 
-%			\frac{K}{2^{a_1}}]$
-%		& 
-%			$[{T_1} \times {T_1} \times {T_2}]$
-%       \\
-%		\hline
-%	\end{tabular*}
-%\end{table*}
 
 \begin{table*}
 %
@@ -503,8 +598,7 @@ compared to the current state-of-the-art implementations
 \toprule
 %
  & \textbf{2D~\cite{summa}} & \textbf{2.5D~\cite{25d}} & 
- \textbf{CARMA~\cite{CARMA}} & \textbf{Our work~[Section 
- \ref{sec:seqScheduling}]} \\
+ \textbf{CARMA~\cite{CARMA}} & \textbf{Our work~(\cref{sec:seqScheduling} )} \\
 %
 \midrule
 %
@@ -551,17 +645,19 @@ $\left[{\sqrt{S}} \times {\sqrt{S}} \times {d}\right]$
 \makecell[l]{\textbf{communication}\\
 \textbf{volume}}
 &
-$\frac{1}{\sqrt{p}} \left(MK + NK\right)\left(1 - \frac{1}{\sqrt{p}}\right)$
+$\frac{1}{\sqrt{p}} \left(MK + NK\right)$
 &
-$\frac{1}{p \sqrt{S}} \left(MK + NK\right)\left(\sqrt{MK + NK} - 
-\sqrt{S}\right)$
+\makecell[l]{$(MK + NK)\sqrt{\frac{I}{p^2S}} + \frac{MNS}{I}$, \\
+$I = MN + MK + NK$}
 &
-\makecell[l]{$2a_4 \cdot \frac{MNK}{p\sqrt{S}} + a_5 \cdot 
-\left(\frac{MNK}{P}\right)^{2/3} - \frac{MK + NK}{p}$, \\
+\makecell[l]{$2\min \Big\{a_4 \frac{MNK}{p\sqrt{S}}, a_5
+	\left(\frac{MNK}{P}\right)^{2/3} \Big\} $ \\
+	$ + a_5 \cdot \left(\frac{MNK}{P}\right)^{2/3}$, \\
 $\sqrt{3}\le a_4 \le \sqrt{5}$,\\
 $\frac{1}{2^{2/3}} \le a_5 \le 2^{1/3}$}
 & 
-$S + 2 \cdot \frac{MNK}{p\sqrt{S}} - \frac{MK + NK}{p}$
+$\min \Big\{S + 2 \cdot \frac{MNK}{p\sqrt{S}}, 3 
+\left(\frac{MNK}{P}\right)^{2/3} \Big\}$
 %
 \vspace{0.5em}
 %
@@ -573,28 +669,28 @@ $S + 2 \cdot \frac{MNK}{p\sqrt{S}} - \frac{MK + NK}{p}$
 $M = N = K$,\\
 $S = 2\frac{N^2}{p}, p=2^{3n}$}
 &
-$2N^2 \left(\frac{1}{\sqrt{p}} - \frac{1}{p} \right)$
+$\frac{2N^2 }{\sqrt{p}}$
 &
-$2N^2 \left(\frac{1}{\sqrt{p}} - \frac{1}{p} \right)$
+$\frac{2N^2 }{\sqrt{p}}$
 &
-$2N^2 \left(\sqrt{\frac{3}{2p}} + \frac{1}{2p^{2/3}} - \frac{1}{p} \right)$
+$2N^2 \left(\sqrt{\frac{3}{2p}} + \frac{1}{2p^{2/3}} \right)$
 & 
-$2N^2 \left(\frac{1}{\sqrt{2p}} \right)$
+$\frac{2N^2 }{\sqrt{p}}$
 %
 \vspace{1.0em}
 %
 \\
 %
-%\midrule
+\midrule
 %
 \makecell[l]{\textbf{``the hardest case'':}\\
 $M = N = \sqrt{p}$,\\
 $K = \frac{p^{3/2}}{4}$,\\
 $S = 2\frac{NK}{p^{2/3}}, p=2^{3n + 1}$}
 &
-$\frac{p^{3/2}}{2}\left(1 - \frac{1}{\sqrt{p}}\right)$
+$\frac{p^{3/2}}{2}$
 &
-$\frac{p^{3/2}}{2}\left(\frac{1}{p^{1/6}} - \frac{1}{\sqrt{p}}\right) + p^{1/3}$
+$\frac{p^{4/3}}{2} + p^{1/3}$
 &
 $\frac{3p}{4}$
 & 
@@ -606,245 +702,653 @@ $\frac{3-2^{1/3}}{2^{4/3}}p \approx 0.69 p$
 %
 \end{tabular}
 %
-\caption{Summary of analysis of 2D, 3D, CARMA ans S-partition parallelization 
-schemes. "Easiest case" is where the matrices are square and there is no extra 
-memory for redundant copies of input data. The "hardest case" is where $K >> M 
-= N$ and there is space for extra $p^{1/3}$ copies. For simplicity, we assume 
-that parameters are chosen such that all divisions have integer results.}
+\caption{The formal summary of 2D,
+2.5D, CARMA, and COMM schemes for matrix-matrix multiplication (The 3D 
+decomposition is a special case of 2.5D, where $c=p^{1/3}$).
+The "easiest case" is when the matrices are square and there is no extra
+memory for redundant copies of input data. The "hardest case" is when $K \gg M
+= N$ and there is space for extra $p^{1/3}$ copies.
+For simplicity, we assume that parameters are chosen such that all divisions
+have integer results. \mac{This table is complex because of all these symbols.
+I would do two things: (1) explicitly refer to the table with most important
+symbols (e.g., write ``The most important symbols are in Table~X), and (2)
+describe briefly here in caption some symbols that are only located here, write
+explicitly what they mean (for example $a_1, a_2, a_3$). Where is this table,
+by the way? why is it gone?}}
 %
 \label{tab:summary}
 \end{table*}
-
+%
+%The overview of the paper's organization is presented in 
+%Figure~\ref{fig:paperOrganization}.
+%\mac{I would provide at least 2-3 sentences here (if you want to make it a 
+%separate
+%paragraph), OR merge this one sentence in some other paragraph.}
 
 \section{Background}
+
+In this section, we discuss necessary concepts and terminology needed for our 
+analysis. Throughout the whole paper, we consider matrix multiplication $C = 
+AB$, where $A \in \mathbb{R}^{M \times K}, B \in  C \in \mathbb{R}^{M \times 
+N}$.\mac{Add this last sentence as the first sentence of a subsection dedicated 
+to MMM,
+*and* explicitly say that $M,N,K$ are parameters for dimensions.}
+
+\mac{Where is the table with most important symbols??}
+
+\subsection{Machine Model}
+
+We use a well-established model for distributed computations with $p$
+processes, each with local memory of size $S$ words~\cite{CARMA},~\cite{25d}).
+A process can hold, send, and receive from any other process up to $S$ words at 
+a time. We consider the \emph{bandwidth cost} $Q_{comm}$, that is, a 
+maximum number of
+words communicated by any process, and the \emph{latency cost} $L_{comm}$, 
+which is a number of
+required data transfers. \mac{this number of required data transfers sounds a
+bit fuzzy}.  \mac{I do like these symbols (for bandwidth and latency cost).
+First: ``comm'' is a long subscript, which makes them look ugly. Second, they
+do not relate to the words that they refer to. How about $\mathcal{C}_{B}$
+  ($\mathcal{C}$ost of Bandwidth) and $\mathcal{C}_L$ ($\mathcal{C}$ost of
+  latency)?}
+
+
+\subsection{State-of-the-art MMM Algorithms}
+
+Here we briefly describe strategies of the existing MMM algorithms.
+
+\macb{2D decomposition}
+%
+In the SUMMA algorithm, processes are arranged in the  $a \times b$ grid, where 
+$a$ and $b$ are user-specified. Computation is performed in $K/t$ steps, for a 
+user specified value $t$.  At each step,
+processes broadcast their local data among rows and columns, and perform 
+$2MNt/p$ computations. For large $K$, the broadcast cost is
+amortized~\cite{summa}. The bandwidth cost is $Q_{comm} = (a+b)K$ and the 
+latency cost $L_{comm} = 2K/t$. The
+memory requirement per process is $S \ge (MN + MK + NK)/p$. 
+%
+%At each step, processes perform a circular shift and compute $2MN/(p\sqrt{S})$ 
+%partial results of C.
+%
+%
+% $a
+%\times b$ grid (or $\sqrt{p} \times \sqrt{p}$) \mac{What's the difference
+%between these two grids? What do a and b mean?}. Computation is performed in
+%$k/t$ (or $k/\sqrt{p}$) steps \mac{What is $k$ and $t$?}. At each step,
+%processes broadcast their data among rows and columns (or do \mac{a} circular
+%shift) and perform $2MNb/p$ (or $2MN\sqrt{S}/p$) computations. Parameters $a,
+%b$ and $t$ have to be user-specified. For large $K$ \mac{,} the broadcast cost
+%\mac{use also the symbol here, to make users used to it} is
+%amortized~\cite{summa}. The bandwidth cost is $Q_{comm} = (a+b)K$ (or $Q_{comm}
+%= (M+N)K/\sqrt{p}$) and the latency cost $L_{comm} = 2t$ (or $2\sqrt{p}$). The
+%memory requirement per process is $S \ge (MN + MK + NK)/p$. 
+%
+\macb{3D decomposition}
+%
+Here, processes are arranged in the $p^{1/3} \times
+p^{1/3} \times p^{1/3}$ grid.  Each process receives $MK/p^{2/3}$ elements of 
+$A$, $NK/p^{2/3}$ elements of $B$,  computes locally
+$MNK/p$ partial results and sends $MN/p^{2/3}$
+elements of $C$. The algorithm is performed in a single step.
+However, the distribution of $A$ and $B$ is performed with a broadcast tree, 
+yielding the bandwidth cost $Q_{comm} = (MN + NK+MK)/p^{2/3}$ and the latency 
+cost
+$L_{comm} = \log (p)$.  The memory requirement per process is $S \ge (MN +
+NK+MK)/p^{2/3}$. 
+
+\macb{2.5 decomposition} Processes are arranged in the $\sqrt{(p/c)} \times
+\sqrt{(p/c)} \times c$ grid, where $c = pS/(MN + MK + NK)$. The computation is
+performed in $\sqrt{p/c^3} - 1$ steps. At each step, processes perform
+Cannon's algorithm on a subset of data of size $2MNc/p$. For $I= MN + MK +
+NK$, The bandwidth cost is $Q_{comm} = (MK + NK)\sqrt{\frac{I}{S}}/p + MNS/I$
+and the latency cost $L_{comm} = \frac{2}{p}\big(\frac{I}{S}\big)^{3/2} +
+\log(pS/I)$. For $M=N=K$, this simplifies to $Q_{comm}=
+\frac{2\sqrt{S}N^3}{p\sqrt{S}}$ and $L_{comm} =
+\frac{6\sqrt{S}N^3}{pS^{3/2}}$. The memory requirement per process is $S \ge
+(MN + MK + NK)/p$. 
+
+\macb{Recursive decomposition}
+%
+Processes are decomposed recursively in the $p_1 \times p_2 \times p_3$ grid,
+where $p_i = 2^{k_i}, p_1 p_2 p_3 = p$ for some $k_1, k_2, k_3 \in \mathbb{N}$.
+The computation is performed in $\log (\max \{p,\sqrt{I/S} \})$ steps.  The
+bandwidth cost is $Q_{comm} = \mathcal{O}\Big(\frac{MNK}{p\sqrt{S}},
+\left(\frac{MNK}{P}\right)^{2/3} \Big\} \Big)$) and the latency cost \\ 
+$L_{comm}
+= \log (\max \{p,\sqrt{I/S} \})$. The memory requirement per process is $S \ge
+(MN + MK + NK)/p$. 
+
+\section{Optimal Matrix Multiplication with COMM}
+%
+%\mac{The title is bad, you want sth like ``Optimal Matrix Products with COMM''}
+%
+%\mac{Greg, remember classes in Polish on writing essays and other literary
+%forms?  How do we start? Usually in general, with some intro. Start with sth
+%like ``'''}
+
+We now provide a high-level description of COMM, the fast and elegant algorithm 
+that
+enables communication-optimal MMM.
+COMM  decomposes processes by
+parallelizing the optimal sequential schedule under given constraints: equal
+work distribution and memory size per process. Such
+a local sequential schedule is independent of matrix dimensions.
+Thus, intuitively, instead of dividing  the global
+domain among $p$ processes (the \emph{top-down} approach), we start from 
+deriving an I/O optimal \emph{sequential} schedule and
+then parallelize it, minimizing the bandwidth and latency cost $\mathcal{C}_B$,
+$\mathcal{C}_L$ (the \emph{bottom-up} approach). This direction enables proving 
+the optimality of the data movement, both
+horizontally and vertically (i.e., I/O) in our
+schedule, deriving all constant factors. Our experiments (~\cref{sec:results}) 
+show that COMM is indeed faster than the
+state-of-the-art algorithms.
+
+The sketch of COMM is presented in
+Algorithm~\ref{alg:comm}. In lines~\ref{alg:line:aopt} and~\ref{alg:line:bopt}, 
+we derive a communication optimal local domain~(\cref{sec:parScheduling}). In 
+line~\ref{alg:line:fitranks}, we find a 
+process grid $D$ that evenly distributes this domain by the matrix dimensions 
+$M,N$, 
+and $K$. If this distribution is unequal (e.g., matrix dimensions are not 
+divisible by $a_{opt}$ and $b_{opt}$), this function also evaluates new values 
+of 
+$a$ and $b$ by finding the best matching 
+decomposition~(\cref{sec:decompArbitrary}).
+ In line~\ref{alg:line:datadecomp}, 
+the local distribution of matrices $A_l$, $B_l$ and $C_l$ is determined, either 
+as a fixed input data layout, or an optimal block-recursive 
+one~(\cref{sec:datalayout}). Also, a $Map$ structure is determined, which 
+translates global matrix indices to a current owning process and a local offset 
+in its memory.
+ In line~\ref{alg:line:steps} we 
+compute the number of sequential steps (lines~\ref{alg:line:innerloopStart} 
+to~\ref{alg:line:innerLoopEnd}) in which every process: (1) distributes its 
+local 
+data $A_l$ and $B_l$  among the grid $D$, based on the $Map$ structure 
+(line~\ref{alg:line:distrData}), and (2) multiplies locally $A_l$ and $B_l$ 
+(line~\ref{alg:line:compute}). Finally, the local partial results $C_l$ are 
+reduced over the grid $D$ (line~\ref{alg:line:reduce}).
+
+
+
+
+
+%\begin{figure}
+\begin{algorithm}
+	\small
+\caption{COMM} \label{alg:comm}
+\begin{algorithmic}[1]
+\Require $\text{matrices } A \in \mathbb{R}^{M \times K}, B \in 
+\mathbb{R}^{K \times N}$,
+\Statex {number of processes:  $p$, memory size: $S$}
+\Ensure $\text{matrix } C = AB \in \mathbb{R}^{M \times N}$
+\State $a_{opt} \gets \left \lfloor \min\Big\{\sqrt{S}, 
+\Big(\frac{MNK}{p}\Big)^{1/3} \Big\} \right \rfloor$ 
+\Comment{ (Equation \ref{eq:optTileShape})} 
+\label{alg:line:aopt}
+\State $b_{opt} \gets \left \lfloor \max\Big\{\frac{MNK}{pS}, 
+\Big(\frac{MNK}{p}\Big)^{1/3} \Big\} \right \rfloor$ 
+\label{alg:line:bopt}
+\State $(D, a, b) \gets FitRanks(M,N,K,a_{opt},b_{opt},p)$ 
+\label{alg:line:fitranks}
+\ForAll{$p_i \in \left\{1 \dots p \right\}$} \textbf{in parallel}
+\label{alg:line:outerloopStart}
+%
+%\State $\mathcal{D} \gets GetLocalDom(Grid,p_i)$ 
+%\Comment{get local domain}
+%\label{alg:line:localDomain}
+\State $(A_l, B_l, C_l,Map) \gets GetDataDecomp(A,B, D, p_i)$ 
+\label{alg:line:datadecomp}
+\State $t \gets \left \lceil{\frac{2ab}{S - a^2}}\right \rceil$ 
+\Comment{number of steps}
+\label{alg:line:steps}
+\For{$j \in \{1 \dots t\}$} 
+\label{alg:line:innerloopStart}
+\State $(A_l, B_l) \gets DistrData(A_l,B_l,D, Map, j, p_i)$ 
+%\Comment{distr. inputs A and B}
+\label{alg:line:distrData}
+\State $C_l \gets Multiply(A_l, B_l,j)$ 
+\Comment{compute locally}
+\label{alg:line:compute}
+\EndFor
+\label{alg:line:innerLoopEnd}
+\State $C_l \gets Reduce(C_l,D,  Map)$ \Comment{Reduce the partial results}
+\label{alg:line:reduce}
+\EndFor
+\label{alg:line:outerLoopEnd}
+\end{algorithmic}
+\end{algorithm}
+%\caption{COMM algorithm}
+%\label{alg:COMM}
+%\end{figure}
+
+
+\section{Tighter Sequential Lower Bounds}
 \label{sec:background}
 
-This section discusses necessary concepts of pebble games in the context of I/O
-optimality. We modify Hong and Kung's lemma (inequality \ref{eq:redbluebound})
-to prove the tighter lower bound (inequality \ref{eq:reusebound}), which
-explicitly expresses \emph{data reuse} - that is, a subset of data used by some 
-part of computation that is used by the following part and is kept in the 
-fast memory. In the context of matrix 
-multiplication, the
-original one takes an upper bound of the data reuse and corresponds to case b)
-in Figure \ref{fig:mmmreuse}. Our result maximizes the achievable reuse, showed
-in case c) in Figure \ref{fig:mmmreuse}.  Readers not interested in deriving
-Lemma \ref{eq:reusebound} may proceed directly to Section \ref{sec:datareuse}.
-The most important symbols are gathered in Table~\ref{tab:symbols}.
+To derive the I/O optimality of COMM, we start with deriving new constructive
+proof of MMM sequential I/O lower bound.  We provide all constant terms $Q \ge
+(2MNK/\sqrt{S} + MN)$ to the bound proved by Hong and Kung~\cite{redblue},
+giving an additive improvement over the  $Q \ge (2MNK/\sqrt{S} 
+- 2S)$ bound by Smith and van de Gein~\cite{tightMMM}. We extend the techniques
+  used in the former work, heavily relying on the \emph{red-blue pebble game}
+  and the \emph{$S$-partition abstraction}. 
 %
-\mac{This whole paragraph is extremely confusing, let's chat.}
+%\mac{For the whole document: do NOT use tabs, use double spaces instead.}
+%
+%This section discusses the \mac{used} sequential and parallel machine models,
+%as well as \mac{the} necessary concepts of pebble games in the context of
+%\mac{``in the context of'' --> ``and'' (simpler)} I/O optimality.
+%
+%\mac{As this whole stuff is very complex and spans multiple domains, I think
+%it may be a good idea to provide, at the beginning of each subsection, a
+%sentence describing WHY we care, linking to MM (when describing I/O), linking
+%to I/O (when describing MM), etc.}
+%
+%% We modify Hong and Kung's lemma (inequality \ref{eq:redbluebound}) %to prove
+%the tighter lower bound (inequality \ref{eq:reusebound}), which %explicitly
+%expresses \emph{data reuse} - that is, a subset of data used by %some part of
+%computation that is used by the following part and is kept in the %fast
+%memory. In the context of matrix multiplication, the original one takes %an
+%upper bound of the data reuse and corresponds to case b) in Figure
+%%\ref{fig:mmmreuse}. Our result maximizes the achievable reuse, showed in case
+%%c) in Figure \ref{fig:mmmreuse}.  Readers not interested in deriving Lemma
+%%\ref{eq:reusebound} may proceed directly to Section \ref{sec:seqOptimality}.
+%%The most important symbols are gathered in Table~\ref{tab:symbols}.
+%
+%%\mac{This whole paragraph is extremely confusing, let's chat.}
 
 \begin{table}[h!]
-	\centering
-	\footnotesize
-	%\scriptsize
-	%\ssmall
-	\sf
-	\begin{tabular}{@{}l|ll@{}}
-		\toprule
-		\multirow{7}{*}{\begin{turn}{90}\textbf{RB pebble game}\end{turn}}
-		& $G$&A directed acyclic graph $G=(V,A)$\\
-		%& $n,m$&Numbers of vertices and edges in $G$; $|V| = n, |E| = m$.\\
-		& $S$ & Number of red pebbles (size of the fast memory)\\
-		& $B = \infty$ & Number of blue pebbles (size of the slow memory)\\
-		& $Dom(V_i), Min(V_i)$ & Dominator and minimum sets of subset $V_i$\\
-		& $H(S)$ & Minimum cardinality valid S-partition \\
-		& $R(S)$ & Maximum reuse volume between subsets \\
-		& $Q$ & Minimal number of I/O operations of any valid \\ 
-		& & execution of $G$ \\
-		\midrule
-		\multirow{3}{*}{\begin{turn}{90}\textbf{geometric}\end{turn}}           
-		& \textbf{i},\textbf{j},\textbf{k} & orthonormal vectors spanning the 
-		3D iteration\\
-		& & space 
-		of MMM~\cite{tiling}\\
-		& \textbf{uv} & plane spanned by vectors \textbf{u} and \textbf{v}\\
-		& $\phi(V)_{uv}$ & projection of subspace $V$ onto plane \textbf{uv}\\
-		& $\mathcal{I}$ & Surface of a subcomputation (size of the 
-		input)\\
-		& $\mathcal{V}$ & Volume of a subcomputation (number of \\
-		& & 
-		operations) bounded by $\mathcal{I}$\\
-		& $\rho = \mathcal{V}/\mathcal{I}$ & Computational 
-		intensity \\
-		\midrule
-		
-		%\multirow{1}{*}{\begin{turn}{90}\textbf{.}\end{turn}}
-		%                    & $S$ & The number of .\\
-		\bottomrule
-	\end{tabular}
-	%\vspace{-0.5em}
-	\caption{The most important symbols used in the paper.}
-	\label{tab:symbols}
-	\vspace{-0.5em}
+
+ \centering
+ \footnotesize
+ %\scriptsize
+ %\ssmall
+ \sf
+ \begin{tabular}{@{}l|ll@{}}
+ 	\toprule
+ 	\multirow{5}{*}{\begin{turn}{90}\textbf{MMM}\end{turn}}
+ 	& $M, N, K$& Matrix dimensions \\
+ 	& $A, B$& Input matrices, $A \in \mathbb{R}^{M \times K}, B \in 
+ 	\mathbb{R}^{K \times N}$ \\
+ 	& $C = AB$& Output matrix, $C \in \mathbb{R}^{M \times N}$ \\
+ 	& $p$& Number of processes \\
+ 	& $S$& Memory size per process \\
+ 	\midrule
+ 	\multirow{7}{*}{\begin{turn}{90}\textbf{I/O complexity}\end{turn}}
+ 	& $G$&A directed acyclic graph $G=(V,E)$\\
+ 	%& $n,m$&Numbers of vertices and edges in $G$; $|V| = n, |E| = m$.\\
+ 	& $S$ & Number of red pebbles (size of the fast memory)\\
+ 	& $V_i$ & An $i$-th subcomputation of an $S$-partition \\
+ 	& $Dom(V_i), Min(V_i)$ & Dominator and minimum sets of subcomp. 
+ 	$V_i$\\
+ 	& $V_{R,i}$ & Set of vertices containing red pebbles just\\
+ 	& &  before $V_i$ starts and used by $V_i$ (reuse set) \\
+ 	& $H(S)$ & Cardinality of a smallest S-partition \\
+ 	& $R(S)$ & Maximum reuse volume between subcomputations \\
+ 	& $Q$ & Minimal number of I/O operations of any valid \\ 
+ 	& & execution of $G$ \\
+ 	\midrule
+ 	\multirow{3}{*}{\begin{turn}{90}\textbf{par. scheduling}\end{turn}}  
+ 	& $\mathcal{V}$ & 3D iteration space of of MMM~\cite{tiling}\\         
+ 	& \textbf{i},\textbf{j},\textbf{k} & orthonormal vectors spanning 
+ 	$\mathcal{V}$\\
+ 	& \textbf{uv} & plane spanned by vectors \textbf{u} and \textbf{v}\\
+ 	& $\phi_{uv}(V)$ & projection of subspace $V$ onto plane \textbf{uv}\\
+ 	& $\mathcal{I}_i$ & Surface of a subcomputation $V_i$ (size of the 
+ 	input)\\
+ 	& $\rho_i$ & Computational 
+ 	intensity of $V_i$\\
+ 	\midrule
+ 	
+ 	%\multirow{1}{*}{\begin{turn}{90}\textbf{.}\end{turn}}
+ 	%                    & $S$ & The number of .\\
+ 	\bottomrule
+ \end{tabular}
+ %\vspace{-0.5em}
+%
+  %\vspace{-0.5em}
+%
+  \caption{The most important symbols used in the paper. \mac{Categories are
+  bad, I suggest: (1) RB pebble games ---> I/O complexity, (2) General program
+  execution, (3) MMM, (4) ``Geometric'' ---> sounds bad, I see the point of a
+  separate category but it needs to change} \mac{Many missing symbols, need to
+  iterate over the whole paper and put the most important missing ones}}
+%
+  \label{tab:symbols}
+  \vspace{-0.5em}
 \end{table}
-
-
-
-\subsection{Modeling Program Execution}
-
-% Modeling computation as a graph pebbling problem dates back to
-% 70s~\cite{completeRegisterProblems, pebblegameregister, registerpebblecolor}.
-% More specifically, 
-
-Following the established convention~\cite{completeRegisterProblems,
-pebblegameregister, registerpebblecolor}, we model any computation with a
-directed acyclic graph (DAG) denoted as $G=(V,E)$. First, $V$ is a set of
-vertices; one vertex represents one elementary operation in the given
-computation. Two selected subsets of $V$ are \emph{input} and \emph{output}
-vertices that represent the input and output of a given computation. $E$ is a
-set of edges; one edge represents one data dependency between operations in
-$V$.
 %
-A \emph{schedule} is a dependency-preserving sequence of 
-elementary operations determined by the algorithm. One schedule therefore 
-corresponds to one of the topological orders of the DAG. For example, it is an 
-order 
-in which all $n^3$ multiplications in MMM are performed.
+%\subsection{Sequential Machine Model}
+%\label{sec:seq-model}
 %
-In the following, we focus on the \emph{I/O complexity} and use DAGs to model
-\emph{I/O computations}.
+%\mac{Repeat briefly why we care and how it links to MM}
+%%
+%We use the sequential computation model from Hong and Kung~\cite{redblue}, that
+%is: \mac{It's bad to have such lists of items. Much better to have a solid
+%block of text that reads well. Check my papers, for example MinCut paper
+%(2018), or BC paper with Edgar (2017, SC), or SlimSell paper (2017), check
+%background, see how we did it - solid blocks of texts.}
+%
+%\begin{enumerate}
+%%
+%  \item A machine has a fast memory of size $S$ (e.g., registers, cache or 
+%  scratchpad memory) and a slow memory of infinite 
+%  size \mac{why do you list $B$ in the table, if it's never used?},
+%  \item a computation is composed of elementary operations \mac{such as...} 
+%connected by 
+%  data dependencies,
+%  \item to execute the \mac{the ---> an} elementary operation, all its input 
+%data must be in 
+%  the fast memory, and the result of the operation is written to the fast 
+%  memory,
+%  \item data may be moved between slow and fast memories, \mac{you should 
+%mention cost here}
+%  \item the cost of evaluating the computation is measured only by the number 
+%  of transfers between the memories - \mac{we don't like such dashes} 
+%execution \mac{itself} has no cost.
+%%
+%\end{enumerate}
+%
+%\subsection{Parallel Machine Model}
+%\label{sec:par-model}
+%
+%\mac{Repeat briefly why we care and how it links to MM}
+%
+%We extend this \mac{what ``this''?} model to a parallel shared memory machine
+%with \mac{the} following modifications:
+%
+%\mac{At this point, this whole thing starts to smell weird. This model looks
+%almost like PRAM. Questions: (1) Why not just use PRAM? (2) do we need ALL
+%these models?  It's getting very strange because at this point a reader
+%realizes there will be three models involved: I/O, distributed, and now
+%suddenly a PRAM variant pops up...  Very complex, why? A reaction: WTF?}
+%
+%\begin{enumerate}
+%%
+%  \item A machine has $p$ parallel processes,
+%%
+%  \item each processes has its private fast memory of size $S$ and a shared
+%  slow memory of infinite size, \mac{Ok, at this point it starts to look like
+%  PRAM + some I/O, still weird, more questions: (1) isn't there a model with
+%  some name, built for such a setting?  There must be some; (2): why so many
+%  models? People will hate it, unless there is a damn good reason}
+%%
+%  \item processes communicate with each other either through the shared slow
+%  memory or by directly writing to other process' fast memory \mac{---> to the
+%  fast memory of another process},
+%%
+%  \item each process can write to every other process' memory \mac{wtf, why are
+%  you repeating the stuff above}
+%%
+%  \item the cost of evaluating the \mac{---> a} computation is a sum of data
+%  transfer \mac{Before you used a term data movement} costs of all processes
+%  (no latency or congestion is accounted for \mac{a reasonable assumption?
+%  Again, I lack here a reference to some established model, and a reference to
+%  some established work claiming, for example, that no latency is ok}.
+%%
+%\end{enumerate}
+%
+%With slight modifications \mac{What modifications?}, we also model a simplistic
+%distributed memory machine \mac{why? why not just the distributed stuff?}:
+%
+%\begin{enumerate}
+%%
+%  \item each processes has its private memory of size $S$ - there is no shared
+%  memory,
+%%
+%  \item processes communicate with each other by directly writing to other
+%  processes' memory \mac{what? in standard distributed models, you use
+%  messages... not sure if such a major shift is a good idea}.
+%%
+%\end{enumerate}
+%
+%The shared memory model may be nested in the distributed model, resulting in a
+%distributed machine with a local fast memory of size $S_1$ and local slow 
+%memory of size $S_2$. \mac{Sounds very complex - is it really needed later??}
+%
+%
+%\subsection{Modeling Program Execution}
+%
+%\mac{Repeat briefly why we care and how it links to MM}
+%
+%% Modeling computation as a graph pebbling problem dates back to
+%% 70s~\cite{completeRegisterProblems, pebblegameregister, registerpebblecolor}.
+%% More specifically, 
+%
+%\mac{At this point, it becomes clear there are too many such 'Program' and
+%'Model' subsections}
+%
+%Following the established convention~\cite{completeRegisterProblems,
+%pebblegameregister, registerpebblecolor}, we model any computation with a
+%directed acyclic graph (DAG) denoted as $G=(V,E)$.
+%%
+%\mac{Now, an average reaction is big fat WTF??! In 2.1, it's written: ``We use
+%the sequential computation model from Hong and Kung [28]''. Then, in 2.2, it
+%says ``We extend this model to a parallel shared memory machine with following
+%modifications:'' and EVEN ``With slight modifications, we also model a
+%simplistic distributed memory machine''. And NOW, it's ``we model any
+%computation with a directed acyclic graph (DAG) denoted'' - wtf?}
+%%
+%First, $V$ is a set of
+%vertices; one vertex represents one elementary operation in the given
+%computation. Two selected subsets of $V$ are \emph{input} and \emph{output}
+%vertices that represent the input and output of a given computation. $E$ is a
+%set of edges; one edge represents one data dependency between operations in
+%$V$. We call a set of all immediate predecessors (or successors) of a vertex 
+%its \emph{parents} (or \emph{children}).
+%%
+%A \emph{schedule} is a dependency-preserving sequence of 
+%elementary operations determined by the algorithm. One schedule therefore 
+%corresponds to one of the topological orders of the DAG. For example, it is an 
+%order 
+%in which all $n^3$ multiplications in MMM are performed.
+%%
+%In the following, we focus on the \emph{I/O complexity} \mac{It seems the term
+%``I/O complexity'' was not really defined before?} and use DAGs to model
+%\emph{I/O computations} \mac{It seems the term ``I/O computations'' was not
+%really defined before?}. \greg{maybe remove the last sentence? you added it}
 
-\subsection{Modeling I/O Computations}
+%\subsection{Modeling I/O Computations}
+%
+%\mac{wtf, another model????}
+%
+%\mac{Repeat briefly why we care and how it links to MM}
+%
 
 % \noindent
 % \macb{Pebble Games}
 %
-In our work, we consider I/O computations in a two-level memory structure with
-a small and fast as well as large and slow memory (e.g., with caches and DRAM
-or DRAM and external storage). \greg{motivate why just two levels}
-%
-To model I/O computations, we use \emph{pebble games} and we focus on \emph{the
-red-blue pebble game} by Hong and Kung~\cite{redblue}.
 
-\macb{Red-Blue Pebble Game: Intuition}
+\subsection{Tighter Sequential Lower Bounds: Preliminaries}
+
+First, for readers not familiar with the concepts of Red-Blue pebble games and
+$S$-partitions, we briefly provide necessary intuitions and definitions.
+Uninterested readers may proceed directly to~\cref{sec:seq-proof}.
+
+\subsubsection{Red-Blue Pebble Game}
+
+Red-blue pebble game is an abstraction modeling I/O operations in a two-level
+memory structure with a small and fast as well as large and slow memory (e.g.,
+with caches and DRAM or DRAM and external storage). Despite its simplicity, it
+is a powerful tool that was used to derive lower bounds of other algorithms
+like sorting or FFT.  Savage~\cite{redblueHierarchy} showed that this model may
+be extended to arbitrary hierarchy of memories.
 %
-Intuitively, in the red-blue pebble game, an computation starts with placing a 
-certain
-number of pebbles on the input vertices, which corresponds to loading the data
-from the slow to the fast memory. The actual computation (referred to as
-\emph{pebbling}) is a series of allowed predefined moves (e.g., moving a pebble
-from one vertex to another) that correspond to load, store, compute or free 
-memory 
-operations.
+%To model I/O computations, we use \emph{pebble games} and we focus on \emph{the
+%red-blue pebble game} by Hong and Kung~\cite{redblue}.
+
+\macb{Intuition}
 %
-The I/O cost of a computation is the number of transitions between
-red and blue pebbles (corresponding to load and store operations).
+Intuitively, in the red-blue pebble game, an a computation starts with placing a
+certain number of pebbles on the input vertices, which corresponds to loading
+the data from the slow to the fast memory. The actual computation (referred to
+as \emph{pebbling}) is a series of allowed predefined moves (e.g., moving a
+pebble from one vertex to another) that correspond to load, store, compute or
+freeing memory operations.
 %
-Finally, finding the optimal pebbling strategy (i.e., minimizing the cost of a
-given computation) is PSPACE-complete~\cite{redbluecomplete,
+The I/O cost of a computation is the number of transitions between red and blue
+pebbles (corresponding to load and store operations).
+%
+Finally, we note that finding the optimal pebbling strategy (i.e., minimizing
+the cost of a given computation) is PSPACE-complete~\cite{redbluecomplete,
 pebblegameregister}. 
 
-\macb{Pebble Games: Details}
+\macb{Details}
+%
+\mac{Do we really need all this, I'm now wondering... Any chance of describing
+the following stuff without these details}
 %
 In more detail, one first places a set of $k$ blue pebbles on $k$ input DAG
 vertices (this corresponds to initializing the slow memory with the input data
 of size $k$). One later applies several \emph{rules} until the final
 configuration of pebbles is obtained (corresponding to producing the desired
 output). Applying these rules corresponds to the actual computation in the I/O
-setting with a two-level memory hierarchy.  The rules are as follows. First,
-one can place a red pebble on any vertex with a blue pebble (this corresponds
-to copying data from the slow to the fast memory).  Second, one can place a
-blue pebble on any vertex with a red pebble (this corresponds to copying some
-result data from the fast to the slow memory). Third, one can place a red
-pebble on a vertex with all its predecessors each having a red pebble (this
-corresponds to performing computation and writing the output to the fast
-memory). Finally, any pebble can be removed from any vertex (this corresponds
-to freeing a part of the fast or the slow memory).
-%
-In this game, the maximum number of red pebbles that can be used at any given
-time is~$S$ (this corresponds to the size of the fast memory). For an MMM DAG, 
-those moves include placing red pebbles on some vertices corresponding to 
-elements of
-matrices A and B (load operations), placing red pebbles on the corresponding 
-elements of C (compute operations), removing red pebbles from the loaded inputs 
-(freeing memory) and placing blue pebbles on the computed elements of C 
-(storing). 
+setting with a two-level memory hierarchy. We formally define the game as 
+follows:
 
-\subsection{Deriving I/O Lower Bounds}
+\begin{defn}[Red-Blue Pebble Game~\cite{redblue}]
+  \label{df:redbluegame}
+  %
+  Let $G = (V,E)$ be a computation DAG (CDAG). Let $I, O \subset V$ be the 
+  input 
+  (and output) set, that is a set of vertices without any parents (or 
+  children). The initial (or terminal) configuration is one in which only 
+  inputs (or outputs, respectively) have blue pebbles. The rules are as 
+  follows:
+  \begin{itemize}
+    \item (Input) A red pebble may be placed on any vertex that has a blue 
+    pebble.
+    \item (Output) A blue pebble may be placed on any vertex that has a red 
+    pebble.
+    \item (Compute) If all the parents of a  vertex have red pebbles, a red 
+    pebble may be placed on that vertex.
+    \item (Output) a blue pebble may be placed on any vertex that has a red 
+    pebble.
+    \item (Delete) a pebble (red or blue) may be removed from any vertex.
+  \end{itemize}
+  %
+  There are at most $S$ red pebbles in the game.
+  A complete calculation of a CDAG is a sequence of moves that start in the 
+  initial configuration and end in the terminal configuration. An \emph{I/O 
+  cost} of a calculation is a number of performed (Input) and (Output) moves.
+\end{defn}
+
+%
+% The rules are as follows. First,
+%one can place a red pebble on any vertex with a blue pebble (this corresponds
+%to copying data from the slow to the fast memory).  Second, one can place a
+%blue pebble on any vertex with a red pebble (this corresponds to copying some
+%result data from the fast to the slow memory). Third, one can place a red
+%pebble on a vertex with all its predecessors each having a red pebble (this
+%corresponds to performing computation and writing the output to the fast
+%memory). Finally, any pebble can be removed from any vertex (this corresponds
+%to freeing a part of the fast or the slow memory).
+%
+%In this game, the maximum number of red pebbles that can be used at any given
+%time is~$S$ (this corresponds to the size of the fast memory).
+ 
+\macb{Discussion: Connections to MMM}
+ %
+For an MMM DAG, those moves include placing red pebbles on some vertices
+corresponding to elements of matrices A and B (input operations), placing red
+pebbles on the corresponding elements of C (compute operations), removing red
+pebbles from the loaded inputs (freeing memory) and placing blue pebbles on the
+computed elements of C (output). 
+
+\subsubsection{$S$-Partitions}
 
 To facilitate deriving lower bounds on the number of I/O operations in pebble
-games, Hong and Kung introduced the notion of an \emph{$S$-partition}. Here, one
-divides the whole computation DAG into consecutive subcomputations, each of 
-which requiring at least $S$ I/O operations.
-The key step is to analytically bound the size (vertex count) of the largest
-subcomputation, given its input and output size (number of vertices outside
-(inside) the subcomputation that have a child inside (outside) of it). 
+games, Hong and Kung introduced the notion of an \emph{$S$-partition}. Here,
+one divides the whole computation DAG into consecutive subcomputations, each of
+which requiring at least $S$ I/O operations.  The key step is to analytically
+bound the size (vertex count) of the largest subcomputation, given its input
+and output size (number of vertices outside (inside) the subcomputation that
+have a child inside (outside) of it). 
+%\macb{Intuition}
+%%
+%Intuitively, the $S$-partition technique may be seen as a generalization of the
+%Loomis-Whitney inequality~\cite{loomisWhitney}, which is used in linear algebra
+%for bounding the amount of I/O~\cite{loomisApplied}: both techniques aim at
+%  finding the optimal surface (communication) to volume (computation) ratio in
+%  a given setting. 
+%%
+%$S$-partition was used to derive the first I/O bounds for matrix
+%multiplication, FFT, or odd-even transposition sorting~\cite{redblue}.
 %
-Intuitively, $S$-partition technique may be seen as a generalization of the
-Loomis-Whitney inequality~\cite{loomisWhitney}, which is used in linear algebra 
-for bounding
-the amount of I/O~\cite{loomisApplied}: both techniques aim at finding the
-optimal surface (communication) to volume (computation) ratio in a given
-setting. 
-%
-$S$-partition was used to derive the first I/O bounds for matrix
-multiplication, FFT, or odd-even transposition sorting~\cite{redblue}.
+%\macb{Details}
+%%
+Here we present the definition of the $S$-partition:
 
-Here we present the definition of the 
-$S$-partition:
+\greg{removed the intuition part}
 
 \begin{defn}[$S$-partition of a CDAG~\cite{redblue}]
 \label{df:s-partition}
-	%
+  %
 Let $G = (V,E)$ be a computation DAG (CDAG). An $S$-partition of $G$ 
-is a collection $\{V_1, ..., V_h\}$ of $h$ subsets of $V$ such that:
-	
+is a collection $\{V_1, ..., V_h\}$ of $h$ subcomputations of $ V$ such that:
+  
 \begin{itemize}
 \item $\forall_{1 \le i,j \le h}\quad V_i \cap V_j =\emptyset\ $ and $\ 
 \bigcup_{i=1}^{h} V_i=V$
 \item $\forall i\quad |Dom(V_i)| \le S$
 \item $\forall i\quad |Min(V_i)| \le S$
-\item there is no cyclic dependence between subsets.
+\item there is no cyclic dependence between subcomputations.
 \end{itemize}
-	%
+  %
 \end{defn}
 
-$Dom(V_i)$ is the \emph{dominator set}, that is, the set of all vertices in V
-such that every path from an input of G to a vertex in $V_i$ contains some
+$Dom(V_i)$ is the \emph{dominator set}, that is, the set of all vertices in $V$
+such that every path from an input of $G$ to a vertex in $V_i$ contains some
 vertex in the set.
 %
 $Min(V_i)$ is the
 \emph{minimum set} of $V_i$: it contains the vertices in $V_i$ that do not have
-any outgoing neighbors in $V_i$. Throughout this paper, we will use 
-\emph{subset} and \emph{subcomputation} interchangeably, to emphasize its 
-interpretation in the context of scheduling. 
+any outgoing neighbors in $V_i$. 
+%
+%Throughout this paper, we will use 
+%\emph{subset} and \emph{subcomputation} interchangeably, to emphasize its 
+%interpretation in the context of scheduling. 
+%
+Finally, for a given CDAG, we 
+denote $H(S)$ as a cardinality of its smallest valid $S$-partition.
+% there is a
+%lower bound on the cardinality of a valid $S$-partition.
+%We denote this minimal number of vertex sets with a dedicated symbol $H(S)$.
 
-Finally, for a given CDAG there is a
-lower bound on the cardinality of a valid $S$-partition.
-We denote this minimal number of vertex sets with a dedicated symbol $H(S)$.
-
-In the context of MM, a single subset of an $S$-partition corresponds to a set 
-of partial products of matrix C that can be computed without additional loads 
-and stores. The dominator set is the required subset of input matrices A and B, 
-as well as previous values of C to be updated. The minimum set corresponds to 
-the result of this subcomputation (Figure \ref{fig:mmmreuse}). $H(S)$ denotes 
+\macb{Discussion: Connections to MMM}
+%
+In the context of MMM, a subcomputation $V_i$
+is a calculation of partial sums of $C$ that can be computed with at most $S$ 
+elements of $A$ and $B$, and that contributes to at most $S$ outputs. Those 
+elements from $A$ and $B$, as well as previous values of $C$ being updated, 
+form the
+dominator set. The minimum set corresponds to 
+the result of this subcomputation (blue, red, orange, and green blocks in 
+Figure 
+\ref{fig:mmmreuse} c). $H(S)$ denotes 
 the number of such subsets required to calculate the final result 
 (geometrically, number of subsets require to fill the entire 3D iteration 
 space).
 
-\section{Towards Tighter I/O Lower Bounds}
-
-\greg{Just one sentence that we derive data movement optimal schedule starting 
-from I/O optimal (sequential) schedule}
-
-\greg{updated}
-
-We now demonstrate how $S$-partition abstraction is used to derive I/O lower 
-bounds. In Section \ref{sec:datareuse} we show the schedule attaining this 
-bound, proving it optimality. The I/O optimal schedule is then used in the same 
-section to derive parallelization strategy minimizing communication between 
-processes. 
-
-\subsection{Established Scheme for I/O Lower Bounds}
-\greg{Observation: 2S-partition reduces scheduling problem (P-space) to 
-partitioning problem (NP-complete)?}
-\greg{...... UPDATE: I don't show here the proof of NP-completeness of 
-S-partitioning. Too much space. Better skip this observation}
+\subsubsection{Existing Sequential Lower Bounds}
+%
+%\greg{Observation: 2S-partition reduces scheduling problem (P-space) 
+%to 
+%partitioning problem (NP-complete)?}
+%\greg{...... UPDATE: I don't show here the proof of NP-completeness 
+%of 
+%S-partitioning. Too much space. Better skip this observation}
 
 In their original paper~\cite{redblue}, Hong and Kung used the $S$-partition 
 abstraction to prove lower bounds of I/O operations for matrix multiplication, 
-FFT and odd-even transposition sorting. They showed that if the 
+FFT and odd-even transposition sorting. 
+
+\macb{Intuition}
+%
+They showed that if the 
 subcomputation's dominator set contains $2S$ vertices, then at most $S$ of them 
 could contain a red pebble before this subcomputation begins. Therefore, at 
 least $S$ additional pebbles need to be loaded from the memory. The similar 
@@ -869,8 +1373,7 @@ can derive the I/O lower bound of the whole algorithm:
 
 \begin{lma}[Lower bound on the number of I/Os~\cite{redblue}]
 %
-Recall that $H(2S)$ is the minimal number of vertex sets needed for any
-valid $2S$-partition of a given CDAG. Then, the minimal number $Q$ of I/O 
+The minimal number $Q$ of I/O 
 operations
 for any valid execution of this CDAG is bounded by
 
@@ -881,16 +1384,16 @@ Q \ge S \cdot (H(2S) - 1)
 %
 \end{lma}
 
-We now sketch the original proof~\cite{redblue} as we use it as a basis for 
-proving
-tighter bounds for the number of I/O operations when using our model of data
-reuse.
-
+\macb{Details}
+%
+We now sketch the original proof, as we use it as a basis for our 
+Lemma~\ref{lma:reuse}, which gives a tighter I/O bound.
+%
 Assume that we know the optimal schedule of the
 CDAG. Now divide the computation into $h$ consecutive subcomputations $V_1,
 V_2, ..., V_h$, such that during the execution of $V_i$, $i < h$, there are
 exactly $S$ I/O operations, and in $V_h$ there are at most $S$
-operations. Now, for each of $V_i$, we
+operations. Now, for each $V_i$, we
 define two subsets of $V$, $V_{R,i}$ and $V_{BR,i}$ as follows:
 
 \begin{enumerate}[leftmargin=1.5em]
@@ -905,42 +1408,66 @@ $V_i$.
 \end{enumerate}
 
 \noindent
-Then, one can derive the following observations~\cite{redblue}:
+Then, one can derive the following observations:
 
 \begin{enumerate}
-	%
-	\item $V_{R,i} \cup V_{BR,i} = Dom(V_i)$
-	%
-	\item $|V_{R,i}| \le S$
-	%
-	\item $|V_{BR,i}| \le S$
-	%
-	\item $|V_{R,i} \cup V_{BR,i}| \le |V_{R,i}| + |V_{BR,i}| \le 2S$
-	%
+  %
+  \item $V_{R,i} \cup V_{BR,i} = Dom(V_i)$
+  %
+  \item $|V_{R,i}| \le S$
+  %
+  \item $|V_{BR,i}| \le S$
+  %
+  \item $|V_{R,i} \cup V_{BR,i}| \le |V_{R,i}| + |V_{BR,i}| \le 2S$
+  %
 \end{enumerate}
 We omit analogous observations for the minimum set. 
 
 By Definition~\ref{df:s-partition}, $V_1,
 V_2, ..., V_h$ form % shows that $C_1, ...C_h$ is
-a valid $2S$-partition of the CDAG.  In~\cref{sec:datareuse}, we show how we
+a valid $2S$-partition of the CDAG.  In~\cref{sec:seqOptimality}, we 
+show how we
 can tighten this bound by tightening the bound on 
 the set
 $V_{R,i}$, that is, the data reuse between the computations. 
 
-%\subsection{2S-partition, S-partition and data reuse}
-\subsection{Tighter I/O Bounds with Explicit Data Reuse}
 
-We now modify the original proof and show that finding the minimum
+
+\subsection{Tighter Sequential Lower Bounds: Proof}
+\label{sec:seq-proof}
+
+%\greg{Just one sentence that we derive data movement optimal 
+%schedule starting 
+%from I/O optimal (sequential) schedule}
+%
+%\greg{updated}
+
+We now demonstrate how $S$-partition abstraction is used to derive I/O lower 
+bounds. In~\cref{sec:seqOptimality} we show the schedule 
+attaining this 
+bound, proving it optimality. The I/O optimal schedule is then used in the same 
+section to derive parallelization strategy minimizing communication between 
+processes. 
+
+%\subsection{2S-partition, S-partition and data reuse}
+% \subsubsection{Tighter Sequential Bounds with Explicit Data Reuse}
+
+Specifically, we modify the original proof and show that finding the minimum
 number of subsets in an $S$-partition (instead of a $2S$-partition), together 
 with the bound on data reuse $V_{R,i}$ gives
 tighter lower bounds.
 %
+%\macb{Intuition}
+%
+\mac{Here, I would provide 1-2 sentences on the intuition in the proof}
+%
 Our main result in this section is as follows:
 
 \begin{lma}
+  \label{lma:reuse}
 %
 The minimal number $Q$ of I/O operations for any valid execution of a CDAG 
-$\ G=(V,E)$ is bounded by	
+$\ G=(V,E)$ is bounded by  
 %
 \begin{equation}
 %
@@ -983,13 +1510,13 @@ $R(S)$:
 \forall_{i}\quad |V_{R,i}| \le R(S) \\
 R(S) \le S \\
 \end{multline}
-Now. adjusting the Observation 4. to form $S$-partition instead of 
-$2S$-partition we have:
+Rewriting Observation 4 ($|V_{R,i} \cup V_{BR,i}| \le |V_{R,i}| + |V_{BR,i}| 
+\le 2S$), we have:
 \begin{multline}
 \label{eq:proof}
 \\
-	R(S) + |V_{BR,i}| \ge S\\
-	|V_{BR,i}| \ge S - R(S)\\
+  R(S) + |V_{BR,i}| \ge S\\
+  |V_{BR,i}| \ge S - R(S)\\
 \end{multline}
 $|V_{BR,i}|$ is the amount of data loaded by subcomputation $i$, which 
 Inequality \ref{eq:proof} bounds from below. Now, if each subcomputation in a 
@@ -1020,23 +1547,32 @@ have
 that is, after $H(S)$ steps, we have $H(S) |V_{max}| \ge |V|$.
 \end{proof}
 
-\subsection{I/O Bounds and Computational Intensity}
-\label{sec:compIntensity}
-\mac{This subsection seems very detached from the rest. I strongly suggest
-a clear motivation in the first 1-2 sentences on WHY we need this part
-and these concepts below} \greg{edited}
+%\subsection{I/O Bounds and Computational Intensity}
+%\label{sec:compIntensity}
 
+\subsection{Discussion}
+
+%\mac{This subsection seems very detached from the rest. I strongly 
+%suggest
+%a clear motivation in the first 1-2 sentences on WHY we need this 
+%part
+%and these concepts below} \greg{edited}
+
+\subsubsection{Computational Intensity}
+%
 For graphs of parametric sizes (e.g., MMM graph has $MNK + MK + KN$ vertices), 
-we need a tool to allow us to bound the I/O complexity of the whole graph using 
-only one subcomputation. We provide an observation that connects the minimal 
+we need a tool to allow us to bound the I/O complexity of the whole graph by 
+bounding the maximum size of a single subcomputation. We provide an observation 
+that connects the minimal 
 number $Q$ of
-I/O operations for its any valid execution
+I/O operations
 (cf.~Eq.~(\ref{eq:reusebound})) and a notion
 of \emph{computational intensity}.
 %
 Define computational intensity of the subcomputation $V_i$ as $\rho_i =
 \frac{|V_i|}{S-V_{R,i}}$. Intuitively, computational intensity is the ratio of 
-computed data ($|V_i|$) and the loaded data ($S-V_{R,i}$).
+the size of computed data ($|V_i|$) and the size of the input that has to be 
+loaded ($S-V_{R,i}$).
 Then, inserting Inequality \ref{eq:reusebound-pmax} to \ref{eq:reusebound}, we 
 have the following corollary:
 
@@ -1049,720 +1585,1505 @@ Q \ge \frac{|V|}{\max_i(\rho_i)}
 $\rho = \max_i(\rho_i)$ is the \emph{maximum} computational intensity.
 \end{corollary*}
 
-
-\greg{completely rewritten}
-\subsection{$2S$-Partition vs $S$-Partition: MMM Example}
+\subsubsection{$2S$-Partition vs $S$-Partition: MMM Example}
+\label{sec:mmmExample}
+\begin{figure}
+  \includegraphics[width=0.26\textwidth]{figures/iterationSpace}
+  \label{fig:iterationSpace}
+  \caption{A  CDAG of multiplication of two $2 \times 2$ matrices as a 3D 
+  iteration 
+  space $\mathcal{V} \subset \mathbb{Z}^3$. An input matrix A (blue vertices) 
+  is represented as 
+  its projection $\phi_{ik}(\mathcal{V})$
+  on 
+  an \textbf{ik} plane - similarly, an input matrix B (red vertices) is a 
+  projection $\phi_{kj}(\mathcal{V})$ on the \textbf{kj} plane and an output 
+  matrix C (light yellow) 
+  is a 
+  projection $\phi_{ij}(\mathcal{V})$ on the \textbf{ij} plane. Each vertex 
+  in this iteration space 
+  (except of the vertices in the bottom layer) has three parents - blue, red, 
+  and yellow and one yellow child (except of vertices in the top layer). A  
+  subset $V_i \subset \mathcal{V}$ of an $S$-partition must satisfy 
+  $|\phi_{ik}(V_i)| 
+  + |\phi_{kj}(V_i)| + |\phi_{ij}(V_i)| \le S$ (number of inputs must be 
+  smaller than $S$.}
+\end{figure}
+ \begin{figure}
+  \includegraphics[width=\columnwidth]{figures/mmm_reuse}
+  \caption{MMM subset shape. a) 
+    geometric interpretation of $C = A B$ (orange cube represents 
+    3-dimensional iteration space of partial sums, matrix C is formed by 
+    reduction over dimension $k$ - represented by dark orange plane). b) 
+    optimal surface to volume subset shape. Note that in a subsequent 
+    subset computation only one of the three planes (blue, red or dark 
+    green) can be reused. c) the optimal subset shapes when 
+    data reuse is considered. In b) and c) blue, red, and orange surfaces 
+    form the dominator set, whereas dark green surface is the 
+    minimum set.}
+  \label{fig:mmmreuse}
+\end{figure}
 
 To show why Lemma 2 gives a tighter bound than Lemma 1, consider the MMM CDAG.
-We can represent the classic $\mathcal{O}(MNK)$ algorithm as a 3D iteration
-space~\cite{tiling}, with \textbf{i},\textbf{j},\textbf{k} as orthonormal 
+We can draw it in a 3D iteration
+space~\cite{tiling} (Figure~\ref{fig:iterationSpace}), with 
+\textbf{i},\textbf{j},\textbf{k} as orthonormal 
 vectors spanning it. Then, 
 an $S$-partition is a decomposition of this space
-into subsets whose number of inputs (elements from matrices A, B and C) is 
-smaller than $S$. The geometric interpretation this input set is the union of 
+into subcomputations whose number of inputs (parents in matrices A, B and C) is 
+smaller than $S$. The geometric interpretation of this input set is the union 
+of 
 projections of the subset onto planes \textbf{ij}, \textbf{ik} and 
-\textbf{kj}~\cite{loomisApplied}. Now according to Lemma~\ref{eq:redbluebound}, 
+\textbf{kj}~\cite{loomisApplied}.
+
+Assume that each subcomputation forms a cuboid $[a \times b \times c]$ in this 
+iteration space (later 
+in~\cref{sec:seqScheduling} we prove that this is the case) and its faces form 
+its input (dominator set).
+ Now according to Lemma~\ref{eq:redbluebound}, 
 we construct a
-$2S$-partition with a minimal cardinality, generating subsets of a cubic shape
-(Figure~\ref{fig:mmmreuse} b), with a cube side $a_1 = \sqrt{\frac{2S}{3}}$.
-However, such schedule will perform $a_1^2 \frac{N^3}{a_1^3} =
-\sqrt{\frac{3}{2}}\frac{2N^3}{\sqrt{S}}$ I/O operations. If, instead, we
-observe that only one of three faces of the subset's cuboid can be reused, we
-derive a "flat" shape (Figure \ref{fig:mmmreuse} c) which performs
-$\frac{2N^3}{\sqrt{S}}$ I/O operations. The detailed analysis of this result is
-performed in Section~\ref{sec:datareuse}.
+$2S$-partition with a minimal cardinality, generating subcomputations of a 
+cubic ($a = 
+b = c$) shape
+(Figure~\ref{fig:mmmreuse} b), with a cube side $a = \sqrt{2S/3}$.
+Such schedule will perform $2a^2 \frac{N^3}{a^3} =
+\sqrt{\frac{3}{2}}\frac{2N^3}{\sqrt{S}}$ I/O operations. 
+
+Now, the question is: what is the size of a maximum reuse $R(S)$? Observe that 
+only one of three faces of this cuboid can be reused (used by a subsequent 
+subcomputation while still being in fast memory). This observation will help us 
+derive in (~\cref{sec:seqScheduling}) a "flat" shape (Figure \ref{fig:mmmreuse} 
+c) which performs
+$\frac{2N^3}{\sqrt{S}}$ I/O operations - an $\sqrt{3/2}$ improvement.
 
 
-%\subsection{I/O Bounds and Matrix Multiplication}
+\section{\hspace{-0.5em}Optimal Sequential Matrix Multiplication}
+\label{sec:seqOptimality}
+
+We now proceed to establish a key step to our main result. Using the 
+mathematical machinery of Lemma 2, we show a new proof of I/O lower bound of 
+MMM $Q \ge \frac{MNK}{\sqrt{S}} + MN$ and show a schedule achieving it. This 
+result will be used in Section~\cref{sec:parOptimality} to prove tight bounds 
+for parallel execution and a schedule 
+that is \emph{independent of any combination of problem parameters}.
 %
-%Finally, we briefly discuss how we use the concepts from this section, related
-%to I/O bounds, to enhance multiplying matrices.
+We derive \emph{all} constant terms improving the well-known asymptotic
+results due to Hong and Kung~\cite{redblue} and Irony et al.~\cite{IronyMMM}, 
+and tightening the bound $2MNK/\sqrt{S} - 2S$ by Smith and van de Geijn by
+an additive factor of $2S + MN$.
+
+
+\greg{commented out the whole subsection Top-down vs bottom-up. It is mentioned 
+in the intro and not needed here at all.}
+
+%\subsection{Top-Down vs Bottom-Up}
+%
+%\mac{The title is a bit confusing... Maybe we can remove it completely}
+%
+%\mac{No, I would start differently - with stating our approach, underlying what
+%is the paper contribution! E.g., "We do bottom-top (see Figure X), as opposed 
+%to [all
+%others], [here is briefly why]}
 %%
-%We can represent the classic $\mathcal{O}(MNK)$ MMM algorithm as a 3D iteration
-%space~\cite{tiling}. Then, 
-%an $S$-partition is a decomposition of this 3D space
-%into subsets such that the surface \mac{Surface was not defined} of each subset
-%(the sum of projections' \mac{projections were not mentioned or defined} volume
-%into three of the faces \mac{faces were not mentioned or defined}) is smaller
-%or equal to $S$. According to Lemma~\ref{eq:redbluebound}, we construct a
-%$2S$-partition with a minimal cardinality, generating subsets of a cubic shape
-%(Figure~\ref{fig:mmmreuse} b), with a cube side $a_1 = \sqrt{\frac{2S}{3}}$.
-%However, such schedule will perform $a_1^2 \frac{N^3}{a_1^3} =
-%\sqrt{\frac{3}{2}}\frac{2N^3}{\sqrt{S}}$ I/O operations. If, instead, we
-%observe that only one of three faces of the subset's cuboid can be reused, we
-%derive a "flat" shape (Figure \ref{fig:mmmreuse} c) which performs
-%$\frac{2N^3}{\sqrt{S}}$ I/O operations. The detailed analysis of this result is
-%performed in Section~\ref{sec:datareuse}.
-%
-%\mac{This last subsection is very very confusing to an average reader - all
-%these undefined things above must be either defined OR eliminated and
-%explained in a different way}
-
-
-\section{Sequential and Parallel Optimality}
-\label{sec:datareuse}
-
-Hong and Kung~\cite{redblue} proved nearly 30 years ago sequential I/O lower
-bound for matrix multiplication to be $\Omega\left(\frac{n^3}{\sqrt{S}}\right)$ 
-in
-their two-level memory model. Irony et al.~\cite{IronyMMM} extended those
-results to a their distributed machine model proving the 
-$\Omega\left(\frac{n^3}{P\sqrt{S}}\right)$ bound on communication per process. 
-While it
-has been shown that those bounds are asymptotically attainable by algorithms
-like Cannon's~\cite{Cannon} (for square matrices) or CARMA~\cite{CARMA} (for
-all matrix shapes), we argue that asymptotic analysis is not sufficient for
-practical comparison between algorithms, as constants may play crucial role, as
-discussed in~\cref{sec:intro}.
-
-We now show how starting from Hong's S-partitions, we prove tight bounds for
-sequential, and then parallel execution, deriving all constant terms for memory
-dependent and independent bounds. We then show a very natural schedule emerging
-from the analysis, that is proved optimal and independent of any combination of
-problem parameters. 
-
-\subsection{Top-Down vs Bottom-Up}
-
-Most of the current state-of-the-art algorithms, like Cannon's~\cite{Cannon},
-SUMMA~\cite{summa}, 3D SUMMA~\cite{summa3d}, or the 2.5D scheme~\cite{25d}
-use the "top-down" approach, that is, aim for decomposing the global domain
-evenly into $p$ processes (Figure \ref{fig:topdown-vs-bottomup}).
-
-To obtain our schedule and prove its optimality, we use "bottom-up" approach,
-that is, defining the finest-granularity task for a single process and then
-identifying parallelization opportunities.  Intuitively, the "bottom-up"
-approach shares similarities with task-based programming~\cite{taskparalelism},
-which has also be used in the context of linear algebra~\cite{taskMMM}. The
-difference, however, is in the \emph{granularity}: A task is a single, I/O
-optimal, rank-1 update (vector-vector outer product), instead of coarser grained
-rank-k updates (matrix-matrix product) in recursive algorithms, like
-CARMA~\cite{CARMA}.
-%
-
-%
-%\section{Sequential and Parallel Optimality}
-%\label{sec:datareuse}
-%
-%\mac{The title does not read great but I myself have no idea now how to enhance
-%it - let's wait for the paper to unroll into a better shape and then see!}
-%
-%Hong and Kung~\cite{redblue} proved nearly 30 years ago sequential I/O lower
-%bound for matrix multiplication to be $\Omega\left(n^3/\sqrt{S}\right)$ in
-%their two-level memory model. Irony et al.~\cite{IronyMMM} extended those
-%results to a parallel machine \mac{In what model? PRAM? which one?}. While it
-%has been shown that those bounds are asymptotically attainable by algorithms
-%like Cannon's~\cite{Cannon} (for square matrices) or CARMA~\cite{CARMA} (for
-%all matrix shapes), we argue that asymptotic analysis is not sufficient for
-%practical comparison between algorithms, as constants may play crucial role, as
-%discussed in~\cref{sec:intro}.
-%
-%We now show how starting from Hong's S-partitions, we prove tight bounds for
-%sequential, and then parallel execution, deriving all constant terms for memory
-%dependent and independent bounds. We then show a very natural schedule emerging
-%from the analysis, that is proved optimal and independent of any combination of
-%problem parameters. For example, it is optimal even for the cases when the
-%matrix sizes or number of processes is not a power of 2, which is one of the
-%limitations of the CARMA algorithm \mac{We still need, as a strong motivation,
-%a reasonable data or reference showing that this is actually a problem}.
-%Furthermore, it avoids recursive decomposition, which leads to runtime
-%overheads and complicated data layout \mac{Well, this really must be supported
-%with a strong reference and/or data and/or proof}.
-%
-%\subsection{State-of-the-Art: Top-Down}
-%
 %Most of the current state-of-the-art algorithms, like Cannon's~\cite{Cannon},
-%SUMMA~\cite{summa}, "3D" SUMMA~\cite{summa3d}, or the 2.5D scheme~\cite{25d}
+%SUMMA~\cite{summa}, 3D SUMMA~\cite{summa3d}, or the 2.5D scheme~\cite{25d}
 %use the "top-down" approach, that is, aim for decomposing the global domain
-%evenly into $p$ processes.  \mac{A bit more on top-down?}
-%
-%\subsection{Our Approach: Bottom-Up}
-%
+%evenly into $p$ processes (Figure \ref{fig:topdown-vs-bottomup}).
+%%
 %To obtain our schedule and prove its optimality, we use "bottom-up" approach,
 %that is, defining the finest-granularity task for a single process and then
-%identifying parallelization opportunities.  Intuitively, the "bottom-up"
-%approach shares similarities with task-based programming~\cite{taskparalelism},
-%which has also be used in the context of linear algebra~\cite{taskMMM}. The
-%difference, however, is in the \emph{granularity}: A task is a single, I/O
-%optimal, rank-1 \mac{what is rank-1 ?} update, instead of coarser grained
-%rank-k \mac{What is rank-k?} updates in recursive algorithms, like
-%CARMA~\cite{CARMA}.
+%identifying parallelization opportunities.  
 %%
-%\mac{I would envision a beautiful figure showing the intuitive difference
-%between those two. Should ideally be combined with the figure(s) about the S
-%partitioning and pebbles? Maybe something along the line of my figure in the
-%locks paper - a huge picture for 60\% of one page, but somehow showing
-%consistently all this stuff together? I can think about it.}
-%
+%\mac{Man, why do you provide this whole following part on task based
+%programming?  What connection does it have? I would remove it completely, or
+%move to a place where task based stuff is used...} 
+%%
+%Intuitively, the "bottom-up" approach shares similarities with task-based
+%programming~\cite{taskparalelism}, which has also be used in the context of
+%linear algebra~\cite{taskMMM}. The difference, however, is in the
+%\emph{granularity}: A task is a single, I/O optimal, rank-1 \mac{rank-1 was not
+%defined} update (vector-vector outer product), instead of coarser grained
+%rank-k \mac{rank-k was not defined} updates (matrix-matrix product) in
+%recursive algorithms, like CARMA~\cite{CARMA}.
+%%
 
 
-
-\subsection{Sequential Scheduling and Tight MMM Lower Bound}
+\subsection{Tight MMM Lower Bound}
 \label{sec:seqScheduling}
 
-"Top-down" algorithms, discussed in Section \ref{sec:datareuse}, derives their 
-optimality proofs from maximizing computation to communication (input volume) 
-ratio.
-The key difference between them, as well as the original lower bound lemma 
-(inequality 
-\ref{eq:redbluebound}) and the lemma presented in this paper (inequality 
-\ref{eq:reusebound}) is the explicit notion of reuse. In this section, we prove 
-optimal sequential scheduling, which later be used to derive parallelization 
-strategies. The crucial insight is that it is independent of matrix dimensions 
-and machine model (distributed or shared memory).
-We use different technique than used by Smith and van de Geijn, who proved 
-sequential lower bound $2MNK/\sqrt{S} - 2S$ and prove a lower bound tighter by 
-a constant factor of $2S$ :  $2MNK/\sqrt{S}$. Furthermore, the former result 
-does not count storing the output, which yields additional $MN$ I/O operations.
-
-We use the computation model from Hong and Kung \cite{redblue}, that is:
-\begin{enumerate}
-	\item A machine has a fast memory of size $S$ and a slow memory of infinite 
-	size,
-	\item all computations have to be performed inside fast memory,
-	\item at the beginning of computation, all inputs are in slow memory, and 
-	at the end of computation all the outputs must be stored back to slow 
-	memory. 
-\end{enumerate}
-
-\begin{thm}[Sequential Matrix Multiplication I/O lower bound]
-	For classical matrix-matrix multiplication that performs $MNK$ 
-	multiplications and computation model from \cite{redblue}, the minimum 
-	number of I/O operations is $2MNK/\sqrt{S} + 
-	MN$.
-	\label{thm:seqlowbounds}
+\greg{commented out the whole beginning}
+%
+%\mac{This title is too long}
+%
+%\mac{The following sequence is broken - how can algorithms
+%derive their proofs? Moreover, ``derives'' should be ``derive'', right?}
+%%
+%"Top-down" algorithms, discussed in Section \ref{sec:seqOptimality}, 
+%derives
+%their 
+%optimality proofs from maximizing computation to communication (input volume) 
+%ratio.
+%%
+%\mac{At this point, I again think that it's bad because you start with 
+%describing
+%others, and not the stuff in this paper}
+%The key difference between them, as well as the original lower bound lemma 
+%(inequality 
+%\ref{eq:redbluebound}) and the lemma presented in this paper (inequality 
+%\ref{eq:reusebound}) is the explicit notion of reuse. \mac{The following 
+%sentence
+%sounds like a reasonable first sentence in this section...} In this section, 
+%we prove 
+%optimal sequential scheduling, \mac{The following sentence part is broken?} 
+%which later be used to derive parallelization 
+%strategies.
+%%
+%\mac{Why do I care? Underline ``what'' parallelization strategies you will
+%obtain - optimal? near-optimal? faster than others? Make this announcement 
+%(parallelization strategies)
+%sounds more interesting... Also, strategies of what?} 
+%%
+%The crucial insight is that it is independent of matrix dimensions 
+%and machine model (distributed or shared memory).
+%%
+%\mac{What? At this point I'm confused. You always wrote about this stuff being 
+%independent of
+%problem parameters. But saying it's independent of machine model is extremely 
+%confusing,
+%considering the fact that you devoted so much space to describing I/O, etc 
+%etc...}
+%%
+%\mac{In addition: ``it is independent of matrix dimensions
+%and machine model'' is *not* a crucial insight... this is the advantage of
+%this scheme. Insight is sth deep, some observation about the nature of 
+%something.}
+%%
+%\mac{The following sentence: this is not a place for this... You should 
+%discuss such
+%things in related work. Sure, sometimes, one must discuss such connections 
+%before
+%related work, but make it concrete and to the point. Right now, you just say 
+%`` We do X differently than others''. Why do I care? How does it help me 
+%understand
+%this section better?}
+%%
+%We use different technique than used by Smith and van de Geijn, who proved 
+%sequential lower bound $2MNK/\sqrt{S} - 2S$ and prove a lower bound tighter 
+%\mac{TIghter?
+%Then why are we still better?} by 
+%a constant factor of $2S$ :  $2MNK/\sqrt{S}$. Furthermore, the former result 
+%does not count storing the output, which yields additional $MN$ I/O operations.
+%\mac{Again, at this point I read 15 lines of text in this *core* and *key* 
+%section
+%that should focus on describing your idea, and still I have no idea... more 
+%than 30\%
+%of this paragraph are some general notes, without obvious connection to the 
+%flow of
+%*this* section, about others' work. How should it help the reader understand 
+%this
+%section better?}
+%
+%\mac{The whole following part is again out of the place... I mean, shouldn't 
+%it be
+%explained in Background? How does it relate to the models from Background?}
+%We use the computation model from Hong and Kung~\cite{redblue}, that is:
+%\begin{enumerate}
+%  \item A machine has a fast memory of size $S$ and a slow memory of infinite 
+%  size,
+%  \item all computations have to be performed inside fast memory, \mac{Huh?
+%  But this sounds like you completely prevent *any* I/O during the execution?
+%  So what's the point of I/O complexity anyway?}
+%  \item at the beginning of computation, all inputs are in slow memory, and 
+%  at the end of computation all the outputs must be stored back to slow 
+%  memory. 
+%\end{enumerate}
+%
+\begin{thm}[Sequential Matrix Multiplication I/O lower bound] 
+%Multiplying matrices of sizes $M \times K$ and $K \times M $ in the 
+%computation 
+%model from Definition~\ref{df:redbluegame} requires a minimum number of I/O 
+%operations is $\frac{MNK}{\sqrt{S}} + MN$.
+Multiplying matrices of sizes $M \times K$ and $K \times M $ requires a minimum 
+number of I/O operations is $\frac{MNK}{\sqrt{S}} + MN$.
+  \label{thm:seqlowbounds}
 \end{thm}
 
 \begin{proof}
-We first derive a size and shape of an elementary S-partition subcomputation 
-(subset) $P$ that 
-achieves 
-maximum computational intensity $\rho$. We then show the 
-number of I/O operations per $P$ and derive the number of $P$ required to 
-perform the whole computation.
 
-Let's represent the matrix multiplication operations as the three dimensional 
-iteration space. Let $i,j,k$ be dimensions corresponding to matrix sizes 
-$M,N,K$, that is, matrix $A$ lays on the plane $ik$, matrix $B$ lays on the 
-plane $kj$ and matrix $C$ lays on the plane $ij$.
-Assume that the searched subset computes $\mathcal{V}$ partial products $c = c 
-+ ab$ of $C$. Then, the projection of $\phi_{ik}(\mathcal{V})$ onto plane $ik$ 
-correspond to the required inputs from $A$. Let's denote $A$'s input 
-$\phi_{ik}(\mathcal{V}) = \alpha$. Similarly, $\phi_{kj}(\mathcal{V}) = 
-\beta$ and $\phi_{ij}(\mathcal{V}) = \gamma$, which correspond to partial 
-results of $C$ being updated. Furthermore, note that $\gamma$ is also the 
-output of the subcomputation, as those inputs are updated.
+\macb{Proof Intuition}
+%
+Using Lemma~\ref{lma:reuse}, we first establish a valid subset $P$ of an 
+$S$-partition that achieves maximum computational intensity $\rho$ and find its 
+size (number of verices). Knowing $\rho$ and the number of vertices in the 
+whole MMM CDAG is $MNK$, we then find the total I/O cost of the complete 
+execution. Throughout the proof, we include intuitive interpretations of 
+particular steps. To help keep up with the intuition, first assume that $P$ is 
+a cuboid, and then we show how it gets "flattened".
 
-To compute $\mathcal{V}$ partial products $c = c + ab$ of $C$, we need 
-$\alpha$ 
-and $\beta$ elements of matrices $A$ and $B$ and $\gamma$ elements of 
-$C$, corresponding to the updated values of $c$ (Figure \ref{fig:mmmreuse}). 
-Therefore, the input size (surface in geometric interpretation) is $\mathcal{I} 
-= |\alpha| + |\beta| + |\gamma|$. According to the definition of S-partition, 
-$$\mathcal{I} = |\alpha| + |\beta| + |\gamma|\le S$$.
-From Loomis-Whitney inequality \cite{loomisWhitney}, we have the upper bound on 
-$$\mathcal{V} \le \sqrt{|\alpha| |\beta| |\gamma|}$$. 
-The upper bound on te reuse 
-$R(S)$ is a largest projection of $\mathcal{V}$ to any surface $\mathcal{P}$ in 
-the $ijk$ space:
-$$R(S) \le \max_\mathcal{P}(|\phi_\mathcal{P}(V)|)$$
-Furthermore $\alpha$ and $\beta$ are the inputs and do not need to be stored. 
-$\gamma$, on the other hand, is the set of partial results and either has to be 
-reused or stored, increasing the I/O cost. 
+\greg{your comments are commented out}
+%  
+%\mac{It may be a good idea to first have a titled paragraph like here, with
+%the outline of the proof, followed by the (titled again) rest.}
+%%
+%We first derive a size \mac{Did you define precisely ``size of an S-partition?}
+%and shape \mac{``shape of an S-partition'' was clearly not defined before} of
+%an elementary \mac{What is ``elementary'' in this context? Again a confusing
+%word} S-partition subcomputation (subset) \mac{It seems these two words
+%(subcomputation, subset) mean the same thing? Use only one
+%consistently} $P$ that achieves 
+%maximum computational intensity $\rho$ \mac{I would explain briefly WHY you 
+%need
+%to derive this particular S-partition}. We then show the 
+%number of I/O operations per $P$ and derive the number of $P$ required to 
+%perform the whole computation. \mac{Again, I would briefly describe
+%the general intuition of the whole proof and the most important steps}
 
-Let's denote $\alpha_i$ and $\beta_i$ as inputs of $i$-th 
-subcomputation, $\gamma_i$ as its input and output, and $R_i$ as its reuse 
-(subset of inputs that is already in the fast memory). Then, 
-$$R_i = (\alpha_i \cap \alpha_{i-1}) \cup (\beta_i \cap \beta_{i-1}) \cup 
-(\gamma_i \cap \gamma_{i-1}) $$
-Note that $|\gamma_i \setminus \gamma_{i+1}|$ outputs have to be stored back to 
-the memory. The I/O cost of $i$-th subcomputation is 
-$$Q_i = |\mathcal{I}| - |R_i| + |\gamma_i \setminus \gamma_{i+1}|$$.
-
-The projection plane $\mathcal{P}$ minimizing $Q_i$ is therefore $\mathcal{P} = 
-ij$, resulting in $\gamma_i = \gamma_{i+1}$. Intuitively, 
-this is clear that we should reuse partial results of $C$ immediately, instead 
-of storing them back to the memory. Therefore, to obtain the optimal 
-subcomputation, we formulate it as the optimization problem:
-
-\begin{multline}
-\\
-\text{maximize } \rho = \frac{|\mathcal{V}|}{\mathcal{I} - |R|} \le 
-\frac{\sqrt{|\alpha| |\beta| |\gamma|}}{|\alpha| + |\beta|}\\
-\text{subject to: } |\alpha| + |\beta| + |\gamma| \le S \\
-\end{multline}
-
-Exploiting the symmetry of the domain by plane \textbf{(i + j)k}, we have  
-$|\alpha| = |\beta|$. Now the solution to this problem gives $|\alpha| = 
-|\beta| \rightarrow 0$, $|\gamma| \rightarrow S$.  
-Restricting the solution to the integer lattice ($\alpha, \beta, \gamma \in 
-\mathbb{Z}$) we get the optimal shape of the subcomputation:
-
-\begin{multline}
-\label{eq:seqSolution}
-\\
-|\phi_{ij}(\alpha)| = |\phi_{ik}(\alpha)|  = |\phi_{ij}(\beta)| = 
-|\phi_{kj}(\beta)|= \sqrt{S + 1} - 1 \\
-|\phi_{kj}(\alpha)| = |\phi_{ik}(\beta)| = 1 \\
-|\gamma| = |\alpha| |\beta| = (\sqrt{S + 1} - 1)^2 \\
-\end{multline}
-
-This corresponds to a single column of $A$ and row of $B$ of length $\sqrt{S + 
-1} - 1$ and a square subset of $C$ of $(\sqrt{S + 1} - 1)^2$. \textbf{From now 
-on, to 
-keep the notation simpler, we approximate} 
-\begin{equation}
-\label{eq:approx}
-\sqrt{S + 1} - 1 \approx \sqrt{S}
-\end{equation}
-All the following results may be easily rewritten using the precise formula and 
-are correct up to this approximation factor.
-
-
-This result immediately gives $\mathcal{V} = S, R(S) = S, \rho = 
-\sqrt{S}/2$ and finally, according to corollary \ref{cor:q}:  $Q \ge 
-\frac{|V|}{\rho} = 
-\frac{2MNK}{\sqrt{S}}$. This is only the input cost, as for now, we assumed 
-that all the outputs were reused. However, $MN$ outputs have to be stored back 
-to the memory, yielding additional $MN$ I/O operations.
-\end{proof}
-
-This result gives an additive improvement over the bound proved in 
-\cite{tightMMM}. This analysis also proves the optimality of schedules based on 
+\macb{Full Proof}
+%
+By Definition~\ref{df:s-partition}, we can divide the whole computation into 
+$H(S)$ subcomputations. Assume that subcomputation $V_i \subset \mathcal{V}$ 
+has 
+the maximum 
+computational intensity $\rho_i = \max_{j = 1 \dots H(S)}(\rho_j)$. Recall that 
+we can represent the 
+MMM CDAG as a 3D iteration 
+space $\mathcal{V}$(~\cref{sec:mmmExample}) spanned by the orthonormal vectors 
+\textbf{i}, 
+\textbf{j}, and \textbf{k}. Then, parents of $V_i$  
+belonging to matrix A (or matrix B) form a projection onto plane \textbf{ik} 
+(or plane 
+\textbf{kj}) : $\phi_{ik}(V_i)$ (or $\phi_{kj}(V_i)$). Similarly, $V_i$ has 
+parents 
+in  
+$\mathcal{V}$ (previously computed partial results of matrix C), which form 
+projection onto plane \text{ij}: $\phi_{ij}(V_i)$. Denote those projections 
+$\alpha_i \gets \phi_{ik}(V_i), \beta_i \gets \phi_{kj}(V_i)$ and $\gamma_i 
+\gets 
+\phi_{ij}(V_i)$. Furthermore, $V_i$ also has children in $\mathcal{V}$. 
+Because, by 
+definition of MMM, all the dependencies are parallel to vector \textbf{k}, then 
 the 
-outer product 
-calculation, like Goto algorithm 
-\cite{Goto}.
+projection of those children onto plane \textbf{ij} is also $\gamma_i$.\\
+\textbf{Intuition:} $\alpha_i, \beta_i$ and $\gamma_i$ are the faces of our 
+cuboid 
+$V_i$. The "bottom" face (Figures~\ref{fig:iterationSpace} 
+and~\ref{fig:mmmreuse}) is formed by partial results of C from previous 
+subcomputations, and the "top" face is formed by partial results evaluated by 
+$V_i$ - also forming input for the next subcomputation.
 
+Denote the size of the dominator set $|Dom(V_i)|$ as $\mathcal{I}_i$, and the 
+minimum set $|Min(V_i)|$ as $\mathcal{O}_i$.
+ Then, by the definition of $S$-partition, we have:
+ 
+ $$\mathcal{I} = |\alpha_i| + |\beta_i| + |\gamma_i| \le S$$
+ $$\mathcal{O} = |\gamma_i| \le S$$
+On the other hand, From Loomis-Whitney inequality
+~\cite{loomisWhitney}, we have the upper bound on 
+ $$V_i \le \sqrt{|\alpha_i| |\beta_i| |\gamma_i|}$$ 
+\textbf{Intuition:} Loomis-Whitney inequality bounds the volume of our cuboid 
+by the size of its faces.
+ 
+Now we find the upper bound on the maximum reuse size $R(S) = \max_{j = 1 \dots 
+H(S)}(|V_{R,i}|)$. Observe that 
+after 
+evaluating subcomputation $P_i$, the subsequent subcomputation $P_{i+1}$ is 
+generated by translating $P_i$ by some vector \textbf{t} perpendicular to a 
+plane $L$: 
+$t \perp L$. Then, $V_{R,i} = \phi_L(V_i)$ and:
+ $$|V_{R,i}| \le \max_L(|\phi_\mathcal{V_i}(V)|)$$
 
-%For MMM, a corollary of Loomis-Whitney inequality \cite{loomisApplied} is that 
-%the optimal subset shape maximizing computational intensity is a cube. For 
-%square matrices, this is the local domain obtained by 3D SUMMA, and, 
-%approximately (if the number of recursive steps is adjusted to matrix sizes), 
-%by CARMA.
-%(Figure \ref{fig:mmmreuse}). If we assume that the surface (input volume) is 
-%bounded by $S$ (local / fast memory size), 
-%then 
-%with a simple calculation	
+We can therefore upper bound the reuse $V_{R,i}$ of $V_i$ as an intersection of 
+its surface ($\mathcal{I}_i \cup \mathcal{O}_i$) with the surface of the 
+previous subcomputation ($\mathcal{I}_{i-1} \cup \mathcal{O}_{i-1}$):
+
+ $$V_{R,i} = (\alpha_i \cap \alpha_{i-1}) \cup (\beta_i \cap
+\beta_{i-1}) \cup (\gamma_i \cap \gamma_{i-1}) $$
+
+\textbf{Intuition:} After subcomputation $P_i$, we "move" to the next one 
+either in \text{i}, \text{j} or \text{k} direction (or a direction not 
+orthogonal to any of those vectors). We then reuse only the data that is "on 
+our way" - if we move in \text{i} we reuse inputs from B, moving in \text{j} 
+reuses inputs from A, moving in \text{k} reuses partial results of C. Moving in 
+any other direction reuses some combination of those three faces.
+ 
+Note that $\alpha_i$ and 
+   $\beta_i$
+ are inputs of the computation - therefore, by definition they are in the slow 
+ memory (they 
+ already have blue pebbles). $\gamma_i$, on the other hand, is 
+   the
+ set of partial results and forms a minimum set (therefore, has only red 
+ pebbles placed). Because by Definition~\ref{df:s-partition} it has unpebbled 
+ children, it has to be either reused (that is, $\gamma_i \subset 
+ \mathcal{I}_{i+1} 
+ =  \alpha_{i+1} \cup \beta_{i+1} \cup \gamma_{i+1}$) or 
+ stored back, increasing the 
+ number of I/O operations. Observe that because $\gamma_i \subset \mathcal{V}$ 
+ and 
+ $\mathcal{V} \cap A = \mathcal{V} \cap B = \emptyset$, we have $\gamma_i \cap 
+ \mathcal{I}_{i+1} 
+ =  \gamma_i \cap \gamma_{i+1}$. Then, the number of I/O operation of $i$-th 
+ subcomputation is
+ 
+ $$Q_i = |\mathcal{I}| - |V_{R,i}| + |\gamma_i \setminus \gamma_{i+1}|$$.
+ \textbf{Intuition:} The input of each subcomputation consists of certain 
+ elements from A, B and partial results of C, that is $\mathcal{V}$. The number 
+ of loads required by $V_i$ is the size of the input $\mathcal{I}$ reduced by 
+ the elements already loaded (reuse $V_{R,i}$). The number of stores is equal 
+ to number of outputs $|\gamma_i|$ not included in the inputs of the subsequent 
+ inputs $|\gamma_{i+1}|$.
+ 
+ Minimizing $Q_i$ gives $|\gamma_i \setminus \gamma_{i+1}| = 0$. Therefore, the 
+ translation vector \textbf{t} is parallel to \textbf{k} and $\gamma_i = 
+ \gamma_{i+1} = V_{R,i}$ (the subsequent computation $V_{i+1}$ is "shifted" in 
+ the 
+ dependency direction \text{k}, immediately "consuming" (reusing) the outputs 
+ from $V_i$). Now, to find the optimal (with the highest computational 
+ intensity $\rho$)
+ subcomputation, we formulate it as the optimization problem:
+ 
+ \begin{multline}
+ \\
+ \text{maximize } \rho = \frac{|V_i|}{\mathcal{I}_i - |V_{R,i}|} \le 
+ \frac{\sqrt{|\alpha_i| |\beta_i| |\gamma_i|}}{|\alpha_i| + |\beta_i|} = 
+ \sqrt{\gamma_i}\frac{\sqrt{|\alpha_i| |\beta_i|}}{|\alpha_i| + |\beta_i|}\\
+ \text{subject to: } |\alpha_i| + |\beta_i| + |\gamma_i| \le S \\
+ \end{multline}
+ 
+ Observe that to maximize $\frac{\sqrt{|\alpha_i| |\beta_i|}}{|\alpha_i| + 
+ |\beta_i|}$ 
+ we have $|\alpha_i| = |\beta_i|$. Then the solution to this maximization 
+ problem gives  
+ $|\alpha_i| = |\beta_i|
+ \rightarrow 0$, $|\gamma_i| \rightarrow S$.  Restricting the solution to the 
+ integer lattice of the iteration space ($\alpha_i, \beta_i,
+ \gamma_i \in \in \mathcal{V} \in \mathbb{Z}$) and observing that by definition 
+ of $\alpha_i$, 
+ $\beta_i$ and $\gamma_i$, we have $\phi_{kj}(\alpha_i) = \phi_{ik}(\beta_i)$, 
+ $\phi_{ij}(\alpha_i) = \phi_{ik}(\gamma_i)$ and $\phi_{ij}(\beta) = 
+ \phi_{kj}(\gamma)$, we get:
+ 
+ \begin{multline}
+ \label{eq:seqSolution}
+ \\
+  |\alpha_i| = |\beta_i|= \left \lfloor{\sqrt{S + 1} - 1} \right \rfloor \\
+ |\phi_{kj}(\alpha)| = |\phi_{ik}(\beta)| = 1 \\
+ |\gamma| = |\alpha| |\beta| = \left \lfloor{(\sqrt{S + 1} - 1)^2} \right 
+ \rfloor 
+\\
+ \end{multline}
+ 
+
+ 
+  \textbf{From now on, to keep the calculations simpler, we approximate} 
+ \begin{equation}
+ \label{eq:approx}
+ \sqrt{S + 1} - 1 \approx \sqrt{S}
+ \end{equation}
+ All the following results may be easily rewritten using the precise formula and
+ are correct up to this approximation factor.
+ 
+ This result immediately gives $\mathcal{V} = S, R(S) = S, \rho = \sqrt{S}/2$
+ \mac{How do you get these? Completely unclear}\greg{Come on, you must be 
+ kidding...} and finally, according to
+ corollary \ref{cor:q}:  $Q \ge \frac{|V|}{\rho} = \frac{2MNK}{\sqrt{S}}$.
+ This is the I/O cost of pebbling the whole iteration space $\mathcal{V}$. Note 
+ however, that we did not put any blue pebbles on the outputs yet (all vertices 
+ in $\mathcal{V}$ had only red pebbles placed on them during the execution). By 
+ Definition~\ref{df:redbluegame}, we need to place blue pebbles on $MN$ output 
+ vertices, corresponding to the output matrix C, resulting in additional $MN$ 
+ I/O operations.
+ This result gives an additive improvement over the bound provided in
+~\cite{tightMMM} - $Q \ge \frac{2MNK}{\sqrt{S}} - 2S$.
+\end{proof}
+ 
+ \subsection{I/O Optimal Schedule}
+ The proof of Theorem~\ref{thm:seqlowbounds} is constructive - that is, from it 
+ we immediately obtain a schedule achieving it. The optimal subcomputation 
+ $V_i$ 
+ corresponds to $S$ calculated partial products of C. Its inputs $\alpha$ and 
+ $\beta$ form a single subcolumn of A a single subrow of B, both of length 
+ $\sqrt{S}$. This may be viewed as an outer product formulation of MMM: each 
+ subcomputation is an outer product of two vectors of length $\sqrt{S}$, with 
+ subsequent subcomputations updating this result 
+ (Listing~\ref{lst:pseudocode}). An example implementation 
+ based on this schedule is the Goto algorithm~\cite{Goto}.
+ 
+ \begin{lstlisting}[caption={Pseudocode of I/O optimal sequential MMM}, 
+ label={lst:pseudocode}, 
+ basicstyle=\tiny]
+T = sqrt(S)
+for i_1 = 1:M/T
+  for j_1 = 1:N/T
+    for k = 1:K    % k is the outer loop
+      %elementary subcomputation V
+      for i_2 = i_1*T : (i_1+1)*T
+        for j_2 = j_1*T : (j_1+1)*T
+          C(i_2,j_2) = C(i_2,j_2) + A(i_2,k)*B(k,j_2)
+        end
+      end
+    end
+  end
+end
+ \end{lstlisting}
+ 
+%-------------old version starts here----------%
+%\greg{------------old version starts here -----------} 
+%
+%
+%
+%Let's \mac{Let's is too informal} represent the matrix multiplication 
+%operations \mac{What are ``matrix multiplication operations''?
+%again, confusing. Intuitively it may be clear, but this must be precise. The 
+%actual products of matrix elements? the sums? more precision} as the three 
+%dimensional 
+%iteration space \mac{This is much more your domain and not main, but 
+%``iteration space'' also
+%sounds quite vague}. Let $i,j,k$ be dimensions corresponding to matrix sizes 
+%$M,N,K$, that is, matrix $A$ lays on the plane $ik$, matrix $B$ lays on the 
+%plane $kj$ and matrix $C$ lays on the plane $ij$ \mac{This again is somewhat 
+%confusing. What is ``plane'' mathematically here?
+%This is proof, all must be clear. Define plane... But then I know, there are 
+%many
+%of these concepts (as we discussed while hiking), and defining them all
+%would be very tedious... My recommendation - \ul{I suggest you read several
+%proofs from top math conferences related to this type of things, and see how 
+%people deal with this}}.
+%
+%\mac{\ul{Another important comment:} at this point, it becomes clear that
+%the paper lacks some background into the MM stuff. I mean, you need to
+%lay out the setting... All these MM-related concepts such as laying matrices
+%A, B, C onto different ``planes of computation'' must be introduced in
+%Background.}
+%%
+%Assume that the searched subset \mac{I would use some symbol for this subset
+%that maximizes intensity} computes $\mathcal{V}$ partial products $c = c + ab$
+%\mac{what? why $c = c + ab$? Mathematically, unless $ab=0$, it's never true,
+%right?} of $C$ \mac{\ul{First comment:} Also, it's confusing: what are
+%``products of $C$''??}. Then, the projection of $\phi_{ik}(\mathcal{V})$
+%\mac{``Projection'' was never defined (extremely confusing). \ul{Second
+%comment:} Moreover: what is this $\mathcal{V}$? it is also not defined. In the
+%sentence before, it sounds like a number (``$\mathcal{V}$ products''), but here
+%it sounds more like something more complex than a number? Again confusing.
+%\ul{Third comment}: is it "the projection of" OR "the projection"? It makes a
+%huge difference. Now it sounds like it should be "the projection" (and is
+%wrongly "the projection of"} onto plane $ik$ correspond \mac{``corresponds''
+%instead of ``correspond''?} to the required inputs from $A$.  \mac{Very
+%confusing - WHY does this projection correspond to the input? It will be
+%unclear to the reader... Maybe with the proper background it will clarify?}
+%Let's \mac{Let's is informal - better just "Denote"} denote $A$'s input
+%$\phi_{ik}(\mathcal{V}) = \alpha$ \mac{Symbol for denote should be different
+%from $=$, I would just use a word ``as''}.  Similarly, $\phi_{kj}(\mathcal{V})
+%= \beta$ and $\phi_{ij}(\mathcal{V}) = \gamma$, which correspond to partial
+%results of $C$ being updated \mac{This part of sentence is again extremely
+%confusing. What partial results? Why? You just wrote about some inputs, why
+%suddenly something corresponds to some partial results of $C$?  and what does
+%it mean ``$C$ being updated''? How updated?}. Furthermore, note that $\gamma$
+%is also the output of the subcomputation \mac{what ``subcomputation''?  In the
+%context of S-partitions? Or is it something purely MM-related?  If yes, what
+%exactly? Adding one element to one element of $C$? computing a block of $C$?
+%what?}, as those inputs are updated \mac{How updated? Confusing again...}.
+%
+%To compute $\mathcal{V}$ partial products $c = c + ab$ of $C$ \mac{Same
+%comments as before, it's confusing on that these symbols really mean. \ul{I
+%mean, the point is that to someone who is specializing in MM stuff, this will
+%more or less be somewhat clear}: c = c + ab will mean that you update some
+%element of C with corresponding ab. However, ANY OTHER person will be lost
+%after the FIRST SENTENCE of this section / proof. In addition, even if a
+%reviewer related to MM understands the stuff, it will not help in persuading
+%him/her to accept the paper, because they will notice all these confusing
+%parts}, we need $\alpha$ and $\beta$ elements of matrices $A$ and $B$
+%\mac{What are precisely these elements of matrices?} and $\gamma$ elements of
+%$C$, corresponding to the updated values of $c$ (Figure \ref{fig:mmmreuse})
+%\mac{This sentence before is also confusing with respect}.  Therefore, the
+%input size \mac{What is ``input'' in this current context?} (surface in
+%geometric interpretation \mac{You never defined anything related to the
+%geometric interpretation}) is $\mathcal{I} = |\alpha| + |\beta| + |\gamma|$
+%\mac{This equality is unclear - not obvious why it should be true}. According
+%to the definition of S-partition, $$\mathcal{I} = |\alpha| + |\beta| +
+%|\gamma|\le S$$ \mac{This previous inequality is important - it combines MM and
+%I/O complexity...  But it's also unclear why this is the case. This must be
+%explained more extensively / appropriately}.  From Loomis-Whitney inequality
+%\cite{loomisWhitney}, we have the upper bound on $$\mathcal{V} \le
+%\sqrt{|\alpha| |\beta| |\gamma|}$$ \mac{I would consider putting 1-2 sentences
+%on the Loomis-Whitney stuff... maybe}.  The upper bound on te \mac{the?} reuse
+%$R(S)$ \mac{At this point, no idea what R(S) is. It was defined, but it gets so
+%complex at this stage that readers won't know. I suggest to remind somehow what
+%it is, intuitively. \ul{Another suggestion: MAYBE a solution to the whole
+%problem of the complexity is to, like I guess we already discussed, is to start
+%early in background with matrix multiplication, and then, at every step of the
+%I/O stuff, provide relations to MM. THis way, people will always get these two
+%next to each other in their minds}} is a largest \mac{The largest?} projection
+%of $\mathcal{V}$ to any surface $\mathcal{P}$ in the $ijk$ space \mac{To an
+%arbitrary one? Or to one of the 3 ``canonical'' ones?}: $$R(S) \le
+%\max_\mathcal{P}(|\phi_\mathcal{P}(V)|)$$ \mac{What is the definition of the $|
+%\cdot |$ symbol above in the current context?} Furthermore $\alpha$ and $\beta$
+%are the inputs and do not need to be stored \mac{Really? Why not? AN average
+%reader will think it's not true, because you always must store input somewhere?
+%Make it precise what it means (no I/O)?}.  $\gamma$, on the other hand, is the
+%set of partial results and either has to be reused or stored, increasing the
+%I/O cost \mac{What is precisely ``I/O cost''? I know, I know, that's all what
+%the paper is about, but I think it might not hurt to clearly state / define at
+%the very beginning some cost function for this thing...}. 
+%
+%Let's \mac{Informal} denote $\alpha_i$ and $\beta_i$ as inputs of $i$-th
+%subcomputation \mac{What is ith subcomputation? How does it relate to the I/O
+%business? Confusing, not clear}, $\gamma_i$ as its input and output, and $R_i$
+%as its reuse (subset of inputs that is already in the fast memory \mac{Why do
+%you suddenly remind HERE what reuse is, and did not do this several lines
+%above?}). Then, $$R_i = (\alpha_i \cap \alpha_{i-1}) \cup (\beta_i \cap
+%\beta_{i-1}) \cup (\gamma_i \cap \gamma_{i-1}) $$ \mac{This series of unions is
+%unclear} Note that $|\gamma_i \setminus \gamma_{i+1}|$ outputs have to be
+%stored back to the memory \mac{why?}. The I/O cost of $i$-th subcomputation is
+%$$Q_i = |\mathcal{I}| - |R_i| + |\gamma_i \setminus \gamma_{i+1}|$$.
+%
+%The projection plane $\mathcal{P}$ \mac{What is ``projection plane''?}
+%minimizing $Q_i$ \mac{What does it mean ``minimizing'' in the current context?
+%meaning, it's not fully clear what the connection between planes and
+%minimization is} is therefore $\mathcal{P} = ij$, resulting in $\gamma_i =
+%\gamma_{i+1}$\mac{What does this last equality intuitively mean?}. Intuitively,
+%this is clear that we should reuse partial results of $C$ immediately, instead
+%of storing them back to the memory. Therefore, to obtain the optimal
+%subcomputation, we formulate it as the optimization problem \mac{``Therefore''
+%- it is not clear why ``formulating it as an optimization problem'' is a
+%logical consequence of the previous sentence}:
+%
 %\begin{multline}
-%\label{eq:cubic}
 %\\
-%\mathcal{S}_1 = S \\
-%3 n_1^2 = S \\
-%n_1 = \sqrt{\frac{S}{3}} \\
-%\mathcal{V}_1 = n_1^3 = \Big(\frac{S}{3}\Big)^{\frac{3}{2}} \\
-%\rho_1 = \frac{\mathcal{V}_1}{\mathcal{S}_1} = \frac{n_1}{3} = 
-%\sqrt{\frac{S}{18}}\\
+%\text{maximize } \rho = \frac{|\mathcal{V}|}{\mathcal{I} - |R|} \le 
+%\frac{\sqrt{|\alpha| |\beta| |\gamma|}}{|\alpha| + |\beta|}\\
+%\text{subject to: } |\alpha| + |\beta| + |\gamma| \le S \\
 %\end{multline}
 %
-%where $\mathcal{S}_1$ is the cubic subset's surface (the dominator set 
-%size), 
-%$\mathcal{V}_1$ is the cubic subset's volume (the number of vertices in 
-%the 
-%subset) and $\rho_1$ is its computational intensity.
+%Exploiting the symmetry of the domain \mac{What is ``the symmetry of the
+%domain''?} by plane \mac{What does it mean ``by plane'' in this context?}
+%\textbf{(i + j)k} \mac{Why bold now and not before?}, we have  $|\alpha| =
+%|\beta|$. Now the solution to this problem gives $|\alpha| = |\beta|
+%\rightarrow 0$, $|\gamma| \rightarrow S$ \mac{Unclear how you get these
+%results}.  Restricting the solution to the integer lattice ($\alpha, \beta,
+%\gamma \in \mathbb{Z}$) we get the optimal shape of the subcomputation
+%\mac{Again, this shape of subcomputation should be more clear}:
 %
-%However, after the execution of this subset, only one of the faces of 
-%this cube can be reused - if the innermost loop is $k$ then we reuse the 
-%last intermediate result of $C$, if the innermost loop is $i$ then we reuse 
-%the subset of matrix $B$, otherwise we reuse the subset of matrix $A$ 
-%(Figure \ref{fig:mmmreuse}). Therefore, maximum possible reuse size $r_1$ 
-%is 
-%$n_1^2$, yielding 
-%
-%$$\rho_{r,1} = \frac{\mathcal{V}_1}{\mathcal{S}_1 - r} = \frac{n_1}{2} = 
-%\sqrt{\frac{S}{12}}$$
-%
-%Where $\rho_{r,1}$ stands for the cubic subset computational intensity 
-%when maximum 
-%possible reuse is considered. Now consider a "flat" subset, when we load 
-%a subset of only one column of $A$, one row of $B$ and we compute only one 
-%"level" (one outer product) of $C$. Then, if the innermost loop is $i$ or 
-%$j$, we will reuse a single row or single column, giving the reuse size of 
-%$n_2$, but if the innermost loop is $k$, the reuse is $n_2^2$. Then we 
-%have: 	
 %\begin{multline}
-%\label{eq:flat}
+%%\label{eq:seqSolution}
 %\\
-%\mathcal{S}_2 = S \\
-%2n_2 + n_2^2 = S \\
-%n_2 = \sqrt{S + 1} - 1 \approx \sqrt{S} \\
-%\mathcal{V}_2 = n_2^2 = (\sqrt{S + 1} - 1)^2  \approx S\\
-%\rho_2 = \frac{\mathcal{V}_2}{\mathcal{S}_2} = \frac{(\sqrt{S + 1} - 
-%	1)^2}{2\sqrt{S+1} - 2 + (\sqrt{S + 1} - 1)^2} \approx 1\\
-%r_2 = n_2^2 \\
-%\rho_{r,2} = \frac{\mathcal{V}_2}{\mathcal{S}_2 - r_2} = \frac{(\sqrt{S + 
-%		1} - 
-%	1)^2}{2\sqrt{S+1} - 2} \approx \sqrt{\frac{S}{4}} 
-%\end{multline}	
-%Which gives $\sqrt{3}$ improvement over the cubic shape. We can obtain same 
-%result if we consider the reuse among other two axes and choose the 
-%projection of the computation volume to this axis to be $n_2^2$, and other 
-%projections to be $n_2$. However, in those cases additional 
-%$\frac{mnk}{\sqrt{S}}$ 
-%store operations are required for intermediate results of the matrix $C$, 
-%creating Read-After-Write (RAW) conflicts. This 
-%observation shows that subset shape 
-%optimization must be performed together with explicit scheduling and reuse 
-%formulation to generate an optimal solution.
+%|\phi_{ij}(\alpha)| = |\phi_{ik}(\alpha)|  = |\phi_{ij}(\beta)| = 
+%|\phi_{kj}(\beta)|= \sqrt{S + 1} - 1 \\
+%|\phi_{kj}(\alpha)| = |\phi_{ik}(\beta)| = 1 \\
+%|\gamma| = |\alpha| |\beta| = (\sqrt{S + 1} - 1)^2 \\
+%\end{multline}
 %
-%Following this observation, we can directly derive tight I/O bounds for 
-%Matrix-Matrix multiplication. Observe that $\rho_r = 
-%\frac{\mathcal{V}}{\mathcal{S}}$ is a maximum computational intensity for a 
-%given scheme. Substituting $\mathcal{V}$ by the whole computation domain $n^3$ 
-%(or $mnk$ for rectangular matrices), we immediately obtain $\mathcal{S}_1 = 
-%\frac{2\sqrt{3}mnk}{\sqrt{S}}$ for cubic subsets and $\mathcal{S}_1 = 
-%\frac{2mnk}{\sqrt{S}}$ for flat subsets. Note that this gives a tight 
-%leading term in a well known asymptotic bound (\cite{redblue}) 
-%$\Omega\big(\frac{mnk}{\sqrt{S}}\big)$.
+%This corresponds to a single column of $A$ and row of $B$ of length $\sqrt{S +
+%1} - 1$ and a square subset of $C$ of $(\sqrt{S + 1} - 1)^2$.  \textbf{From now
+%on, to keep the notation \mac{It's not notation that you keep simpler here,
+%it's calculations?} simpler, we approximate} 
+%\begin{equation}
+%\label{eq:approx}
+%\sqrt{S + 1} - 1 \approx \sqrt{S}
+%\end{equation}
+%All the following results may be easily rewritten using the precise formula and
+%are correct up to this approximation factor.
 %
- \begin{figure}
- 	\includegraphics[width=\columnwidth]{figures/mmm_reuse}
- 	\caption{MMM subset shape. a) 
- 		geometric interpretation of $C = A \times B$ (orange cube represents 
- 		3-dimensional iteration space of partial sums, matrix C is formed by 
- 		reduction over dimension $k$ - represented by dark orange plane). b) 
- 		optimal surface to volume subset shape. Note that in a subsequent 
- 		subset computation only one of the three planes (blue, red or dark 
- 		green) can be reused. c) the optimal subset shapes when 
- 		data reuse is considered. In b) and c) blue, red, and orange surfaces 
- 		form the dominator set, whereas dark green surface is the minimum set.}
- 	\label{fig:mmmreuse}
- \end{figure}
+%
+%This result immediately gives $\mathcal{V} = S, R(S) = S, \rho = \sqrt{S}/2$
+%\mac{How do you get these? Completely unclear} and finally, according to
+%corollary \ref{cor:q}:  $Q \ge \frac{|V|}{\rho} = \frac{2MNK}{\sqrt{S}}$. This
+%is only the input cost \mac{Huh? What is the input cost? Why input cost?}, as
+%for now, we assumed that all the outputs were reused. However, $MN$ outputs
+%  have to be stored back to the memory, yielding additional $MN$ I/O operations
+%  \mac{Unclear sentence}. 
+%
+%%-------------old version ends here----------%
+%\greg{------------old version ends here -----------} 
 
-\subsection{Parallel Scheduling}
-\label{sec:parScheduling}
 
-In this section we show how to derive communication optimal schedule from the 
-result from the previous section.
-The explicit notion of reuse, effects not only sequential execution, as 
-discussed above, but also parallel scheduling, as it determines data 
-dependencies.
- Intuitively, the schedule consists 
-of $MNK/S$ elementary outer product calculations, arranged in $\sqrt{S} \times 
-\sqrt{S} \times K$ "blocks" (Figure \ref{fig:mmmParallelization}). The number 
-of dependency-free 
-subsets in the optimal S-partition determines the maximum degree of parallelism 
-up 
-to which no additional communication between processes is performed. Above 
-this 
-threshold, 
-further parallelization requires either parallelizing dependent subsets, 
-causing additional communication between processes, or by shrinking the size of 
-subsets, reducing the effective memory size.
+\section{Optimal Parallel Matrix Multiplication}
+\label{sec:parOptimality}
 
-\macb{Note: shared vs distributed memory model}. In our work we only evaluate 
-the total data volume transfered (both horizontally and vertically). For 
-distributed machine, we assume that a network is fully connected. We 
-furthermore omit the analysis of congestion or latency. With those assumptions,
-our results hold for both shared and distributed memory machine - one can view 
-the former as the latter with $p + 1$ processes, where the 
-$(p+1)$st process mimics the shared memory - it holds the initial data and 
-performs no work. To translate the shared memory results to a distributed 
-machine, one needs to subtract the cost of transferring the initial data 
-layout. We note however, that this accounts for up to additive factor $(MK + 
-NK)/p$ of total communication volume.
+In this section we derive a communication optimal parallel schedule 
+from the
+results derived in ~\cref{sec:seqScheduling}. The explicit notion of reuse 
+determines not only the sequential execution, as
+discussed shown there, but also the parallel scheduling.
 
- \begin{figure}
-	\includegraphics[width=\columnwidth]{figures/mmm_parallelization}
-	\label{fig:mmmParallelization}
-	\caption{Different parallelization schemes of matrix multiplication 
-	arriving from the optimal sequential schedule. Up to six processes may be 
-	used optimally - above this limit we either increase I/O or communication. 
-	Shades of gray represent local domains of different processes. a) Global 
-	iteration domain (pink) and the optimal subset shape (green). b) Global 
-	iteration space scheduling (arrows represent data dependencies). c) Optimal 
-	parallelization using $p=3$ processes. d-f) Suboptimal parallelization 
-	using $p=24$ processes. From left to right, \textbf{par in ij}, \textbf{par 
-	in ijk} and \textbf{cubic}. Note the trade-off between I/O (shrinkage of 
-	local domain) and communication (dashed red lines showing parallelization 
-	and required communication in k dimension).} 
+\subsection{Sequential and Parallel Schedules}
+\label{sec:seqpar}
+
+Here we briefly describe the differences and connections between these two 
+worlds. In sequential scheduling, the CDAG $G = (V,E)$ is partitioned into 
+$H(S)$ 
+subcomputations $V_i$ connected (acyclically) by data dependencies $G = 
+\bigcup_{i=1}^{H(S)} V_i$, $\mathcal{S} = \{V_1, \dots V_{H(S)}\}$. The I/O 
+optimal \emph{sequential} schedule $\mathcal{S}_{opt}$ maximizes the 
+computational intensity 
+$\rho_i$ of 
+the subcomputations $V_i$. The parallel schedule $\mathcal{P}$ distributes 
+$\mathcal{S}$ among $p$ processes $\mathcal{P} = \{\mathcal{D}_1, \cdots 
+\mathcal{D}_p\}, \bigcup_{j=1}^p \mathcal{D}_j = \mathcal{S}$. The set 
+$\mathcal{D}_j$ of all 
+$V_k$ assigned to 
+process $j$ is called a \emph{local domain} of $j$. If 
+the distributed schedule $\mathcal{S} = 
+\mathcal{S}_{opt}$, then the parallel schedule $\mathcal{P}_{IOopt}$ is 
+\emph{I/O optimal}.
+
+If two local domains $\mathcal{D}_k, \mathcal{D}_l$ are dependent, that is,\\
+$\exists_{u \in \mathcal{D}_k, v \in \mathcal{D}_l} : (u,v) \in E$, then $u$ 
+has to be \emph{communicated} from process $k$ to $l$. The total number of 
+vertices communicated between all processes is the \emph{total communication 
+cost} of a schedule $Q_{comm}(\mathcal{P})$. 
+Note that the dependencies between domains in parallel schedule $\mathcal{P}$ 
+always increase the communication cost. However, the corresponding sequential 
+schedule $\mathcal{S}$ may not increase the I/O cost, as 
+during the pebbling of vertex $v$, vertex $u$ may already contain a red pebble 
+due to the data reuse.
+We say that the parallel schedule 
+$\mathcal{P}_{Copt}$ is \emph{communication optimal} if $Q_{comm}(\mathcal{P})$ 
+is minimized among all possible parallel schedules. Clearly, if 
+$Q_{comm}(\mathcal{P}) = 0$, then $\mathcal{P}$ is communication optimal. A 
+parallel schedule may be I/O \emph{and} communication optimal, which we call 
+\emph{data movement} optimal 
+$\mathcal{P}_{DMopt}$.
+
+For MMM, recall that the CDAG may be represented as the 3D iteration space 
+$\mathcal{V}$ of size $[M \times N \times K]$. We call a 
+schedule $\mathcal{P}$ \emph{parallelized in dimension} \textbf{d} if each 
+local domain $\mathcal{D}_j \in \mathcal{V}, j =\nobreak 1 \dots p$
+is a cuboid of size $[M/p_m \times N/p_n \times K/p_k]$, where $p_r = 
+p$ if $r 
+= $ \textbf{d} and $p_r = 1$ otherwise, for $r \in \{m, n, k\}$. The schedule 
+may also be parallelized in two $\mathbf{d}_1\mathbf{d}_2$ 
+or three 
+dimensions $\mathbf{d}_1\mathbf{d}_2\mathbf{d}_3$ for some $p_m, p_n, p_k$, 
+such that $p_m p_n p_k= \nobreak p$. We call $p_m, p_n, p_k$ the parallel 
+\emph{divisors} of a schedule.
+
+\greg{Not sure if this paragraph needed. For MMM it is obvious. This note is 
+important only in general case of parallelizing different DAGs, where we cannot 
+just blindly parallelize among the dependencies.}
+The important observation is that the parallelization of MMM in \textbf{k} 
+dimension is possible only because the addition operation is associative, 
+therefore processes may start the execution of local domains simultaneously- 
+before receiving partial result inputs $\gamma$. We note that in general, one 
+can only parallelize dependent domains $\mathcal{D}_j$ only if the operation 
+induced by the dependencies is associative. Therefore, the parallelization 
+requires additional knowledge about the CDAG, namely, which vertices correspond 
+to associative operations.
+
+
+
+\subsection{Parallelization strategies for MMM}
+ Intuitively, the 
+I/O optimal sequential schedule $\mathcal{S}_{opt}$
+consists of $MNK/S$ elementary outer product calculations, arranged in
+$\sqrt{S} \times \sqrt{S} \times K$ "blocks" (Figure
+\ref{fig:mmmParallelization}). The number $p_1 = MN/\sqrt{S}$ of 
+dependency-free subcomputations 
+$V_i$
+(that is, having no parents except of input vertices) in $\mathcal{S}_{opt}$ 
+determines the maximum size of data movement optimal parallel schedule 
+$|\mathcal{P}_{DMopt}|$. This is the maximum 
+degree of parallelism up to which no
+additional data movement (that is, except of one required by the sequential 
+lower bound) is performed. Each process has assigned a local domain 
+$\mathcal{D}$ of size 
+$|\mathcal{D}| = MNK/(pS)$, each of which requires $2MNK/(p\sqrt{S})$ I/O 
+operations. 
+There are 
+no dependencies between local domains, therefore $Q_{comm} = 0$.
+
+Above the  
+threshold $p_1$, reducing the size of 
+local domains $\mathcal{D}_j$ either enforce data dependencies between them - 
+causing
+additional communication $Q_{comm} > 0$ (Figure~\ref{fig:mmmParallelization} 
+e), or not 
+utilizing the whole available memory, making the schedule not I/O optimal 
+$\mathcal{S} \ne \mathcal{S}_{opt}$ 
+(Figure~\ref{fig:mmmParallelization} d). Therefore, by the definition from  
+\cref{sec:seqpar}, there is no data movement optimal schedule 
+$\mathcal{P}_{DMopt}$ for $p > p_1$.
+
+\begin{figure}
+  \includegraphics[width=\columnwidth]{figures/mmm_parallelization}
+  \label{fig:mmmParallelization}
+  \caption{Different parallelization schemes of matrix multiplication 
+    arriving from the optimal sequential schedule. Up to six processes may 
+    be 
+    used optimally - above this limit we either increase I/O or 
+    communication. 
+    Shades of gray represent local domains of different processes. a) 
+    Global 
+    iteration domain (pink) and the optimal subset shape (green). b) Global 
+    iteration space scheduling (arrows represent data dependencies). c) 
+    Optimal 
+    parallelization using $p=3$ processes. d-f) Suboptimal parallelization 
+    using $p=24$ processes. From left to right, \textbf{par in ij}, 
+    \textbf{par 
+      in ijk} and \textbf{cubic}. Note the trade-off between I/O 
+      (shrinkage of 
+    local domain) and communication (dashed red lines showing 
+    parallelization 
+    and required communication in k dimension).} 
 \end{figure}
 
-We now analyze three possible parallelization strategies that trade I/O for 
-communication optimality (Figure~\ref{fig:mmmParallelization}):
+We now analyze three possible parallelization strategies that either increase 
+the I/O or the communication cost (or both) 
+(Figure~\ref{fig:mmmParallelization}):
 
 \begin{enumerate}
-	\item \textbf{par. in ij dim:} 
-	Parallelization is only on the \textbf{ij} plane, therefore there is no 
-	reuse 
-	(no data sent) 
-	between the processes (communication optimality). The local domain size is 
-	$[a \times a \times K]$, where $a = \sqrt{\frac{MN}{P}} < \sqrt{S}$  (I/O 
-	optimality is broken).
-	\item \textbf{par. in ijk dim:} The subset's size is 
-	constant determined by 
-	Equation~\ref{eq:seqSolution} (I/O optimality). The parallelization is done 
-	in all 
-	three dimensions. The reuse crossing domains of parallel processes in 
-	\textbf{k} 
-	requires sending data between them (communication optimality 
-	is broken).
-	\item \textbf{cubic} 
-	the local domain size is 
-	$[a_c \times a_c \times a_c]$, where $a_c = 
-	\min\Big\{\big(\frac{MNK}{P}\big)^{1/3}, 
-	\sqrt{\frac{S}{3}}\Big\}$ (both I/O and communication 
-	optimality is broken).
+  \item \textbf{$\mathcal{P}ij$:} 
+  The schedule is parallelized in dimensions \textbf{i} and 
+  \textbf{j}. The parallel divisors are $[M/a , N/a, 1]$, where $a = 
+  \sqrt{\frac{MN}{P}}$.
+  Because all dependencies are parallel to dimension \textbf{k}, no 
+  communication is required $Q_{comm}(\mathcal{P}ij) = 0$, therefore 
+  $\mathcal{P}ij$ is communication optimal. Because $a < \sqrt{S}$, the 
+  corresponding sequential schedule $\mathcal{S}ij$ is not I/O optimal.
+  \item \textbf{$\mathcal{P}ijk$} The schedule is parallelized in all 
+  dimensions. The parallel divisors are $[M/\sqrt{S} , N/\sqrt{S}, 
+  MNK/(pS)]$.
+   Each subcomputation's $V_i$ size is determined by 
+  Equation~\ref{eq:seqSolution}: the sequential schedule is I/O optimal. The 
+  parallelization in \textbf{k} dimension creates dependencies between local 
+  domains, enforcing communication \\ $Q_{comm}(\mathcal{P}ijk) > 0$. 
+  \item \textbf{$\mathcal{P}cubic$} The schedule is parallelized in all 
+  dimensions. The parallel divisors are $[M/a_c , N/a_c, 
+  MNK/a_c]$, where $a_c = 
+  \min\Big\{\big(\frac{MNK}{P}\big)^{1/3}, 
+  \sqrt{\frac{S}{3}}\Big\}$. Because $a_c < \sqrt{S}$, the 
+  corresponding sequential schedule $\mathcal{S}ij$ is not I/O optimal. 
+  Also,  the 
+  parallelization in \textbf{k} dimension creates dependencies between local 
+  domains, enforcing communication $Q_{comm}(\mathcal{P}cubic) >\nobreak 0$. 
 \end{enumerate}
 
-\textbf{Notes:}
+\macb{Comparison with other algorithms:}
 
 \begin{itemize}
-	\item If $M = N$, then \textbf{par. in ij dim} scheme is reduced to 
-	classical 2D 
-	decomposition (e.g., Cannon's algorithm~\cite{Cannon} or 
-	SUMMA~\cite{summa}). 
-	\item If $M = N = K$ then \textbf{par. in ijk dim} scheme reduces to 2.5D 
-	decomposition~\cite{25d}.
-	\item CARMA~\cite{CARMA} asymptotically reaches \textbf{cubic} scheme, 
-	guaranteeing that 
-	the longest dimension of a local cuboidal domain is at most two times 
-	larger than the 
-	smallest one.
+  \item If $M = N$, $\mathcal{P}ij$ scheme is reduced to the
+  classical 2D 
+  decomposition (e.g., Cannon's algorithm~\cite{Cannon} or 
+  SUMMA~\cite{summa}). 
+  \item If $M = N = K$, $\mathcal{P}ijk$ reduces to 2.5D 
+  decomposition~\cite{25d}.
+  \item CARMA~\cite{CARMA} asymptotically reaches $\mathcal{P}cubic$
+  scheme, 
+  guaranteeing that 
+  the longest dimension of a local cuboidal domain is at most two times 
+  larger than the 
+  smallest one.
 \end{itemize}
 
-\subsubsection{Data Movement Optimal Parallel Scheduling}
-Observe that none of those schemes is optimal in the whole range of parameters.
-As discussed in Section~\ref{sec:seqScheduling}, in sequential scheduling, 
-intermediate results of C are not stored to the memory - they are consumed 
-(reused) immediately by the next sequential step. Only the final result of C in 
-local domain is sent. Therefore, the optimal parallel schedule minimizes the 
-communication, that is, sum of the inputs' sizes plus the output size, under 
-the constraint of I/O sequential schedule. More formally, if we express a local 
-domain as a cuboid of size $[a \times a \times b]$ in dimensions \textbf{i}, 
-\textbf{j} and \textbf{k}, then expressing our optimization problem using the 
-computational intensity (Section~\ref{sec:compIntensity}) can be formulated as 
+
+%-------------------------Old version starts here
+%\greg{------------------ Old version starts here -------------------}
+%
+%In this section we show how to derive a communication optimal parallel 
+%schedule 
+%from the
+%results derived in ~\cref{sec:seqScheduling}. The explicit notion of reuse 
+%effects
+%\mac{reuse affects?} not only sequential \mac{the sequential} execution, as
+%discussed above, but also parallel scheduling \mac{the parallel scheduling}, as
+%it determines data dependencies \mac{It's unclear why only affecting data
+%dependencies have impact on the parallel schedule}.  Intuitively, the schedule
+%consists of $MNK/S$ elementary outer product calculations, arranged in
+%$\sqrt{S} \times \sqrt{S} \times K$ "blocks" (Figure
+%\ref{fig:mmmParallelization}). The number of dependency-free subsets in the
+%optimal S-partition determines the maximum degree of parallelism up to which no
+%additional \mac{What does it mean ``additional''?} communication between
+%processes is performed. Above this threshold, further parallelization requires
+%either parallelizing dependent subsets \mac{How? Sounds very vague}, causing
+%additional communication between processes, or by shrinking the size of
+%subsets, reducing the effective memory size \mac{Why? And what is effective
+%memory size?}.
+%
+%\macb{Note: shared vs distributed memory model}. \mac{``Note:'' sounds bad, 
+%like
+%you're writing some report as homework. Too unstructured. A paper must like the
+%inside of a watch, everything strutured for one goal. No some weirdo ``notes''}
+%%
+%In our work we only evaluate the total data volume transfered \mac{This now
+%sounds like you start Evaluation, but it's the algorithmic part - very
+%confusing. Why?} \mac{``evaluate the total volume'' - sounds very limiting. It
+%is stressed even more by adding: ``only'' - you're essentially telling yourself
+%that the analysis here is very limited :)} (both horizontally and vertically).
+%For distributed \mac{a distributed} machine \mac{Actually, instead of machine,
+%I'd write ``For distributed environments'' - sounds better}, we assume that a
+%network is fully connected \mac{All such assumtions should be a part of a
+%separate section where the whole distirbuted setting is summarized and
+%explained}. We furthermore omit the analysis of congestion or latency
+%\mac{Without any citation and a brief statement that it's a common approach, it
+%sounds like it sucks}. With those assumptions, our results hold for both shared
+%and distributed memory machine \mac{machines? or even better, environments?} -
+%one can view the former as the latter with $p + 1$ processes, where the
+%$(p+1)$st process mimics the shared memory \mac{Huh? Completely unclear, how
+%mimic? No reference to support, bad.} - it holds the initial data and performs
+%no work \mac{No work? What does it mean? Also, suddenly work-depth is brough
+%up? Extremely confusing}. To translate the shared memory results to a
+%distributed machine, one needs to subtract the cost of transferring the initial
+%data layout \mac{But you just swaid above that it ``mimics'' and one can view
+%one as the other on some more processes - and now it's about some additional
+%subtraction? Extremely confusing}. We note however, that this accounts for up
+%to additive factor $(MK + NK)/p$ of total communication volume. \mac{Anyone is
+%lost again here. All these statements above must be clarified, ordered, and
+%placed in a separate section on distributed settings}
+%
+%We now analyze three possible parallelization strategies that trade I/O for 
+%communication optimality \mac{Unclear what this means - trade I/O - put more
+%details, and make it more precise - for example, ``increase the number of
+%I/O operations in exchange for...''} (Figure~\ref{fig:mmmParallelization}):
+%
+%\begin{enumerate}
+%  \item \textbf{par. in ij dim:} 
+%  Parallelization is only on the \textbf{ij} plane \mac{Unclear, write more
+%  precisely wht this means that parallelism is on some plane - actually,
+%  this should be just mentioned in the associated background section on MM
+%  (that parallelizing a given plane is paralelizing the corresponding 
+%loop(s))}, therefore there is no 
+%  reuse 
+%  (no data sent) \mac{Such connections between the I/O and distributed world 
+%  like reuse --- data sent should be gathered and explicitly discussed 
+%somewhere I guess...} 
+%  between the processes (communication optimality). The local domain size is 
+%  $[a \times a \times K]$, where $a = \sqrt{\frac{MN}{P}} < \sqrt{S}$  (I/O 
+%  optimality \mac{the I/O optimality} is broken \mac{Cars can be broken, 
+%broken optimality sounds bad}).
+%  \item \textbf{par. in ijk dim:} The subset's size is 
+%  constant determined by 
+%  Equation~\ref{eq:seqSolution} (I/O optimality). The 
+%  parallelization is done 
+%  in all 
+%  three dimensions \mac{You sometimes mention parallelism in the context of 
+%planes, and
+%  sotimes dimentions - confusing}. The reuse crossing domains of parallel 
+%processes in 
+%  \textbf{k} 
+%  requires sending data between them (communication optimality 
+%  is broken).
+%  \item \textbf{cubic} 
+%  the local domain size is 
+%  $[a_c \times a_c \times a_c]$, where $a_c = 
+%  \min\Big\{\big(\frac{MNK}{P}\big)^{1/3}, 
+%  \sqrt{\frac{S}{3}}\Big\}$ (both I/O and communication 
+%  optimality is broken \mac{broken again}).
+%\end{enumerate}
+%
+%\textbf{Notes:}
+%
+%\begin{itemize}
+%  \item If $M = N$, then \textbf{par. in ij dim} scheme is reduced to 
+%  classical 2D 
+%  decomposition (e.g., Cannon's algorithm~\cite{Cannon} or 
+%  SUMMA~\cite{summa}). 
+%  \item If $M = N = K$ then \textbf{par. in ijk dim} scheme reduces to 2.5D 
+%  decomposition~\cite{25d}.
+%  \item CARMA~\cite{CARMA} asymptotically reaches \textbf{cubic} 
+%  scheme, 
+%  guaranteeing that 
+%  the longest dimension of a local cuboidal domain is at most two times 
+%  larger than the 
+%  smallest one.
+%\end{itemize}
+%
+%%-------------old version ends here----------%
+%\greg{------------old version ends here -----------} 
+
+
+\subsection{Data Movement Optimal Parallel Schedule}
+\label{sec:parScheduling}
+Observe that none of those schedules is optimal in the whole range of 
+parameters.
+As discussed in ~\cref{sec:seqScheduling}, in sequential 
+scheduling, 
+intermediate results of C are not stored to the memory - they are 
+consumed 
+(reused) immediately by the next sequential step. Only the final 
+result of C in 
+local domain is sent. Therefore, the optimal parallel schedule 
+$\mathcal{P}_{Copt}$
+minimizes the 
+communication, that is, sum of the inputs' sizes plus the output 
+size, under 
+the sequential I/O constraint on subcomputations $\forall_{V_i \in 
+\mathcal{P}_{Copt}} |\mathcal{I}_i| \le S \land |\mathcal{O}_i| \le S$.
+
+The local domain $\mathcal{D}_j$ is a cuboid of size $[a \times a \times b]$. 
+The optimization problem of finding $\mathcal{P}_{Copt}$
+using the 
+computational intensity (~\cref{sec:compIntensity}) can be 
+formulated as 
 follows:
 \begin{multline}
+\label{eq:tileEq}
 \\
 \text{maximize } \rho = \frac{a^2b}{ab + ab + a^2}\\
 \text{subject to: } \\
 a + a + a^2 \le S \text{ (I/O constraint)} \\
 a^2b = \frac{MNK}{p} \text{ (load balance constraint)} \\ 
 \end{multline}
-where $p$ is the number of processes. The inequality constraint $2a + a^2 \le 
-S$ is tight (binding) for $p \ge \frac{MNK}{S^{3/2}}$. Therefore, we have a 
-piece-wise solution to this problem (using the approximation~\ref{eq:approx}):
+where $p$ is the number of processes. The inequality constraint $2a + 
+a^2 \le 
+S$ is tight (binding) for $p \ge \frac{MNK}{S^{3/2}}$. Therefore, the solution 
+to this problem (using the 
+approximation~\ref{eq:approx}):
 
 \begin{multline}
 \\
-\nonumber
-a =
-\begin{cases} 
-\sqrt{S} & p < \frac{MNK}{S^{3/2}} \\
-\big(\frac{MNK}{p}\big)^{1/3} & p \ge \frac{MNK}{S^{3/2}}
-\end{cases}\\
-b =
-\begin{cases} 
-\frac{MNK}{pS} & p < \frac{MNK}{S^{3/2}} \\
-\big(\frac{MNK}{p}\big)^{1/3} & p \ge \frac{MNK}{S^{3/2}}
-\end{cases}\\
+a = \min\Big\{\sqrt{S}, \Big(\frac{MNK}{p}\Big)^{1/3} \Big\}\\
+b = \max\Big\{\frac{MNK}{pS}, \Big(\frac{MNK}{p}\Big)^{1/3} \Big\}\\
+\label{eq:optTileShape}
+%\end{cases}\\
 \end{multline}
 \\
 
-This can be intuitively interpreted geometrically as follows: if we imagine the 
-optimal local domain "growing" with decreasing number of processes, then it is 
-cubic until it is still "small enough" (its side is smaller than $\sqrt{S}$). 
-After that point, its face in \textbf{ij} plane stays constant $\sqrt{S} \times 
+This can be intuitively interpreted geometrically as follows: if we 
+imagine the 
+optimal local domain "growing" with decreasing number of processes, 
+then it is 
+cubic until it is still "small enough" (its side is smaller than 
+$\sqrt{S}$). 
+After that point, its face in \textbf{ij} plane stays constant 
+$\sqrt{S} \times 
 \sqrt{S}$ and it "grows" 
-only in the \textbf{k} dimension.
+only in the \textbf{k} dimension. This schedule effectively switches 
+from $\mathcal{P}ijk$ to $\mathcal{P}cubic$ once there is enough 
+memory ($S \ge \big(\frac{MNK}{p}\big)^{2/3}$).
 
-\macb{Parallel efficiency.} We now proceed to analyze the communication's 
-\emph{parallel efficiency} of all parallelization schemes. It is defined as a 
+\begin{lma}
+  \label{lma:parSchedule}
+  Parallel schedule $\mathcal{P}_{Copt} = \{\mathcal{D}_j\}$ composed of $p$ 
+  local domains $\mathcal{D}_j$ of size 
+  determined by Equation~\ref{eq:optTileShape} is asymptotically 
+  communication optimal, that is, the communication volume is minimal across 
+  all parallel schedules $\mathcal{P}$ with $p$ processes.
+\end{lma}
+
+\begin{proof}
+The communication cost $Q_{comm}$ of each local domain $\mathcal{D} \in 
+\mathcal{P}_{Copt}$ is the sum of communications of all subcomputations $V_i 
+\in \mathcal{D}$. Each subcomputation $V_i$ requires $2a$ elements to be 
+communicated (~\cref{sec:seqOptimality}). The number of subcomputations is 
+$|\mathcal{D}| = b$. Furthermore, the last subcomputation $V_b$ must 
+communicate $a^2$ outputs. Therefore, the total communication cost $Q_{comm}$ 
+is: 
+t%he sum of communications of all processes:
+
+
+$$Q_{comm} = \max\Big\{\frac{2MNK}{\sqrt{S}} + 
+S, 3\Big(\frac{MNK}{p}\Big)^{2/3}  \Big\}$$
+
+This schedule is asymptotically communication optimal, as it reaches both 
+memory-dependent and 
+memory-independent lower bounds~\cite{memIndependentBound}.
+\end{proof}
+
+\subsection{Discussion}
+
+\subsubsection{Bandwidth-Latency Trade-off}
+As showed in~\cref{sec:parScheduling}, the local domain $\mathcal{D}$ of the 
+I/O optimal 
+schedule $\mathcal{P}$ is a cuboid of size $[a \times a \times b]$, where $a, 
+b$ are given by Equation~\ref{eq:optTileShape}. The I/O cost of each  
+$\mathcal{D}$ is $2ab$ (size of the inputs) plus $a^2$ (output). 
+ The corresponding sequential 
+schedule $\mathcal{S}$ is a sequence of $b$ outer products of vectors of length 
+$a$. Denote the size of the required inputs in each step by $I_{step} = 2a$. 
+However, this corresponds to $b$ steps of communication ($L_{comm} = b$).
+
+The number of steps (latency) is equal to the communication volume divided by 
+the volume per step $L_{comm} = Q_{comm}/I_{step}$. To reduce the latency, one 
+either have to decrease $Q_{comm}$ or increase $I_{step}$, under the memory 
+constraint that $I_{step} + a^2 \le S$ (otherwise we cannot fit the inputs and 
+the outputs in the memory). Express $I_{step} = a \cdot h$, where $h$ is the 
+number of sequential subcomputations $V_i$ we merge in one communication. We 
+can now express the bandwidth-latency trade-off:
+
+\begin{multline}
+\\
+Q_{comm} = 2ab + a^2 \\
+L_{comm} = \frac{b}{h} \\
+a^2 + 2ah \le S \text{(I/O constraint)} \\
+a^2b = \frac{MNK}{p} \text{(load balance constraint)} \\
+\end{multline}
+Solving this problem, we have $Q_{comm} = \frac{2MNK}{pa} + a^2$ and $L_{comm} 
+= 
+\frac{MNK}{pa(S-a^2)}$, 
+where $a \le \sqrt{S}$. Increasing $a$ we \emph{reduce} bandwidth cost 
+$Q_{comm}$ and \emph{increase} latency cost $L_{comm}$. For minimal value of 
+$Q_{comm}$ (Lemma~\ref{lma:parSchedule}),  $L_{comm} = \max\{\frac{2a^2}{S - 
+a^2}\}$, where $a = \min\{\sqrt{S}, (MNK/p)^{1/3} \}$. Based on our 
+experiments, we observe that the bandwidth cost is vastly greater than the 
+latency cost, therefore our schedule by default minimizes $Q_{comm}$ and uses 
+extra memory (if any) to reduce $L_{comm}$. However, we leave that as a tunable 
+parameter dependent on the hardware parameters.
+
+\subsubsection{Parallel efficiency} 
+We now proceed to analyze the 
+communication's 
+\emph{parallel efficiency} of all parallelization schemes. We define it as a 
 ratio between  
 the total data movement required by the sequential processor (Theorem 
-\ref{thm:seqlowbounds}) and sum of data movements performed by all parallel
+\ref{thm:seqlowbounds}) and sum of data movements performed by all 
+parallel
 processes. More 
-formally, if $Q(p,S)$ is the data movement cost per process of the algorithm 
+formally, if $Q(p,S)$ is the data movement cost per process of the 
+algorithm 
 using $p$ 
-processes, each of local fast memory size $S$, then the parallel efficiency 
-metric for communication is defined as $E(p,S) = \frac{Q(1,S)}{pQ(p,S)}$.
+processes, each of local fast memory size $S$, then the parallel 
+efficiency 
+metric for communication is defined as $E(p,S) = 
+\frac{Q(1,S)}{pQ(p,S)}$.
 
-The results of our analysis is shown in Table \ref{tab:mmmEfficiency} and 
-Figure \ref{fig:mmmScaling}. Due to the size constraints, their derivation is 
-presented in the Appendix.
+In the proof of Lemma~\ref{lma:parSchedule} we derive $pQ(p,S)$ for 
+$\mathcal{P}Copt$. Using the same technique, we obtain $pQ(p,S)$ for the 
+remaining schedules $\mathcal{P}ij$, $\mathcal{P}ijk$, and $\mathcal{P}cubic$.
+The results of our analysis is shown in Table \ref{tab:mmmEfficiency} 
+and 
+Figure \ref{fig:mmmScaling}.
 
 
 \begin{table*}[t]
-	\begin{tabular}{lllll}
-		\toprule
-		range & metric & par in \textbf{ij} dim & par. in \textbf{ijk} dim & 
-		cubic \\
-		\midrule 
-		%
-		\multirow{3}{*}{$p \le \frac{MN}{S}$}
-		%
-		& loc. dom. & $[\sqrt{S} \times \sqrt{S} \times K]$ & $[\sqrt{S} 
-		\times \sqrt{S} \times K]$ & $\Big[\sqrt{\frac{S}{3}} \times 
-		\sqrt{\frac{S}{3}} \times \sqrt{\frac{S}{3}}\Big]$ \\
-		\cline{2-5}
-		%
-		& $pQ(p,S)$ & 
-		$\frac{2MNK}{\sqrt{S}} + MN$ & 
-		$\frac{2MNK}{\sqrt{S}} + MN$ & $\frac{3\sqrt{3}MNK}{\sqrt{S}}$ \\
-		\cline{2-5}
-		%
-		& $E(p,S)$ & 1 & 1 & 	$\frac{2K + 
-		\sqrt{S}}{3\sqrt{3}K}$ \\
-		\midrule 
-		%
-		\multirow{3}{*}{
-			\begin{tabular}{l}
-				$\frac{MN}{S} < p$ \\
-				$p \le \Big(\frac{3}{S}\Big)^{3/2}MNK$
-			\end{tabular}		 
-		}
-		% 
-		& loc. dom. & $\Big[\sqrt{\frac{MN}{p}} \times \sqrt{\frac{MN}{p}} 
-		\times K\Big]$ & $\Big[\sqrt{S} 
-		\times \sqrt{S} \times \frac{MNK}{Sp}\Big]$ & $\Big[\sqrt{\frac{S}{3}} 
-		\times 
-		\sqrt{\frac{S}{3}} \times \sqrt{\frac{S}{3}}\Big]$ \\
-		\cline{2-5}
-		%
-		& $pQ(p,S)$ & $2K 
-		\sqrt{pMN} + MN$ & 
-		$\frac{2MNK}{\sqrt{S}} + pS$ & $\frac{3\sqrt{3}MNK}{\sqrt{S}}$ 
-		\\
-		\cline{2-5}
-		%
-		& $E(p,S)$ & $\frac{MNK(\frac{2}{\sqrt{S}} + \frac{1}{K})}{2K\sqrt{MNp} 
-		+ MN}$ & $\frac{2MNK(1 + \frac{\sqrt{S}}{2K})}{2MNK + S^{3/2}p}$ & 	
-		$\frac{2K + 
-			\sqrt{S}}{3\sqrt{3}K}$ \\
-		\midrule \\
-		%
-		\multirow{3}{*}{$p > \Big(\frac{3}{S}\Big)^{3/2}MNK$}
-		%
-		& loc. dom. & $\Big[\sqrt{\frac{MN}{p}} \times \sqrt{\frac{MN}{p}} 
-		\times K\Big]$ & $\Big[\sqrt{S} 
-		\times \sqrt{S} \times \frac{MNK}{Sp}\Big]$ & 
-		\begin{tabular}{l}
+  \begin{tabular}{lllll}
+    \toprule
+    range & metric & par in \textbf{ij} dim & par. in 
+    \textbf{ijk} dim & 
+    cubic \\
+    \midrule 
+    %
+    \multirow{3}{*}{$p \le \frac{MN}{S}$}
+    %
+    & loc. dom. & $[\sqrt{S} \times \sqrt{S} \times K]$ & 
+    $[\sqrt{S} 
+    \times \sqrt{S} \times K]$ & $\Big[\sqrt{\frac{S}{3}} \times 
+    \sqrt{\frac{S}{3}} \times \sqrt{\frac{S}{3}}\Big]$ \\
+    \cline{2-5}
+    %
+    & $pQ(p,S)$ & 
+    $\frac{2MNK}{\sqrt{S}} + MN$ & 
+    $\frac{2MNK}{\sqrt{S}} + MN$ & 
+    $\frac{3\sqrt{3}MNK}{\sqrt{S}}$ \\
+    \cline{2-5}
+    %
+    & $E(p,S)$ & 1 & 1 &   $\frac{2K + 
+    \sqrt{S}}{3\sqrt{3}K}$ \\
+    \midrule 
+    %
+    \multirow{3}{*}{
+      \begin{tabular}{l}
+        $\frac{MN}{S} < p$ \\
+        $p \le \Big(\frac{3}{S}\Big)^{3/2}MNK$
+      \end{tabular}     
+    }
+    % 
+    & loc. dom. & $\Big[\sqrt{\frac{MN}{p}} \times 
+    \sqrt{\frac{MN}{p}} 
+    \times K\Big]$ & $\Big[\sqrt{S} 
+    \times \sqrt{S} \times \frac{MNK}{Sp}\Big]$ & 
+    $\Big[\sqrt{\frac{S}{3}} 
+    \times 
+    \sqrt{\frac{S}{3}} \times \sqrt{\frac{S}{3}}\Big]$ \\
+    \cline{2-5}
+    %
+    & $pQ(p,S)$ & $2K 
+    \sqrt{pMN} + MN$ & 
+    $\frac{2MNK}{\sqrt{S}} + pS$ & 
+    $\frac{3\sqrt{3}MNK}{\sqrt{S}}$ 
+    \\
+    \cline{2-5}
+    %
+    & $E(p,S)$ & $\frac{MNK(\frac{2}{\sqrt{S}} + 
+    \frac{1}{K})}{2K\sqrt{MNp} 
+    + MN}$ & $\frac{2MNK(1 + \frac{\sqrt{S}}{2K})}{2MNK + 
+    S^{3/2}p}$ &   
+    $\frac{2K + 
+      \sqrt{S}}{3\sqrt{3}K}$ \\
+    \midrule \\
+    %
+    \multirow{3}{*}{$p > \Big(\frac{3}{S}\Big)^{3/2}MNK$}
+    %
+    & loc. dom. & $\Big[\sqrt{\frac{MN}{p}} \times 
+    \sqrt{\frac{MN}{p}} 
+    \times K\Big]$ & $\Big[\sqrt{S} 
+    \times \sqrt{S} \times \frac{MNK}{Sp}\Big]$ & 
+    \begin{tabular}{l}
 $\Big[a 
 \times 
 a \times 
 a\Big]$ \\
 $a = \big(\frac{MNK}{p}\big)^{1/3}$
-		\end{tabular} 
-	\\
-	\cline{2-5}
-		%
-		& $pQ(p,S)$ & $2K 
-		\sqrt{pMN} + MN$ & 
-		$\frac{2MNK}{\sqrt{S}} + pS$ & $3p\big(\frac{MNK}{p}\big)^{2/3}$ 
-		\\
-		\cline{2-5}
-		%
-		& $E(p,S)$ & $\frac{MNK(\frac{2}{\sqrt{S}} + \frac{1}{K})}{2K\sqrt{MNp} 
-			+ MN}$ & $\frac{2MNK(1 + \frac{\sqrt{S}}{2K})}{2MNK + S^{3/2}p}$ & 	
-		$\frac{2MNK(1 + \frac{\sqrt{S}}{2K})}{3p^{1/3}\sqrt{S}(MNK)^{2/3}}$ \\
-	\end{tabular}
-	\caption{Total communication volume of MMM and its parallel efficiency of 
-	the 
-	different parallelization schemes. We assume that all the respective local 
-	domain sizes divide the global matrix sizes evenly (e.g., for cubic domain 
-	in range $p \le MN/S$, we assume that $\sqrt{S/3} = a_1M = a_2N = a_3K$ for 
-	$a_1, a_2, a_3 \in \mathbb{N}$).}
-	\label{tab:mmmEfficiency}
+    \end{tabular} 
+  \\
+  \cline{2-5}
+    %
+    & $pQ(p,S)$ & $2K 
+    \sqrt{pMN} + MN$ & 
+    $\frac{2MNK}{\sqrt{S}} + pS$ & 
+    $3p\big(\frac{MNK}{p}\big)^{2/3}$ 
+    \\
+    \cline{2-5}
+    %
+    & $E(p,S)$ & $\frac{MNK(\frac{2}{\sqrt{S}} + 
+    \frac{1}{K})}{2K\sqrt{MNp} 
+      + MN}$ & $\frac{2MNK(1 + \frac{\sqrt{S}}{2K})}{2MNK + 
+      S^{3/2}p}$ &   
+    $\frac{2MNK(1 + 
+    \frac{\sqrt{S}}{2K})}{3p^{1/3}\sqrt{S}(MNK)^{2/3}}$ \\
+  \end{tabular}
+  \caption{Total communication volume of MMM and its parallel 
+  efficiency of 
+  the 
+  different parallelization schemes. We assume that all the 
+  respective local 
+  domain sizes divide the global matrix sizes evenly (e.g., for 
+  cubic domain 
+  in range $p \le MN/S$, we assume that $\sqrt{S/3} = a_1M = a_2N = 
+  a_3K$ for 
+  $a_1, a_2, a_3 \in \mathbb{N}$). The optimal schedule 
+  (\cref{sec:parScheduling}) switches from \textbf{par. in ijk} to 
+  \textbf{cubic} when $p \ge \frac{MNK}{S^{3/2}}$.}
+  \label{tab:mmmEfficiency}
 \end{table*}
-
-%\begin{table*}[t]
-%\begin{tabular}{lllll}
-%\toprule
-%range & metric & par in \textbf{ij} dim & par. in \textbf{ijk} dim & cubic \\
-%\midrule 
-%%		& $t(p,S)$ & $E(p,S)$ & $t(p,S)$ & $E(p,S)$ & $t(p,S)$ & $E(p,S)$ \\
-%\multirow{2}{*}{$p \le \frac{nm}{S}$} & $t(p,S)$ & $\frac{2nmk}{p\sqrt{S}}$ & 
-%$\frac{2nmk}{p\sqrt{S}}$ & $\frac{2\sqrt{3}nmk}{p\sqrt{S}}$ \\
-%& $E(p,S)$ & 1 & 1 & 	$\frac{1}{\sqrt{3}}$\\
-%\midrule 
-%\multirow{2}{*}{$\frac{nm}{S} < p \le \frac{3nm}{S}$} & $t(p,S)$ & $2k 
-%\sqrt{\frac{nm}{p}}$ & 
-%$\frac{2nmk}{p\sqrt{S}} + S$ & $\frac{2\sqrt{3}nmk}{p\sqrt{S}}$ 
-%\\
-%& $E(p,S)$ & $\sqrt{\frac{nm}{pS}}$ & $\frac{1}{1 + 
-%\frac{pS^{3/2}}{2nmk}}$ & 	$\frac{1}{\sqrt{3}}$ \\
-%\midrule \\
-%\multirow{2}{*}{$\frac{3nm}{S} < p$} & $t(p,S)$ & $2k 
-%\sqrt{\frac{nm}{p}}$ & 
-%$\frac{2nmk}{p\sqrt{S}} + S$ & $\frac{2\sqrt{3}nmk}{p\sqrt{S}} + 
-%\frac{S}{3}$\\
-%& $E(p,S)$ & $\sqrt{\frac{nm}{pS}}$ & $\frac{1}{1 + 
-%\frac{pS^{3/2}}{2nmk}}$ &	$\frac{1}{\sqrt{3} + 
-%\frac{pS^{3/2}}{6nmk}}$
-%\end{tabular}
-%\caption{Communication volume and its parallel efficiency of the Matrix-Matrix 
-%multiplication for different partition schemes. Three ranges correspond 
-%to thresholds above which parallelization in \textbf{k} dimension is 
-%performed.}
-%\label{tab:mmmEfficiency}
-%\end{table*}
 
 
  \begin{figure*}[t]
- 	\hspace*{-1.5cm}
- 	\includegraphics[width=2.5\columnwidth]{figures/mmmScaling}
- 	\label{fig:mmmScaling}
- 	\caption{\greg{New results, plots need to be updated!} Parallel efficiency 
- 	of different partition schemes for matrix 
- 		matrix multiplication. Two vertical dashed lines correspond to 
- 		thresholds 
- 		$nm/S$ and $3nm/S$ (Table \ref{tab:mmmEfficiency}).}
+     \centering
+   %
+   \hspace{-1cm}
+   \subfloat["flat" matrices]{\includegraphics[width=0.33\textwidth]
+     {figures/efficiencyPlot11}\label{fig:effic1}}
+   %
+ %\hfill
+   %
+   \subfloat[square matrices, small 
+   S]{\includegraphics[width=0.33\textwidth]
+     {figures/efficiencyPlot12}\label{fig:effic2}}
+   %
+  %\hfill
+   %
+   \subfloat[square matrices, large 
+   S]{\includegraphics[width=0.33\textwidth]
+     {figures/efficiencyPlot13}\label{fig:effic3}}
+   %
+   \hspace*{-1.5cm}
+   \caption{Parallel 
+   efficiency 
+   of different parallelization schemes. Three vertical dashed lines 
+   correspond to 
+     thresholds 
+     $p1 = MN/S$, $p2 = MNK/S^{3/2}$ and $p3 = 
+     (\frac{3}{S})^{3/2}MNK$ (Table \ref{tab:mmmEfficiency}). Note 
+     that for cases (b) and (c), increasing memory $S$ six times 
+     reduces the number of processes required to fully saturate it 
+     drops from $p2=741455$ to $p2=50449$. }
+   \label{fig:mmmScaling}
  \end{figure*}
- 
-\section{Implementation Insights}
+
+\section{Implementation}
 \label{sec:implementation}
+In this Section we discuss various implementation insights that further 
+increase the performance of our code. To leverage the RDMA mechanisms of 
+current high-speed network interfaces, we use MPI one-sided 
+interface(~\cref{sec:rdma}). We also use an block-cyclic data 
+layout(~\cref{sec:datalayout}), grid-fitting 
+technique(~\cref{sec:decompArbitrary}) and an optimized binary broadcast 
+tree using static information about
+the communication pattern(~\cref{sec:commPattern}) together with the buffer 
+swapping(~\cref{sec:bufferReuse}). For the local matrix operations, we use 
+BLAS routines. Together, those optimizations account 
+for XX total runtime 
+reduction. 
 
-\subsection{Synchronous and Asynchronous Versions}
-We offer two versions of the algorithm: an \emph{asynchronous} version using the one-sided communication backend and a \emph{synchronous} version using the two-sided communication. The choise of the version to be used can be made at the runtime of the algorithm. In the asynchronous version, each rank has a read-only buffer that holds the initial data and the data from this buffer can be fetched by any processor at any time without any synchronization between processors. This allows a natural separation of the logic behind the initial data layout and the computation: what a processor computes as the output might be independent of what data this processor initially owns, thus allowing an overlap of communication and computation. The drawback of this approach is that a processor cannot use this initial buffer, they are read-only and they only serve to allow the access to this data for any process that might need it. In the two-sided version, the communication happens in synchronously: whenever a processor has to compute some subproblem, it will first collect all the necessary input data and then perform the computation. Here, instead of always exchanging just the content of the \emph{initial}, read-only buffers (as in the one-sided version), the processors exchange the content of the current, \emph{working} buffers, which they also actively use. For this reason, we want to avoid the need of local data reshuffling in these \emph{working} buffers which might be needed after the communication. This can be achieved by carefully corellating the initial data layout with the order of the data exchanges throughout the algorithm, which is explained in the next section. 
+\subsection{Blocked Data Layout}
+\label{sec:datalayout}
 
-\subsection{Reducing Local Data Movements with Blocked Data Layout}
 
- \greg{Computation and communication overlap. will add this once we have it.}
-\subsection{Recursive vs single step}
-\begin{enumerate}
-	\item \greg{Recursive steps determine data layout.}
-	\item \greg{Manual reduction tree vs MPI collectives. Conclusion: We 
-	implemented both, but on Piz daint recursive is faster, possibly due to 
-	static knowledge about spatial data locality}
-\end{enumerate}
+
+\subsection{Fitting Process Grid to Problem Size}
+\label{sec:decompArbitrary}
+\begin{figure}[!tbp]
+	\centering
+	%
+	\subfloat[$1 \times 3 \times 15$ 
+	grid]{\includegraphics[width=0.18\textwidth]
+		{figures/proc_decomp_problem_bad}\label{fig:decomp_left}}
+	%
+	\hfill
+	%
+	\subfloat[$4 \times 4 \times 4$ grid with one idle 
+	process]{\includegraphics[width=0.27\textwidth]
+		{figures/proc_decomp_problem_good}\label{fig:decomp_right}}
+	%
+	\caption{Process decomposition for square matrices and 65 
+		processes. To utilize all resources, the local domain is 
+		drastically stretched (a). Dropping one 
+		process results in a symmetric grid (b) that 
+		increases the computation per process only by 1\%, but reduces 
+		the communication by 36\%.}
+	\label{fig:decompProblem}
+\end{figure}
+Throughout the paper, we assume all operations required to 
+assess the decomposition (divisions, roots, powers) result in natural 
+numbers. We note that in practice it is rarely the case - e.g., the 
+$[8704 \times 8704 \times 933888]$ domain, emerging from an exemplary 
+water molecule simulation~\cite{joost}, when launched on the whole 
+Piz Daint supercomputer with 1813 nodes, cannot be equally divided. 
+Moreover, the memory size per 
+node (64~GiB DDR, 90~MiB L3 cache) does not give the integer solution 
+for the Equation~\ref{eq:seqSolution} ($a = \sqrt{S+1} -1$) for the 
+local domain size. One may use the straightforward approach to take  
+the floor and ceiling
+functions for non-natural numbers, but this may result in suboptimal 
+results, as we demonstrate in the following example.
+
+Assume that we multiply two square matrices with 65 
+processes (Figure~\ref{fig:decompProblem}). The only integer factors 
+of 65 are 1, 5 and 13. Therefore, to 
+utilize all the resources, the processes must be arranged in a $[13 
+\times 5 \times 1]$ grid (up to a permutation). On the other hand, if 
+we decide \emph{not to utilize all resources} 
+and drop one process, then we can arrange remaining 64 in a $[4 
+\times 4 \times 4]$ grid. Such arrangement \emph{trades communication 
+	for computation:} it increases the number of arithmetic operations 
+per process by 1\%, while decreasing the communication volume per 
+process by 36\%. However, because the dense MMM is compute bound, the 
+decision which arrangement is better is not obvious.
+% In this extreme example the trade-off is clearly visible, but 
+%In most real life scenarios it is a non-trivial decision 
+%and depends on the computation and communication performance of a 
+%machine. 
+In most real life scenarios this trade-off may vary and the optimal 
+decomposition depends on the computation and communication 
+performance 
+of a 
+machine. 
+
+
+%This gives $2.15\cdot10^9$ arithmetic operations 
+%(only 1\% increase) and $3\cdot10^6$ elements communicated (36\% 
+%decrease).
+%This results in 
+%$2.12\cdot10^9$ arithmetic operations and approx. $5\cdot10^6$ 
+%elements communicated per process.
+
+The existing algorithms either cannot handle such case (CARMA), 
+require a user to manually specify the decomposition (ScaLAPACK), or 
+simply discard the "non-fitting" processes using floor functions 
+(Cyclops). Our algorithm balances this computation-communication 
+trade-off by "stretching" the local domain size 
+derived in ~\cref{sec:parScheduling} to fit the global 
+domain by adjusting its width, height and length. The range of this 
+tuning (how far is the shape of the local domain from the optimal, 
+increasing communication but utilizing more resources) 
+depends on the hardware specification of the 
+machine (peak FLOP/s, memory and network bandwidth) and it is a
+tunable parameter. For our 
+experiments on Piz Daint we chose the maximal ratio between the 
+optimal and applied size to be ??, accounting for up to ?? speedup 
+compared to a straightforward (applying floor and ceiling functions) 
+decomposition.
+
+\subsection{Communication Pattern}
+\label{sec:commPattern}
+As shown in Algorithm~\ref{alg:comm}, COMM executes $\frac{2ab}{S - a^2}$ 
+steps. In each step, each process receives $\frac{S - a^2}{2a}$ elements of A 
+and 
+B. Therefore, the inputs has are broadcast among the \textbf{i} and \textbf{j} 
+dimensions of the process grid. After the last step, the partial results of C 
+are reduced among the \textbf{k} dimension. The communication pattern is 
+therefore similar to ScaLAPACK or Cyclops.
+
+To accelerate the collective communication, we implement our own binary 
+broadcast 
+tree, taking advantage of a static data layout, process grid and communication 
+pattern.
+ Knowing the initial data 
+layout(~\cref{sec:datalayout}) and the process 
+grid(~\cref{sec:decompArbitrary}), we craft the binary reduction tree 
+in all three dimensions \textbf{i}, \textbf{j} and \textbf{k} such that a 
+distance in the grid between communicating processes is minimized. 
+
+Given a $[g_M, g_N, g_K]$ process grid, in each dimension we organize processes 
+in a balanced binary tree with $g_i$ leaves ($i \in \{M,N,K\}$). The 
+communication 
+(either distributing inputs A and B, or reducing output C) is performed in 
+$\left \lceil{log_2(g_i)} \right \rceil$ steps, sending data of size $2^(k-1) 
+D$, where $k$ is the step 
+number and $D$ is the local size of data to be distributed.
+
+\subsection{One-Sided and Two-Sided Communication}
+\label{sec:rdma}
+To reduce the latency \greg{cite something?} we implemented the communication 
+using MPI one-sided~\cite{mpi3-rma-overview}. This interface utilizes the 
+underlying features of RDMA (Remote Direct Memory Access) mechanism, bypassing 
+the OS on the receiver side and providing zero-copy communication (data sent is 
+not buffered in a temporary address, instead, it is written directly to its 
+destination).
+
+Due to the static nature of the algorithm, all communication windows are 
+pre-allocated using MPI\_Win\_Allocate with the size of maximum message in the 
+broadcast tree $2^(k-1) D$ (~\cref{sec:commPattern}). Communication in each 
+step is performed using MPI\_Put with passive synchronization (MPI\_Lock / 
+MPI\_Unlock).
+
+For compatibility reasons, as well as for the performance comparison, we also 
+implemented a communication back-end using MPI two-sided (message passing 
+abstraction). In our tests on Piz Daint, we observed that the two-sided version 
+was XX faster/slower than the one-sided.
+
+
 \subsection{Local buffer reuse}
-\greg{We use two buffers instead of $\log P$}
-\subsection{Block recursive data layout}
-\begin{enumerate}
-	\item \greg{Faster, doesn't require reshuffling in each step}
-	\item \greg{Better suitable for integration with ScaLAPACK ?}
-\end{enumerate}
+\label{sec:bufferReuse}
+The binary broadcast tree pattern of our communication is a generalization of 
+the recursive structure CARMA algorithm. However, CARMA in each step of the 
+recursion dynamically allocates new buffers of increasing size to match the 
+message sizes $2^{k-1} D$, causing additional runtime overhead.
 
+To alleviate this problem, we use our static knowledge and pre-allocate a 
+single buffer per matrix A, B and C of the maximum size of the message $ab/t$, 
+where $t = \frac{2ab}{S - a^2}$ is the number of steps in COMM 
+(Algorithm~\ref{alg:comm}). Then, in each level $k$ of the communication tree, 
+we  move the pointer in the receive buffer by $2^{k-1} D$ elements.
+
+%We offer two versions of the algorithm: an \emph{asynchronous} 
+%version using the one-sided communication backend and a 
+%\emph{synchronous} version using the two-sided communication. The 
+%choise of the version to be used can be made at the runtime of the 
+%algorithm. In the asynchronous version, each rank has a read-only 
+%buffer that holds the initial data and the data from this buffer can 
+%be fetched by any processor at any time without any synchronization 
+%between processors. This allows a natural separation of the logic 
+%behind the initial data layout and the computation: what a processor 
+%computes as the output might be independent of what data this 
+%processor initially owns, thus allowing an overlap of communication 
+%and computation. The drawback of this approach is that a processor 
+%cannot use this initial buffer, they are read-only and they only 
+%serve to allow the access to this data for any process that might 
+%need it. In the two-sided version, the communication happens in 
+%synchronously: whenever a processor has to compute some subproblem, 
+%it will first collect all the necessary input data and then perform 
+%the computation. Here, instead of always exchanging just the content 
+%of the \emph{initial}, read-only buffers (as in the one-sided 
+%version), the processors exchange the content of the current, 
+%\emph{working} buffers, which they also actively use. For this 
+%reason, we want to avoid the need of local data reshuffling in these 
+%\emph{working} buffers which might be needed after the communication. 
+%This can be achieved by carefully corellating the initial data layout 
+%with the order of the data exchanges throughout the algorithm, which 
+%is explained in the next section. 
+%
+%\greg{We use two buffers instead of $\log P$}
 
 \section{Evaluation}
 \label{sec:evaluation}
 
-\subsection{Test cases}
-We chose our experiments to cover the whole spectrum of possible use cases. We 
-compare
-\begin{itemize}
-	\item square ($M=N=K$) vs "skinny" ($M=N << K$) matrices,
-	\item different memory requirements: just enough memory to fit the inputs 
-	($S = (MK + NK)/p$) vs enough memory for $p^{1/3}$ redundant copies of data,
-	\item weak vs strong scaling,
-	\item parameter values that are powers of two vs randomly chosen vs 
-	determined by real-life problem definition.
-\end{itemize}
+We evaluate COMM against other state-of-the-art implementations with various 
+combinations of matrix dimensions and memory requirements. These scenarios 
+include both synthetic square matrices, in which all algorithms achieve their 
+peak performance, as well as real-world "tall-and-skinny" cases with uneven 
+number of available processes. 
+ 
+%\mac{My papers, for example, RMA Locks or Push Pull, or Slim NoC,
+%contain good Evaluation sections, I'd suggest checking them in case
+%of some doubts}
 
-For our "skinny" matrix, as a use case we evaluate the problem of water 
+\macb{Comparison Targets}
+%
+As a comparison, we use a widely used ScaLAPACK library (version XX), as well 
+as Cyclops Tensor Framework (version YY) and the original CARMA implementation 
+(github ZZ ?).
+
+%\macb{Datasets}
+%%
+%\mac{What concrete datasets are used?}
+\macb{Matrix Dimensions and Number of Processes}
+We use both square ($M = N = K$) and "skinny" ($M = N << K$) matrices. Due to 
+the space constraints, we skip the "flat" (e.g., $M << N = K$) case and limit 
+ourselves to these two extreme cases. The matrix dimensions and number of 
+processes are (1) powers of 
+two $M = 2^{r_1}, N = 2^{r_2}, M = 2^{r_3}$, (2) determined by the real-life 
+simulations or hardware architecture (available nodes on a computer), (3) 
+chosen from a random distribution. 
+For our "skinny" matrix, we consider the problem of 
+water 
 molecules interaction in the DFT
-simulation\cite{joost}. There, to simulate $w$ molecules, the sizes of the 
-matrices are $M=N=136w$ and $K = 228w^2$. For $w=64$, as it was used in their 
-work, we have $M=N=8704, K = 933888$.
+simulation\cite{joost}. There, to simulate $w$ molecules, the sizes 
+of the 
+matrices are $M=N=136w$ and $K = 228w^2$. We use $w=64$ as in the 
+original paper, yielding $M=N=8704, K = 933888$.
 
-\subsection{Experimental setup}
-We run our experiments on CSCS Piz Daint - Cray supercomputer equipped with 
-5320 XC50 heterogeneous nodes with NVIDIA Tesla P100 and 1813 XC40 nodes with 
-dual-socket Intel Xeon E5-2695 v4 processors (3.30 GHz,45 MiB L3 shared cache), 
+\macb{Selection of Benchmarks}
+%
+We perform both strong scaling and \emph{adjusted size} experiments. 
+The \emph{adjusted size} scenario fixes the input size per process 
+($\frac{pS}{I}, I = MN + MK + NK$), as opposed to the work per 
+process ($\frac{MNK}{p} \ne const$). We evaluate two cases: (1) "just enough 
+memory" ($\frac{pS}{I} = 1$), and (2) "extra memory"  ($\frac{pS}{I} = 
+p^{1/3}$).
+%
+%\mac{Instead of this list, I'd suggest use a block of text (list in text)
+%like in my Push Pull paper or in RMA Locks paper}
+%%
+%We chose our experiments to cover the whole spectrum of possible use 
+%cases. We 
+%compare
+%\begin{itemize}
+%  \item square ($M=N=K$) vs "skinny" ($M=N << K$) matrices,
+%  \item different memory requirements: just enough memory to fit 
+%  the inputs 
+%  ($S = (MK + NK)/p$) vs enough memory for $p^{1/3}$ redundant 
+%  copies of data,
+%  \item weak vs strong scaling,
+%  \item parameter values that are powers of two vs randomly chosen 
+%  vs 
+%  determined by real-life problem definition.
+%\end{itemize}
+%
+%For our "skinny" matrix, as a use case we evaluate the problem of 
+%water 
+%molecules interaction in the DFT
+%simulation\cite{joost}. There, to simulate $w$ molecules, the sizes 
+%of the 
+%matrices are $M=N=136w$ and $K = 228w^2$. We use $w=64$ as in the 
+%original paper, yielding $M=N=8704, K = 933888$.
+%
+%\macb{Varied Parameters}
+%%
+%\mac{Are there any additional important parameters to be explicitly described?}
+
+\macb{Programming Models}
+%
+As stated in (~\cref{sec:rdma}), we use both RMA and Message Passing models. 
+CARMA, ScaLAPACK and CTF ?? use MPI two-sided (Message Passing).
+
+\macb{Experimentation Methodology}
+%
+For each combination of parameters, we perform 20 runs. As all the algorithms 
+use BLAS routines for local matrix computations, we discard the first run due 
+to the BLAS setup overhead. We report median and 95\% confidence intervals of 
+the runtime.
+%\mac{How is data gathered? What is considered? Info on statistical measures,
+%confidence intervals, other statistical info}
+
+\macb{Experimental Setup and Architectures}
+%
+We run our experiments on CSCS Piz Daint - Cray supercomputer equipped with
+5320 XC50 heterogeneous nodes with NVIDIA Tesla P100 and 1813 XC40 nodes with
+dual-socket Intel Xeon E5-2695 v4 processors (3.30 GHz,45 MiB L3 shared cache),
 interconnected with Cray Aries network.
 
-\subsection{Results}
-\greg{No results yet
+\macb{Infrastructure and Implementation Details}
+%
+All implementations were compiled using XX compiler. We use YY implementation 
+of MPI. The intra-node parallelism is handled internally by the BLAS routines 
+(no OpenMP calls). 
+%\mac{Any information about, for example, version of MPI used, and/or
+%things like PAPI, OpenMP? Also versions of used compilers, etc.}
+
+\section{Results}
+\label{sec:results}
+\greg{No results yet. Waiting for Marko}
 }
 
 
@@ -1784,22 +3105,28 @@ interconnected with Cray Aries network.
 %\} - \text{remote path between u and v} \\
 %\end{multline}
 %\begin{enumerate}
-%	\item For each $P_i$:
+%  \item For each $P_i$:
 %\end{enumerate}
 
 \section{Related work}
+
 Data movement minimization essentially may be divided into two aspects: across 
 memory hierarchy (vertical, also called I/O minimization) and between parallel 
 processes (horizontal, also called communication minimization). Even though 
 they are two sides of the same coin, in literature they are often treated as 
-separate topics. In our work we combine two together, that is, deriving 
-communication optimal schedule (parallel) from I/O optimal schedule 
-(sequential).
+separate topics. In our work we combine two together, that is, analyzing 
+trade-offs between 
+communication optimal (distributed memory) and I/O optimal schedule 
+(shared memory). We observe that even though algorithms of the second class 
+tend to be problem size independent, distributed memory algorithms fix the 
+domain sizes based on the even process grid (as discussed in Introduction - 
+"top-down" vs "bottom-up" approach).
 
+\subsection{General I/O Lower Bounds}
 I/O optimization techniques date back to work by 
 Sethi~\cite{completeRegisterProblems}, where he used one color pebble game to 
 model minimum number of registers required to perform a computation. It has 
-been proven by Gilbert et.al \cite{pebblegameregister} that this problem is 
+been proven by Gilbert et.al~\cite{pebblegameregister} that this problem is 
 P-SPACE complete. Despite the complexity, much work based on pebble game 
 abstraction. Paul and Tarjan~~\cite{pebbleTradeoffs} studied time-space 
 tradeoffs in pebble games. Dymond and Tompa~\cite{dymond2playerpebblegame} 
@@ -1809,8 +3136,16 @@ Kung~\cite{redblue} introduced red-blue pebble game, on which our work is
 based. Elango et al.~\cite{redbluewhite} extended this work to red-blue-white 
 game and Liu and Terman~\cite{redblueHard} proved that it is also P-SPACE 
 complete. Chan~\cite{justApebbleGame} studied different variants of pebble 
-games in context of memory space and parallel time.
+games in context of memory space and parallel time. Aggarwal and 
+Vitter~\cite{externalMem}
+introduced a two-memory machine that models a blocked access and latency in an
+external storage. Large et al.~\cite{parallelExMem} extended this model to a 
+parallel machine. Solomonik et al.~\cite{edgarTradeoff} combined the 
+communication, synchronization and computation in their general cost model and 
+applied 
+it to several linear algebra algorithms.
 
+\subsection{Shared Memory Optimizations}
 Memory optimization for linear algebra includes such techniques as loop tiling 
 and skewing~\cite{tiling}, interchanging and reversal~\cite{tiling2}. For 
 programs with multiple loop nests, Kennedy and McKinley~\cite{loopFusion} 
@@ -1819,12 +3154,33 @@ problem is NP-hard. Later,
 Darte~\cite{loopFusionComplexity} identified cases when this problem has 
 polynomial complexity.
 
+Toledo~\cite{IOsurvey} in his survey on Out-Of-Core (OOC) algorithms analyzed 
+various I/O minimizing techniques for dense and sparse matrices, like 
+multiplication, factorization, or iterative methods. 
+Mohanty~\cite{MohantyThesis} in his thesis optimized various OOC algorithms for 
+QR, QZ decompositions and eigenvalue computation, expressing them with MMM 
+kernels. Irony et 
+al.~\cite{IronyMMM} proved the I/O lower bound of classical MMM on a parallel 
+machine. Ballard et al.~\cite{strassenBounds} proved analogous results for 
+Strassen's algorithm. This analysis was extended by Scott et 
+al.~\cite{generalStrassenBounds} to a general class of Strassen-like algorithms.
+
+Although we consider only dense matrices, there is an extensive literature on 
+sparse matrix I/O optimizations. Bender et al.~\cite{SpMVIO} extended 
+Aggarwal's external memory model~\cite{externalMem} and showed I/O complexity 
+of sparse matrix-vector (SpMV) multiplication under various data layouts. 
+Greiner~\cite{SpEverything} extended those results and provided parallel I/O 
+complexities of other sparse computations, like bilinear forms or sparse-sparse 
+and sparse-dense matrix multiplications.
+
+
+\subsection{Distributed Memory Optimizations}
 Parallel algorithms for matrix multiplication dates back to the work of 
 Cannon~\cite{Cannon}, which has been analyzed and extended many times, e.g, 
 ~\cite{MManalysis}~\cite{generalCannon}. In the presence of extra memory, 
-Agarwal et al.~\cite{summa3d} included parallelization in the third dimension. 
+Aggarwal et al.~\cite{summa3d} included parallelization in the third dimension. 
 Solomink and Demmel~\cite{25d} extended this scheme to arbitrary range of 
-available memory, effectively extrapolating between Cannon's 2D and Agarwal's 
+available memory, effectively interpolating between Cannon's 2D and Agarwal's 
 3D scheme. Recursive, cache-oblivious MM algorithm was introduced by Blumofe 
 et al.~\cite{recursiveMM} and extended to rectangular matrices by Frigo et 
 al.~\cite{recursiveRectangularMM}. Demmel el al.~\cite{CARMA} showed that their 
@@ -1844,134 +3200,169 @@ superiority of the former both in terms of theoretical analysis and achieved
 performance.
 
 %\greg{
-%	TODO: 
-%	\begin{enumerate}
-%		\item BSP model?
-%	\end{enumerate}
+%  TODO: 
+%  \begin{enumerate}
+%    \item BSP model?
+%  \end{enumerate}
 %}
 %
 %\section{Bibliography}
 
 %% Bibliography style
 %\bibliographystyle{ACM-Reference-Format}
+
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{mmm-ppopp}
-
-
-\appendix
-\section{Parallel scheduling}
-\greg{this analysis is old and not actual. I will fix it as the last thing.}
-In this section, we start with the reuse analysis from Section 
-\ref{sec:seqScheduling} 
-to derive the execution time and parallel efficiency metric of the two tiling 
-schemes of Matrix-Matrix multiplication. In this framework, we assume that each 
-I/O operation takes unit time and any arithmetic operation is performed 
-instantaneously, therefore $t = Q$. We start with two observations:
-
-\begin{enumerate}
-\item There is only one dimension on 
-which a reuse set projection is not empty $\exists!_{\mathbf{d}}: 
-\phi_{\mathbf{d}}(R) \ne 
-\emptyset$, which implies, that there is no reuse along the plane 
-perpendicular 
-to this dimension. Furthermore, if $\mathbf{d} = \mathbf{k}$, meaning that 
-$\mathbf{m} \times \mathbf{n} \parallel \mathbf{k}$, then if the 
-parallelization is performed only on the \textbf{mn} plane, then there are 
-no RAW 
-conflicts discussed in Section \ref{sec:seqScheduling} - subsets on 
-this 
-plane are embarrassingly parallel. 
-\item To achieve maximum reuse (and therefore optimum usage 
-of the fast memory), the subset shape must be fixed to the one derived 
-in 
-Section \ref{sec:seqScheduling}. This means, that there is maximum 
-available 
-parallelism (dictated by the number of optimal subsets in one 
-\textbf{mn} plane) up to which the parallel efficiency will remain 
-constant. Above this threshold, we have three options: 1) reduce the 
-subset size, reducing the effective memory size, 2) parallelize in 
-\textbf{k} dimension, creating RAW writes and requiring additional 
-communication between processes, 3) create cubic subsets, effectively 
-combining 1 and 2.
-\end{enumerate}
-
-From this, we derive following formulas:
-
-\begin{multline}
-\\
-a_0 = \sqrt{S+1} - 1  \text{ (size of a side of the square subset )}\\
-N = \frac{nm}{a^2} \approx \frac{nm}{S} \text{ (number of optimal square 
-	subsets in one \textbf{mn} plane)}\\
-D_0(p,S) = |\{P \in \mathcal{P} : \forall_{P_i, P_j} \phi_{\mathbf{k}}(P_i) = 
-\phi_{\mathbf{k}}(P_j)\}| = k \\
-\text{number of subsets which projection along the \textbf{k} dimension is 
-	equal} \\ 
-\text{- because the subsets are flat, the "height" of the 
-	subset stack}
-\\ 
-\text{in \textbf{k} dimension is k }\\
-\end{multline}
-
-Now, for the case where we do not exceed the parallelism threshold $p \le N$ : 
-\begin{multline}
-\\
-t_0(p,S) = \frac{N}{p} (\mathcal{S}_0 - r_0) D_0(p,S) = \frac{2nmk(\sqrt{S+1} 
-	- 
-	1)}{(\sqrt{S+1} - 1)^2 p} \approx \frac{2nmk}{\sqrt{S} p} \\
-E_0(p,S) = \frac{t_0(1,S)}{p t_0(p,S)} = 1 \\
-\end{multline}
-
-If $p > N$, we have two previously discussed cases: smaller square tiles and 
-parallelization in \textbf{k} dimension. Case 1:
-\begin{multline}
-\\
-D_1(p,S) = D_0(p,S) \\
-a_1 = \sqrt{\frac{nm}{p}} \text{ size of a side of the reduced square 
-	subset} \\
-\mathcal{S}_1 - r_1 = 2a_1 = 2\sqrt{\frac{nm}{p}} \text{ number of load 
-	operations per one subset} \\
-t_1(p,S) = (\mathcal{S}_1 - r_1) D_1(p,S) = 2k \sqrt{\frac{nm}{p}} \\
-E_1(p,S) = \frac{t_0(1,S)}{p t_1(p,S)} = \sqrt{\frac{nm}{Sp}} \\
-\end{multline}
-
-Case 2 (parallelization in \textbf{k} dimension): 
-
-\begin{multline}
-\\
-D_2(p,S) = \frac{D_0(p,S)N}{p} \text{ (the depth is reduced by } \frac{N}{p} 
-\text{)}\\
-a_2 = a , \mathcal{S}_2 = \mathcal{S}_0\\ 
-r_2 = a_2^2(1 - \frac{p}{Nk}) \text{ (in every $\frac{p}{N}$ plane in dimension 
-	\textbf{k} we} \\
-\text{communicate whole $a_2^2$ plane between subsets)} \\
-t_2(p,S) = (\mathcal{S}_2 - r_2) D_2(p,S) = \frac{2nmk}{\sqrt{S}p} + S \\
-E_2(p,S) = \frac{t_0(1,S)}{p t_2(p,S)} = \frac{1}{1 + \frac{\sqrt{S}p}{2nmk}} \\
-\end{multline}
-
-Case 3 (cubic subsets - Section \ref{sec:subsetShape}):
-
-\begin{multline}
-\\
-a_3 = \sqrt{\frac{S}{3}} \\ 
-\mathcal{S}_3 = 3a_3^2, r_3 = a_3^2\\ 
-D_3(p,S) = \frac{nmk}{p \Big(\frac{S}{3}\Big)^{\frac{3}{2}}}\\
-\\
-\frac{nm}{S} \le p < \frac{3nm}{S} :\\
-t_3(p,S) = (\mathcal{S}_3 - r_3) D_3(p,S) = \frac{2\sqrt{3}mnk}{\sqrt{S}p} \\
-E_3(p,S) = \frac{t_1(1,S)}{p t_3(p,S)} = \frac{1}{\sqrt{3}}\\
-\\
-p > \frac{3nm}{S} :\\
-t_3(p,S) = (\mathcal{S}_3 - r_3) D_3(p,S) = \frac{2\sqrt{3}mnk}{\sqrt{S}p} \\
-E_3(p,S) = \frac{t_1(1,S)}{p t_3(p,S)} = \\
-\end{multline}
-
-$$2 \cdot h_{Sopt}(G) \ge \sum_{P \in \mathcal{P}(G)} h_{Sopt}(inv(P)) $$
-$$ \nexists_{P \in \mathcal{P}}: V_{w,opt} \in P $$
-
+%
+%\section*{The Algorithm}
+%
 %\begin{algorithm}
-%	\label{alg:spartition}
-%	\SetKwInOut{Input}{Input}
-%	\SetKwInOut{Output}{Output}
-%	\underline{rSpartitionCut}\;
+%\caption{$COMM^{2}$ - Matrix Multiplication Algorithm} \label{algorithm}
+%\begin{algorithmic}[1]
+%\Require $\text{input matrices: } A \in \mathbb{R}^{M \times K}, B \in 
+%\mathbb{R}^{K \times N}, \text{num. of proc.: } p, \text{mem. size: } S, 
+%\text{comm. granularity: } t $
+%\Ensure $\text{output matrix: } C = AB \in \mathbb{R}^{M \times N}$
+%\State $a_{opt} \gets \left \lfloor \min\Big\{\sqrt{S}, 
+%\Big(\frac{MNK}{p}\Big)^{1/3} \Big\} \right \rfloor$ 
+%\Comment{get optimal local domain shape (Equation \ref{eq:optTileShape})}
+%\State $b_{opt} \gets \left \lfloor \max\Big\{\frac{MNK}{pS}, 
+%\Big(\frac{MNK}{p}\Big)^{1/3} \Big\} \right \rfloor$
+%\State $(g_M, g_N, g_K, a, b) \gets FitRanks(M,N,K,a,b,p)$ \Comment{get the 
+%global 3D domain decomposition}
+%
+%\State $(map_A, map_B, map_C) \gets GetDataDecomp(A,B, g_M, g_N, g_K)$ 
+%\Comment{get the data decomposition}
+%
+%\For{$p_i \in \left\{1 \dots p \right\}$} %\textbf{in parallel}
+%%
+%\State $(r_m,r_n, r_k) \gets GetProcRanks(g_M, g_N,g_K,p)$ \Comment{translate 
+%proc. rank to the 3D grid}
+%\State $(m_s,m_e) \gets (r_m a, \min\{(r_m+1) a, M\})$ \Comment{get local 
+%domain ranges}
+%\State $(n_s,n_e) \gets (r_n a, \min\{(r_n+1) a, N\})$
+%\State $(k_s,k_e) \gets (r_k a, \min\{(r_k+1) b, K\})$
+%%\If {comm = two\_sided}
+%%\State $P \gets P.split\_cyclicaly\_by(d_i)$ \Comment {Split processors 
+%%cyclically into groups}
+%%\If {$S.m\_split(i)$} \Comment{if $m$ was split}
+%%\State $A.split\_by(d_i)$
+%%\State $B.all\_gather(P)$ \Comment{Perform all-gather copy of $B$ within each 
+%%processor group} 
+%%\ElsIf {$S.n\_split(i)$} \Comment{if $n$ was split}
+%%\State $B.split\_by(d_i)$
+%%\State $A.all\_gather(P)$ \Comment{Perform all-gather copy of $A$ within each 
+%%processor group} 
+%%\EndIf
+%%\Else
+%%\State Assign all processors to each subproblem sequentially.
+%%\EndIf 
+%\State $C_l \gets ComputeSequential([m_s,m_e], [n_s,n_e], [k_s,k_e], map_A, 
+%map_B)$ \Comment{Evaluate local domain}
+%\State $C_l \gets Reduce(C_l, map_C)$ \Comment{Reduce the partial results}
+%\EndFor
+%\end{algorithmic}
+%\end{algorithm}
+%
+%\begin{algorithm}
+%\caption{$GetDataDecomp$} \label{algorithm}
+%\begin{algorithmic}[1]
+%\Require $\text{input matrices: } A \in \mathbb{R}^{M \times K}, B \in 
+%\mathbb{R}^{K \times N}, \text{3D grid process decomposition: } g_M, g_N, g_K$
+%\Ensure Mapping functions from global index of input to the owner's rank and 
+%its local index: 
+%\Statex $map_A,~map_B:~[g_i, g_j]~\rightarrow~[r, l_i, l_j]$
+%\State $DoSomething$
+%\end{algorithmic}
+%\end{algorithm}
+%
+%\begin{figure}
+%\begin{algorithm}
+%\caption{ComputeSequential} \label{algorithm}
+%\begin{algorithmic}[1]
+%\Require $\text{index ranges: } (m_s,m_e), (n_s,n_e), (k_s,k_e), \text{mapping 
+%functions: } map_A, map_B, \text{ chunk size: } t$
+%\Ensure $\text{partial results of C: } C_l = A_l B_l \in \mathbb{R}^{(m_e - 
+%m_s) \times (n_e - n_s)}$
+%\State $(t_s, t_e) \gets (k_s, k_s + t)$ \Comment{Initialize first chunk's 
+%indices}
+%\State $C \gets \mathbf{0^{(m_e - m_s) \times (n_e - n_s)}}, ChunkA \gets 
+%\mathbf{0^{(m_e - m_s) \times t}}, ChunkB \gets \mathbf{0^{t \times (n_e - 
+%n_s)}}$ \Comment{Initialize receive buffers}
+%\While{$t_e \le k_e$}
+%\State $ChunkA_{next} \gets AsyncReceiveA([m_s, m_e], [t_s, t_e])$ 
+%\Comment{Start receiving  the next chunk}
+%\State $ChunkB_{next} \gets AsyncReceiveB([t_s, t_e], [n_s, n_e])$ 
+%\State $C \gets C + ChunkA \cdot ChunkB$
+%\State $(t_s, t_e) \gets (t_e, \min\{t_e + t, k_e\})$ 
+%\State $WaitAll(ChunkA_{next}, ChunkB_{next})$ \Comment{When the computation 
+%of 
+%previous chunk is done, wait for the next one}
+%\State $ChunkA \gets ChunkA_{next}$ \Comment{Swap the buffers}
+%\State $ChunkB \gets ChunkB_{next}$ \Comment{Swap the buffers}
+%\EndWhile
+%\end{algorithmic}
+%\end{algorithm}
+%\caption{$\mathbf{0^{a \times b}}$ is an $a \times b$ zero matrix.}
+%\end{figure}
+%
+%
+%\begin{figure}
+%\begin{algorithm}
+%\caption{FitRanks} \label{algorithm}
+%\begin{algorithmic}[1]
+%\Require $\text{matix sizes: } M,N,K, \text{ optimal domain size: } 
+%a_{opt},b_{opt}, \text{ num procs: } p,  \text{ computation to communication 
+%cost ratio: } \sigma $
+%\Ensure $\text{process grid: } g_M, g_N, g_K: g_M g_N g_K \le p \text{, domain 
+%size adjusted to problem dimensions: } a_M, a_N, b $
+%%
+%\State $g_M, g_N, g_K \gets \infty$
+%\State $a_M \gets a_{opt}, a_N \gets a_{opt}, b \gets b_{opt}$
+%
+%%\Comment{If the evaluation of $a_{opt}$ and $b_{opt}$ required no trunking, }
+%\Statex{$\triangleright$ Iteratively find the communication-minimizing grid 
+%size smaller than $p$}
+%\While{$ g_M g_N g_K > p$} 
+%\State  $(g_M, g_N, g_K) \gets (\left \lceil{M / a_M} \right \rceil,\left 
+%\lceil{N / a_N} \right \rceil , \left \lceil{K / b} \right \rceil)$ 
+%\If{$g_M \ge g_N \ge g_K$}
+%\State $a_M \gets \left \lceil{M / (g_M-1)} \right \rceil$
+%\ElsIf {$g_N \ge g_M \ge g_K$}
+%\State $a_N \gets \left \lceil{N / (g_N-1)} \right \rceil$
+%\Else
+%\State $b \gets \left \lceil{K / (g_K-1)} \right \rceil$
+%\EndIf
+%\EndWhile
+%\State $CommVol_1 \gets a_N \cdot a_M + a_N \cdot b + a_M \cdot b$ 
+%\Comment{Communication volume per process}
+%\State $CompVol_1 \gets a_N \cdot a_M \cdot b$ \Comment{Computation volume per 
+%process}
+%
+%\Statex{$\triangleright$ Find best resource-fitting process grid}
+%\State $f \gets Factorize(p)$
+%\State $(g_{M,2}, g_{N,2}, g_{K,2}) \gets FitFactors(f,M,N,K)$ 
+%\State $(a_{M,2}, a_{N,2}, b_2) \gets (\left \lceil{M / g_{M,2}} \right 
+%\rceil,\left \lceil{N / g_{N,2}} \right \rceil,\left \lceil{K / g_{K,2}} 
+%\right 
+%\rceil)$
+%\State $CommVol_2 = a_{M,2} \cdot a_{N,2} + a_{M,2}\cdot b_2 + a_{N,2} \cdot 
+%b_2$ \Comment{Communication volume per process}
+%\State $CompVol_2 = a_{M,2} \cdot a_{N,2} \cdot b_2$ \Comment{Computation 
+%volume per process}
+%
+%\If{$\sigma \cdot CommVol_1 + CompVol_1 > \sigma \cdot CommVol_2 + CompVol_2$}
+%\Comment{Resource fitting grid has lower cost. Use this grid instead}
+%\State $(a_{M}, a_{N}, b) \gets (a_{M,2}, a_{N,2}, b_2)$
+%\State $(g_{M}, g_{N}, g_K) \gets (g_{M,2}, g_{N,2}, g_{K,2})$
+%\EndIf
+%\end{algorithmic}
+%\end{algorithm}
+%\end{figure}
+
+\end{document}
+
+
+
 
 \end{document}
