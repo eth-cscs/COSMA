@@ -508,6 +508,8 @@ void Strategy::process_token(const std::string& step_triplet) {
 
 void Strategy::throw_exception(const std::string& message) {
     std::cout << "Splitting strategy not well defined.\n";
+    std::cout << "Strategy looks like this: " << std::endl;
+    std::cout << *this << std::endl;
     throw std::runtime_error(message);
 }
 
@@ -711,24 +713,29 @@ void Strategy::check_if_valid() {
             mi /= divisors[i];
         }
 
-        // since we are using column major ordering, the #columns of each matrix must be at least
-        // the number of processors left at that step
-        if (split_dimension[i] == 'n') {
-            ni /= divisors[i];
-            if (ni < Pi) {
-                throw_exception(std::string("Dimension n at step ") + std::to_string(i) + " = "
-                        + std::to_string(ni) + ", which is less than the number of processors left = "
-                        + std::to_string(Pi));
+        // if last step, check if #columns >= #processors that share this block of matrix
+        // we only check dimensions n and k, because these are the dimensions defining
+        // the number of columns, i.e. dimension m does not denote the #columns of any matrix
+        if (i == n_steps - 1) {
+            // since we are using column major ordering, the #columns of each matrix must be at least
+            // the number of processors left at that step
+            if (split_dimension[i] == 'n') {
+                ni /= divisors[i];
+                if (ni < Pi) {
+                    throw_exception(std::string("Dimension n at step ") + std::to_string(i) + " = "
+                            + std::to_string(ni) + ", which is less than the number of processors left = "
+                            + std::to_string(Pi));
+                }
             }
-        }
 
-        if (split_dimension[i] == 'k') {
-            ki /= divisors[i];
-            if (ki < Pi) {
-                throw_exception(std::string("Dimension k at step ") + std::to_string(i) + " = "
-                        + std::to_string(ki) + ", which is less than the number "
-                        + "of processors left = "
-                        + std::to_string(Pi));
+            if (split_dimension[i] == 'k') {
+                ki /= divisors[i];
+                if (ki < Pi) {
+                    throw_exception(std::string("Dimension k at step ") + std::to_string(i) + " = "
+                            + std::to_string(ki) + ", which is less than the number "
+                            + "of processors left = "
+                            + std::to_string(Pi));
+                }
             }
         }
     }
@@ -739,6 +746,7 @@ void Strategy::check_if_valid() {
 
     memory_used = required_memory(*this);
     // check if we have enough memory for this splitting strategy
+    /*
     if (memory_limit < memory_used) {
         throw_exception(std::string("The splitting strategy requires memory for roughly ")
                 + std::to_string(memory_used) + " elements, but the memory limit is only " 
@@ -746,6 +754,7 @@ void Strategy::check_if_valid() {
                 + "or change the strategy. (Hint: you could use some sequential (DFS) "
                 + "steps to decrease the required memory.)");
     }
+    */
 }
 
 std::ostream& operator<<(std::ostream& os, const Strategy& other) {
