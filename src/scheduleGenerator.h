@@ -13,7 +13,7 @@ enum dim { dimM, dimN, dimK };
 
 enum splitType { BFS, DFS };
 
-enum schedType { S2D, S3D, S25D };
+enum schedType { S2D, S3D, COMM };
 
 enum DivisionStrategy { oneStep, recursive };
 
