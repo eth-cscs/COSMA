@@ -208,7 +208,7 @@ namespace spartition {
 			sched.tileSizeN = (params.n - 1) / sched.numTilesN + 1;
 			sched.tileSizeK = (params.k - 1) / sched.numTilesK + 1;
 			bool good = true;
-			if (sched.numTilesM * sched.numTilesN * sched.numTilesK > params.P)
+			while (sched.numTilesM * sched.numTilesN * sched.numTilesK > params.P)
 			{
 				good = false;
 				if (a < std::sqrt(params.S)) {
@@ -216,7 +216,7 @@ namespace spartition {
 					unsigned newTileSizeM = sched.numTilesM == 1 ? MAX_SIZE : (params.m - 1) / (sched.numTilesM - 1) + 1;
 					unsigned newTileSizeN = sched.numTilesN == 1 ? MAX_SIZE : (params.n - 1) / (sched.numTilesN - 1) + 1;
 					unsigned newTileSizeK = sched.numTilesK == 1 ? MAX_SIZE : (params.k - 1) / (sched.numTilesK - 1) + 1;
-					if (newTileSizeK <= newTileSizeM <= newTileSizeN) {
+					if ((newTileSizeK <= newTileSizeM)  && (newTileSizeK <= newTileSizeN)) {
 						sched.numTilesK = (params.k - 1) / newTileSizeK + 1;
 					}
 					else {
@@ -230,12 +230,17 @@ namespace spartition {
 							sched.numTilesK = (params.k - 1) / newTileSizeK + 1;
 						}
 					}
-					if (sched.numTilesM * sched.numTilesN * sched.numTilesK > params.P) {
+					if (sched.numTilesM * sched.numTilesN * sched.numTilesK <= params.P) {
 						good = true;
+						break;
 					}
 				}
-				if (good == false) {
+				else {
 					sched.numTilesK = params.P / (sched.numTilesM *sched.numTilesN);
+					if (sched.numTilesM * sched.numTilesN * sched.numTilesK <= params.P) {
+						good = true;
+						break;
+					}
 				}
 			}
 			break;
