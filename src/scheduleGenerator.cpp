@@ -159,92 +159,95 @@ namespace spartition {
 	Schedule GenerateSchedule(ProblemParameters params) {
 		Schedule sched;
 		switch (params.schedule) {
-		case (schedType::S2D): {
-			int squaretileSize = (int)std::sqrt(1LL * params.m*params.n / params.P);
-			sched.numTilesM = (params.m - 1) / squaretileSize + 1;
-			sched.numTilesN = (params.n - 1) / squaretileSize + 1;
-			while (sched.numTilesM * sched.numTilesN > params.P) {
-				int newTileSizeM = sched.numTilesM == 1 ? MAX_SIZE : (params.m - 1) / (sched.numTilesM - 1) + 1;
-				int newTileSizeN = sched.numTilesN == 1 ? MAX_SIZE : (params.n - 1) / (sched.numTilesN - 1) + 1;
-				squaretileSize = std::min(newTileSizeM, newTileSizeN);
+			case (schedType::S2D): {
+				int squaretileSize = (int)std::sqrt(1LL * params.m*params.n / params.P);
 				sched.numTilesM = (params.m - 1) / squaretileSize + 1;
 				sched.numTilesN = (params.n - 1) / squaretileSize + 1;
+				while (sched.numTilesM * sched.numTilesN > params.P) {
+					int newTileSizeM = sched.numTilesM == 1 ? MAX_SIZE : (params.m - 1) / (sched.numTilesM - 1) + 1;
+					int newTileSizeN = sched.numTilesN == 1 ? MAX_SIZE : (params.n - 1) / (sched.numTilesN - 1) + 1;
+					squaretileSize = std::min(newTileSizeM, newTileSizeN);
+					sched.numTilesM = (params.m - 1) / squaretileSize + 1;
+					sched.numTilesN = (params.n - 1) / squaretileSize + 1;
+				}
+				sched.tileSizeM = (params.m - 1) / sched.numTilesM + 1;
+				sched.tileSizeN = (params.n - 1) / sched.numTilesN + 1;
+				sched.tileSizeK = params.k;
+				sched.numTilesK = 1;
+				break;
 			}
-			sched.tileSizeM = (params.m - 1) / sched.numTilesM + 1;
-			sched.tileSizeN = (params.n - 1) / sched.numTilesN + 1;
-			sched.tileSizeK = params.k;
-			sched.numTilesK = 1;
-			break;
-		}
-		case (schedType::S3D): {
-			//TODO : out of range problems
-			int cubicTileSize = (int)std::cbrt(1LL * params.k * params.m * params.n / params.P);
+			case (schedType::S3D): {
+				//TODO : out of range problems
+				int cubicTileSize = (int)std::cbrt(1LL * params.k * params.m * params.n / params.P);
 
-			sched.numTilesM = (params.m - 1) / cubicTileSize + 1;
-			sched.numTilesN = (params.n - 1) / cubicTileSize + 1;
-			sched.numTilesK = (params.k - 1) / cubicTileSize + 1;
-			while (sched.numTilesM * sched.numTilesN * sched.numTilesK > params.P)
-			{
-				unsigned newTileSizeM = sched.numTilesM == 1 ? MAX_SIZE : (params.m - 1) / (sched.numTilesM - 1) + 1;
-				unsigned newTileSizeN = sched.numTilesN == 1 ? MAX_SIZE : (params.n - 1) / (sched.numTilesN - 1) + 1;
-				unsigned newTileSizeK = sched.numTilesK == 1 ? MAX_SIZE : (params.k - 1) / (sched.numTilesK - 1) + 1;
-				cubicTileSize = std::min(std::min(newTileSizeM, newTileSizeN), newTileSizeK);
 				sched.numTilesM = (params.m - 1) / cubicTileSize + 1;
 				sched.numTilesN = (params.n - 1) / cubicTileSize + 1;
 				sched.numTilesK = (params.k - 1) / cubicTileSize + 1;
-			}
-			break;
-		}
-		case (schedType::COMM): {
-			//TODO : out of range problems
-			int a = (int)std::min(std::sqrt(params.S), std::cbrt(1LL * params.k * params.m * params.n / params.P));
-			int b = (int)std::max((double)(params.m * params.n * params.k) / (params.P * params.S), std::cbrt(1LL * params.k * params.m * params.n / params.P));
-
-			sched.numTilesM = (params.m - 1) / a + 1;
-			sched.numTilesN = (params.n - 1) / a + 1;
-			sched.numTilesK = (params.k - 1) / b + 1;
-
-			sched.tileSizeM = (params.m - 1) / sched.numTilesM + 1;
-			sched.tileSizeN = (params.n - 1) / sched.numTilesN + 1;
-			sched.tileSizeK = (params.k - 1) / sched.numTilesK + 1;
-			bool good = true;
-			while (sched.numTilesM * sched.numTilesN * sched.numTilesK > params.P)
-			{
-				good = false;
-				if (a < std::sqrt(params.S)) {
-					//find which dimension requires least stretching 
+				while (sched.numTilesM * sched.numTilesN * sched.numTilesK > params.P)
+				{
 					unsigned newTileSizeM = sched.numTilesM == 1 ? MAX_SIZE : (params.m - 1) / (sched.numTilesM - 1) + 1;
 					unsigned newTileSizeN = sched.numTilesN == 1 ? MAX_SIZE : (params.n - 1) / (sched.numTilesN - 1) + 1;
 					unsigned newTileSizeK = sched.numTilesK == 1 ? MAX_SIZE : (params.k - 1) / (sched.numTilesK - 1) + 1;
-					if ((newTileSizeK <= newTileSizeM)  && (newTileSizeK <= newTileSizeN)) {
-						sched.numTilesK = (params.k - 1) / newTileSizeK + 1;
-					}
-					else {
-						if (newTileSizeN < newTileSizeM && newTileSizeN * sched.tileSizeM < params.S) {
-							sched.numTilesN = (params.n - 1) / newTileSizeN + 1;
-						}
-						else if (newTileSizeM * sched.tileSizeN < params.S) {
-							sched.numTilesM = (params.m - 1) / newTileSizeM + 1;
-						}
-						else {
+					cubicTileSize = std::min(std::min(newTileSizeM, newTileSizeN), newTileSizeK);
+					sched.numTilesM = (params.m - 1) / cubicTileSize + 1;
+					sched.numTilesN = (params.n - 1) / cubicTileSize + 1;
+					sched.numTilesK = (params.k - 1) / cubicTileSize + 1;
+				}
+				break;
+			}
+			case (schedType::COMM): {
+				//TODO : out of range problems
+				int a = (int)std::min(std::sqrt(params.S), std::cbrt(1LL * params.k * params.m * params.n / params.P));
+				int b = (int)std::max((double)(params.m * params.n * params.k) / (params.P * params.S), std::cbrt(1LL * params.k * params.m * params.n / params.P));
+
+				sched.numTilesM = (params.m - 1) / a + 1;
+				sched.numTilesN = (params.n - 1) / a + 1;
+				sched.numTilesK = (params.k - 1) / b + 1;
+
+				sched.tileSizeM = (params.m - 1) / sched.numTilesM + 1;
+				sched.tileSizeN = (params.n - 1) / sched.numTilesN + 1;
+				sched.tileSizeK = (params.k - 1) / sched.numTilesK + 1;
+				bool good = true;
+
+				//std::cout << "Proc grid: [" << sched.numTilesM << " x " << sched.numTilesN << " x " << sched.numTilesK << "]\n";
+				while (sched.numTilesM * sched.numTilesN * sched.numTilesK > params.P)
+				{
+					good = false;
+					if (a < std::sqrt(params.S)) {
+						//find which dimension requires least stretching 
+						unsigned newTileSizeM = sched.numTilesM == 1 ? MAX_SIZE : (params.m - 1) / (sched.numTilesM - 1) + 1;
+						unsigned newTileSizeN = sched.numTilesN == 1 ? MAX_SIZE : (params.n - 1) / (sched.numTilesN - 1) + 1;
+						unsigned newTileSizeK = sched.numTilesK == 1 ? MAX_SIZE : (params.k - 1) / (sched.numTilesK - 1) + 1;
+						if ((newTileSizeK <= newTileSizeM)  && (newTileSizeK <= newTileSizeN)) {
 							sched.numTilesK = (params.k - 1) / newTileSizeK + 1;
 						}
+						else {
+							if (newTileSizeN < newTileSizeM && newTileSizeN * sched.tileSizeM < params.S) {
+								sched.numTilesN = (params.n - 1) / newTileSizeN + 1;
+							}
+							else if (newTileSizeM * sched.tileSizeN < params.S) {
+								sched.numTilesM = (params.m - 1) / newTileSizeM + 1;
+							}
+							else {
+								sched.numTilesK = (params.k - 1) / newTileSizeK + 1;
+							}
+						}
+						if (sched.numTilesM * sched.numTilesN * sched.numTilesK <= params.P) {
+							good = true;
+							break;
+						}
 					}
-					if (sched.numTilesM * sched.numTilesN * sched.numTilesK <= params.P) {
-						good = true;
-						break;
+					else {
+						sched.numTilesK = params.P / (sched.numTilesM *sched.numTilesN);
+						if (sched.numTilesM * sched.numTilesN * sched.numTilesK <= params.P) {
+							good = true;
+							break;
+						}
 					}
+					//std::cout << "Proc grid: [" << sched.numTilesM << " x " << sched.numTilesN << " x " << sched.numTilesK << "]\n";
 				}
-				else {
-					sched.numTilesK = params.P / (sched.numTilesM *sched.numTilesN);
-					if (sched.numTilesM * sched.numTilesN * sched.numTilesK <= params.P) {
-						good = true;
-						break;
-					}
-				}
+				break;
 			}
-			break;
-		}
 		}
 
 		//physical num cores refinement
