@@ -1,26 +1,24 @@
 experiment_time="00:30:00"
 
-n_nodes=(4 7 8 13 16 25 27 32 37 61 64 81 93 128 201 216 256 333 473 512)
+n_nodes=()
+p_range=()
+p_rows=()
+p_cols=()
+strong_scaling_square=()
 
-p_range=(16 28 32 52 64 100 108 128 148 244 256 324 372 512 804 864 1024 1332 1892 2048)
-p_rows=(4 4 4 4 8 10 9 8 4 4 16 18 12 16 12 24 32 36 43 32)
-p_cols=(4 7 8 13 8 10 12 16 37 61 16 18 31 32 67 36 32 37 44 64)
+weak_scaling_p0=()
+weak_scaling_p1=()
 
-strong_scaling_square=16384
+strong_scaling_thin_mn=()
+strong_scaling_thin_k=()
 
-weak_scaling_p0=(4206 5564 5948 7583 8413 10516 10928 11897 12793 16426 16826 18929 20283 23795 29818 30911 33652 38380 45742 47591)
-weak_scaling_p1=(3338 4023 4206 4945 5299 6149 6309 6677 7008 8279 8413 9100 9529 10599 12320 12619 13354 14578 16387 16826)
+weak_scaling_p0_mn=()
+weak_scaling_p0_k=()
 
-strong_scaling_thin_mn=17408
-strong_scaling_thin_k=3735552
+weak_scaling_p1_mn=()
+weak_scaling_p1_k=()
 
-weak_scaling_p0_mn=(262 347 371 473 525 657 683 743 799 1026 1051 1183 1267 1487 1863 1931 2103 2398 2858 2974)
-weak_scaling_p0_k=(67072 88832 94976 121088 134400 168192 174848 190208 204544 262656 269056 302848 324352 380672 476928 494336 538368 613888 731648 761344)
-
-weak_scaling_p1_mn=(208 251 262 309 331 384 394 417 438 517 525 568 595 662 770 788 834 911 1024 1051)
-weak_scaling_p1_k=(53248 64256 67072 79104 84736 98304 100864 106752 112128 132352 134400 145408 152320 169472 197120 201728 213504 233216 262144 269056)
-
-mem_limit=8847360 # memory available in #doubles per node
+mem_limit=()
 
 DATE=`date '+%d-%m-%Y[%H:%M:%S]'`
 mkdir $DATE
@@ -28,7 +26,7 @@ cd ./$DATE
 
 n_rep=15
 
-scripts=()
+files=()
 
 for node_idx in ${!n_nodes[@]}
 do
