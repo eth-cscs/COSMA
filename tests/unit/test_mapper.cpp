@@ -2,12 +2,20 @@
 #include <mapper.hpp>
 
 TEST(strategy, spartition) {
-    int m = 64000;
-    int n = 64000;
-    int k = 64000;
-    int P = 2304;
+    int m = 84606;
+    int n = m;
+    int k = m;
+    long long memory_limit = 149130808; // #elements, per node, corresponding to 50GB
+    int nodes = 4;
+    int ranks_per_node = 36;
+    int P = nodes * ranks_per_node;
+    // memory_limit /= ranks_per_node;
 
-    Strategy strategy(m, n, k, P);
+    Strategy strategy(m, n, k, P, memory_limit);
+
+    std::cout << "Strategy = " << strategy << std::endl;
+    std::cout << "n dfs steps = " << strategy.n_dfs_steps << std::endl;
+    EXPECT_TRUE(strategy.n_dfs_steps > 0);
 }
 
 TEST(mapper, bdb) {

@@ -80,9 +80,8 @@ int main( int argc, char **argv ) {
     MPI_Comm_size(MPI_COMM_WORLD, &P);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    if (rank >= strategy.P) {
-        MPI_Finalize();
-        return 0;
+    if (rank == 0) { 
+        std::cout << "Strategy = " << strategy << std::endl;
     }
 
     MPI_Group group;
@@ -98,10 +97,11 @@ int main( int argc, char **argv ) {
     if (P != strategy.P) {
         MPI_Group_excl(group, strategy.P, exclude_ranks.data(), &new_group);
         MPI_Comm_create_group(MPI_COMM_WORLD, new_group, 0, &new_comm);
-    }
 
-    if (rank == 0) {
-        std::cout << strategy << std::endl;
+        if (rank >= strategy.P) {
+            MPI_Finalize();
+            return 0;
+        }
     }
 
     int n_iter = get_n_iter();

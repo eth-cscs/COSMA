@@ -34,9 +34,10 @@ Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
 
 Strategy::Strategy(int mm, int nn, int kk, size_t PP, long long mem_limit, bool top) : 
     m(mm), n(nn), k(kk), P(PP), memory_limit(mem_limit), topology(top) {
-    // square_strategy();
+    //square_strategy();
     // default_strategy();
-    spartition_strategy();
+    // spartition_strategy();
+    square_strategy();
     n_steps = divisors.size();
     check_if_valid();
 }
@@ -59,6 +60,9 @@ void Strategy::initialize(const std::string& cmd_line) {
     // (i.e. assume that each rank can store all 3 matrices)
     if (memory_limit < 0) {
         memory_limit = std::numeric_limits<long long>::max();
+    } else {
+        // take into account the memory optimization we make
+        memory_limit *= 1.2;
     }
 
     topology = flag_exists("-t", "--topology", cmd_line);
@@ -72,9 +76,9 @@ void Strategy::initialize(const std::string& cmd_line) {
         process_steps(steps_it, cmd_line);
     }
     else {
-        // square_strategy();
         // default_strategy();
-        spartition_strategy();
+        // spartition_strategy();
+        square_strategy();
     }
 }
 
@@ -315,6 +319,9 @@ void Strategy::square_strategy() {
     long long n = this->n;
     long long k = this->k;
     int P = this->P;
+    // split_dimension = "";
+    // step_type = "";
+    // divisors.clear();
 
     long long needed_memory = initial_memory(m, n, k, P);
 
@@ -465,6 +472,56 @@ void Strategy::square_strategy() {
             }
         }
     }
+
+    std::string step_type_shorter = "";
+    std::string split_dimension_shorter = "";
+    std::vector<int> divisors_shorter;
+
+    for (int i = 0; i < divisors.size(); ++i) {
+        if (step_type[i] == 'b') {
+            step_type_shorter += "b";
+            split_dimension_shorter += split_dimension[i];
+            divisors_shorter.push_back(divisors[i]);
+            continue;
+        }
+
+        int j = i;
+        int divm = 1;
+        int divn = 1;
+        int divk = 1;
+
+        while (step_type[j] == 'd') {
+            if (split_dimension[j] == 'm') 
+                divm *= divisors[j];
+            else if (split_dimension[j] == 'n')
+                divn *= divisors[j];
+            else 
+                divk *= divisors[j];
+            j++;
+        }
+
+        if (divm > 1) {
+            split_dimension_shorter += "m";
+            step_type_shorter += "d";
+            divisors_shorter.push_back(divm);
+        }
+        if (divn > 1) {
+            split_dimension_shorter += "n";
+            step_type_shorter += "d";
+            divisors_shorter.push_back(divn);
+        }
+        if (divk > 1) {
+            split_dimension_shorter += "k";
+            step_type_shorter += "d";
+            divisors_shorter.push_back(divk);
+        }
+
+        i = j - 1;
+    }
+
+    split_dimension = split_dimension_shorter;
+    step_type = step_type_shorter;
+    divisors = divisors_shorter;
 }
 
 void Strategy::spartition_strategy() {
@@ -475,7 +532,8 @@ void Strategy::spartition_strategy() {
     params.divStrat = spartition::DivisionStrategy::recursive;
     params.P = P;
     params.S = memory_limit;
-    params.schedule = spartition::schedType::S3D;
+    params.schedule = spartition::schedType::COMM;
+    params.dfsSched = spartition::DFSSchedule::DFSsquare;
     spartition::Schedule schedule = spartition::GenerateSchedule(params);
 
     this->P = schedule.numTilesM * schedule.numTilesN * schedule.numTilesK;
@@ -496,6 +554,42 @@ void Strategy::spartition_strategy() {
         else
             step_type += "d";
     }
+
+    // schedule.Print();
+
+    /*
+    // we reverse to have first all dfs steps and then all bfs steps
+    std::string step_type_reversed = "";
+    std::string split_dimension_reversed = "";
+    std::vector<int> divisors_reversed;
+
+    for (int i = 0; i < divisors.size(); ++i) {
+        if (step_type[i] == 'd') {
+            divisors_reversed.push_back(divisors[i]);
+            step_type_reversed += step_type[i];
+            split_dimension_reversed += split_dimension[i];
+        }
+    }
+    for (int i = 0; i < divisors.size(); ++i) {
+        if (step_type[i] == 'b') {
+            divisors_reversed.push_back(divisors[i]);
+            step_type_reversed += step_type[i];
+            split_dimension_reversed += split_dimension[i];
+        }
+    }
+
+    step_type = step_type_reversed;
+    split_dimension = split_dimension_reversed;
+    divisors = divisors_reversed;
+
+    std::cout << "Using the step_type " << step_type << std::endl;
+    std::cout << "Using the split_dimension " << split_dimension << std::endl;
+    std::cout << "Using the divisors: " << std::endl;
+    for (int i = 0; i < divisors.size(); ++i)
+        std::cout << divisors[i] << " ";
+    std::cout << std::endl;
+    */
+
 }
 
 // token is a triplet e.g. bm3 (denoting BFS (m / 3) step)
@@ -508,7 +602,6 @@ void Strategy::process_token(const std::string& step_triplet) {
 
 void Strategy::throw_exception(const std::string& message) {
     std::cout << "Splitting strategy not well defined.\n";
-    std::cout << "Strategy looks like this: " << std::endl;
     std::cout << *this << std::endl;
     throw std::runtime_error(message);
 }
@@ -777,6 +870,7 @@ std::ostream& operator<<(std::ostream& os, const Strategy& other) {
             os << "DFS (" << other.split_dimension[i] << " / " << other.divisors[i] << ")\n";
         }
     }
-    std::cout << "Required memory per rank (in #elements): " << other.memory_used << "\n";
+    os << "Required memory per rank (in #elements): " << other.memory_used << "\n";
+    os << "Available memory per rank (in #elements): " << other.memory_limit << "\n";
     return os;
 }
