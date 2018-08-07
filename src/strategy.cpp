@@ -54,12 +54,15 @@ void Strategy::initialize(const std::string& cmd_line) {
     n = next_int(n_it, cmd_line);
     k = next_int(k_it, cmd_line);
     P = next_int(P_it, cmd_line);
-    memory_limit = 1.1 * next_long_long(M_it, cmd_line);
+    memory_limit = next_long_long(M_it, cmd_line);
 
     // if memory limit not given, assume we have infinity
     // (i.e. assume that each rank can store all 3 matrices)
     if (memory_limit < 0) {
         memory_limit = std::numeric_limits<long long>::max();
+    } else {
+        // take into account the memory optimization we make
+        memory_limit *= 1.2;
     }
 
     topology = flag_exists("-t", "--topology", cmd_line);

@@ -3,7 +3,7 @@ import math
 
 n_nodes = [4, 7, 8, 13, 16, 25, 27, 32, 37, 61, 64, 81, 93, 128, 201, 216, 256, 333, 473, 512]
 
-mem_limit = 3750000000 # per node, in #doubles, corresponding to 30GB
+mem_limit = 1342177280 # per node, in #doubles, corresponding to 10GB
 
 p_range=[16, 28, 32, 52, 64, 100, 108, 128, 148, 244, 256, 324, 372, 512, 804, 864, 1024, 1332, 1892, 2048]
 p_rows=[4, 4, 4, 4, 8, 10, 9, 8, 4, 4, 16, 18, 12, 16, 12, 24, 32, 36, 43, 32]
@@ -22,16 +22,16 @@ def square_root(x):
     return x**(1.0/2.0)
 
 def get_weak_scaling_p0_mn():
-    return [int(math.floor(136*cubic_root(p*mem_limit/(2.0 * 228)))) for p in n_nodes]
+    return [int(math.floor(136.0*cubic_root(p*mem_limit/(3.0 * 228.0 * 136.0)))) for p in n_nodes]
 
 def get_weak_scaling_p0_k():
-    return [int(math.floor(228.0/(136**2) * (p**2))) for p in weak_scaling_p0_mn]
+    return [int(math.floor(228.0/(136.0**2.0) * (p**2.0))) for p in weak_scaling_p0_mn]
 
 def get_weak_scaling_p1_mn():
-    return [int(math.floor(136*cubic_root((p**(2.0/3.0))*mem_limit/(2.0 * 228)))) for p in n_nodes]
+    return [int(math.floor(136.0*cubic_root((p**(2.0/3.0))*mem_limit/(3.0 * 228.0 * 136.0)))) for p in n_nodes]
 
 def get_weak_scaling_p1_k():
-    return [int(math.floor(228.0/(136**2) * (p**2))) for p in weak_scaling_p1_mn]
+    return [int(math.floor(228.0/(136.0**2.0) * (p**2))) for p in weak_scaling_p1_mn]
 
 def get_weak_scaling_p0():
     return [int(math.floor(square_root(p * mem_limit / 3.0))) for p in n_nodes]
@@ -39,6 +39,7 @@ def get_weak_scaling_p0():
 def get_weak_scaling_p1():
     return [int(math.floor(square_root((p**(2.0/3.0)) * mem_limit / 3.0))) for p in n_nodes]
 
+mem_limit = 2 * mem_limit
 
 weak_scaling_p0 = get_weak_scaling_p0()
 weak_scaling_p1 = get_weak_scaling_p1()
@@ -48,6 +49,21 @@ weak_scaling_p0_k = get_weak_scaling_p0_k()
 
 weak_scaling_p1_mn = get_weak_scaling_p1_mn()
 weak_scaling_p1_k = get_weak_scaling_p1_k()
+
+def apply_correctness_factor(l, factor):
+    poly = np.polyfit([4, 512], [factor, 0.1], deg=1)
+    factors = [np.polyval(poly, x) for x in n_nodes]
+    return [int(factors[i] * l[i]) for i in range(len(n_nodes))]
+
+weak_scaling_p0 = apply_correctness_factor(weak_scaling_p0, 0.5)
+weak_scaling_p1 = apply_correctness_factor(weak_scaling_p1, 0.4)
+
+weak_scaling_p0_mn = apply_correctness_factor(weak_scaling_p0_mn, 0.6)
+weak_scaling_p0_k = apply_correctness_factor(weak_scaling_p0_k, 0.6)
+
+weak_scaling_p1_mn = apply_correctness_factor(weak_scaling_p1_mn, 0.5)
+weak_scaling_p1_k = apply_correctness_factor(weak_scaling_p1_k, 0.5)
+
 
 print(weak_scaling_p0)
 print(weak_scaling_p1)
@@ -61,7 +77,7 @@ print(weak_scaling_p1_k)
 template_file = "generate_scripts.sh"
 output_file = "generate_scripts_filled.sh"
 
-mem_limit = mem_limit * 10
+#mem_limit = mem_limit * 5
 
 def get_string(num_list):
     result = '('
