@@ -170,6 +170,128 @@ substring() {
     fi
 }
 
+run_one() {
+    m=$1
+    n=$2
+    k=$3
+    nodes=$4
+    p_rows=$5
+    p_cols=$6
+    algorithm=$7
+
+    echo ""
+    echo ""
+    echo "======================================================================================"
+    echo "           EXPERIMENT: nodes = $nodes, (m, n, k) = ($m, $n, $k)"
+    echo "======================================================================================"
+    echo "memory limit = $mem_limit"
+    echo $nodes" "$m" "$n" "$k" "$mem_limit >> "config.txt"
+
+    if [ "$algorithm" = "carma" ]
+    then
+        echo ""
+        echo "================================="
+        echo "           CARMA"
+        echo "================================="
+        # OUR ALGORITHM
+        output=$(run_carma $m $n $k $nodes true)
+        error=$(substring $output "error")
+        echo "error = "$error
+        if [ "$error" = "y" ];
+        then 
+            echo "Failed with limited memory, retrying with infinite memory..."
+            output=$(run_carma $m $n $k $nodes false)
+        fi
+        echo $output
+        carma_time=$(echo $output | awk -v n_iters="$n_iter" '/CARMA TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
+        echo "CARMA TIMES = "$carma_time
+        if [ "$error" = "y" ];
+        then
+            echo $nodes" "$m" "$n" "$k" inf "$carma_time >> "carma_"$nodes".txt"
+        else
+            echo $nodes" "$m" "$n" "$k" "$mem_limit" "$carma_time >> "carma_"$nodes".txt"
+        fi
+        time=`date '+[%H:%M:%S]'`
+        echo "Finished our algorithm at "$time
+
+    elif [ "$algorithm" = "scalapack" ] 
+    then
+        echo ""
+        echo "================================="
+        echo "           SCALAPACK"
+        echo "================================="
+
+        # SCALAPACK
+        output=$(run_scalapack $m $n $k $nodes $p_rows $p_cols)
+        scalapack_time=$(echo $output | awk -v n_iters="$n_iter" '/ScaLAPACK TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
+        echo $output
+        echo "SCALAPACK TIME = "$scalapack_time
+        time=`date '+[%H:%M:%S]'`
+        echo $nodes" "$m" "$n" "$k" inf "$scalapack_time >> "scalapack_"$nodes".txt"
+        echo "Finished ScaLAPACK algorithm at "$time
+
+    elif [ "$algorithm" = "cyclops" ]
+    then
+        echo ""
+        echo "================================="
+        echo "           CYCLOPS"
+        echo "================================="
+
+        # CYCLOPS
+        output=$(run_cyclops $m $n $k $nodes true)
+        error=$(substring $output "error")
+        echo "error = "$error
+        if [ "$error" = "y" ];
+        then 
+            echo "Failed with limited memory, retrying with infinite memory..."
+            output=$(run_cyclops $m $n $k $nodes false)
+        fi
+        cyclops_time=$(echo $output | awk -v n_iters="$n_iter" '/CYCLOPS TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
+        time=`date '+[%H:%M:%S]'`
+        echo $output
+        echo "CYCLOPS TIME = "$cyclops_time
+        if [ "$error" = "y" ];
+        then
+            echo $nodes" "$m" "$n" "$k" inf "$cyclops_time >> "cyclops_"$nodes".txt"
+        else
+            echo $nodes" "$m" "$n" "$k" "$mem_limit" "$cyclops_time >> "cyclops_"$nodes".txt"
+        fi
+        echo "Finished CYCLOPS algorithm at "$time
+
+    elif [ "$algorithm" = "old_carma" ]
+    then
+        echo ""
+        echo "================================="
+        echo "           OLD CARMA"
+        echo "================================="
+        # OLD CARMA
+        if [ $(contains "${n_nodes_powers[@]}" $nodes) == "y" ]; then
+            output=$(run_old_carma $m $n $k $nodes true)
+            error=$(substring $output "error")
+            echo "error = "$error
+            if [ "$error" = "y" ];
+            then 
+                echo "Failed with limited memory, retrying with infinite memory..."
+                output=$(run_old_carma $m $n $k $nodes false)
+            fi
+            old_carma_time=$(echo $output | awk -v n_iters="$n_iter" '/OLD_CARMA TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
+            echo $output
+            echo "OLD CARMA TIME = "$old_carma_time
+            if [ "$error" = "y" ];
+            then
+                echo $nodes" "$m" "$n" "$k" inf "$old_carma_time >> "old_carma_"$nodes".txt"
+            else
+                echo $nodes" "$m" "$n" "$k" "$mem_limit" "$old_carma_time >> "old_carma_"$nodes".txt"
+            fi
+        else
+            echo "OLD CARMA TIME = not a power of 2"
+            echo "not a power of 2" >> "old_carma_"$nodes".txt"
+        fi
+        time=`date '+[%H:%M:%S]'`
+        echo "Finished OLD CARMA algorithm at "$time
+    fi
+}
+
 run_all() {
     m=$1
     n=$2
@@ -321,5 +443,6 @@ do
     m=${m_range[idx]}
     n=${n_range[idx]}
     k=${k_range[idx]}
-    run_all $m $n $k GLOBAL_NODES GLOBAL_P GLOBAL_Q
+    #run_all $m $n $k GLOBAL_NODES GLOBAL_P GLOBAL_Q
+    run_one $m $n $k GLOBAL_NODES GLOBAL_P GLOBAL_Q cyclops
 done
