@@ -34,9 +34,9 @@ Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
 
 Strategy::Strategy(int mm, int nn, int kk, size_t PP, long long mem_limit, bool top) : 
     m(mm), n(nn), k(kk), P(PP), memory_limit(mem_limit), topology(top) {
-    //square_strategy();
+    // square_strategy();
     // default_strategy();
-    // spartition_strategy();
+    spartition_strategy();
     square_strategy();
     n_steps = divisors.size();
     check_if_valid();
@@ -62,7 +62,7 @@ void Strategy::initialize(const std::string& cmd_line) {
         memory_limit = std::numeric_limits<long long>::max();
     } else {
         // take into account the memory optimization we make
-        memory_limit *= 1.2;
+        memory_limit = (long long) (memory_limit * 1.2);
     }
 
     topology = flag_exists("-t", "--topology", cmd_line);
@@ -77,7 +77,7 @@ void Strategy::initialize(const std::string& cmd_line) {
     }
     else {
         // default_strategy();
-        // spartition_strategy();
+        spartition_strategy();
         square_strategy();
     }
 }
@@ -94,6 +94,7 @@ void Strategy::process_steps(size_t start, const std::string& line) {
 
     while (std::getline(stream, token, ',')) {
         process_token(token);
+        std::cout << token << std::endl;
     }
 }
 
@@ -319,9 +320,9 @@ void Strategy::square_strategy() {
     long long n = this->n;
     long long k = this->k;
     int P = this->P;
-    // split_dimension = "";
-    // step_type = "";
-    // divisors.clear();
+    split_dimension = "";
+    step_type = "";
+    divisors.clear();
 
     long long needed_memory = initial_memory(m, n, k, P);
 
@@ -446,7 +447,7 @@ void Strategy::square_strategy() {
                 // don't count this iteration
                 i--;
                 step_type += "d";
-                int div = 2;
+                int div = 4;
                 divisors.push_back(div);
 
                 // if m largest => split it

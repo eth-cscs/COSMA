@@ -87,7 +87,7 @@ int main( int argc, char **argv ) {
     MPI_Group group;
     MPI_Comm_group(MPI_COMM_WORLD, &group);
     std::vector<int> exclude_ranks;
-    for (int i = strategy.P; i < P; --i) {
+    for (int i = strategy.P; i < P; ++i) {
         exclude_ranks.push_back(i);
     }
 
@@ -95,7 +95,7 @@ int main( int argc, char **argv ) {
     MPI_Comm new_comm;
 
     if (P != strategy.P) {
-        MPI_Group_excl(group, strategy.P, exclude_ranks.data(), &new_group);
+        MPI_Group_excl(group, exclude_ranks.size(), exclude_ranks.data(), &new_group);
         MPI_Comm_create_group(MPI_COMM_WORLD, new_group, 0, &new_comm);
 
         if (rank >= strategy.P) {
