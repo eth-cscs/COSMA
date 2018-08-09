@@ -1,0 +1,57 @@
+\contentsline {section}{Contents}{1}{section*.1}
+\contentsline {section}{List of Figures}{1}{section*.2}
+\contentsline {section}{List of Tables}{2}{section*.3}
+\contentsline {section}{\numberline {1}Abstract}{2}{section.1}
+\contentsline {section}{\numberline {2}Introduction}{2}{section.2}
+\contentsline {section}{\numberline {3}General Background}{3}{section.3}
+\contentsline {subsection}{\numberline {3.1}Computation Model}{4}{subsection.3.1}
+\contentsline {subsection}{\numberline {3.2}Machine Model}{4}{subsection.3.2}
+\contentsline {subsection}{\numberline {3.3}Naming}{4}{subsection.3.3}
+\contentsline {subsection}{\numberline {3.4}State-of-the-art MMM Algorithms}{4}{subsection.3.4}
+\contentsline {subsection}{\numberline {3.5}MMM and iteration space}{4}{subsection.3.5}
+\contentsline {section}{\numberline {4}COMM: High-Level Description}{5}{section.4}
+\contentsline {section}{\numberline {5}I/O Lower Bounds for Arbitrary CDAGs}{5}{section.5}
+\contentsline {subsection}{\numberline {5.1}Intro}{5}{subsection.5.1}
+\contentsline {subsection}{\numberline {5.2}Red-Blue Pebble Game}{6}{subsection.5.2}
+\contentsline {subsubsection}{\numberline {5.2.1}Short Version}{6}{subsubsection.5.2.1}
+\contentsline {subsubsection}{\numberline {5.2.2}Long Version}{6}{subsubsection.5.2.2}
+\contentsline {subsubsection}{\numberline {5.2.3}Connections to MMM}{6}{subsubsection.5.2.3}
+\contentsline {subsection}{\numberline {5.3}$S$-Partitions}{6}{subsection.5.3}
+\contentsline {subsubsection}{\numberline {5.3.1}Short version}{6}{subsubsection.5.3.1}
+\contentsline {subsubsection}{\numberline {5.3.2}Long version}{6}{subsubsection.5.3.2}
+\contentsline {subsubsection}{\numberline {5.3.3}Connections to MMM}{7}{subsubsection.5.3.3}
+\contentsline {subsection}{\numberline {5.4}Existing General I/O Lower Bound}{7}{subsection.5.4}
+\contentsline {subsubsection}{\numberline {5.4.1}Short version}{7}{subsubsection.5.4.1}
+\contentsline {subsubsection}{\numberline {5.4.2}Long version}{7}{subsubsection.5.4.2}
+\contentsline {subsubsection}{\numberline {5.4.3}Data Reuse}{7}{subsubsection.5.4.3}
+\contentsline {subsection}{\numberline {5.5}Tighter General I/O Lower Bounds}{8}{subsection.5.5}
+\contentsline {subsubsection}{\numberline {5.5.1}Short version}{8}{subsubsection.5.5.1}
+\contentsline {subsubsection}{\numberline {5.5.2}Long version}{8}{subsubsection.5.5.2}
+\contentsline {subsubsection}{\numberline {5.5.3}Computational Intensity}{8}{subsubsection.5.5.3}
+\contentsline {subsubsection}{\numberline {5.5.4}$2S$-Partition vs $S$-Partition: An MMM Example}{8}{subsubsection.5.5.4}
+\contentsline {section}{\numberline {6}\hspace {-0.5em}Optimal Sequential Matrix Multiplication}{9}{section.6}
+\contentsline {subsection}{\numberline {6.1}I/O Optimal Schedule}{10}{subsection.6.1}
+\contentsline {section}{\numberline {7}Optimal Parallel Matrix Multiplication}{10}{section.7}
+\contentsline {subsection}{\numberline {7.1}Sequential and Parallel Schedules}{11}{subsection.7.1}
+\contentsline {subsection}{\numberline {7.2}Parallelization strategies for MMM}{11}{subsection.7.2}
+\contentsline {subsection}{\numberline {7.3}Data Movement Optimal Parallel Schedule}{12}{subsection.7.3}
+\contentsline {subsection}{\numberline {7.4}Discussion}{12}{subsection.7.4}
+\contentsline {subsubsection}{\numberline {7.4.1}I/O-Latency Trade-off}{12}{subsubsection.7.4.1}
+\contentsline {subsubsection}{\numberline {7.4.2}Parallel efficiency}{13}{subsubsection.7.4.2}
+\contentsline {section}{\numberline {8}Implementation}{13}{section.8}
+\contentsline {subsection}{\numberline {8.1}Blocked Data Layout}{13}{subsection.8.1}
+\contentsline {subsection}{\numberline {8.2}Fitting Process Grid to Problem Size}{13}{subsection.8.2}
+\contentsline {subsection}{\numberline {8.3}Communication Pattern}{13}{subsection.8.3}
+\contentsline {subsection}{\numberline {8.4}One-Sided and Two-Sided Communication}{13}{subsection.8.4}
+\contentsline {subsection}{\numberline {8.5}Local buffer reuse}{14}{subsection.8.5}
+\contentsline {section}{\numberline {9}Evaluation}{14}{section.9}
+\contentsline {section}{\numberline {10}Results}{14}{section.10}
+\contentsline {section}{\numberline {11}Related work}{14}{section.11}
+\contentsline {subsection}{\numberline {11.1}General I/O Lower Bounds}{14}{subsection.11.1}
+\contentsline {subsection}{\numberline {11.2}Shared Memory Optimizations}{15}{subsection.11.2}
+\contentsline {subsection}{\numberline {11.3}Distributed Memory Optimizations}{15}{subsection.11.3}
+\contentsline {section}{\numberline {12}Conclusions}{15}{section.12}
+\contentsline {section}{\numberline {13}Tighter General I/O Lower Bounds}{15}{section.13}
+\contentsline {section}{\numberline {14}Figures}{17}{section.14}
+\contentsline {section}{\numberline {15}Tables}{17}{section.15}
+\contentsline {section}{References}{17}{section*.15}
