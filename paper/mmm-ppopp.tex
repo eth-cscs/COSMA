@@ -31,6 +31,8 @@
 \usepackage{graphicx}
 \usepackage{caption}
 \usepackage{tabularx}
+\usepackage{fontawesome}
+\usepackage{pifont}
 %\usepackage{amsthm}
 %\usepackage[section]{placeins}
 \usepackage{enumitem}
@@ -42,7 +44,7 @@
 \captionsetup{labelfont=bf,textfont=bf}
 \usepackage[font={bf,sf,scriptsize}]{subfig} 
 \usepackage{amsthm}
-
+\usepackage{placeins}
 
 %
 %\usepackage[utf8]{inputenc}
@@ -253,21 +255,22 @@ Monopoly of Dimensions: Towards I/O-Optimal Matrix Multiplication}
 
 \begin{abstract}
 %
-\greg{Mac's abstract. Not sure about it, especially the first sentence}
-%
 We propose COMM: a parallel matrix-matrix multiplication (MMM) algorithm that 
 achieves provably optimum communication volume with respect to all constant 
-factors for all combinations of parameters such matrix dimension sizes. The key 
+factors for all combinations of parameters, such as matrix dimension sizes. The 
+key 
 idea behind COMM is to move away from fixing process domain decomposition 
 upfront, as done in 2D or 3D algorithms. Instead, we first derive a tight 
 optimal sequential schedule of MMM and only then parallelize it, preserving 
-optimality in communication volume. The key method in achieving this is to 
-employ the I/O complexity machinery: model MMM using our extension of the 
-red-blue pebble game that allows us to derive the tight constructive I/O lower 
+optimality in communication volume. To achieve this, we 
+employ the I/O complexity machinery: we use the red-blue pebble game to 
+precisely model MMM dependencies, which allows us to derive the tight 
+constructive I/O lower 
 bound proof. The final design of COMM facilitates the overlap of computation 
 and communication, ensuring speedups and applicability of modern mechanism such 
 as RDMA for even more performance, outperforming the established ScaLAPACK, 
-CARMA, and CTF algorithms by XXX. Our work can be used to accelerate dense MMM 
+CARMA, and CTF algorithms by \greg{Missing}. Our work can be used to accelerate 
+dense MMM 
 for virtually any matrix sizes without the need for hand tuning of parameters. 
 COMM can be extended to enhance other related schemes, such as graph processing 
 or machine learning.
@@ -315,7 +318,6 @@ or machine learning.
 %  %
 %  \label{fig:paperOrganization}
 %\end{figure*}
-
 % OLD long MMM par below
 %
 %     Matrix-matrix multiplication (MMM) is one of the most fundamental building
@@ -334,7 +336,6 @@ or machine learning.
 %of
 %     great significance for many domains.
 
-
 Matrix-matrix multiplication (MMM) is one of the most fundamental building
 blocks in scientific computing, used in linear algebra algorithms (Cholesky and
 LU decomposition~\cite{meyer2000matrix}, eigenvalue
@@ -342,35 +343,205 @@ factorization~\cite{chatelin2012eigenvalues}, triangular
 solvers~\cite{linearAlgebraLAPACK}), machine
 learning~\cite{abadi2016tensorflow}, graph
 processing~\cite{cormen2009introduction, azad2015parallel,
-kepner2016mathematical, ng2002spectral}, or computational 
-chemistry~\cite{joost}.Thus, accelerating MMM routines is 
-of great significance for many domains. Due to the relative increase of 
-input-output (I/O) cost compared to computation, I/O-minimizing techniques are 
-essential to increase performance of those routines on modern architectures.
+kepner2016mathematical, ng2002spectral, slimsell, maciejBC}, or computational 
+chemistry~\cite{joost}. Thus, accelerating MMM routines is 
+of great significance for many domains. 
+Minimizing the amount of transfered data is essential for high--performance 
+and  power--efficient MMM.
+%Due to the relative increase of 
+%input-output (I/O) cost compared to computation, I/O-minimizing techniques are 
+%essential to increase performance of those routines on modern architectures.
+In this paper we use the term I/O both for data transfers across the memory 
+hierarchy (\emph{vertical I/O}) and between processes in a distributed machine 
+(\emph{horizontal I/O}).
 
-In this work, we focus only on the ``classical'' MMM algorithms which perform 
+Modern parallel machines with deep memory hierarchies offer high performance 
+for highly regular computations, such as ``classical'' MMM algorithms which 
+perform 
 $n^3$ multiplications. Another class of algorithms
 are Strassen-like routines~\cite{Strassen}, which asymptotically reduce the
-number of multiplications. However, in practice they are often slower on 
-modern 
-parallel architectures with deep memory hierarchies~\cite{strassenVsClassic}.
+number of multiplications. However, in practice they are often 
+slower~\cite{strassenVsClassic}. Therefore, in this work, we focus only on a 
+former class.
+%
+%\greg{revert. Start with architectures, Modern parallel machines with deep 
+%memory hierarchies offer premises of high performance. Unfortunanately, 
+%strassen are slow }
+%In this work, we focus only on the ``classical'' MMM algorithms which perform 
+%$n^3$ multiplications. 
 
-Analysis of I/O-efficient MMM algorithms is an active topic of research for a 
+
+\begin{table*}
+	%	\vspace{-1em}
+	%
+%	\setlength{\tabcolsep}{4pt}
+%	\renewcommand{\arraystretch}{1}
+	\centering
+	%\footnotesize
+	\fontsize{0.26cm}{0.4cm}\selectfont
+%	\scriptsize
+	\sf
+	\hskip-0.5em
+	\begin{tabular}{lllll}
+		%
+		\multicolumn{5}{c}{$C=AB, A \in \mathbb{R}^{m \times k}$ and $ B \in 
+			\mathbb{R}^{k \times n}$} \\
+		%\vspace{-0.5em}
+		%
+		\toprule
+		& \textbf{2D~\cite{summa}} & \textbf{2.5D~\cite{25d}} & 
+		\textbf{recursive~\cite{CARMA}} & \textbf{COMM} \\
+		%
+		\midrule
+		Input:
+		%\textbf{Input}
+		&
+		User--specified grid
+		&
+		\makecell[l] {
+			Available
+			memory
+		}
+		&
+		\makecell[l] {
+			Available memory, 
+			matrix dimensions}
+		& 
+		\makecell[l] {
+			Available memory, 
+			matrix dimensions}
+		\\
+		%
+		%	\rowcolor{gray}
+		\textbf{Step 1}
+		%		\makecell[l]{\textbf{process} %\\
+		%			\textbf{decomposition} \\
+		%			$\left[p_m \times p_n \times p_k\right]$}
+		&
+		Split $m$ and $n$
+		&
+		Split $m$, $n$, $k$
+		& 
+		\makecell[l] {
+			Split recursively the largest dimension
+		}
+		& 
+		\makecell[l] {
+			Find the optimal
+			sequential schedule
+		}
+		\\
+		%	\midrule
+		\textbf{Step 2}
+		&
+		\makecell[l] {
+			Map matrices 
+			to process grid
+		}
+		&
+		\makecell[l] {
+			Map matrices 
+			to process grid
+		}
+		&
+		\makecell[l] {
+			Map matrices 
+			to recursion tree
+		}
+		& 
+		\makecell[l] {
+			Map sequential 
+			domain to matrices
+		}
+		\\
+		\midrule
+	%	\textbf{Observations:}
+		&
+		\makecell[l] {
+			\faThumbsDown Requires manual tuning  \\
+			\faThumbsDown Asymptotically
+			more comm.  
+		}
+		&
+		\makecell[l] {
+			\faThumbsOUp Optimal for $m=n$  \\
+			\faThumbsDown Inefficient for 
+			$m \ll n$ 
+			or $n \ll m$  \\
+			\faThumbsDown Inefficient for some $p$
+		}
+		&
+		\makecell[l] {
+			\faThumbsOUp Asymptotically 
+			optimal 
+			for all  $m,n,k,p$  \\
+			\faThumbsDown Up to $\sqrt{3}$ more comm.\\
+			\faThumbsDown $p$ must be 
+			a power of 2  
+		}
+		& 
+		\makecell[l] {
+			\faThumbsOUp ~ ~Optimal for 
+			all $m,n,k$  \\
+			\faThumbsOUp ~ ~Optimal for
+			all $p$  \\
+			\faThumbsOUp \faThumbsOUp ~Highest performance
+		}
+		\\
+		\bottomrule
+		%
+	\end{tabular}
+	%
+	\caption{Intuitive comparison between the COMM algorithm and the 
+		state-of-the-art 2D, 2.5D, and recursive decompositions.
+	}
+	%
+	\vspace{-0.5em}
+	%
+	\label{tab:intro}
+\end{table*}
+
+
+\begin{figure}
+%	\vspace{-3em}
+	\centering
+	%
+	\subfloat[square matrix]{\includegraphics[width=0.23\textwidth]
+		{results/square_strong_scaling}\label{fig:introPlot:f1}}
+	%
+	\hfill
+	%
+	\subfloat["skinny" matrix]{\includegraphics[width=0.23\textwidth]
+		{results/thin_strong_scaling}\label{fig:introPlot:f2}}
+	%
+	\vspace{-0.5em}
+	\caption{Total MMM runtime of ScaLAPACK~\cite{scalapack} (2D 
+	decomposition), CTF~\cite{cyclops} (2.5D decomposition),  
+	CARMA~\cite{CARMA} (recursive)  COMM (this paper) algorithms. 
+	See~\cref{sec:evaluation} for our evaluation 
+	methodology. }
+	\label{fig:introPlot}
+	\vspace{-1em}
+\end{figure}
+
+The analysis of I/O--minimizing MMM algorithms has been an active topic of 
+research 
+for a 
 long time. 
 A first I/O lower bound in a two-level 
 memory
-model, $\Omega\left({n^3}/{\sqrt{S}}\right)$, was proven nearly 30 years ago by
-Hong and Kung~\cite{redblue}, where $S$ is the size of the fast
+model, $\Omega\left({n^3}/{\sqrt{S}}\right)$, where $S$ is the size of the fast
 memory\footnote{Throughout this paper we use the original notation from Hong
 and Kung to denote the memory size $S$. In literature, it is also common to use
 the symbol $M$~\cite{externalMem,IronyMMM, parallelExMem}.} and $n$ is the
-number of rows of a square matrix.
+number of rows of a square matrix, was proven nearly 40 years ago by
+Hong and Kung~\cite{redblue}.
 %
 %	and denote the memory size $M$. Hong and Kung used the symbol $S$.}. 
 %
 Irony et al.~\cite{IronyMMM} extended this
 result to a parallel machine with $p$ processes,
-each of which has a fast private memory of size~$S$, proving the
+each having a fast private memory of size~$S$, proving the
 $\frac{n^3}{2\sqrt{2}p\sqrt{S}} - S$ 
 %$\Omega\left({n^3}/{p\sqrt{S}}\right)$ 
 lower bound on the communication volume 
@@ -386,8 +557,7 @@ process.
 %3D~\cite{summa3d} domain decomposition or data layout
 %optimization~\cite{scalapackLayout}.
 %
-If the memory size~$S$ is bounded by the size of
-input ($pS \in \Theta(n^2)$), the bound
+If $S$ is bounded by the input size ($pS \in \Theta(n^2)$), the bound
 $\Omega\left({n^2}/{\sqrt{p}}\right)$  is asymptotically attainable by
 algorithms such as Cannon's~\cite{Cannon} or SUMMA~\cite{summa}. In the
 presence of extra memory ($pS \in \Theta(p^{1/3} n^2)$), the 3D
@@ -397,29 +567,9 @@ and Demmel~\cite{25d} effectively interpolates
 between those two results, depending on the available
 memory.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-While the largest focus has traditionally been
-placed on accelerating the product of square matrices, more attention has
-recently been placed on
-non-square matrices as well. Such scenarios are common in a number of
-relevant areas and problems, for example in machine learning
+Recent efforts focus on accelerating 
+non-square matrices. Such matrices are common in many
+relevant areas, for example in machine learning
 \cite{rectangularML} or computational chemistry~\cite{rectangularChemistry}.
 %
 Yet, Demmel et al.~\cite{CARMA} showed
@@ -438,222 +588,238 @@ configurations of dimensions and memory sizes.
 %concrete examples on why it matters}\greg{changed to just "memory" and there
 %are referenced to this}
 
+%
+%\begin{table}
+%	%	\vspace{-1em}
+%	%
+%	\setlength{\tabcolsep}{4pt}
+%	\renewcommand{\arraystretch}{1}
+%	\centering
+%	%\footnotesize
+%	\scriptsize
+%	\sf
+%	%
+%	%		\begin{tabular}{llll}
+%	%		%
+%	%		\toprule
+%	%		%\vspace{-0.5em}
+%	%		%
+%	%		& \textbf{Step 1} & \textbf{based on...} & \textbf{Step 2} \\
+%	%		%
+%	%		\midrule
+%	%		%
+%	%		\textbf{2D~\cite{summa}}
+%	%		%		\makecell[l]{\textbf{process} %\\
+%	%		%			\textbf{decomposition} \\
+%	%		%			$\left[p_m \times p_n \times p_k\right]$}
+%	%		&
+%	%		split $m$ and $n$
+%	%		&
+%	%user provided grid
+%	%		& 
+%	%
+%	%\makecell[l] {
+%	%	map problem \\
+%	%	to process grid
+%	%}
+%	%		\\
+%	%		\textbf{2.5D~\cite{25d}}
+%	%		&
+%	%				split $m$, $n$, and $k$
+%	%		&
+%	%		available memory
+%	%		&		
+%	%		\makecell[l] {
+%	%			map problem \\
+%	%			to process grid
+%	%		}
+%	%		\\
+%	%%		\midrule
+%	%				\textbf{recursive~\cite{CARMA}}
+%	%		&
+%	%				\makecell[l] {
+%	%			split recursively\\ largest dimension
+%	%		}
+%	%		&
+%	%		\makecell[l] {
+%	%			available memory, \\
+%	%			matrix dimensions}
+%	%		&
+%	%		\makecell[l] {
+%	%			map problem \\
+%	%			to recursion tree
+%	%		}
+%	%	%
+%	%	\\
+%	%  \textbf{COMM (this paper)}
+%	%	&
+%	%		\makecell[l] {
+%	%		find optimal\\
+%	%		sequential schedule
+%	%	}
+%	%	&
+%	%\makecell[l] {
+%	%	available memory, \\
+%	%	matrix dimensions}
+%	%			& 
+%	%	\makecell[l] {
+%	%		map sequential \\
+%	%		domain to problem
+%	%	}
+%	%		\\
+%	%		\bottomrule
+%	%		%
+%	%	\end{tabular}
+%	%
+%	%
+%	%
+%	%
+%	%	\hspace{-2em}
+%	\hskip-3em
+%	\begin{tabular}{lllll}
+%		%
+%		\multicolumn{5}{c}{$A \in \mathbb{R}^{m \times k}$ and $ B \in 
+%			\mathbb{R}^{k \times n}$} \\
+%		%\vspace{-0.5em}
+%		%
+%		& \textbf{2D~\cite{summa}} & \textbf{2.5D~\cite{25d}} & 
+%		\textbf{recursive~\cite{CARMA}} & \textbf{COMM} \\
+%		%
+%		\midrule
+%		%
+%		%	\rowcolor{gray}
+%		\textbf{Step 1}
+%		%		\makecell[l]{\textbf{process} %\\
+%		%			\textbf{decomposition} \\
+%		%			$\left[p_m \times p_n \times p_k\right]$}
+%		&
+%		split $m$ and $n$
+%		&
+%		split $m$, $n$, $k$
+%		& 
+%		\makecell[l] {
+%			split recursively\\ largest dimension
+%		}
+%		& 
+%		\makecell[l] {
+%			find optimal\\
+%			sequential schedule
+%		}
+%		\\
+%		\textbf{based on:}
+%		&
+%		user input
+%		&
+%		\makecell[l] {
+%			available\\
+%			memory
+%		}
+%		&
+%		\makecell[l] {
+%			available memory, \\
+%			matrix dimensions}
+%		& 
+%		\makecell[l] {
+%			available memory, \\
+%			matrix dimensions}
+%		\\
+%		%	\midrule
+%		\textbf{Step 2}
+%		&
+%		\makecell[l] {
+%			map matrices \\
+%			to process grid
+%		}
+%		&
+%		\makecell[l] {
+%			map matrices \\
+%			to process grid
+%		}
+%		&
+%		\makecell[l] {
+%			map matrices \\
+%			to recursion tree
+%		}
+%		& 
+%		\makecell[l] {
+%			map sequential \\
+%			domain to matrices
+%		}
+%		\\
+%		\midrule
+%		\textbf{results in:}
+%		&
+%		\makecell[l] {
+%			\faThumbsODown Requires user
+%			\\ input  \\
+%			\faThumbsODown Asymptotically \\
+%			more comm.  
+%		}
+%		&
+%		\makecell[l] {
+%			\faThumbsOUp Optimal for $m=n$  \\
+%			\faThumbsODown Bad for $m \ll n$ \\
+%			or $n \ll m$  \\
+%			\faThumbsODown Bad for some $p$
+%		}
+%		&
+%		\makecell[l] {
+%			\faThumbsOUp Asymptotically \\
+%			optimal for all $m,n,k,p$  \\
+%			\faThumbsODown Up to $\sqrt{3}$ more comm.\\
+%			\faThumbsODown $p$ must be \\
+%			a power of 2  
+%		}
+%		& 
+%		\makecell[l] {
+%			\faThumbsOUp Optimal for \\
+%			all $m,n,k$  \\
+%			\faThumbsOUp Optimal for \\
+%			all $p$  
+%		}
+%		\\
+%		\bottomrule
+%		%
+%	\end{tabular}
+%	%
+%	\caption{Intuitive comparison between the COMM algorithm and the 
+%		state-of-the-art 2D, 2.5D, and recursive decompositions.
+%	}
+%	%
+%	\vspace{-0.5em}
+%	%
+%	\label{tab:intro}
+%\end{table}
 
-\begin{table}
-%	\vspace{-1em}
-	%
-	\setlength{\tabcolsep}{4pt}
-	\renewcommand{\arraystretch}{1}
-	\centering
-	%\footnotesize
-	\scriptsize
-	\sf
-	%
-	%		\begin{tabular}{llll}
-	%		%
-	%		\toprule
-	%		%\vspace{-0.5em}
-	%		%
-	%		& \textbf{Step 1} & \textbf{based on...} & \textbf{Step 2} \\
-	%		%
-	%		\midrule
-	%		%
-	%		\textbf{2D~\cite{summa}}
-	%		%		\makecell[l]{\textbf{process} %\\
-	%		%			\textbf{decomposition} \\
-	%		%			$\left[p_m \times p_n \times p_k\right]$}
-	%		&
-	%		split $m$ and $n$
-	%		&
-	%user provided grid
-	%		& 
-	%
-	%\makecell[l] {
-	%	map problem \\
-	%	to process grid
-	%}
-	%		\\
-	%		\textbf{2.5D~\cite{25d}}
-	%		&
-	%				split $m$, $n$, and $k$
-	%		&
-	%		available memory
-	%		&		
-	%		\makecell[l] {
-	%			map problem \\
-	%			to process grid
-	%		}
-	%		\\
-	%%		\midrule
-	%				\textbf{recursive~\cite{CARMA}}
-	%		&
-	%				\makecell[l] {
-	%			split recursively\\ largest dimension
-	%		}
-	%		&
-	%		\makecell[l] {
-	%			available memory, \\
-	%			matrix dimensions}
-	%		&
-	%		\makecell[l] {
-	%			map problem \\
-	%			to recursion tree
-	%		}
-	%	%
-	%	\\
-	%  \textbf{COMM (this paper)}
-	%	&
-	%		\makecell[l] {
-	%		find optimal\\
-	%		sequential schedule
-	%	}
-	%	&
-	%\makecell[l] {
-	%	available memory, \\
-	%	matrix dimensions}
-	%			& 
-	%	\makecell[l] {
-	%		map sequential \\
-	%		domain to problem
-	%	}
-	%		\\
-	%		\bottomrule
-	%		%
-	%	\end{tabular}
-	%
-	%
-	%
-	%
-	\begin{tabular}{lllll}
-		%
-		\toprule
-		%\vspace{-0.5em}
-		%
-		& \textbf{2D~\cite{summa}} & \textbf{2.5D~\cite{25d}} & 
-		\textbf{recursive~\cite{CARMA}} & \textbf{COMM} \\
-		%
-		\midrule
-		%
-		\textbf{Step 1}
-		%		\makecell[l]{\textbf{process} %\\
-		%			\textbf{decomposition} \\
-		%			$\left[p_m \times p_n \times p_k\right]$}
-		&
-		split $m$ and $n$
-		&
-		split $m$, $n$, $k$
-		& 
-		\makecell[l] {
-			split recursively\\ largest dimension
-		}
-		& 
-		\makecell[l] {
-			find optimal\\
-			sequential schedule
-		}
-		\\
-		\textbf{based on}
-		&
-		provided grid
-		&
-		\makecell[l] {
-			available\\
-			memory
-		}
-		&
-		\makecell[l] {
-			available memory, \\
-			matrix dimensions}
-		& 
-		\makecell[l] {
-			available memory, \\
-			matrix dimensions}
-		\\
-		\midrule
-		\textbf{Step 2}
-		&
-		\makecell[l] {
-			map matrices \\
-			to process grid
-		}
-		&
-		\makecell[l] {
-			map matrices \\
-			to process grid
-		}
-		&
-		\makecell[l] {
-			map matrices \\
-			to recursion tree
-		}
-		& 
-		\makecell[l] {
-			map sequential \\
-			domain to matrices
-		}
-		\\
-		\bottomrule
-		%
-	\end{tabular}
-	%
-	\caption{The comparison of complexities of 2D, 2.5D, recursive, and COMM 
-		algorithms. The 3D decomposition is a special case of 2.5D, and can be 
-		obtained 
-		by
-		instantiating $c=p^{1/3}$ in the 2.5D case.
-		%
-		The most important symbols are described in Table~\ref{tab:symbols}. In 
-		addition to the general analysis, we show two special cases. If the 
-		matrices 
-		are 
-		square and there is no extra memory available, 2D, 2.5D and COMM 
-		achieves tight 
-		communication lower bound $2N^2/\sqrt{p}$, whereas CARMA performs 
-		$\sqrt{3}$ 
-		times more 
-		communication. If one dimension is much larger than the others and 
-		there is 
-		extra memory available, 2D, 2.5D and CARMA decompositions perform 
-		$\mathcal{O}(p^{1/2})$, $\mathcal{O}(p^{1/3})$, and 8\%  more 
-		communication 
-		than COMM, respectively. For simplicity, we assume that
-		parameters are chosen such that all divisions have integer results.
-		%
-	}
-	%
-	\vspace{-2em}
-	%
-	\label{tab:intro}
-\end{table}
 
-
-
-Unfortunately, we observe several problems of the current state-of-the art
-algorithms, such as ScaLAPACK~\cite{scalapack} (an implementation of
+Unfortunately, we observe several problems with state-of-the art
+algorithms, including ScaLAPACK~\cite{scalapack} (an implementation of
 SUMMA), Cyclops Tensor Framework (CTF)~\cite{cyclops} (an implementation of the 
 2.5D MMM algorithm), or CARMA~\cite{CARMA}. ScaLAPACK supports
-only the 2D~decomposition, which requires significantly more communication than 
-the 3D~algorithms in a presence of extra memory. Furthermore, it requires a 
+only the 2D~decomposition, which is communication--inefficient in a presence of 
+extra memory. Also, it requires a 
 user to
 fine-tune parameters such as block sizes or a process
-grid size. On the other hand, the recursive
-implementation of CARMA cannot directly handle scenarios when the number of
-processes is not the power of two, a common
-case, as the number of processes is usually determined by the available
+grid size. The available CARMA specification supports only scenarios when the 
+number of
+processes is a power of two, a serious limitation, as the number of processes 
+is usually determined by the available
 hardware resources.
 %  For example, Piz Daint, the
 %third fastest supercomputer in 2017, has 1,813 CPU nodes, which are
 %impossible to arrange in a cubic grid. 
-CTF can utilize any number of processes, but we 
-observe that it may generate a decomposition that is far from 
-optimal~(\cref{sec:results}).  Furthermore, we emphasize that 
+CTF can utilize any number of processes, but its decompositions may be far from 
+optimal~(\cref{sec:results}). We also emphasize that 
 \emph{asymptotic 
 complexity is an insufficient measure of speedup}. For instance, the
 Coppersmith--Winograd algorithm~\cite{coppersmith} achieves computational
 complexity of $\mathcal{O}(n^{2.376})$, but its constant terms are 
 prohibitively big and
 make it slower in practice than the classical $\mathcal{O}(n^{3})$ algorithms. 
-We later (\cref{sec:evaluation}) identify similar overheads in CARMA. 
+We later (\cref{sec:evaluation}) identify similar overheads in CARMA. Our 
+observations are summarized in Table~\ref{tab:intro}. Their practical 
+implications are shown in the Figure~\ref{fig:introPlot}, where we see that all 
+the discussed algorithms perform poorly for some configurations. 
 
 
 
@@ -675,19 +841,25 @@ In this work, we present COMM (Communication Optimal Matrix Multiplication):
 an algorithm that takes a new approach to multiplying
 matrices and alleviates the above issues. COMM is I/O optimal \emph{with regard 
 to all constant factors}
-for \emph{all combinations of parameters}. We sketch the main idea behind the 
+for \emph{all combinations of parameters}. The driving idea is to start with 
+the optimal sequential schedule, which we then parallelize, deriving a process 
+grid. This is in contrast with the other discussed algorithms, which fix the 
+process grid upfront and then map it to a sequential schedule for each 
+process.   We outline the
 algorithm in~\cref{sec:commDescr}.
 %
-To prove the optimality of our algorithm,  we (1) first provide a new 
-constructive proof of sequential I/O lower bound~\cref{sec:seqScheduling},  (2) 
+To prove its optimality,  we first provide a new 
+constructive proof of a sequential I/O lower bound~(\cref{sec:seqScheduling}),  
+then we
 derive the communication cost of  
 parallelizing the sequential
-schedule~\cref{sec:parStrategies}, (3) construct an I/O optimal parallel 
-schedule~\cref{sec:parScheduling}. 
-The detailed communication analysis of COMM, 2D, 3D and 
+schedule~(\cref{sec:parStrategies}), and finally we construct an I/O optimal 
+parallel 
+schedule~(\cref{sec:parScheduling}). 
+The detailed communication analysis of COMM, 2D, 3D, and 
 recursive decompositions is
 presented in Table~\ref{tab:summary}. Our algorithm reduces the data 
-movement volume by a factor of up to $\sqrt{3} \approx 1.73$ times compared to 
+movement volume by a factor of up to $\sqrt{3} \approx 1.73$x compared to 
 the 
 asymptotically optimal recursive decomposition and up to 
 $\max\{n,m,k\}$ times compared to the 2D
@@ -706,7 +878,7 @@ computation--communication overlap,
 %``unlike the existing approaches''}\greg{not sure about this part}
 %
 enabling even higher speedups
-using Remote Direct Memory Access (RDMA) mechanisms.
+using Remote Direct Memory Access (RDMA).
 %
 %We further motivate our work in Figure~\ref{fig:motivation-page-1} that shows
 %the advantages of our algorithm over the state of the art \greg{what do you 
@@ -730,8 +902,8 @@ We provide the following contributions:
 %the total runtime of the MMM scheme over the existing state-of-the-art 
 %implementations,
 %
-\item  We present an extension of the red-blue pebble game 
-method~\cite{redblue} to provide a new proof (constructive) of
+\item Based the red-blue pebble game 
+abstraction~\cite{redblue}, we provide a new proof (constructive) of
 the sequential MMM I/O lower bound.  The proof delivers tight
 constant factors (\cref{sec:seqOpt}). We extend this proof to parallel machines 
 (\cref{sec:parScheduling}).
@@ -745,17 +917,19 @@ constant factors (\cref{sec:seqOpt}). We extend this proof to parallel machines
 minimal reshuffling of input data by using a block-cyclic data layout
 (\cref{sec:datalayout}) and a static buffer pre-allocation
 (\cref{sec:bufferReuse}), providing compatibility with the
-ScaLAPACK format\cref{sec:implementation}.
+ScaLAPACK format~(\cref{sec:implementation}).
 % Our design provides better compatibility with the
 %ScaLAPACK format than CARMA (\cref{sec:implementation}).
 %
-\item We naturally express the computation--communication overlap, which enables
-even higher speedups by leveraging RDMA (\cref{sec:implementation}),
+\item We utilize the computation--communication overlap, which enables
+even higher speedups with RDMA (\cref{sec:implementation}),
 %
-\item We evaluate the performance of COMM, ScaLAPACK, CARMA and CTF on the Piz 
+\item We evaluate the performance of COMM, ScaLAPACK, CARMA and CTF on the CSCS 
+Piz 
 Daint supercomputer for an
 extensive selection of problem dimensions, memory sizes, and numbers of
-processes, showing the speedup of up to ?? (?? on average) 
+processes, showing the speedup of up to \greg{Missing} (\greg{Missing} on 
+average) 
 (~\cref{sec:results}).
 %
 \end{itemize}
@@ -925,20 +1099,19 @@ We assume a fully connected network. Furthermore, we assume that
 a computation is performed in synchronous rounds: in each round, processes 
 first 
 communicate with each other, then conduct computations on their local data.
-Shared memory, if present, is modeled by an additional $p+1$-st process with 
-an 
+Shared memory, if present, is modeled by an additional $(p+1)$-st process with  
 unlimited local storage, that does not perform any computation. A communication 
 between it and the remaining $p$ processes correspond to loading and storing 
 from shared memory. Then, $S$ corresponds to a fast, private memory of each 
-$p$ (e.g., a processor's cache), and the unlimited memory of $p+1$-st process 
+$p$ (e.g., a processor's cache), and the unlimited memory of $(p+1)$-st process 
 is the shared storage.
 
-This model is a generalization of distributed machine models used 
-in~\cite{CARMA,25d}, as it is applicable to shared memory and sequential 
+This model is a generalization of established distributed machine 
+models~\cite{CARMA,25d}, as it is applicable to shared memory and sequential 
 machines (with $p=1$ and shared memory present). It is also an extension of a 
 concurrent-read concurrent-write (CRCW) PRAM machine~\cite{pram}, as it allows 
 processes to communicate not only through the shared memory, but also between 
-each other.
+one another.
 
 %\mac{No other model details? Cost of operations, what about synchronization, 
 %etc?} \greg{do you think it should be merged with "optimization goals" ? or to 
@@ -959,22 +1132,21 @@ the \emph{I/O optimality} of an algorithm.
 %
 The 
 I/O cost~$Q$ is a number of words transferred during the execution 
-of a schedule. In the context of a sequential or shared memory machine equipped 
-with small-and-fast and slow-and-big memories, these transfers refer to load 
+of a schedule. On a sequential or shared memory machine equipped 
+with small-and-fast and slow-and-big memories, these transfers are load 
 and store operations from and to the slow memory (also called the 
 \emph{vertical 
 	I/O}). For a distributed machine with a limited memory per node, 
 the 
-transfers indicate communication operations between the nodes (also called the
+transfers are communication operations between the nodes (also called the
 \emph{horizontal I/O}). A schedule is \emph{I/O optimal} if it minimizes the 
 I/O cost among all schedules of a given CDAG. 
 The 
 \emph{I/O complexity} of a 
 CDAG is a lower bound of the I/O cost of a valid schedule.
 %
-Besides the I/O cost, we also model a \emph{latency cost} $L$, which is 
-a required number of rounds in 
-which all I/O operations are performed.
+Besides the I/O cost, we also model a \emph{latency cost} $L$, which is the 
+minimal number of rounds necessary to perform al I/O operations.
 
 %\greg{Not sure should we add this.}
 %The shared and distributed machines may be nested of combined to model, e.g., 
@@ -997,11 +1169,11 @@ Throughout the whole paper, we consider matrix multiplication $C =
 AB$, where $A \in \mathbb{R}^{m \times k}, B \in \mathbb{R}^{k \times n},  C 
 \in \mathbb{R}^{m \times 
 	n}$, where $m$, $n$, and $k$ are matrix dimensions. Furthermore, we assume 
-that a size of each element of matrices is one word, and that $S < 
+that the size of each element of matrices is one word, and that $S < 
 \min\{mn, mk, nk\}$, that is, none of the matrices can entirely 
 fit into single process' fast memory. 
 
-We compare our algorithm with 2D, 2.5D, and recursive 
+We compare our algorithm with the 2D, 2.5D, and recursive 
 decompositions. We assume a square process grid $[\sqrt{p}, \sqrt{p}, 1]$ 
 for the 2D variant, analogously 
 to the Cannon's algorithm~\cite{Cannon}, and a cubic grid $[\sqrt{p/c}, 
@@ -1009,7 +1181,8 @@ to the Cannon's algorithm~\cite{Cannon}, and a cubic grid $[\sqrt{p/c},
 variant~\cite{25d}, where $c$ is the amount of the ``extra'' memory $c = 
 pS/(mk 
 + nk)$. For the recursive decomposition, we assume that in each recursion level 
-we split the largest dimension $m,n$ or $k$ in half, until the local domain per 
+we split the largest dimension $m,n,$ or $k$ in half, until the local domain 
+per 
 process fits into the memory.
 	The detailed complexity analysis of these decompositions is 
 presented in 
@@ -1055,7 +1228,7 @@ CDAG computation is a
 sequence of moves that lead from the initial to the terminal pebble
 configuration.
 %
-The allowed moves are as follows:  placing a red pebble on any
+The allowed moves are:  placing a red pebble on any
 vertex with a blue pebble (load),  placing a blue pebble on any
 vertex with a red pebble (store),  placing a red pebble on a vertex
 whose parents have all red pebbles (compute), removing any pebble, 
@@ -1076,7 +1249,7 @@ moves (called
 In the MMM context, it is an order in which all $n^3$
 multiplications in MMM are performed. A \emph{parallel schedule} $\mathcal{P} = 
 \{\mathcal{S}_j\}$ is a collection of sequential schedules, such that each 
-$\mathcal{S}_j$ is evaluated by process $j = 1, \dots, p$.
+process $j = 1, \dots, p$ executes domain $\mathcal{S}_j$.
 
 \section{COMM: High-Level Description}
 \label{sec:commDescr}
@@ -1113,6 +1286,7 @@ $\mathcal{S}_j$ is evaluated by process $j = 1, \dots, p$.
 		compared to the former strategy.}
 	%
 	\label{fig:topdown-vs-bottomup}
+		\vspace{-1.5em}
 \end{figure}
 
 We now provide a high-level description of COMM, an algorithm that enables 
@@ -1122,7 +1296,7 @@ under given constraints: equal work distribution and memory size per process.
 Such a local sequential schedule is independent of matrix dimensions.  Thus,
 intuitively, instead of dividing  the global domain among $p$ processes (the
 \emph{top-down} approach), we start from deriving an I/O optimal
-\emph{sequential} schedule.We then parallelize it, minimizing the I/O and
+\emph{sequential} schedule. We then parallelize it, minimizing the I/O and
 latency costs $Q$, $L$ (the \emph{bottom-up} approach)
 (Figure~\ref{fig:topdown-vs-bottomup}).
 %This direction enables proving the optimality of the data movement, both
@@ -1130,19 +1304,19 @@ latency costs $Q$, $L$ (the \emph{bottom-up} approach)
 %factors 
 %(Figure~\ref{fig:topdown-vs-bottomup}).
 Our experiments 
-(~\cref{sec:results}) confirm the analysis: COMM outperforms
+(\cref{sec:results}) confirm the theoretical analysis: COMM outperforms
 all considered state-of-the-art algorithms.
 
 The sketch of COMM is presented in Algorithm~\ref{alg:comm}.
 In
 Line~\ref{alg:line:findOptDomain} 
-we derive a 
-I/O--minimizing work distribution among $p$ 
-processes (\cref{sec:parScheduling}). Each process is responsible for a subset 
+we derive an 
+I/O--optimal sequential schedule for each process~(\cref{sec:parScheduling}). 
+Each one of them is responsible for a subset 
 of 
 computation called a \emph{local domain} $\mathcal{D}$. $a_{opt}$ and 
-$b_{opt}$ are the
-optimal sizes of $\mathcal{D}$, such that $\mathcal{D}$ contains $a_{opt} 
+$b_{opt}$ define the 
+optimal size of $\mathcal{D}$, that is each $\mathcal{D}$ contains $a_{opt} 
 \times a_{opt} 
 \times b_{opt}$ vertices (multiplications to be performed).
 %Lines~\ref{alg:line:aopt} and~\ref{alg:line:bopt}, we derive a 
@@ -1158,8 +1332,8 @@ find a process
 grid~$\mathcal{G}$ that evenly distributes this domain by the matrix dimensions 
 $m,n$,
 and $k$. If the dimensions are not divisible by $a_{opt}$ or $b_{opt}$, this
-function also evaluates new values of $a$ and $b$ by finding the best matching
-decomposition~(\cref{sec:decompArbitrary}).
+function also evaluates new values of $a$ and $b$ by fitting the best matching
+decomposition, possibly discarding some processes~(\cref{sec:decompArbitrary}).
 In Line~\ref{alg:line:datadecomp}, 
 we decompose matrices $A, B$, and $C$ to the submatrices $A_l, B_l, C_l$ that 
 are 
@@ -1178,42 +1352,71 @@ one~(\cref{sec:datalayout}).
 %translates global matrix indices to a current owning process and a local offset
 %in its memory.  
 In Line~\ref{alg:line:stepsize} we compute a size of a 
-communication step, that is, how many subcomputations $V_i$ 
+communication step, that is, how many subcomputations 
 (\cref{sec:seqSched}) are computed in a single round.
 % Therefore, a size of a 
 %local view $A_l$ 
 %and $B_l$ is $a \times s$ (a size local view of $C_l$ is $a \times a$).
 In Line~\ref{alg:line:steps} we 
 compute the number of
-sequential steps (lines~\ref{alg:line:innerloopStart}
+sequential steps (Lines~\ref{alg:line:innerloopStart}
 to~\ref{alg:line:innerLoopEnd}) in which every process: (1) distributes its
 local data $A_l$ and $B_l$  among the grid $\mathcal{G}$ 
-(line~\ref{alg:line:distrData}),
+(Line~\ref{alg:line:distrData}),
 % based on the $Map$ structure, 
 and (2) multiplies locally $A_l$ and $B_l$
-(line~\ref{alg:line:compute}). Finally, the local partial results $C_l$ are
+(Line~\ref{alg:line:compute}). Finally, the local partial results $C_l$ are
 reduced over the grid $\mathcal{G}$ (line~\ref{alg:line:reduce}).
 
-\macb{I/O complexity of COMM}
+%\macb{I/O Complexity of COMM}
+%We now analyze the complexity of COMM. 
+%Lines~\ref{alg:line:findOptDomain}--\ref{alg:line:steps} require no 
+%communication 
+%(assuming that problem 
+%parameters $m, n, k, p, S$ are already distributed at the start of the 
+%program).
+%The loop in Lines~\ref{alg:line:innerloopStart}--\ref{alg:line:innerLoopEnd} 
+%executes $2ab/(S-a^2) = 
+%\left\lceil{\min\{b, 2a^2/(S-a^2) \}} \right \rceil$ times. In 
+%Line~\ref{alg:line:distrData}, each process receives $|A_l| + |B_l| = 
+%\linebreak
+%\left\lceil{\min\{2a, (S-a^2)/(2a) \}} \right \rceil$ elements, yielding in 
+%total \linebreak$\left\lceil{\min\{2mnk/(p\sqrt{S + 1} - 1), 2(mnk/p)^{2/3} 
+%\}} 
+%\right 
+%\rceil$ elements received throughout the loop. Sending the partial results in 
+%Line~\ref{alg:line:reduce} adds $a^2 = \left\lceil{\min\{\sqrt{S+1} - 1, 
+%(mnk/p)^{2/3}\}}\right\rceil$ communicated elements.
+\macb{I/O Complexity of COMM}
 We now analyze the complexity of COMM. 
 Lines~\ref{alg:line:findOptDomain}--\ref{alg:line:steps} require no 
 communication 
 (assuming that problem 
 parameters $m, n, k, p, S$ are already distributed at the start of the program).
-The loop in Lines~\ref{alg:line:innerloopStart} to~\ref{alg:line:innerLoopEnd} 
-executes $2ab/(s-a^2) = 
-\left\lceil{\min\{b, 2a^2/(S-a^2) \}} \right \rceil$ times. In 
-Line~\ref{alg:line:distrData}, each process receives $|A_l| + |B_l| = \linebreak
-\left\lceil{\min\{2a, (S-a^2)/(2a) \}} \right \rceil$ elements, yielding in 
-total \linebreak$\left\lceil{\min\{2mnk/(p\sqrt{S + 1} - 1), 2(mnk/p)^{2/3} \}} 
-\right 
-\rceil$ elements received throughout the loop. Sending the partial results in 
-Line~\ref{alg:line:reduce} adds $a^2 = \left\lceil{\min\{\sqrt{S+1} - 1, 
-(mnk/p)^{2/3}\}}\right\rceil$ 
-elements to be communicated.
-
-
-
+The loop in Lines~\ref{alg:line:innerloopStart}-\ref{alg:line:innerLoopEnd} 
+executes $\left\lceil{2ab/(S-a^2)}\right \rceil$ times. In 
+Line~\ref{alg:line:distrData}, each process receives $|A_l| + |B_l|$ elements.
+Sending the partial results in 
+Line~\ref{alg:line:reduce} adds $a^2$ communicated elements. 
+In~\cref{sec:parScheduling} we derive the optimal values $a_{opt} = 
+\left\lceil{\min\{\sqrt{S}, 
+(mnk/p)^{2/3}\}}\right\rceil$ and  $b_{opt} = 
+\left\lceil{\max\{\frac{mnk}{pS}, 
+(mnk/p)^{2/3}\}}\right\rceil$, which yields a total of 
+$\min \Big\{S + 2 \cdot \frac{mnk}{p\sqrt{S}}, 3 
+\left(\frac{mnk}{P}\right)^{2/3} \Big\}$ elements communicated.
+%
+% \linebreak$\left\lceil{\min\{2mnk/(p\sqrt{S + 1} - 1), 2(mnk/p)^{2/3} \}} 
+%\right 
+%\rceil$ elements received throughout the loop. 
+%
+%
+%$|A_l| + |B_l| = \linebreak
+%\left\lceil{\min\{2a, (S-a^2)/(2a) \}} \right \rceil$
+%
+%
+%$a^2 = \left\lceil{\min\{\sqrt{S+1} - 1, 
+%	(mnk/p)^{2/3}\}}\right\rceil$
 %\begin{figure}
 \begin{algorithm}
 	\small
@@ -1246,7 +1449,7 @@ elements to be communicated.
 %\label{alg:line:localDomain}
 \State $(A_l, B_l, C_l) \gets GetDataDecomp(A,B, \mathcal{G}, p_i)$ 
 \label{alg:line:datadecomp}
-\State $s \gets \left \lfloor{\frac{S - a^2}{2a}}\right \rfloor$ 
+\State $s \gets \left \lfloor{\frac{S - a^2}{2a}}\right \rfloor$
 \Comment{size of a step}
 \label{alg:line:stepsize}
 \State $t \gets \left \lceil{\frac{b}{s}}\right \rceil$ 
@@ -1277,9 +1480,8 @@ elements to be communicated.
 \label{sec:seqScheduling}
 
 We now summarize our most important results related to the sequential I/O
-optimality, both in a general context and for MMM. We extend the methods from 
-Hong and
-Kung~\cite{redblue}. The detailed analysis, together with a proof of
+optimality, both in a general context and for MMM. The detailed analysis, 
+together with a proof of
 Lemma~\ref{lma:reuse} and Theorem~\ref{thm:seqlowbounds}, may be found in the
 attached supplementary material.
 
@@ -1309,8 +1511,8 @@ there are no cyclic dependencies between them ($\forall_{(u_1,v_1) \in E}: (u_1
 u_2 \in V_j \land v_2 \in V_i$), and their dominator and minimum sets are 
 smaller than $S$ ($\forall_i (|Dom(V_i)| \le S \land |Min(V_i)| \le S)$).
 These subcomputations $V_i$ correspond to some execution order (a schedule) of 
-a CDAG, such that at first step, only vertices in $V_1$ are pebbled, then the 
-vertices in $V_2$, and so on. We call this series an \emph{$S$-partition} or a 
+a CDAG, such that at step $i$, only vertices in $V_i$ are pebbled. We call this 
+series an \emph{$S$-partition} or a 
 \emph{schedule} of a 
 CDAG $\mathcal{S}(S) = \{V_1, \dots, V_h\}$.
 
@@ -1320,7 +1522,7 @@ bounds for
 MMM
 (Theorem~\ref{thm:seqlowbounds}). 
 
-\macb{I/O Lower Bounds Lemma}
+\macb{General I/O Lower Bounds Lemma}
 %
 When a subcomputation $V_i$ ($i > 1$) begins, observe that some vertices may
 already 
@@ -1332,8 +1534,10 @@ definition, those vertices are inside the dominator set $V_{R,i} \subset
 Dom(V_i)$. We call 
 these vertices a \emph{reuse set}, as they correspond to results from 
 previous subcomputations that are reused by a subsequent computation without 
-being stored and loaded from the slow memory. Denote the size of largest reuse 
-set as $R(S) = max_i|V_{R,i}|$. Then, we have:
+being stored and loaded from the slow memory. Denote the size of the largest 
+reuse 
+set as $R(S) = max_i|V_{R,i}|$. 
+%Then, we have:
 
 \begin{lma}
 	\label{lma:reuse}
@@ -1371,12 +1575,12 @@ I/O lower bound for MMM (Theorem~\ref{thm:seqlowbounds}):
 
 \begin{corollary*}[Computational intensity]
 	\label{cor:q}
-	We define $\rho_i = \frac{|V_i|}{S - R(S)}$ to be the \emph{computational 
-	intensity} 
-	of a subcomputation $V_i$.
+	Define the number of computations performed by $V_i$ for one loaded 
+	element as the \emph{computational 
+		intensity} $\rho_i = \frac{|V_i|}{S - V_{R,i}}$ of a subcomputation 
+		$V_i$.
 	Denote $\rho = \max_i(\rho_i) \le \Big(\frac{|V_{max}|}{S-R(S)}\Big)$ to be 
-	the \emph{maximal computational intensity}, that is, a maximum number of 
-	computations performed for one loaded element. 
+	the \emph{maximal computational intensity}.
 	Then, the number of I/O operations $Q$ is bounded by:
 	\begin{equation}
 	Q \ge {|V|}/{\rho}
@@ -1385,7 +1589,7 @@ I/O lower bound for MMM (Theorem~\ref{thm:seqlowbounds}):
 
 \subsection{Tight MMM I/O Lower Bound} 
 \label{sec:seqOpt}
-We first present our theorem of tight sequential
+We first present our theorem of a tight sequential
 MMM I/O lower bound. It provides an additive improvement over the bound $Q \ge 
 \frac{2mnk}{S} - 2S$ by Smith and van de 
 Gein~\cite{tightMMM}. Furthermore, the proof is constructive: it provides a 
@@ -1541,9 +1745,10 @@ to be communicated, increasing the I/O cost
 	%
 	% 
 	%\includegraphics[width=0.26\textwidth]{figures/iterationSpace}
+	\vspace{-1em}
 		\caption{
 			Case~\ref{fig:f21}:
-		An MMM CDAG forming a 3D 
+		The MMM CDAG forming a 3D 
 		iteration 
 		space $\mathcal{V} \subset \mathbb{Z}^3$.
 		Each 
@@ -1566,6 +1771,7 @@ to be communicated, increasing the I/O cost
 		$|V_i| > |V_j|$, we have
 		$\rho_i = |V_i|/(|\alpha_i| + |\beta_i|) < \rho_j$.
 	}
+	\vspace{-1em}
 %	\caption{
 %		 An MMM CDAG forming a 3D 
 %		iteration 
@@ -1627,7 +1833,7 @@ CDAG can be represented as a 3D \emph{iteration
 space} $\mathcal{V}$~\cite{tiling} (see Figure~\ref{fig:iterationSpace}). Let 
 \textbf{i}, \textbf{j}, \textbf{k} be the orthonormal vectors spanning 
 $\mathcal{V}$,
-corresponding to the loops at lines 1-3.  Denote a plane \textbf{uv} as a
+corresponding to the loops in Lines 1-3.  Denote a plane \textbf{uv} as a
 plane spanned by vectors \textbf{u} and \textbf{v}, for some \textbf{u,v} $\in
 \{\mathbf{i,j,k}\}$. Assume that $p = (i_1,i_2,i_3) \in \mathcal{V}$ is a point
 in the iteration space. Then $\phi_{ij}(p) = (i_1,i_2)$ is a projection of this
@@ -1652,7 +1858,7 @@ corresponding  $\mathcal{V}$) may be split into a series of subcomputations
 (subsets $V_i \subset \mathcal{V}$), forming the schedule
 $\mathcal{S} = \{V_i\}$ (\cref{sec:iolowerbounds}). Each $V_i$ of the optimal 
 sequential schedule forms a cuboid in the iteration space $\mathcal{V}$ of 
-size $\sqrt{S} \times \sqrt{S} \times 1$(\cref{sec:seqOpt}). This size 
+size $\sqrt{S} \times \sqrt{S} \times 1$~(\cref{sec:seqOpt}). This size 
 corresponds to the number of 
 elements of $A$ and $B$ loaded in each $V_1$ . We use this 
 fact in~\cref{sec:parOptimality} to analyze the parallelization strategies of 
@@ -1689,10 +1895,12 @@ If two local domains $\mathcal{D}_k, \mathcal{D}_l$ are dependent, that is,
 then $u$ has to be \emph{communicated} from process $k$ to $l$. The total
 number of vertices communicated between all processes is the \emph{I/O cost} of
 a schedule $Q$.  Note that the dependencies between domains in a parallel
-schedule $\mathcal{P}$ always increase the communication cost. However, the
-corresponding sequential schedule $\mathcal{S}$ may not increase the I/O cost,
-as during the pebbling of vertex $v$, vertex $u$ may already contain a red
-pebble due to the data reuse.  We say that the parallel schedule
+schedule $\mathcal{P}$ always increase the communication cost.
+% However, the
+%corresponding sequential schedule $\mathcal{S}$ may not increase the I/O cost,
+%as during the pebbling of vertex $v$, vertex $u$ may already contain a red
+%pebble due to the data reuse. 
+ We say that the parallel schedule
 $\mathcal{P}_{opt}$ is
 \emph{communication--optimal} if $Q(\mathcal{P})$ is minimized among all
 possible parallel schedules. 
@@ -2170,6 +2378,7 @@ analysis comparison for all algorithms in Table~\ref{tab:summary}.
 %  optimality is broken \mac{broken again}).
 %\end{enumerate}
 %
+%\vspace{-3em}
 
 \subsection{I/O Optimal Parallel Schedule}
 \label{sec:parScheduling}
@@ -2486,7 +2695,7 @@ tree using static information about
 the communication pattern~\cref{sec:commPattern} together with the buffer 
 swapping~\cref{sec:bufferReuse}. For the local matrix operations, we use 
 BLAS routines for highest performance. Together, those optimizations account 
-for XX total runtime 
+for \greg{Missing} total runtime 
 reduction. 
 
 \subsection{Blocked Data Layout}
@@ -2494,33 +2703,31 @@ reduction.
 COMM schedule specifies what input data is required by each processes
 independently of the initial data distribution. 
 Therefore, having $c$ initial redundant copies of $A$ and $B$ reduce the 
-communication up to $c/\sqrt{p}$ times. \greg{finish this}, COMM 
-algorithm would not require any communication. However, in practice we usually 
-assume that the initial data layout is uniform and without redundancy. In this 
-case, we can use the I/O optimal schedule to induce the optimal initial data 
-layout, since it specifies for each block (say block $b$) of a matrix, which 
-processes (say processes $\left\{ p_1, ... p_x\right\}$) would require it. 
-However, the schedule does not specify how to distribute this block $b$ further 
-among these processes. Here we go a step further: we first split each of these 
-blocks $b$ into $x$ smaller blocks $b_1, ... b_x$ and then aim to assign each 
+communication up to $\sqrt{p}/(\sqrt{p} - c)$ times: if we allow $c = \sqrt{p}$ 
+copies, then COMM does not require any communication at all. However, in 
+practice we usually 
+assume that $c=1$. In this 
+case, COMM schedule induces the optimal initial data 
+layout, since it specifies for each subset $I$ of a input matrices $A$ and $B$, 
+which 
+processes $\left\{ p_1, ... p_x\right\}$) requires it. 
+However, the schedule does not specify how to distribute subsets $I$ further 
+among these processes. Here we go a step further: we first split each of $I$ 
+into $x$ smaller blocks $I_1, ... I_x$ and then aim to assign each 
 block to a single process from $\left\{ p_1, ... p_x\right\}$ such that the 
 data movements during communication are minimized. We achieve this by enforcing 
 that consecutive blocks are assigned to processes that communicate first. By 
-finding a mapping between processes and blocks that completely resembles the 
+finding a mapping between processes and blocks that resembles the 
 communication schedule, we guarantee that after each communication round, each 
 process owns a consecutive block of initial matrix without any need of local 
 data reshuffling. This property of owning a consecutive pieces of matrix is 
 hence preserved both before and after each communication. This is unlike the 
-distributed CARMA implementation \ref{carma}, which uses the cyclic 
+distributed CARMA implementation~\ref{carma}, which uses the cyclic 
 distribution among processes in the recursion base case and requires local data 
 reshuffling after each communication round. Another advantage of our blocked 
-data layout is that it is completely compatible to the block-cyclic data 
-layout, that can be seen in e.g. ScaLAPACK, since it is still blocked and might 
-require only relabeling of the processes to switch from the ScaLAPACK 
-block-cyclic data layout to our block data layout. This offers a compatibility 
-of our algorithm with other linear-algebra libraries, that was not present in 
-CARMA.
-
+data layout is a full compatibility with the block-cyclic data 
+layout, that can be seen in e.g. ScaLAPACK. This offers a compatibility 
+of our algorithm with other linear-algebra libraries.
 
 
 \subsection{Process Grid Optimization}
@@ -2605,7 +2812,8 @@ increasing communication but utilizing more resources)
 depends on the hardware specification of the 
 machine (peak FLOPS, memory and network bandwidth). For our 
 experiments on Piz Daint we chose the maximal ratio between the 
-optimal and applied size to be ??, accounting for up to ?? speedup.
+optimal and applied size to be \greg{Missing}, accounting for up to 
+\greg{Missing} speedup.
 
 \subsection{Enchanced Communication Pattern}
 \label{sec:commPattern}
@@ -2683,7 +2891,7 @@ MPI\_Unlock).
 For compatibility reasons, as well as for the performance comparison, we also 
 implemented a communication back-end using MPI two-sided (the message passing 
 abstraction). In our tests on Piz Daint, we observed that the two-sided version 
-was XX faster/slower than the one-sided one.
+was \greg{Missing} faster/slower than the one-sided one.
 
 
 \subsection{Communication Buffer Optimization}
@@ -2755,9 +2963,10 @@ the original CARMA implementation (commit number 7589212 on July 19, 2013).
 %\mac{What concrete datasets are used?}
 \macb{Matrix Dimensions and Number of Processes}
 We use both square ($m = n = k$) and "skinny" ($m = n \ll k$) matrices. Due to 
-space constraints, we skip the ``flat'' case (e.g., $m \ll n = k$) as the 
-least representative one, and limit 
-ourselves to these two extreme cases. The matrix dimensions and number of 
+space constraints, we skip the ``flat'' case (e.g., $m \ll n = k$) as being 
+``in between'', and limit 
+ourselves to these two representative cases. The matrix dimensions and number 
+of 
 processes are (1) powers of 
 two $m = 2^{r_1}, n = 2^{r_2}, m = 2^{r_3}$, (2) determined by the real-life 
 simulations or hardware architecture (available nodes on a computer), (3) 
@@ -2771,8 +2980,8 @@ original paper, yielding $m=n=8704, k = 933888$.
 
 \macb{Selection of Benchmarks}
 %
-We perform both strong scaling and \emph{adjusted size} experiments. 
-The \emph{adjusted size} scenario fixes the input size per process 
+We perform both strong scaling and \emph{memory scaling} experiments. 
+The memory scaling scenario fixes the input size per process 
 ($\frac{pS}{I}, I = mn + mk + nk$), as opposed to the work per 
 process ($\frac{mnk}{p} \ne const$). We evaluate two cases: (1) "just enough 
 memory" ($\frac{pS}{I} = 1$), and (2) "extra memory"  ($\frac{pS}{I} = 
@@ -2825,8 +3034,8 @@ the runtimes.
 
 \macb{Experimental Setup and Architectures}
 %
-We run our experiments on CSCS Piz Daint: Cray supercomputer equipped with
-5320 XC50 heterogeneous nodes with NVIDIA Tesla P100 and 1813 XC40 nodes with
+We run our experiments on the CPU partition of the CSCS Piz Daint, which has 
+1813 XC40 nodes with
 dual-socket Intel Xeon E5-2695 v4 processors (3.30 GHz,45 MiB L3 shared cache, 
 64 GiB DDR3 RAM),
 interconnected with Cray Aries network.
@@ -2842,7 +3051,58 @@ internally by the MKL BLAS version 2017.4.196.
 
 \section{Results}
 \label{sec:results}
-\greg{No results yet. Waiting for Marko}
+We now present the experimental results comparing COMM with the existing 
+algorithms. For each of the scenarios: strong, memory and size scaling, we test 
+the runtime on both square and skinny matrices. As can be seen, COMM is always 
+the fastest in \emph{all} scenarios. 
+Furthermore, due to the process grid optimization~\ref{sec:decompArbitrary}, 
+the performance is stable and does not suffer from bad combinations of 
+parameters. For example, the total runtime of COMM for square matrices $m=n=k=$ 
+\greg{Missing} on $p_1=$ \greg{Missing} is \greg{Missing}. Increasing number of 
+processes to $p_2=$ \greg{Missing} reduces the runtime to \greg{Missing}. On 
+the other hand, CTF for $p_1$ runs in \greg{Missing}, while for $p_2$ the 
+runtime \emph{increases} to \greg{Missing}.
+
+\subsection{Strong Scaling}
+\macb{Square Matrices} In this scenario we fix the matrix sizes to $m=n=k=$ 
+\greg{Missing}. 
+\begin{figure}
+	\includegraphics[width=\columnwidth]{results/square_strong_scaling}
+	\caption{Square matrices, strong scaling. $n=m=k=$ \greg{Missing}} 
+	\label{fig:mmmParallelization}
+\end{figure}
+
+\noindent
+\macb{"Skinny" Matrices} Here we use the matrices used to simulate 
+\greg{Missing} water molecules in the RPA scheme, resulting in $m=n=$ 
+\greg{Missing}, and $k=$ \greg{Missing} 
+\greg{Missing}. 
+\begin{figure}
+	\includegraphics[width=\columnwidth]{results/thin_strong_scaling}
+	\caption{"Skinny" matrices, strong scaling. $n=m=$ \greg{Missing}, $k=$ 
+	\greg{Missing}} 
+	\label{fig:mmmParallelization}
+\end{figure}
+
+\subsection{Memory Scaling}
+For those tests, we scale the problem size so that the size of the input 
+remains either constant $\frac{pS}{I} = 3$ (for ``just enough memory'' case) or 
+to maintain a fixed replication factor $\frac{pS}{I} = p^{1/3}$.
+
+%\macb{Square Matrices}
+\begin{figure}
+	\includegraphics[width=\columnwidth]{results/square_weak_scaling}
+	\caption{Square matrices, memory scaling. $n=m=k=$ \greg{Missing}} 
+	\label{fig:mmmParallelization}
+\end{figure}
+
+%\macb{"Skinny" Matrices}
+\begin{figure}
+	\includegraphics[width=\columnwidth]{results/thin_weak_scaling}
+	\caption{"Skinny" matrices, strong scaling. $n=m=$ \greg{Missing}, $k=$ 
+	\greg{Missing}} 
+	\label{fig:mmmParallelization}
+\end{figure}
 
 
 
@@ -2876,7 +3136,7 @@ processes (horizontal, also called communication minimization). Even though
 they are ``two sides of the same coin'', in literature they are often treated 
 as 
 separate topics. In our work we combine them: analyze
-trade=-offs between 
+trade--offs between 
 communication optimal (distributed memory) and I/O optimal schedule 
 (shared memory).
 % We observe that even though algorithms in the second class 
