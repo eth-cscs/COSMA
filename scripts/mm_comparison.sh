@@ -19,6 +19,11 @@ export prefix="../.."
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/scratch/snx3000/kabicm/ctf/build/lib_shared"
 
 n_nodes_powers=(4 8 16 32 64 128 256 512)
+#weird_nodes=(4 7 8 13 16 25 27 32 37 61 64 81 93 128 201 216 256 333 473 512 )
+#weird_ranks=(109 217 344 730 1332)
+n_tasks_weird=(12 24 28 48 60 96 104 124 144 240 252 320 368 508 800 860 1020 1328 1888 2044)
+p_weird=(3 4 4 6 6 8 8 4 12 15 14 16 16 4 25 20 30 16 32 28)
+q_weird=(4 6 7 8 10 12 13 31 12 16 18 20 23 127 32 43 34 83 59 73)
 
 m_range=GLOBAL_M_RANGE
 n_range=GLOBAL_N_RANGE
@@ -35,17 +40,51 @@ run_scalapack() {
     nodes=$4
     p_rows=$5
     p_cols=$6
+    idx=$7
     n_ranks_per_node=4
     n_threads_per_rank=9
     export OMP_NUM_THREADS=$n_threads_per_rank
     export MKL_NUM_THREADS=$n_threads_per_rank
     n_ranks=$((nodes*n_ranks_per_node))
 
-    srun -N $nodes -n $n_ranks -c $n_threads_per_rank --hint=nomultithread --ntasks-per-node=$n_ranks_per_node \
-         $prefix/DLA-interface/build/miniapp/matrix_multiplication \
-         -m $m -n $n -k $k --scalapack \
-         -p $p_rows -q $p_cols \
-         -r $n_iter
+    if [ $k -gt $m ]; then
+        srun -N $nodes -n $n_ranks -c $n_threads_per_rank --hint=nomultithread --ntasks-per-node=$n_ranks_per_node \
+             $prefix/DLA-interface/build/miniapp/matrix_multiplication \
+             -m $m -n $n -k $k --scalapack \
+             -p $p_rows -q $p_cols \
+             -r $n_iter --transb
+    else
+        srun -N $nodes -n $n_ranks -c $n_threads_per_rank --hint=nomultithread --ntasks-per-node=$n_ranks_per_node \
+             $prefix/DLA-interface/build/miniapp/matrix_multiplication \
+             -m $m -n $n -k $k --scalapack \
+             -p $p_rows -q $p_cols \
+             -r $n_iter
+    fi
+
+    if [ $idx -eq 2 ]; then
+        echo ""
+        echo "============================"
+        echo "      PARTIAL NODE"
+        echo "============================"
+        n_ranks=$((4*(nodes-1)))
+        index=$(find_index $n_ranks)
+        p_rows=${p_weird[$index]}
+        p_cols=${q_weird[$index]}
+
+        if [ $k -gt $m ]; then
+            srun -N $nodes -n $n_ranks -c $n_threads_per_rank --hint=nomultithread \
+                 $prefix/DLA-interface/build/miniapp/matrix_multiplication \
+                 -m $m -n $n -k $k --scalapack \
+                 -p $p_rows -q $p_cols \
+                 -r $n_iter --transb
+        else
+            srun -N $nodes -n $n_ranks -c $n_threads_per_rank --hint=nomultithread \
+                 $prefix/DLA-interface/build/miniapp/matrix_multiplication \
+                 -m $m -n $n -k $k --scalapack \
+                 -p $p_rows -q $p_cols \
+                 -r $n_iter
+        fi
+    fi
 }
 
 run_carma() {
@@ -54,25 +93,60 @@ run_carma() {
     k=$3
     nodes=$4
     limited=$5
+    idx=$6
     n_ranks_per_node=36
     n_threads_per_rank=1
     export OMP_NUM_THREADS=$n_threads_per_rank
     export MKL_NUM_THREADS=$n_threads_per_rank
     n_ranks=$((nodes*n_ranks_per_node))
     mem_limit=$((mem_limit/n_ranks_per_node))
+    if [ $nodes -ge 81 ];
+    then
+        mem_limit=$(echo "($mem_limit*0.5 + 0.5)/1"|bc)
+    fi
 
     if [ "$limited" = true ]; 
     then
         srun -N $nodes -n $n_ranks --ntasks-per-node=$n_ranks_per_node \
              $prefix/CARMA/build/miniapp/temp-miniapp \
              -m $m -n $n -k $k -P $n_ranks --memory $mem_limit
+
+        #if [ $(contains "${weird_nodes[@]}" $nodes) == "y" ]; then
+        #    index=$(find_index "${weird_nodes[@]}" $nodes)
+        #    n_ranks=${weird_ranks[$index]}
+
+        if [ $idx -eq 2 ]; then
+            echo ""
+            echo "============================"
+            echo "      PARTIAL NODE"
+            echo "============================"
+            n_ranks=$((36*(nodes-1)+1))
+            echo "Total number of cores: "$n_ranks
+
+            srun -N $nodes -n $n_ranks \
+                 $prefix/CARMA/build/miniapp/temp-miniapp \
+                 -m $m -n $n -k $k -P $n_ranks --memory $mem_limit
+        fi
     else
         srun -N $nodes -n $n_ranks --ntasks-per-node=$n_ranks_per_node \
              $prefix/CARMA/build/miniapp/temp-miniapp \
              -m $m -n $n -k $k -P $n_ranks
+
+        if [ $idx -eq 2 ]; then
+            echo ""
+            echo "============================"
+            echo "      PARTIAL NODE"
+            echo "============================"
+            n_ranks=$((36*(nodes-1)+1))
+            echo "Total number of cores: "$n_ranks
+
+            srun -N $nodes -n $n_ranks \
+                 $prefix/CARMA/build/miniapp/temp-miniapp \
+                 -m $m -n $n -k $k -P $n_ranks
+        fi
     fi
 
-    if [ $? -ne 0 ] 
+    if [ $? -ne 0 ];
     then
         echo "error"
     fi
@@ -84,6 +158,7 @@ run_old_carma() {
     k=$3
     nodes=$4
     limited=$5
+    idx=$6
     n_ranks_per_node=32
     n_threads_per_rank=1
     export OMP_NUM_THREADS=$n_threads_per_rank
@@ -102,7 +177,7 @@ run_old_carma() {
              -m $m -n $n -k $k 
     fi
 
-    if [ $? -ne 0 ] 
+    if [ $? -ne 0 ]; 
     then
         echo "error"
     fi
@@ -114,15 +189,16 @@ run_cyclops() {
     k=$3
     nodes=$4
     limited=$5
+    idx=$6
     #n_ranks_per_node=36
-    n_ranks_per_node=1
-    n_threads_per_rank=36
+    n_ranks_per_node=36
+    n_threads_per_rank=1
     export OMP_NUM_THREADS=$n_threads_per_rank
     export MKL_NUM_THREADS=$n_threads_per_rank
     n_ranks=$((nodes*n_ranks_per_node))
 
-    memory_in_bytes=$((8*mem_limit/n_ranks_per_node))
-    memory_in_bytes=$(echo "(2*$mem_limit+0.5)/1"|bc)
+    memory_in_bytes=$((8*mem_limit))
+    memory_in_bytes=$(echo "($memory_in_bytes+0.5)/1"|bc)
     echo "Memory limit = "$memory_in_bytes
 
     if [ "$limited" = true ]; 
@@ -132,12 +208,40 @@ run_cyclops() {
            $prefix/ctf/build/bin/matmul -m $m -n $n -k $k \
            -sym_A NS -sym_B NS -sym_C NS -sp_A 1.0 -sp_B 1.0 -sp_C 1.0 -niter $n_iter \
            -bench 1 -test 0 | grep -v -i ERROR && echo "error"
+
+        if [ $idx -eq 2 ]; then
+            echo ""
+            echo "============================"
+            echo "      PARTIAL NODE"
+            echo "============================"
+            n_ranks=$((36*(nodes-1)+1))
+            echo "Total number of cores: "$n_ranks
+
+            CTF_MEMORY_SIZE=$memory_in_bytes srun -N $nodes -n $n_ranks \
+               $prefix/ctf/build/bin/matmul -m $m -n $n -k $k \
+               -sym_A NS -sym_B NS -sym_C NS -sp_A 1.0 -sp_B 1.0 -sp_C 1.0 -niter $n_iter \
+               -bench 1 -test 0 | grep -v -i ERROR && echo "error"
+        fi
     else
         CTF_PPN=$n_ranks_per_node srun -N $nodes -n $n_ranks \
            --ntasks-per-node=$n_ranks_per_node \
            $prefix/ctf/build/bin/matmul -m $m -n $n -k $k \
            -sym_A NS -sym_B NS -sym_C NS -sp_A 1.0 -sp_B 1.0 -sp_C 1.0 -niter $n_iter \
            -bench 1 -test 0 | grep -v -i ERROR && echo "error"
+
+        if [ $idx -eq 2 ]; then
+            echo ""
+            echo "============================"
+            echo "      PARTIAL NODE"
+            echo "============================"
+            n_ranks=$((36*(nodes-1)+1))
+            echo "Total number of cores: "$n_ranks
+
+            srun -N $nodes -n $n_ranks \
+               $prefix/ctf/build/bin/matmul -m $m -n $n -k $k \
+               -sym_A NS -sym_B NS -sym_C NS -sp_A 1.0 -sp_B 1.0 -sp_C 1.0 -niter $n_iter \
+               -bench 1 -test 0 | grep -v -i ERROR && echo "error"
+        fi
     fi
 
     if [ $? -ne 0 ] 
@@ -156,6 +260,19 @@ function contains() {
         fi
     }
     echo "n"
+    return 1
+}
+
+function find_index() {
+    local value=$1
+    for i in "${!n_tasks_weird[@]}";
+    do
+        if [ "${n_tasks_weird[$i]}" -eq "$value" ]; then
+            echo $i
+            return 0
+        fi
+    done
+    echo "-1"
     return 1
 }
 
@@ -178,6 +295,7 @@ run_one() {
     p_rows=$5
     p_cols=$6
     algorithm=$7
+    idx=$8
 
     echo ""
     echo ""
@@ -187,20 +305,20 @@ run_one() {
     echo "memory limit = $mem_limit"
     echo $nodes" "$m" "$n" "$k" "$mem_limit >> "config.txt"
 
-    if [ "$algorithm" = "carma" ]
+    if [ "$algorithm" = "carma" ];
     then
         echo ""
         echo "================================="
         echo "           CARMA"
         echo "================================="
         # OUR ALGORITHM
-        output=$(run_carma $m $n $k $nodes true)
+        output=$(run_carma $m $n $k $nodes true $idx)
         error=$(substring $output "error")
         echo "error = "$error
         if [ "$error" = "y" ];
         then 
             echo "Failed with limited memory, retrying with infinite memory..."
-            output=$(run_carma $m $n $k $nodes false)
+            output=$(run_carma $m $n $k $nodes false $idx)
         fi
         echo $output
         carma_time=$(echo $output | awk -v n_iters="$n_iter" '/CARMA TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
@@ -214,7 +332,7 @@ run_one() {
         time=`date '+[%H:%M:%S]'`
         echo "Finished our algorithm at "$time
 
-    elif [ "$algorithm" = "scalapack" ] 
+    elif [ "$algorithm" = "scalapack" ];
     then
         echo ""
         echo "================================="
@@ -222,7 +340,7 @@ run_one() {
         echo "================================="
 
         # SCALAPACK
-        output=$(run_scalapack $m $n $k $nodes $p_rows $p_cols)
+        output=$(run_scalapack $m $n $k $nodes $p_rows $p_cols $idx)
         scalapack_time=$(echo $output | awk -v n_iters="$n_iter" '/ScaLAPACK TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
         echo $output
         echo "SCALAPACK TIME = "$scalapack_time
@@ -230,7 +348,7 @@ run_one() {
         echo $nodes" "$m" "$n" "$k" inf "$scalapack_time >> "scalapack_"$nodes".txt"
         echo "Finished ScaLAPACK algorithm at "$time
 
-    elif [ "$algorithm" = "cyclops" ]
+    elif [ "$algorithm" = "cyclops" ];
     then
         echo ""
         echo "================================="
@@ -238,13 +356,13 @@ run_one() {
         echo "================================="
 
         # CYCLOPS
-        output=$(run_cyclops $m $n $k $nodes true)
+        output=$(run_cyclops $m $n $k $nodes true $idx)
         error=$(substring $output "error")
         echo "error = "$error
         if [ "$error" = "y" ];
         then 
             echo "Failed with limited memory, retrying with infinite memory..."
-            output=$(run_cyclops $m $n $k $nodes false)
+            output=$(run_cyclops $m $n $k $nodes false $idx)
         fi
         cyclops_time=$(echo $output | awk -v n_iters="$n_iter" '/CYCLOPS TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
         time=`date '+[%H:%M:%S]'`
@@ -258,7 +376,7 @@ run_one() {
         fi
         echo "Finished CYCLOPS algorithm at "$time
 
-    elif [ "$algorithm" = "old_carma" ]
+    elif [ "$algorithm" = "old_carma" ];
     then
         echo ""
         echo "================================="
@@ -266,13 +384,13 @@ run_one() {
         echo "================================="
         # OLD CARMA
         if [ $(contains "${n_nodes_powers[@]}" $nodes) == "y" ]; then
-            output=$(run_old_carma $m $n $k $nodes true)
+            output=$(run_old_carma $m $n $k $nodes true $idx)
             error=$(substring $output "error")
             echo "error = "$error
             if [ "$error" = "y" ];
             then 
                 echo "Failed with limited memory, retrying with infinite memory..."
-                output=$(run_old_carma $m $n $k $nodes false)
+                output=$(run_old_carma $m $n $k $nodes false $idx)
             fi
             old_carma_time=$(echo $output | awk -v n_iters="$n_iter" '/OLD_CARMA TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
             echo $output
@@ -299,6 +417,7 @@ run_all() {
     nodes=$4
     p_rows=$5
     p_cols=$6
+    idx=$7
 
     echo ""
     echo ""
@@ -313,13 +432,13 @@ run_all() {
     echo "           CARMA"
     echo "================================="
     # OUR ALGORITHM
-    output=$(run_carma $m $n $k $nodes true)
+    output=$(run_carma $m $n $k $nodes true $idx)
     error=$(substring $output "error")
     echo "error = "$error
     if [ "$error" = "y" ];
     then 
         echo "Failed with limited memory, retrying with infinite memory..."
-        output=$(run_carma $m $n $k $nodes false)
+        output=$(run_carma $m $n $k $nodes false $idx)
     fi
     echo $output
     carma_time=$(echo $output | awk -v n_iters="$n_iter" '/CARMA TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
@@ -339,7 +458,7 @@ run_all() {
     echo "================================="
 
     # SCALAPACK
-    output=$(run_scalapack $m $n $k $nodes $p_rows $p_cols)
+    output=$(run_scalapack $m $n $k $nodes $p_rows $p_cols $idx)
     scalapack_time=$(echo $output | awk -v n_iters="$n_iter" '/ScaLAPACK TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
     echo $output
     echo "SCALAPACK TIME = "$scalapack_time
@@ -353,13 +472,13 @@ run_all() {
     echo "================================="
 
     # CYCLOPS
-    output=$(run_cyclops $m $n $k $nodes true)
+    output=$(run_cyclops $m $n $k $nodes true $idx)
     error=$(substring $output "error")
     echo "error = "$error
     if [ "$error" = "y" ];
     then 
         echo "Failed with limited memory, retrying with infinite memory..."
-        output=$(run_cyclops $m $n $k $nodes false)
+        output=$(run_cyclops $m $n $k $nodes false $idx)
     fi
     cyclops_time=$(echo $output | awk -v n_iters="$n_iter" '/CYCLOPS TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
     time=`date '+[%H:%M:%S]'`
@@ -379,13 +498,13 @@ run_all() {
     echo "================================="
     # OLD CARMA
     if [ $(contains "${n_nodes_powers[@]}" $nodes) == "y" ]; then
-        output=$(run_old_carma $m $n $k $nodes true)
+        output=$(run_old_carma $m $n $k $nodes true $idx)
         error=$(substring $output "error")
         echo "error = "$error
         if [ "$error" = "y" ];
         then 
             echo "Failed with limited memory, retrying with infinite memory..."
-            output=$(run_old_carma $m $n $k $nodes false)
+            output=$(run_old_carma $m $n $k $nodes false $idx)
         fi
         old_carma_time=$(echo $output | awk -v n_iters="$n_iter" '/OLD_CARMA TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
         echo $output
@@ -443,6 +562,7 @@ do
     m=${m_range[idx]}
     n=${n_range[idx]}
     k=${k_range[idx]}
-    #run_all $m $n $k GLOBAL_NODES GLOBAL_P GLOBAL_Q
-    run_one $m $n $k GLOBAL_NODES GLOBAL_P GLOBAL_Q cyclops
+    #run_all $m $n $k GLOBAL_NODES GLOBAL_P GLOBAL_Q $idx
+    run_one $m $n $k GLOBAL_NODES GLOBAL_P GLOBAL_Q scalapack $idx
+    run_one $m $n $k GLOBAL_NODES GLOBAL_P GLOBAL_Q old_carma $idx
 done

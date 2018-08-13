@@ -603,7 +603,7 @@ void Strategy::process_token(const std::string& step_triplet) {
 
 void Strategy::throw_exception(const std::string& message) {
     std::cout << "Splitting strategy not well defined.\n";
-    std::cout << *this << std::endl;
+    // std::cout << *this << std::endl;
     throw std::runtime_error(message);
 }
 

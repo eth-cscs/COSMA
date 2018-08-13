@@ -1,4 +1,4 @@
-experiment_time="00:45:00"
+experiment_time="00:30:00"
 
 n_nodes=()
 p_range=()
@@ -24,13 +24,13 @@ DATE=`date '+%d-%m-%Y[%H:%M:%S]'`
 mkdir $DATE
 cd ./$DATE
 
-n_rep=15
+n_rep=1
 
 files=()
 
 for node_idx in ${!n_nodes[@]}
 do
-    if [ $node_idx -le 5 ]
+    if [ $node_idx -le 10 ]
     then
         m_values=($strong_scaling_square ${weak_scaling_p0[node_idx]} ${weak_scaling_p1[node_idx]} ${weak_scaling_p0_mn[node_idx]} ${weak_scaling_p1_mn[node_idx]})
         n_values=($strong_scaling_square ${weak_scaling_p0[node_idx]} ${weak_scaling_p1[node_idx]} ${weak_scaling_p0_mn[node_idx]} ${weak_scaling_p1_mn[node_idx]})
@@ -56,7 +56,7 @@ for rep in `seq 1 1 $((n_rep))`
 do
     for file in ${files[@]}
     do
-        #./$file
+        #sbatch ./$file
         echo "Executing the script "$file
     done
 done
