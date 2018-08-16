@@ -64,7 +64,6 @@ void Strategy::initialize(const std::string& cmd_line) {
         // take into account the memory optimization we make
         memory_limit = (long long) (memory_limit * 1.2);
     }
-
     topology = flag_exists("-t", "--topology", cmd_line);
 
     one_sided_communication = flag_exists("-o", "--one_sided_communication", cmd_line);
@@ -94,7 +93,6 @@ void Strategy::process_steps(size_t start, const std::string& line) {
 
     while (std::getline(stream, token, ',')) {
         process_token(token);
-        std::cout << token << std::endl;
     }
 }
 

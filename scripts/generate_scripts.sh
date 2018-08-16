@@ -1,6 +1,7 @@
-experiment_time="00:30:00"
+experiment_time="00:20:00"
 
 n_nodes=()
+n_tasks=()
 p_range=()
 p_rows=()
 p_cols=()
@@ -30,7 +31,7 @@ files=()
 
 for node_idx in ${!n_nodes[@]}
 do
-    if [ $node_idx -le 10 ]
+    if [ $node_idx -le 4 ]
     then
         m_values=($strong_scaling_square ${weak_scaling_p0[node_idx]} ${weak_scaling_p1[node_idx]} ${weak_scaling_p0_mn[node_idx]} ${weak_scaling_p1_mn[node_idx]})
         n_values=($strong_scaling_square ${weak_scaling_p0[node_idx]} ${weak_scaling_p1[node_idx]} ${weak_scaling_p0_mn[node_idx]} ${weak_scaling_p1_mn[node_idx]})
@@ -42,8 +43,9 @@ do
     fi
 
     nodes=${n_nodes[node_idx]}
+    tasks=${n_tasks[node_idx]}
     sname=script_$nodes.sh
-    sed "s|GLOBAL_NODES|$nodes|g; s|GLOBAL_P|${p_rows[node_idx]}|g; s|GLOBAL_Q|${p_cols[node_idx]}|g; s|GLOBAL_TIME|$experiment_time|g; s|GLOBAL_MEM_LIMIT|$mem_limit|g; s|GLOBAL_M_RANGE|(${m_values[*]})|g; s|GLOBAL_N_RANGE|(${n_values[*]})|g; s|GLOBAL_K_RANGE|(${k_values[*]})|g" ../mm_comparison.sh > $sname
+    sed "s|GLOBAL_NODES|$nodes|g; s|GLOBAL_P|${p_rows[node_idx]}|g; s|GLOBAL_Q|${p_cols[node_idx]}|g; s|GLOBAL_TIME|$experiment_time|g; s|GLOBAL_MEM_LIMIT|$mem_limit|g; s|GLOBAL_M_RANGE|(${m_values[*]})|g; s|GLOBAL_N_RANGE|(${n_values[*]})|g; s|GLOBAL_K_RANGE|(${k_values[*]})|g; s|GLOBAL_TASKS|${tasks}|g;" ../mm_comparison.sh > $sname
 
     chmod a+x $sname
     files+=($sname)

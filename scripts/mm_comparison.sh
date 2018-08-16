@@ -29,6 +29,8 @@ m_range=GLOBAL_M_RANGE
 n_range=GLOBAL_N_RANGE
 k_range=GLOBAL_K_RANGE
 
+n_tasks_upper=GLOBAL_TASKS
+
 export n_iter=1
 
 mem_limit=GLOBAL_MEM_LIMIT  #8847360 # in # of doubles and not in bytes
@@ -45,46 +47,46 @@ run_scalapack() {
     n_threads_per_rank=9
     export OMP_NUM_THREADS=$n_threads_per_rank
     export MKL_NUM_THREADS=$n_threads_per_rank
-    n_ranks=$((nodes*n_ranks_per_node))
+    n_ranks=$((p_rows*p_cols))
 
     if [ $k -gt $m ]; then
-        srun -N $nodes -n $n_ranks -c $n_threads_per_rank --hint=nomultithread --ntasks-per-node=$n_ranks_per_node \
+        srun -N $nodes -n $n_ranks -c $n_threads_per_rank --hint=nomultithread \
              $prefix/DLA-interface/build/miniapp/matrix_multiplication \
              -m $m -n $n -k $k --scalapack \
              -p $p_rows -q $p_cols \
              -r $n_iter --transb
     else
-        srun -N $nodes -n $n_ranks -c $n_threads_per_rank --hint=nomultithread --ntasks-per-node=$n_ranks_per_node \
+        srun -N $nodes -n $n_ranks -c $n_threads_per_rank --hint=nomultithread \
              $prefix/DLA-interface/build/miniapp/matrix_multiplication \
              -m $m -n $n -k $k --scalapack \
              -p $p_rows -q $p_cols \
              -r $n_iter
     fi
 
-    if [ $idx -eq 2 ]; then
-        echo ""
-        echo "============================"
-        echo "      PARTIAL NODE"
-        echo "============================"
-        n_ranks=$((4*(nodes-1)))
-        index=$(find_index $n_ranks)
-        p_rows=${p_weird[$index]}
-        p_cols=${q_weird[$index]}
-
-        if [ $k -gt $m ]; then
-            srun -N $nodes -n $n_ranks -c $n_threads_per_rank --hint=nomultithread \
-                 $prefix/DLA-interface/build/miniapp/matrix_multiplication \
-                 -m $m -n $n -k $k --scalapack \
-                 -p $p_rows -q $p_cols \
-                 -r $n_iter --transb
-        else
-            srun -N $nodes -n $n_ranks -c $n_threads_per_rank --hint=nomultithread \
-                 $prefix/DLA-interface/build/miniapp/matrix_multiplication \
-                 -m $m -n $n -k $k --scalapack \
-                 -p $p_rows -q $p_cols \
-                 -r $n_iter
-        fi
-    fi
+#    if [ $idx -eq 2 ]; then
+#        echo ""
+#        echo "============================"
+#        echo "      PARTIAL NODE"
+#        echo "============================"
+#        n_ranks=$((4*(nodes-1)))
+#        index=$(find_index $n_ranks)
+#        p_rows=${p_weird[$index]}
+#        p_cols=${q_weird[$index]}
+#
+#        if [ $k -gt $m ]; then
+#            srun -N $nodes -n $n_ranks -c $n_threads_per_rank --hint=nomultithread \
+#                 $prefix/DLA-interface/build/miniapp/matrix_multiplication \
+#                 -m $m -n $n -k $k --scalapack \
+#                 -p $p_rows -q $p_cols \
+#                 -r $n_iter --transb
+#        else
+#            srun -N $nodes -n $n_ranks -c $n_threads_per_rank --hint=nomultithread \
+#                 $prefix/DLA-interface/build/miniapp/matrix_multiplication \
+#                 -m $m -n $n -k $k --scalapack \
+#                 -p $p_rows -q $p_cols \
+#                 -r $n_iter
+#        fi
+#    fi
 }
 
 run_carma() {
@@ -98,52 +100,54 @@ run_carma() {
     n_threads_per_rank=1
     export OMP_NUM_THREADS=$n_threads_per_rank
     export MKL_NUM_THREADS=$n_threads_per_rank
-    n_ranks=$((nodes*n_ranks_per_node))
+    #n_ranks=$((nodes*n_ranks_per_node))
+    n_ranks=$n_tasks_upper
     mem_limit=$((mem_limit/n_ranks_per_node))
-    if [ $nodes -ge 81 ];
+    if [ $nodes -ge 100 ];
+    then
+        #mem_limit=$(echo "($mem_limit*0.4 + 0.5)/1"|bc)
+        mem_limit=45000000
+        echo "Decreased memory limit to "$mem_limit
+    elif [ $nodes -ge 80 ];
     then
         mem_limit=$(echo "($mem_limit*0.5 + 0.5)/1"|bc)
     fi
 
     if [ "$limited" = true ]; 
     then
-        srun -N $nodes -n $n_ranks --ntasks-per-node=$n_ranks_per_node \
+        srun -N $nodes -n $n_ranks \
              $prefix/CARMA/build/miniapp/temp-miniapp \
              -m $m -n $n -k $k -P $n_ranks --memory $mem_limit
 
-        #if [ $(contains "${weird_nodes[@]}" $nodes) == "y" ]; then
-        #    index=$(find_index "${weird_nodes[@]}" $nodes)
-        #    n_ranks=${weird_ranks[$index]}
+        #if [ $idx -eq 2 ]; then
+        #    echo ""
+        #    echo "============================"
+        #    echo "      PARTIAL NODE"
+        #    echo "============================"
+        #    n_ranks=$((36*(nodes-1)+1))
+        #    echo "Total number of cores: "$n_ranks
 
-        if [ $idx -eq 2 ]; then
-            echo ""
-            echo "============================"
-            echo "      PARTIAL NODE"
-            echo "============================"
-            n_ranks=$((36*(nodes-1)+1))
-            echo "Total number of cores: "$n_ranks
-
-            srun -N $nodes -n $n_ranks \
-                 $prefix/CARMA/build/miniapp/temp-miniapp \
-                 -m $m -n $n -k $k -P $n_ranks --memory $mem_limit
-        fi
+        #    srun -N $nodes -n $n_ranks \
+        #         $prefix/CARMA/build/miniapp/temp-miniapp \
+        #         -m $m -n $n -k $k -P $n_ranks --memory $mem_limit
+        #fi
     else
-        srun -N $nodes -n $n_ranks --ntasks-per-node=$n_ranks_per_node \
+        srun -N $nodes -n $n_ranks \
              $prefix/CARMA/build/miniapp/temp-miniapp \
              -m $m -n $n -k $k -P $n_ranks
 
-        if [ $idx -eq 2 ]; then
-            echo ""
-            echo "============================"
-            echo "      PARTIAL NODE"
-            echo "============================"
-            n_ranks=$((36*(nodes-1)+1))
-            echo "Total number of cores: "$n_ranks
+        #if [ $idx -eq 2 ]; then
+        #    echo ""
+        #    echo "============================"
+        #    echo "      PARTIAL NODE"
+        #    echo "============================"
+        #    n_ranks=$((36*(nodes-1)+1))
+        #    echo "Total number of cores: "$n_ranks
 
-            srun -N $nodes -n $n_ranks \
-                 $prefix/CARMA/build/miniapp/temp-miniapp \
-                 -m $m -n $n -k $k -P $n_ranks
-        fi
+        #    srun -N $nodes -n $n_ranks \
+        #         $prefix/CARMA/build/miniapp/temp-miniapp \
+        #         -m $m -n $n -k $k -P $n_ranks
+        #fi
     fi
 
     if [ $? -ne 0 ];
@@ -159,20 +163,31 @@ run_old_carma() {
     nodes=$4
     limited=$5
     idx=$6
-    n_ranks_per_node=32
+    n_ranks_per_node=36
     n_threads_per_rank=1
     export OMP_NUM_THREADS=$n_threads_per_rank
     export MKL_NUM_THREADS=$n_threads_per_rank
-    n_ranks=$((nodes*n_ranks_per_node))
+    #n_ranks=$((nodes*n_ranks_per_node))
+    n_ranks=$n_tasks_upper
     mem_limit=$((mem_limit/n_ranks_per_node))
+
+    if [ $nodes -ge 100 ];
+    then
+        #mem_limit=$(echo "($mem_limit*0.4 + 0.5)/1"|bc)
+        mem_limit=45000000
+        echo "Decreased memory limit to "$mem_limit
+    elif [ $nodes -ge 80 ];
+    then
+        mem_limit=$(echo "($mem_limit*0.5 + 0.5)/1"|bc)
+    fi
 
     if [ "$limited" = true ]; 
     then
-        srun -N $nodes -n $n_ranks --ntasks-per-node=$n_ranks_per_node \
+        srun -N $nodes -n $n_ranks \
              $prefix/CAPS/rect-class/bench-rect-nc \
              -m $m -n $n -k $k -L $mem_limit
     else
-        srun -N $nodes -n $n_ranks --ntasks-per-node=$n_ranks_per_node \
+        srun -N $nodes -n $n_ranks \
              $prefix/CAPS/rect-class/bench-rect-nc \
              -m $m -n $n -k $k 
     fi
@@ -195,7 +210,8 @@ run_cyclops() {
     n_threads_per_rank=1
     export OMP_NUM_THREADS=$n_threads_per_rank
     export MKL_NUM_THREADS=$n_threads_per_rank
-    n_ranks=$((nodes*n_ranks_per_node))
+    #n_ranks=$((nodes*n_ranks_per_node))
+    n_ranks=$n_tasks_upper
 
     memory_in_bytes=$((8*mem_limit))
     memory_in_bytes=$(echo "($memory_in_bytes+0.5)/1"|bc)
@@ -203,45 +219,43 @@ run_cyclops() {
 
     if [ "$limited" = true ]; 
     then
-        CTF_MEMORY_SIZE=$memory_in_bytes CTF_PPN=$n_ranks_per_node srun -N $nodes -n $n_ranks \
-           --ntasks-per-node=$n_ranks_per_node \
+        CTF_MEMORY_SIZE=$memory_in_bytes srun -N $nodes -n $n_ranks \
            $prefix/ctf/build/bin/matmul -m $m -n $n -k $k \
            -sym_A NS -sym_B NS -sym_C NS -sp_A 1.0 -sp_B 1.0 -sp_C 1.0 -niter $n_iter \
            -bench 1 -test 0 | grep -v -i ERROR && echo "error"
 
-        if [ $idx -eq 2 ]; then
-            echo ""
-            echo "============================"
-            echo "      PARTIAL NODE"
-            echo "============================"
-            n_ranks=$((36*(nodes-1)+1))
-            echo "Total number of cores: "$n_ranks
+        #if [ $idx -eq 2 ]; then
+        #    echo ""
+        #    echo "============================"
+        #    echo "      PARTIAL NODE"
+        #    echo "============================"
+        #    n_ranks=$((36*(nodes-1)+1))
+        #    echo "Total number of cores: "$n_ranks
 
-            CTF_MEMORY_SIZE=$memory_in_bytes srun -N $nodes -n $n_ranks \
-               $prefix/ctf/build/bin/matmul -m $m -n $n -k $k \
-               -sym_A NS -sym_B NS -sym_C NS -sp_A 1.0 -sp_B 1.0 -sp_C 1.0 -niter $n_iter \
-               -bench 1 -test 0 | grep -v -i ERROR && echo "error"
-        fi
+        #    CTF_MEMORY_SIZE=$memory_in_bytes srun -N $nodes -n $n_ranks \
+        #       $prefix/ctf/build/bin/matmul -m $m -n $n -k $k \
+        #       -sym_A NS -sym_B NS -sym_C NS -sp_A 1.0 -sp_B 1.0 -sp_C 1.0 -niter $n_iter \
+        #       -bench 1 -test 0 | grep -v -i ERROR && echo "error"
+        #fi
     else
-        CTF_PPN=$n_ranks_per_node srun -N $nodes -n $n_ranks \
-           --ntasks-per-node=$n_ranks_per_node \
+        srun -N $nodes -n $n_ranks \
            $prefix/ctf/build/bin/matmul -m $m -n $n -k $k \
            -sym_A NS -sym_B NS -sym_C NS -sp_A 1.0 -sp_B 1.0 -sp_C 1.0 -niter $n_iter \
            -bench 1 -test 0 | grep -v -i ERROR && echo "error"
 
-        if [ $idx -eq 2 ]; then
-            echo ""
-            echo "============================"
-            echo "      PARTIAL NODE"
-            echo "============================"
-            n_ranks=$((36*(nodes-1)+1))
-            echo "Total number of cores: "$n_ranks
+        #if [ $idx -eq 2 ]; then
+        #    echo ""
+        #    echo "============================"
+        #    echo "      PARTIAL NODE"
+        #    echo "============================"
+        #    n_ranks=$((36*(nodes-1)+1))
+        #    echo "Total number of cores: "$n_ranks
 
-            srun -N $nodes -n $n_ranks \
-               $prefix/ctf/build/bin/matmul -m $m -n $n -k $k \
-               -sym_A NS -sym_B NS -sym_C NS -sp_A 1.0 -sp_B 1.0 -sp_C 1.0 -niter $n_iter \
-               -bench 1 -test 0 | grep -v -i ERROR && echo "error"
-        fi
+        #    srun -N $nodes -n $n_ranks \
+        #       $prefix/ctf/build/bin/matmul -m $m -n $n -k $k \
+        #       -sym_A NS -sym_B NS -sym_C NS -sp_A 1.0 -sp_B 1.0 -sp_C 1.0 -niter $n_iter \
+        #       -bench 1 -test 0 | grep -v -i ERROR && echo "error"
+        #fi
     fi
 
     if [ $? -ne 0 ] 
@@ -383,28 +397,28 @@ run_one() {
         echo "           OLD CARMA"
         echo "================================="
         # OLD CARMA
-        if [ $(contains "${n_nodes_powers[@]}" $nodes) == "y" ]; then
-            output=$(run_old_carma $m $n $k $nodes true $idx)
-            error=$(substring $output "error")
-            echo "error = "$error
-            if [ "$error" = "y" ];
-            then 
-                echo "Failed with limited memory, retrying with infinite memory..."
-                output=$(run_old_carma $m $n $k $nodes false $idx)
-            fi
-            old_carma_time=$(echo $output | awk -v n_iters="$n_iter" '/OLD_CARMA TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
-            echo $output
-            echo "OLD CARMA TIME = "$old_carma_time
-            if [ "$error" = "y" ];
-            then
-                echo $nodes" "$m" "$n" "$k" inf "$old_carma_time >> "old_carma_"$nodes".txt"
-            else
-                echo $nodes" "$m" "$n" "$k" "$mem_limit" "$old_carma_time >> "old_carma_"$nodes".txt"
-            fi
-        else
-            echo "OLD CARMA TIME = not a power of 2"
-            echo "not a power of 2" >> "old_carma_"$nodes".txt"
+        #if [ $(contains "${n_nodes_powers[@]}" $nodes) == "y" ]; then
+        output=$(run_old_carma $m $n $k $nodes true $idx)
+        error=$(substring $output "error")
+        echo "error = "$error
+        if [ "$error" = "y" ];
+        then 
+            echo "Failed with limited memory, retrying with infinite memory..."
+            output=$(run_old_carma $m $n $k $nodes false $idx)
         fi
+        old_carma_time=$(echo $output | awk -v n_iters="$n_iter" '/OLD_CARMA TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
+        echo $output
+        echo "OLD CARMA TIME = "$old_carma_time
+        if [ "$error" = "y" ];
+        then
+            echo $nodes" "$m" "$n" "$k" inf "$old_carma_time >> "old_carma_"$nodes".txt"
+        else
+            echo $nodes" "$m" "$n" "$k" "$mem_limit" "$old_carma_time >> "old_carma_"$nodes".txt"
+        fi
+        #else
+        #    echo "OLD CARMA TIME = not a power of 2"
+        #    echo "not a power of 2" >> "old_carma_"$nodes".txt"
+        #fi
         time=`date '+[%H:%M:%S]'`
         echo "Finished OLD CARMA algorithm at "$time
     fi
@@ -497,28 +511,28 @@ run_all() {
     echo "           OLD CARMA"
     echo "================================="
     # OLD CARMA
-    if [ $(contains "${n_nodes_powers[@]}" $nodes) == "y" ]; then
-        output=$(run_old_carma $m $n $k $nodes true $idx)
-        error=$(substring $output "error")
-        echo "error = "$error
-        if [ "$error" = "y" ];
-        then 
-            echo "Failed with limited memory, retrying with infinite memory..."
-            output=$(run_old_carma $m $n $k $nodes false $idx)
-        fi
-        old_carma_time=$(echo $output | awk -v n_iters="$n_iter" '/OLD_CARMA TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
-        echo $output
-        echo "OLD CARMA TIME = "$old_carma_time
-        if [ "$error" = "y" ];
-        then
-            echo $nodes" "$m" "$n" "$k" inf "$old_carma_time >> "old_carma_"$nodes".txt"
-        else
-            echo $nodes" "$m" "$n" "$k" "$mem_limit" "$old_carma_time >> "old_carma_"$nodes".txt"
-        fi
-    else
-        echo "OLD CARMA TIME = not a power of 2"
-        echo "not a power of 2" >> "old_carma_"$nodes".txt"
+    #if [ $(contains "${n_nodes_powers[@]}" $nodes) == "y" ]; then
+    output=$(run_old_carma $m $n $k $nodes true $idx)
+    error=$(substring $output "error")
+    echo "error = "$error
+    if [ "$error" = "y" ];
+    then 
+        echo "Failed with limited memory, retrying with infinite memory..."
+        output=$(run_old_carma $m $n $k $nodes false $idx)
     fi
+    old_carma_time=$(echo $output | awk -v n_iters="$n_iter" '/OLD_CARMA TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
+    echo $output
+    echo "OLD CARMA TIME = "$old_carma_time
+    if [ "$error" = "y" ];
+    then
+        echo $nodes" "$m" "$n" "$k" inf "$old_carma_time >> "old_carma_"$nodes".txt"
+    else
+        echo $nodes" "$m" "$n" "$k" "$mem_limit" "$old_carma_time >> "old_carma_"$nodes".txt"
+    fi
+    #else
+    #    echo "OLD CARMA TIME = not a power of 2"
+    #    echo "not a power of 2" >> "old_carma_"$nodes".txt"
+    #fi
     time=`date '+[%H:%M:%S]'`
     echo "Finished OLD CARMA algorithm at "$time
 
@@ -563,6 +577,6 @@ do
     n=${n_range[idx]}
     k=${k_range[idx]}
     #run_all $m $n $k GLOBAL_NODES GLOBAL_P GLOBAL_Q $idx
-    run_one $m $n $k GLOBAL_NODES GLOBAL_P GLOBAL_Q scalapack $idx
+    #run_one $m $n $k GLOBAL_NODES GLOBAL_P GLOBAL_Q carma $idx
     run_one $m $n $k GLOBAL_NODES GLOBAL_P GLOBAL_Q old_carma $idx
 done

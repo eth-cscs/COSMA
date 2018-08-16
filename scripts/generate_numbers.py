@@ -1,17 +1,19 @@
 import numpy as np
 import math
 
-n_nodes = [4, 7, 8, 13, 16, 25, 27, 32, 37, 61, 64, 81, 93, 128, 201, 216, 256, 333, 473, 512]
+#n_nodes = [4, 7, 8, 13, 16, 25, 27, 32, 37, 61, 64, 81, 93, 128, 201, 216, 256, 333, 473, 512]
+n_nodes = [int(math.ceil(2**i/36.0)) for i in range(7, 15)]
+n_tasks = [2**i for i in range(7, 15)]
+p_range = [int(math.floor(2**i/36.0))*4 for i in range(7, 15)]
+p_rows = [3, 4, 7, 8, 14, 4, 4, 35]
+p_cols = [4, 7, 8, 14, 16, 113, 227, 52]
 
 base_memory = 1250000000 # per node, in #doubles, corresponding to 10GB
 mem_limit = 1.0 * base_memory
 
-p_range=[16, 28, 32, 52, 64, 100, 108, 128, 148, 244, 256, 324, 372, 512, 804, 864, 1024, 1332, 1892, 2048]
-p_rows=[4, 4, 4, 4, 8, 10, 9, 8, 4, 4, 16, 18, 12, 16, 12, 24, 32, 36, 43, 32]
-p_cols=[4, 7, 8, 13, 8, 10, 12, 16, 37, 61, 16, 18, 31, 32, 67, 36, 32, 37, 44, 64]
-
-p_range_weird = [4*(x-1) for x in n_nodes]
-print(p_range_weird)
+#p_range=[16, 28, 32, 52, 64, 100, 108, 128, 148, 244, 256, 324, 372, 512, 804, 864, 1024, 1332, 1892, 2048]
+#p_rows=[4, 4, 4, 4, 8, 10, 9, 8, 4, 4, 16, 18, 12, 16, 12, 24, 32, 36, 43, 32]
+#p_cols=[4, 7, 8, 13, 8, 10, 12, 16, 37, 61, 16, 18, 31, 32, 67, 36, 32, 37, 44, 64]
 
 # these can be any values independent of available memory or nodes
 strong_scaling_square=16384
@@ -55,7 +57,7 @@ weak_scaling_p1_k = get_weak_scaling_p1_k()
 mem_limit = 4 * base_memory
 
 def apply_correctness_factor(l, factor):
-    #poly = np.polyfit([4, 512], [factor, 0.1], deg=1)
+    #poly = np.polyfit([4, n_nodes[len(n_nodes)-1]], [factor, 0.1], deg=1)
     #factors = [np.polyval(poly, x) for x in n_nodes]
     #return [int(factors[i] * l[i]) for i in range(len(n_nodes))]
     return [int(factor * l[i]) for i in range(len(n_nodes))]
@@ -93,6 +95,7 @@ with open(template_file) as in_file:
     with open(output_file, 'w') as out_file:
         for line in in_file:
             line = line.replace("n_nodes=()", "n_nodes=" + get_string(n_nodes))
+            line = line.replace("n_tasks=()", "n_tasks=" + get_string(n_tasks))
 
             line = line.replace("p_range=()", "p_range=" + get_string(p_range))
             line = line.replace("p_rows=()", "p_rows=" + get_string(p_rows))
