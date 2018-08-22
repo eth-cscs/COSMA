@@ -63,30 +63,30 @@ run_scalapack() {
              -r $n_iter
     fi
 
-    if [ $idx -eq 2 ]; then
-        echo ""
-        echo "============================"
-        echo "      PARTIAL NODE"
-        echo "============================"
-        n_ranks=$((4*(nodes-1)))
-        index=$(find_index $n_ranks)
-        p_rows=${p_weird[$index]}
-        p_cols=${q_weird[$index]}
-
-        if [ $k -gt $m ]; then
-            srun -N $nodes -n $n_ranks -c $n_threads_per_rank --hint=nomultithread \
-                 $prefix/DLA-interface/build/miniapp/matrix_multiplication \
-                 -m $m -n $n -k $k --scalapack \
-                 -p $p_rows -q $p_cols \
-                 -r $n_iter --transb
-        else
-            srun -N $nodes -n $n_ranks -c $n_threads_per_rank --hint=nomultithread \
-                 $prefix/DLA-interface/build/miniapp/matrix_multiplication \
-                 -m $m -n $n -k $k --scalapack \
-                 -p $p_rows -q $p_cols \
-                 -r $n_iter
-        fi
-    fi
+#    if [ $idx -eq 2 ]; then
+#        echo ""
+#        echo "============================"
+#        echo "      PARTIAL NODE"
+#        echo "============================"
+#        n_ranks=$((4*(nodes-1)))
+#        index=$(find_index $n_ranks)
+#        p_rows=${p_weird[$index]}
+#        p_cols=${q_weird[$index]}
+#
+#        if [ $k -gt $m ]; then
+#            srun -N $nodes -n $n_ranks -c $n_threads_per_rank --hint=nomultithread \
+#                 $prefix/DLA-interface/build/miniapp/matrix_multiplication \
+#                 -m $m -n $n -k $k --scalapack \
+#                 -p $p_rows -q $p_cols \
+#                 -r $n_iter --transb
+#        else
+#            srun -N $nodes -n $n_ranks -c $n_threads_per_rank --hint=nomultithread \
+#                 $prefix/DLA-interface/build/miniapp/matrix_multiplication \
+#                 -m $m -n $n -k $k --scalapack \
+#                 -p $p_rows -q $p_cols \
+#                 -r $n_iter
+#        fi
+#    fi
 }
 
 run_carma() {
@@ -119,35 +119,35 @@ run_carma() {
              $prefix/CARMA/build/miniapp/temp-miniapp \
              -m $m -n $n -k $k -P $n_ranks --memory $mem_limit
 
-        if [ $idx -eq 2 ]; then
-            echo ""
-            echo "============================"
-            echo "      PARTIAL NODE"
-            echo "============================"
-            n_ranks=$((36*(nodes-1)+1))
-            echo "Total number of cores: "$n_ranks
+        #if [ $idx -eq 2 ]; then
+        #    echo ""
+        #    echo "============================"
+        #    echo "      PARTIAL NODE"
+        #    echo "============================"
+        #    n_ranks=$((36*(nodes-1)+1))
+        #    echo "Total number of cores: "$n_ranks
 
-            srun -N $nodes -n $n_ranks \
-                 $prefix/CARMA/build/miniapp/temp-miniapp \
-                 -m $m -n $n -k $k -P $n_ranks --memory $mem_limit
-        fi
+        #    srun -N $nodes -n $n_ranks \
+        #         $prefix/CARMA/build/miniapp/temp-miniapp \
+        #         -m $m -n $n -k $k -P $n_ranks --memory $mem_limit
+        #fi
     else
         srun -N $nodes -n $n_ranks \
              $prefix/CARMA/build/miniapp/temp-miniapp \
              -m $m -n $n -k $k -P $n_ranks
 
-        if [ $idx -eq 2 ]; then
-            echo ""
-            echo "============================"
-            echo "      PARTIAL NODE"
-            echo "============================"
-            n_ranks=$((36*(nodes-1)+1))
-            echo "Total number of cores: "$n_ranks
+        #if [ $idx -eq 2 ]; then
+        #    echo ""
+        #    echo "============================"
+        #    echo "      PARTIAL NODE"
+        #    echo "============================"
+        #    n_ranks=$((36*(nodes-1)+1))
+        #    echo "Total number of cores: "$n_ranks
 
-            srun -N $nodes -n $n_ranks \
-                 $prefix/CARMA/build/miniapp/temp-miniapp \
-                 -m $m -n $n -k $k -P $n_ranks
-        fi
+        #    srun -N $nodes -n $n_ranks \
+        #         $prefix/CARMA/build/miniapp/temp-miniapp \
+        #         -m $m -n $n -k $k -P $n_ranks
+        #fi
     fi
 
     if [ $? -ne 0 ];
@@ -224,38 +224,38 @@ run_cyclops() {
            -sym_A NS -sym_B NS -sym_C NS -sp_A 1.0 -sp_B 1.0 -sp_C 1.0 -niter $n_iter \
            -bench 1 -test 0 | grep -v -i ERROR && echo "error"
 
-        if [ $idx -eq 2 ]; then
-            echo ""
-            echo "============================"
-            echo "      PARTIAL NODE"
-            echo "============================"
-            n_ranks=$((36*(nodes-1)+1))
-            echo "Total number of cores: "$n_ranks
+        #if [ $idx -eq 2 ]; then
+        #    echo ""
+        #    echo "============================"
+        #    echo "      PARTIAL NODE"
+        #    echo "============================"
+        #    n_ranks=$((36*(nodes-1)+1))
+        #    echo "Total number of cores: "$n_ranks
 
-            CTF_MEMORY_SIZE=$memory_in_bytes srun -N $nodes -n $n_ranks \
-               $prefix/ctf/build/bin/matmul -m $m -n $n -k $k \
-               -sym_A NS -sym_B NS -sym_C NS -sp_A 1.0 -sp_B 1.0 -sp_C 1.0 -niter $n_iter \
-               -bench 1 -test 0 | grep -v -i ERROR && echo "error"
-        fi
+        #    CTF_MEMORY_SIZE=$memory_in_bytes srun -N $nodes -n $n_ranks \
+        #       $prefix/ctf/build/bin/matmul -m $m -n $n -k $k \
+        #       -sym_A NS -sym_B NS -sym_C NS -sp_A 1.0 -sp_B 1.0 -sp_C 1.0 -niter $n_iter \
+        #       -bench 1 -test 0 | grep -v -i ERROR && echo "error"
+        #fi
     else
         srun -N $nodes -n $n_ranks \
            $prefix/ctf/build/bin/matmul -m $m -n $n -k $k \
            -sym_A NS -sym_B NS -sym_C NS -sp_A 1.0 -sp_B 1.0 -sp_C 1.0 -niter $n_iter \
            -bench 1 -test 0 | grep -v -i ERROR && echo "error"
 
-        if [ $idx -eq 2 ]; then
-            echo ""
-            echo "============================"
-            echo "      PARTIAL NODE"
-            echo "============================"
-            n_ranks=$((36*(nodes-1)+1))
-            echo "Total number of cores: "$n_ranks
+        #if [ $idx -eq 2 ]; then
+        #    echo ""
+        #    echo "============================"
+        #    echo "      PARTIAL NODE"
+        #    echo "============================"
+        #    n_ranks=$((36*(nodes-1)+1))
+        #    echo "Total number of cores: "$n_ranks
 
-            srun -N $nodes -n $n_ranks \
-               $prefix/ctf/build/bin/matmul -m $m -n $n -k $k \
-               -sym_A NS -sym_B NS -sym_C NS -sp_A 1.0 -sp_B 1.0 -sp_C 1.0 -niter $n_iter \
-               -bench 1 -test 0 | grep -v -i ERROR && echo "error"
-        fi
+        #    srun -N $nodes -n $n_ranks \
+        #       $prefix/ctf/build/bin/matmul -m $m -n $n -k $k \
+        #       -sym_A NS -sym_B NS -sym_C NS -sp_A 1.0 -sp_B 1.0 -sp_C 1.0 -niter $n_iter \
+        #       -bench 1 -test 0 | grep -v -i ERROR && echo "error"
+        #fi
     fi
 
     if [ $? -ne 0 ] 
