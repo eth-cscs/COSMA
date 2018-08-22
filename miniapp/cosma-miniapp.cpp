@@ -31,7 +31,7 @@ int run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD) {
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
 
-    //Declare A,B and C CARMA matrices objects
+    //Declare A,B and C COSMA matrices objects
     CosmaMatrix A('A', s, rank);
     CosmaMatrix B('B', s, rank);
     CosmaMatrix C('C', s, rank);

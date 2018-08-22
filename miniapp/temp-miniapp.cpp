@@ -53,7 +53,7 @@ long run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD) {
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
 
-    //Declare A,B and C CARMA matrices objects
+    //Declare A,B and C COSMA matrices objects
     CosmaMatrix A('A', s, rank);
     CosmaMatrix B('B', s, rank);
     CosmaMatrix C('C', s, rank);
@@ -118,7 +118,7 @@ int main( int argc, char **argv ) {
     std::sort(times.begin(), times.end());
 
     if (rank == 0) {
-        std::cout << "CARMA TIMES [ms] = ";
+        std::cout << "COSMA TIMES [ms] = ";
         for (auto& time : times) {
             std::cout << time << " ";
         }
