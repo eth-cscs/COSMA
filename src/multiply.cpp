@@ -31,7 +31,7 @@ void initialize_blas() {
 }
 
 // this is just a wrapper to initialize and call the recursive function
-void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
+void multiply(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
               const Strategy& strategy, MPI_Comm comm, bool one_sided_communication) {
     Interval mi = Interval(0, strategy.m-1);
     Interval ni = Interval(0, strategy.n-1);
@@ -43,26 +43,26 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     // PL();
 
     PE(preprocessing_communicators);
-    std::unique_ptr<communicator> carma_comm;
+    std::unique_ptr<communicator> cosma_comm;
     if (one_sided_communication) {
-        carma_comm = std::make_unique<one_sided_communicator>(&strategy, comm);
+        cosma_comm = std::make_unique<one_sided_communicator>(&strategy, comm);
 
     } else {
-        carma_comm = std::make_unique<two_sided_communicator>(&strategy, comm);
+        cosma_comm = std::make_unique<two_sided_communicator>(&strategy, comm);
     }
     PL();
 
     multiply(matrixA, matrixB, matrixC,
-             mi, ni, ki, Pi, 0, strategy, 0.0, *carma_comm);
+             mi, ni, ki, Pi, 0, strategy, 0.0, *cosma_comm);
 
-    if (carma_comm->rank() == 0) {
+    if (cosma_comm->rank() == 0) {
         PP();
     }
 
 }
 
 // dispatch to local call, BFS, or DFS as appropriate
-void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
+void multiply(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
               Interval& m, Interval& n, Interval& k, Interval& P,
               size_t step, const Strategy& strategy, double beta,
               communicator& comm) {
@@ -128,7 +128,7 @@ void printMat(int m, int n, double*A, char label) {
     std::cout << std::endl;
 }
 
-void local_multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC, int m, int n, int k, double beta) {
+void local_multiply(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC, int m, int n, int k, double beta) {
     char N = 'N';
     double one = 1.;
 #ifdef DEBUG
@@ -143,7 +143,7 @@ void local_multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& mat
     }
 #endif
     PE(multiply_computation);
-#ifdef CARMA_HAVE_GPU
+#ifdef COSMA_HAVE_GPU
     gpu_dgemm_(matrixA.current_matrix(), matrixB.current_matrix(), matrixC.current_matrix(), m, n, k, 1.0, beta);
 #else
     dgemm_(&N, &N, &m, &n, &k, &one, matrixA.current_matrix(), &m, matrixB.current_matrix(), &k, &beta, matrixC.current_matrix(), &m);
@@ -162,7 +162,7 @@ void local_multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& mat
  In each DFS step, one of the dimensions is split, and each of the subproblems is solved
  sequentially by all P processors.
  */
-void DFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
+void DFS(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
          Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
          const Strategy& strategy, double beta, communicator& comm) {
     // split the dimension but not the processors, all P processors are taking part
@@ -248,7 +248,7 @@ T which_is_expanded(T&& A, T&& B, T&& C, const Strategy& strategy, size_t step) 
  had to own what was previously owned by P processors) here we have the opposite - P ranks
  should own what was previously owned by newP ranks - thus local matrices are shrinked.
  */
-void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
+void BFS(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
          Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
          const Strategy& strategy, double beta, communicator& comm) {
     int divisor = strategy.divisor(step);
@@ -304,7 +304,7 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
      if divn > 1 => matrix A is expanded
      if divk > 1 => matrix C is expanded
      */
-    CarmaMatrix& expanded_mat = which_is_expanded(matrixA, matrixB, matrixC, strategy, step);
+    CosmaMatrix& expanded_mat = which_is_expanded(matrixA, matrixB, matrixC, strategy, step);
     // gets the buffer sizes before and after expansion.
     // this still does not modify the buffer sizes inside layout
     // it just tells us what they would be.

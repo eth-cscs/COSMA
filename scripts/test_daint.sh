@@ -66,8 +66,8 @@ case $partition in
 esac
 
 case $lapack in
-  MKLst) OPT_LAPACK=(-DCARMA_LAPACK_TYPE=MKL -DMKL_THREADING=Sequential) ;;
-  MKLmt) OPT_LAPACK=(-DCARMA_LAPACK_TYPE=MKL -DMKL_THREADING="Intel OpenMP") ;;
+  MKLst) OPT_LAPACK=(-DCOSMA_LAPACK_TYPE=MKL -DMKL_THREADING=Sequential) ;;
+  MKLmt) OPT_LAPACK=(-DCOSMA_LAPACK_TYPE=MKL -DMKL_THREADING="Intel OpenMP") ;;
   *) echo "Wrong --lapack option: $lapack" ; print_help ; exit 1 ;;
 esac
 

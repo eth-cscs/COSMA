@@ -29,10 +29,10 @@ bool run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD, bool one_sided_communication
     int k = s.k;
     int P = s.P;
 
-    //Declare A,B and C CARMA matrices objects
-    CarmaMatrix A('A', s, rank);
-    CarmaMatrix B('B', s, rank);
-    CarmaMatrix C('C', s, rank);
+    //Declare A,B and C COSMA matrices objects
+    CosmaMatrix A('A', s, rank);
+    CosmaMatrix B('B', s, rank);
+    CosmaMatrix C('C', s, rank);
 
     // fill the matrices with random data
     srand48(rank);

@@ -41,7 +41,7 @@ int get_n_iter() {
     return intValue;
 }
 
-void output_matrix(CarmaMatrix& M, int rank) {
+void output_matrix(CosmaMatrix& M, int rank) {
     std::string local = M.which_matrix() + std::to_string(rank) + ".txt";
     std::ofstream local_file(local);
     local_file << M << std::endl;
@@ -54,9 +54,9 @@ long run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD) {
     MPI_Comm_size(comm, &size);
 
     //Declare A,B and C CARMA matrices objects
-    CarmaMatrix A('A', s, rank);
-    CarmaMatrix B('B', s, rank);
-    CarmaMatrix C('C', s, rank);
+    CosmaMatrix A('A', s, rank);
+    CosmaMatrix B('B', s, rank);
+    CosmaMatrix C('C', s, rank);
 
     // fill the matrices with random data
     srand48(rank);

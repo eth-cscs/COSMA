@@ -13,22 +13,22 @@
 #include "timer.hpp"
 #include "gpu/gemm.hpp"
 
-void multiply(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
+void multiply(CosmaMatrix& A, CosmaMatrix& B, CosmaMatrix& C,
               const Strategy& strategy, MPI_Comm comm=MPI_COMM_WORLD, 
               bool one_sided_communication=false);
 
-void multiply(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
+void multiply(CosmaMatrix& A, CosmaMatrix& B, CosmaMatrix& C,
               Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
               const Strategy& strategy, double beta, communicator& comm);
 
-void local_multiply(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
+void local_multiply(CosmaMatrix& A, CosmaMatrix& B, CosmaMatrix& C,
                     int m, int n, int k, double beta);
 
-void DFS(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
+void DFS(CosmaMatrix& A, CosmaMatrix& B, CosmaMatrix& C,
          Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
          const Strategy& strategy, double beta, communicator& comm);
 
-void BFS(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
+void BFS(CosmaMatrix& A, CosmaMatrix& B, CosmaMatrix& C,
          Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
          const Strategy& strategy, double beta, communicator& comm);
 

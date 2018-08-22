@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
-project(carma)
+project(cosma)
 
-set(PROJECT_NAME carma CXX C)
+set(PROJECT_NAME cosma CXX C)
 set(CMAKE_CXX_STANDARD 14)
 
 include(./cmake/utils.cmake)
@@ -29,8 +29,8 @@ set(PRJ_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 #################################
 #          PROFILER             #
 #################################
-option(CARMA_WITH_PROFILING "use the semiprof profiler" OFF)
-if(CARMA_WITH_PROFILING)
+option(COSMA_WITH_PROFILING "use the semiprof profiler" OFF)
+if(COSMA_WITH_PROFILING)
     add_definitions(-DSEMIPROF)
 endif()
 
@@ -40,8 +40,8 @@ include_directories("${PRJ_ROOT_DIR}/profiler/include/semiprof")
 #################################
 #        COVERAGE TEST          #
 #################################
-option(CARMA_COVERAGE_TEST "use lcov for the code coverage test" OFF)
-if(CARMA_COVERAGE_TEST)
+option(COSMA_COVERAGE_TEST "use lcov for the code coverage test" OFF)
+if(COSMA_COVERAGE_TEST)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
     set(CMAKE_LD_FLAGS "${CMAKE_LD_FLAGS} --coverage")
@@ -53,7 +53,7 @@ if(CARMA_COVERAGE_TEST)
 
   else ()
     message(WARNING "Coverage test can be used only with GCC.")
-    set(CARMA_COVERAGE_TEST "OFF" FORCE)
+    set(COSMA_COVERAGE_TEST "OFF" FORCE)
   endif()
 endif()
 
@@ -105,23 +105,23 @@ endif()
 # BLAS Part    #
 ################
 include(lapack)
-carma_find_lapack()
-set(blas_deps ${CARMA_LAPACK_LIBRARY})
+cosma_find_lapack()
+set(blas_deps ${COSMA_LAPACK_LIBRARY})
 
 ################
 # CUDA support #
 ################
-option(CARMA_WITH_CUDA "use CUDA GPU backend for base case" OFF)
-if(CARMA_WITH_CUDA)
+option(COSMA_WITH_CUDA "use CUDA GPU backend for base case" OFF)
+if(COSMA_WITH_CUDA)
     find_package(CUDA REQUIRED)
-    add_definitions(-DCARMA_HAVE_GPU)
+    add_definitions(-DCOSMA_HAVE_GPU)
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-arch=sm_60;-std=c++11;-Xcompiler -fPIC)
     set(cuda_deps ${CUDA_LIBRARIES})
 else()
     set(cuda_deps "")
 endif()
 
-set(carma_deps ${mpi_deps} ${blas_deps} ${cuda_deps})
+set(cosma_deps ${mpi_deps} ${blas_deps} ${cuda_deps})
 
 #############
 #  Testing  #

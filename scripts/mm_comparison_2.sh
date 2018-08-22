@@ -89,7 +89,7 @@ run_scalapack() {
 #    fi
 }
 
-run_carma() {
+run_cosma() {
     m=$1
     n=$2
     k=$3
@@ -116,7 +116,7 @@ run_carma() {
     if [ "$limited" = true ]; 
     then
         srun -N $nodes -n $n_ranks \
-             $prefix/CARMA/build/miniapp/temp-miniapp \
+             $prefix/COSMA/build/miniapp/temp-miniapp \
              -m $m -n $n -k $k -P $n_ranks --memory $mem_limit
 
         #if [ $idx -eq 2 ]; then
@@ -128,12 +128,12 @@ run_carma() {
         #    echo "Total number of cores: "$n_ranks
 
         #    srun -N $nodes -n $n_ranks \
-        #         $prefix/CARMA/build/miniapp/temp-miniapp \
+        #         $prefix/COSMA/build/miniapp/temp-miniapp \
         #         -m $m -n $n -k $k -P $n_ranks --memory $mem_limit
         #fi
     else
         srun -N $nodes -n $n_ranks \
-             $prefix/CARMA/build/miniapp/temp-miniapp \
+             $prefix/COSMA/build/miniapp/temp-miniapp \
              -m $m -n $n -k $k -P $n_ranks
 
         #if [ $idx -eq 2 ]; then
@@ -145,7 +145,7 @@ run_carma() {
         #    echo "Total number of cores: "$n_ranks
 
         #    srun -N $nodes -n $n_ranks \
-        #         $prefix/CARMA/build/miniapp/temp-miniapp \
+        #         $prefix/COSMA/build/miniapp/temp-miniapp \
         #         -m $m -n $n -k $k -P $n_ranks
         #fi
     fi
@@ -156,7 +156,7 @@ run_carma() {
     fi
 }
 
-run_old_carma() {
+run_old_cosma() {
     m=$1
     n=$2
     k=$3
@@ -319,29 +319,29 @@ run_one() {
     echo "memory limit = $mem_limit"
     echo $nodes" "$m" "$n" "$k" "$mem_limit >> "config.txt"
 
-    if [ "$algorithm" = "carma" ];
+    if [ "$algorithm" = "cosma" ];
     then
         echo ""
         echo "================================="
-        echo "           CARMA"
+        echo "           COSMA"
         echo "================================="
         # OUR ALGORITHM
-        output=$(run_carma $m $n $k $nodes true $idx)
+        output=$(run_cosma $m $n $k $nodes true $idx)
         error=$(substring $output "error")
         echo "error = "$error
         if [ "$error" = "y" ];
         then 
             echo "Failed with limited memory, retrying with infinite memory..."
-            output=$(run_carma $m $n $k $nodes false $idx)
+            output=$(run_cosma $m $n $k $nodes false $idx)
         fi
         echo $output
-        carma_time=$(echo $output | awk -v n_iters="$n_iter" '/CARMA TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
-        echo "CARMA TIMES = "$carma_time
+        cosma_time=$(echo $output | awk -v n_iters="$n_iter" '/COSMA TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
+        echo "COSMA TIMES = "$cosma_time
         if [ "$error" = "y" ];
         then
-            echo $nodes" "$m" "$n" "$k" inf "$carma_time >> "carma_"$nodes".txt"
+            echo $nodes" "$m" "$n" "$k" inf "$cosma_time >> "cosma_"$nodes".txt"
         else
-            echo $nodes" "$m" "$n" "$k" "$mem_limit" "$carma_time >> "carma_"$nodes".txt"
+            echo $nodes" "$m" "$n" "$k" "$mem_limit" "$cosma_time >> "cosma_"$nodes".txt"
         fi
         time=`date '+[%H:%M:%S]'`
         echo "Finished our algorithm at "$time
@@ -390,37 +390,37 @@ run_one() {
         fi
         echo "Finished CYCLOPS algorithm at "$time
 
-    elif [ "$algorithm" = "old_carma" ];
+    elif [ "$algorithm" = "old_cosma" ];
     then
         echo ""
         echo "================================="
-        echo "           OLD CARMA"
+        echo "           OLD COSMA"
         echo "================================="
-        # OLD CARMA
+        # OLD COSMA
         #if [ $(contains "${n_nodes_powers[@]}" $nodes) == "y" ]; then
-        output=$(run_old_carma $m $n $k $nodes true $idx)
+        output=$(run_old_cosma $m $n $k $nodes true $idx)
         error=$(substring $output "error")
         echo "error = "$error
         if [ "$error" = "y" ];
         then 
             echo "Failed with limited memory, retrying with infinite memory..."
-            output=$(run_old_carma $m $n $k $nodes false $idx)
+            output=$(run_old_cosma $m $n $k $nodes false $idx)
         fi
-        old_carma_time=$(echo $output | awk -v n_iters="$n_iter" '/OLD_CARMA TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
+        old_cosma_time=$(echo $output | awk -v n_iters="$n_iter" '/OLD_COSMA TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
         echo $output
-        echo "OLD CARMA TIME = "$old_carma_time
+        echo "OLD COSMA TIME = "$old_cosma_time
         if [ "$error" = "y" ];
         then
-            echo $nodes" "$m" "$n" "$k" inf "$old_carma_time >> "old_carma_"$nodes".txt"
+            echo $nodes" "$m" "$n" "$k" inf "$old_cosma_time >> "old_cosma_"$nodes".txt"
         else
-            echo $nodes" "$m" "$n" "$k" "$mem_limit" "$old_carma_time >> "old_carma_"$nodes".txt"
+            echo $nodes" "$m" "$n" "$k" "$mem_limit" "$old_cosma_time >> "old_cosma_"$nodes".txt"
         fi
         #else
-        #    echo "OLD CARMA TIME = not a power of 2"
-        #    echo "not a power of 2" >> "old_carma_"$nodes".txt"
+        #    echo "OLD COSMA TIME = not a power of 2"
+        #    echo "not a power of 2" >> "old_cosma_"$nodes".txt"
         #fi
         time=`date '+[%H:%M:%S]'`
-        echo "Finished OLD CARMA algorithm at "$time
+        echo "Finished OLD COSMA algorithm at "$time
     fi
 }
 
@@ -443,25 +443,25 @@ run_all() {
 
     echo ""
     echo "================================="
-    echo "           CARMA"
+    echo "           COSMA"
     echo "================================="
     # OUR ALGORITHM
-    output=$(run_carma $m $n $k $nodes true $idx)
+    output=$(run_cosma $m $n $k $nodes true $idx)
     error=$(substring $output "error")
     echo "error = "$error
     if [ "$error" = "y" ];
     then 
         echo "Failed with limited memory, retrying with infinite memory..."
-        output=$(run_carma $m $n $k $nodes false $idx)
+        output=$(run_cosma $m $n $k $nodes false $idx)
     fi
     echo $output
-    carma_time=$(echo $output | awk -v n_iters="$n_iter" '/CARMA TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
-    echo "CARMA TIMES = "$carma_time
+    cosma_time=$(echo $output | awk -v n_iters="$n_iter" '/COSMA TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
+    echo "COSMA TIMES = "$cosma_time
     if [ "$error" = "y" ];
     then
-        echo $nodes" "$m" "$n" "$k" inf "$carma_time >> "carma_"$nodes".txt"
+        echo $nodes" "$m" "$n" "$k" inf "$cosma_time >> "cosma_"$nodes".txt"
     else
-        echo $nodes" "$m" "$n" "$k" "$mem_limit" "$carma_time >> "carma_"$nodes".txt"
+        echo $nodes" "$m" "$n" "$k" "$mem_limit" "$cosma_time >> "cosma_"$nodes".txt"
     fi
     time=`date '+[%H:%M:%S]'`
     echo "Finished our algorithm at "$time
@@ -508,33 +508,33 @@ run_all() {
 
     echo ""
     echo "================================="
-    echo "           OLD CARMA"
+    echo "           OLD COSMA"
     echo "================================="
-    # OLD CARMA
+    # OLD COSMA
     #if [ $(contains "${n_nodes_powers[@]}" $nodes) == "y" ]; then
-    output=$(run_old_carma $m $n $k $nodes true $idx)
+    output=$(run_old_cosma $m $n $k $nodes true $idx)
     error=$(substring $output "error")
     echo "error = "$error
     if [ "$error" = "y" ];
     then 
         echo "Failed with limited memory, retrying with infinite memory..."
-        output=$(run_old_carma $m $n $k $nodes false $idx)
+        output=$(run_old_cosma $m $n $k $nodes false $idx)
     fi
-    old_carma_time=$(echo $output | awk -v n_iters="$n_iter" '/OLD_CARMA TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
+    old_cosma_time=$(echo $output | awk -v n_iters="$n_iter" '/OLD_COSMA TIMES/ {for (i = 0; i < n_iters; i++) {printf "%d ", $(5+i)}}')
     echo $output
-    echo "OLD CARMA TIME = "$old_carma_time
+    echo "OLD COSMA TIME = "$old_cosma_time
     if [ "$error" = "y" ];
     then
-        echo $nodes" "$m" "$n" "$k" inf "$old_carma_time >> "old_carma_"$nodes".txt"
+        echo $nodes" "$m" "$n" "$k" inf "$old_cosma_time >> "old_cosma_"$nodes".txt"
     else
-        echo $nodes" "$m" "$n" "$k" "$mem_limit" "$old_carma_time >> "old_carma_"$nodes".txt"
+        echo $nodes" "$m" "$n" "$k" "$mem_limit" "$old_cosma_time >> "old_cosma_"$nodes".txt"
     fi
     #else
-    #    echo "OLD CARMA TIME = not a power of 2"
-    #    echo "not a power of 2" >> "old_carma_"$nodes".txt"
+    #    echo "OLD COSMA TIME = not a power of 2"
+    #    echo "not a power of 2" >> "old_cosma_"$nodes".txt"
     #fi
     time=`date '+[%H:%M:%S]'`
-    echo "Finished OLD CARMA algorithm at "$time
+    echo "Finished OLD COSMA algorithm at "$time
 
 }
 
@@ -545,13 +545,13 @@ compile() {
     echo "======================================================================================"
     echo ""
     (
-        echo "Compiling CAPS (OLD_CARMA) library..."
+        echo "Compiling CAPS (OLD_COSMA) library..."
         cd $prefix/CAPS/rect-class/
         make -j
     )
     (
         echo "Compiling our library..."
-        cd $prefix/CARMA/build/
+        cd $prefix/COSMA/build/
         make -j
     )
     (
@@ -577,6 +577,6 @@ do
     n=${n_range[idx]}
     k=${k_range[idx]}
     run_all $m $n $k GLOBAL_NODES GLOBAL_P GLOBAL_Q $idx
-    #run_one $m $n $k GLOBAL_NODES GLOBAL_P GLOBAL_Q carma $idx
-    #run_one $m $n $k GLOBAL_NODES GLOBAL_P GLOBAL_Q old_carma $idx
+    #run_one $m $n $k GLOBAL_NODES GLOBAL_P GLOBAL_Q cosma $idx
+    #run_one $m $n $k GLOBAL_NODES GLOBAL_P GLOBAL_Q old_cosma $idx
 done

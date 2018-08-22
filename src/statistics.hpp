@@ -8,9 +8,9 @@
        * size of matrix (m, n, k) in the base case with the maximum computational volume
  */
 
-CarmaMatrix* matrixA;
-CarmaMatrix* matrixB;
-CarmaMatrix* matrixC;
+CosmaMatrix* matrixA;
+CosmaMatrix* matrixB;
+CosmaMatrix* matrixC;
 
 long long total_communication = 0;
 long long max_buffer_size = 0;
@@ -51,10 +51,10 @@ void multiply(const Strategy& strategy) {
     Interval ki = Interval(0, strategy.k-1);
     Interval Pi = Interval(0, strategy.P-1);
 
-    //Declare A,B and C CARMA matrices objects
-    matrixA = new CarmaMatrix('A', strategy, 0);
-    matrixB = new CarmaMatrix('B', strategy, 0);
-    matrixC = new CarmaMatrix('C', strategy, 0);
+    //Declare A,B and COSMA matrices objects
+    matrixA = new CosmaMatrix('A', strategy, 0);
+    matrixB = new CosmaMatrix('B', strategy, 0);
+    matrixC = new CosmaMatrix('C', strategy, 0);
 
     // simulate the algorithm for each rank
     for (int rank = 0; rank < Pi.length(); ++rank) {
@@ -237,7 +237,7 @@ void BFS(Interval& m, Interval& n, Interval& k, Interval& P, int step,
          if divn > 1 => matrix A is expanded
          if divk > 1 => matrix C is expanded
     */
-    CarmaMatrix* expanded_mat = which_is_expanded(matrixA, matrixB, matrixC, strategy, step);
+    CosmaMatrix* expanded_mat = which_is_expanded(matrixA, matrixB, matrixC, strategy, step);
     // gets the buffer sizes before and after expansion.
     // this still does not modify the buffer sizes inside layout
     // it just tells us what they would be.

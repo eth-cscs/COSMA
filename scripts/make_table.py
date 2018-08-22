@@ -1,7 +1,7 @@
 import numpy as np
 import openpyxl
 
-algorithms = ["old_carma", "scalapack", "cyclops", "carma"]
+algorithms = ["old_cosma", "scalapack", "cyclops", "cosma"]
 n_nodes = [4, 7, 8, 13, 16, 25, 27, 32, 37, 61, 64, 81, 93, 128, 201, 216, 256, 333, 473, 512]
 
 experiments = ["square_strong", "square_weak_p0", "square_weak_p1", "thin_strong", "thin_weak_p0", "thin_weak_p1"]
@@ -53,7 +53,7 @@ for nodes_i, nodes in enumerate(n_nodes):
                 sheet.cell(row=row, column=col).value = time
 
                 # output the problem sizes like m, n, k
-                if alg == "carma":
+                if alg == "cosma":
                     if line_i == 0:
                         sheet.cell(row=label_row, column=square_col).value = m
                     elif line_i == 3:

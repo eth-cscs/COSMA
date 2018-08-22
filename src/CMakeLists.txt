@@ -26,13 +26,13 @@ set (cuda_sources
 )
 
 ###################
-#  Carma Library  #
+#  Cosma Library  #
 ###################
-add_library(carma ${sources})
-target_link_libraries(carma semiprof ${mpi_deps})
+add_library(cosma ${sources})
+target_link_libraries(cosma semiprof ${mpi_deps})
 
-if(CARMA_WITH_CUDA)
-    cuda_add_library(carmacu ${cuda_sources})
-    target_link_libraries(carmacu cublas)
+if(COSMA_WITH_CUDA)
+    cuda_add_library(cosmacu ${cuda_sources})
+    target_link_libraries(cosmacu cublas)
 endif()
 

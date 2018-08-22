@@ -18,9 +18,9 @@
 #include "strategy.hpp"
 #include "buffer.hpp"
 
-class CarmaMatrix {
+class CosmaMatrix {
 public:
-    CarmaMatrix(char label, const Strategy& strategy, int rank);
+    CosmaMatrix(char label, const Strategy& strategy, int rank);
 
     int m();
     int n();
@@ -99,7 +99,7 @@ public:
     // outputs matrix in a format:
     //      row, column, value
     // for all local elements on the current rank
-    friend std::ostream& operator<<(std::ostream& os, const CarmaMatrix& mat);
+    friend std::ostream& operator<<(std::ostream& os, const CosmaMatrix& mat);
 
     double* matrix_pointer();
     std::vector<double, mpi_allocator<double>>& matrix();

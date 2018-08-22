@@ -12,7 +12,7 @@
 include(utils)
 include(CheckFunctionExists)
 
-function(carma_find_lapack)
+function(cosma_find_lapack)
   unset(CARMA_LAPACK_LIBRARY CACHE)
   setoption(CARMA_LAPACK_TYPE STRING "Compiler" "BLAS/LAPACK type setting")
   set_property(CACHE CARMA_LAPACK_TYPE PROPERTY STRINGS Compiler MKL Custom)
