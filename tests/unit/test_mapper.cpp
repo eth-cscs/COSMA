@@ -2,11 +2,11 @@
 #include <mapper.hpp>
 
 TEST(strategy, spartition) {
-    int m = 84606;
-    int n = m;
-    int k = m;
-    long long memory_limit = 149130808; // #elements, per node, corresponding to 50GB
-    int nodes = 4;
+    int m = 17408;
+    int n = 17408;
+    int k = 3735552;
+    long long memory_limit = 80000000; // #elements, per node, corresponding to 50GB
+    int nodes = 64;
     int ranks_per_node = 36;
     int P = nodes * ranks_per_node;
     // memory_limit /= ranks_per_node;

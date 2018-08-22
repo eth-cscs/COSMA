@@ -34,9 +34,8 @@ Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
 
 Strategy::Strategy(int mm, int nn, int kk, size_t PP, long long mem_limit, bool top) : 
     m(mm), n(nn), k(kk), P(PP), memory_limit(mem_limit), topology(top) {
-    // square_strategy();
     // default_strategy();
-    spartition_strategy();
+    // spartition_strategy();
     square_strategy();
     n_steps = divisors.size();
     check_if_valid();
@@ -60,9 +59,6 @@ void Strategy::initialize(const std::string& cmd_line) {
     // (i.e. assume that each rank can store all 3 matrices)
     if (memory_limit < 0) {
         memory_limit = std::numeric_limits<long long>::max();
-    } else {
-        // take into account the memory optimization we make
-        memory_limit = (long long) (memory_limit * 1.2);
     }
     topology = flag_exists("-t", "--topology", cmd_line);
 
@@ -76,7 +72,7 @@ void Strategy::initialize(const std::string& cmd_line) {
     }
     else {
         // default_strategy();
-        spartition_strategy();
+        // spartition_strategy();
         square_strategy();
     }
 }
@@ -118,7 +114,7 @@ int Strategy::next_multiple_of(int n_to_round, int multiple) {
 // find all divisors of a given number n
 std::vector<int> Strategy::find_divisors(int n) {
     std::vector<int> divs;
-    for (int i = 2; i < n; ++i) {
+    for (int i = 1; i < n; ++i) {
         if (n % i == 0) {
             divs.push_back(i);
         }
@@ -212,6 +208,8 @@ void Strategy::default_strategy() {
                 + "steps.");
     }
 
+    std::cout << "Default strategy" << std::endl;
+
     for (int i = 0; i < factors.size(); ++i) {
         bool did_bfs = false;
         int accumulated_div = 1;
@@ -279,6 +277,7 @@ void Strategy::default_strategy() {
             P /= accumulated_div;
             continue;
         }
+
 
         // if BFS steps were not possible
         // then perform DFS step first
@@ -445,7 +444,7 @@ void Strategy::square_strategy() {
                 // don't count this iteration
                 i--;
                 step_type += "d";
-                int div = 4;
+                int div = 2;
                 divisors.push_back(div);
 
                 // if m largest => split it
@@ -762,6 +761,10 @@ long long Strategy::required_memory(Strategy& strategy) {
 
 // checks if the strategy is well-defined
 void Strategy::check_if_valid() {
+#ifdef DEBUG
+    std::cout << "Checking if the following strategy is valid: " << std::endl;
+    std::cout << *this << std::endl;
+#endif
     int mi = m;
     int ni = n;
     int ki = k;
