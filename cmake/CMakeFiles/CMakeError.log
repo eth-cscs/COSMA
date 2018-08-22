@@ -1,0 +1,19 @@
+Determining if the function dgemm_ exists failed with the following output:
+Change Dir: /Users/kabicm/Projects/carma-now/cmake/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_94016/fast"
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_94016.dir/build.make CMakeFiles/cmTC_94016.dir/build
+Building C object CMakeFiles/cmTC_94016.dir/CheckFunctionExists.c.o
+/usr/local/bin/gcc-8   -fopenmp -DCHECK_FUNCTION_EXISTS=dgemm_   -o CMakeFiles/cmTC_94016.dir/CheckFunctionExists.c.o   -c /usr/local/Cellar/cmake/3.11.4/share/cmake/Modules/CheckFunctionExists.c
+Linking C executable cmTC_94016
+/usr/local/Cellar/cmake/3.11.4/bin/cmake -E cmake_link_script CMakeFiles/cmTC_94016.dir/link.txt --verbose=1
+/usr/local/bin/gcc-8  -fopenmp -DCHECK_FUNCTION_EXISTS=dgemm_ -Wl,-search_paths_first -Wl,-headerpad_max_install_names   CMakeFiles/cmTC_94016.dir/CheckFunctionExists.c.o  -o cmTC_94016 
+Undefined symbols for architecture x86_64:
+  "_dgemm_", referenced from:
+      _main in CheckFunctionExists.c.o
+ld: symbol(s) not found for architecture x86_64
+collect2: error: ld returned 1 exit status
+make[1]: *** [cmTC_94016] Error 1
+make: *** [cmTC_94016/fast] Error 2
+
+
