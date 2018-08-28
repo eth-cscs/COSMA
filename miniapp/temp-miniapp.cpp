@@ -73,45 +73,23 @@ long run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD) {
 }
 
 int main( int argc, char **argv ) {
-    Strategy strategy(argc, argv);
     MPI_Init(&argc, &argv);
 
     int P, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &P);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+    Strategy strategy(argc, argv);
+
     if (rank == 0) { 
         std::cout << "Strategy = " << strategy << std::endl;
-    }
-
-    MPI_Group group;
-    MPI_Comm_group(MPI_COMM_WORLD, &group);
-    std::vector<int> exclude_ranks;
-    for (int i = strategy.P; i < P; ++i) {
-        exclude_ranks.push_back(i);
-    }
-
-    MPI_Group new_group;
-    MPI_Comm new_comm;
-
-    if (P != strategy.P) {
-        MPI_Group_excl(group, exclude_ranks.size(), exclude_ranks.data(), &new_group);
-        MPI_Comm_create_group(MPI_COMM_WORLD, new_group, 0, &new_comm);
-
-        if (rank >= strategy.P) {
-            MPI_Finalize();
-            return 0;
-        }
     }
 
     int n_iter = get_n_iter();
     std::vector<long> times;
     for (int i = 0; i < n_iter+1; ++i) {
         long t_run = 0;
-        if (P != strategy.P) 
-            t_run = run(strategy, new_comm);
-        else 
-            t_run = run(strategy);
+        t_run = run(strategy);
         if (i == 0) continue;
         times.push_back(t_run);
     }
@@ -123,11 +101,6 @@ int main( int argc, char **argv ) {
             std::cout << time << " ";
         }
         std::cout << std::endl;
-    }
-
-    if (P != strategy.P) {
-        MPI_Group_free(&new_group);
-        MPI_Comm_free(&new_comm);
     }
 
     MPI_Finalize();

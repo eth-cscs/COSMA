@@ -156,6 +156,8 @@ public:
     // size of the initial communicator
     int comm_size();
 
+    bool is_idle();
+
     static void free_comm(MPI_Comm& comm);
     static void free_group(MPI_Group& comm_group);
 
@@ -169,6 +171,11 @@ protected:
     std::vector<int> step_to_comm_index_;
     MPI_Comm full_comm_;
     int comm_size_;
+    // if true then not all processors were used
+    // this usually happens if given number of processors
+    // cannot be decomposed nicely (e.g. if P is prime)
+    bool using_reduced_comm_;
+    bool is_idle_;
 
     static int relative_rank(Interval& P, int rank);
     static int offset(Interval& P, int div, int rank);

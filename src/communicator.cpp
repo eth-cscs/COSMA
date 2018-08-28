@@ -1,10 +1,35 @@
 #include "communicator.hpp"
 
 communicator::communicator(const Strategy* strategy, MPI_Comm comm):
-        strategy_(strategy), full_comm_(comm) {
+        strategy_(strategy), full_comm_(comm), using_reduced_comm_(false) {
+    MPI_Group group;
+    MPI_Group reduced_group;
+    is_idle_ = false;
 
-    MPI_Comm_rank(comm, &rank_);
-    MPI_Comm_size(comm, &comm_size_);
+    MPI_Comm_rank(full_comm_, &rank_);
+    MPI_Comm_size(full_comm_, &comm_size_);
+
+    if (rank_ < strategy->P) {
+        MPI_Comm_group(comm, &group);
+        std::vector<int> exclude_ranks;
+        for (int i = strategy->P; i < comm_size_; ++i) {
+            exclude_ranks.push_back(i);
+        }
+
+        MPI_Group_excl(group, exclude_ranks.size(), exclude_ranks.data(), &reduced_group);
+        MPI_Comm_create_group(comm, reduced_group, 0, &full_comm_);
+        using_reduced_comm_ = true;
+
+        MPI_Group_free(&reduced_group);
+        MPI_Group_free(&group);
+    } else {
+        is_idle_ = true;
+    }
+
+
+    if (is_idle_) {
+        return;
+    }
 
     if (strategy_->topology) {
         add_topology();
@@ -22,7 +47,13 @@ communicator::communicator(const Strategy* strategy, MPI_Comm comm):
 }
 
 communicator::~communicator() {
-    free_comms();
+    if (!is_idle_) {
+        free_comms();
+    }
+}
+
+bool communicator::is_idle() {
+    return is_idle_;
 }
 
 // adds vector b to vector a
@@ -275,6 +306,9 @@ MPI_Comm communicator::create_comm_subproblem(MPI_Comm comm, Interval& P, Interv
 }
 
 void communicator::free_comms() {
+    if (using_reduced_comm_) {
+        free_comm(full_comm_);
+    }
     for (int i = 0; i < comm_ring_.size(); ++i) {
         free_comm(comm_ring_[i]);
     }

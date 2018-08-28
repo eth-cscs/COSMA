@@ -136,4 +136,6 @@ protected:
     Mapper mapper_;
     Layout layout_;
     Buffer buffer_;
+
+    std::vector<double, mpi_allocator<double>> dummy_vector;
 };

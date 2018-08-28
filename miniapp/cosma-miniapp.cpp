@@ -26,7 +26,7 @@ void output_matrix(CosmaMatrix& M, int rank) {
     local_file.close();
 }
 
-int run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD) {
+void run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD) {
     int rank, size;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
@@ -50,16 +50,18 @@ int run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD) {
 }
 
 int main( int argc, char **argv ) {
-    Strategy strategy(argc, argv);
     MPI_Init(&argc, &argv);
 
     int P, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &P);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    if (P != strategy.P) {
-        throw(std::runtime_error("Number of processors available not equal \
-                                 to the number of processors specified by flag P"));
+    Strategy strategy(argc, argv);
+
+    // if this rank is not used, return immediately
+    if (rank >= strategy.P) {
+        MPI_Finalize();
+        return 0;
     }
 
     if (rank == 0) {

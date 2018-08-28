@@ -16,7 +16,8 @@ set(sources
     timer.hpp
     buffer.cpp
     mpi_allocator.hpp
-    scheduleGenerator.cpp
+    options.cpp
+    math_utils.cpp
 )
 
 set (cuda_sources 

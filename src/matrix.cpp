@@ -16,6 +16,11 @@ CosmaMatrix::CosmaMatrix(char label, const Strategy& strategy, int rank) :
         n_ = strategy.n;
     }
     P_ = strategy.P;
+
+    if (rank >= P_) {
+        return;
+    }
+
     mapper_ = Mapper(label, m_, n_, P_, strategy, rank);
     layout_ = Layout(label, m_, n_, P_, rank, mapper_.complete_layout());
     buffer_ = Buffer(label, strategy, rank, &mapper_, &layout_);
@@ -38,10 +43,14 @@ char CosmaMatrix::label() {
 }
 
 const int CosmaMatrix::initial_size(int rank) const {
+    if (rank >= strategy_.P) 
+        return 0;
     return mapper_.initial_size(rank);
 }
 
 const int CosmaMatrix::initial_size() const {
+    if (rank_ >= strategy_.P) 
+        return 0;
     return mapper_.initial_size();
 }
 
@@ -94,16 +103,25 @@ const std::pair<int, int> CosmaMatrix::global_coordinates(int local_index) const
 
 double* CosmaMatrix::matrix_pointer() {
     //return matrix_.data();
+    if (rank_ >= strategy_.P) {
+        return nullptr;
+    }
     return buffer_.initial_buffer_ptr();
 }
 
 std::vector<double, mpi_allocator<double>>& CosmaMatrix::matrix() {
     //return matrix_;
+    if (rank_ >= strategy_.P) {
+        return dummy_vector;
+    }
     return buffer_.initial_buffer();
 }
 
 const std::vector<double, mpi_allocator<double>>& CosmaMatrix::matrix() const {
     //return matrix_;
+    if (rank_ >= strategy_.P) {
+        return dummy_vector;
+    }
     return buffer_.initial_buffer();
 }
 
