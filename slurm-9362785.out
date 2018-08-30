@@ -1,0 +1,34 @@
+/users/kabicm/.bashrc: line 41: bind: warning: line editing not enabled
+/users/kabicm/.bashrc: line 42: bind: warning: line editing not enabled
+ModuleCmd_Switch.c(179):ERROR:152: Module 'PrgEnv-cray' is currently not loaded
+Strategy = Matrix dimensions (m, n, k) = (25000, 25000, 25000)
+Number of processors: 48
+Communication backend: two-sided.
+Divisions strategy: 
+BFS (m / 3)
+BFS (n / 2)
+BFS (k / 4)
+BFS (n / 2)
+Required memory per rank (in #elements): 208328127
+Available memory per rank (in #elements): 9223372036854775807
+
+COSMA TIMES [ms] = 4104 
+ 
+Batch Job Summary Report for Job "matmul" (9362785) on daint
+-----------------------------------------------------------------------------------------------------
+             Submit            Eligible               Start                 End    Elapsed  Timelimit 
+------------------- ------------------- ------------------- ------------------- ---------- ---------- 
+2018-08-30T12:50:49 2018-08-30T12:50:50 2018-08-30T12:51:18 2018-08-30T12:52:06   00:00:48   00:03:00 
+-----------------------------------------------------------------------------------------------------
+Username    Account     Partition   NNodes   Energy
+----------  ----------  ----------  ------  --------------
+kabicm      csstaff     normal           4   21.15K joules
+----------------------------------------------------------
+gpusecs  maxgpusecs        maxmem            summem
+-------  ----------  ------------  ----------------
+     24          24   15121514496       61706600448
+----------------------------------------------------------
+Scratch File System        Files       Quota
+--------------------  ----------  ----------
+/scratch/snx3000            4378     1000000
+ 

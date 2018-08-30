@@ -1,10 +1,10 @@
 #pragma once
 #include <cmath>
 #include <iostream>
-#include <mutex>
 #include <cublas_v2.h>
 #include <cuda_profiler_api.h>
 #include <cuda.h>
+#include <mutex>
 
 // helper for initializing cublas
 // use only for demos: not threadsafe
@@ -116,26 +116,3 @@ void copy_to_host_async(const T* from, T* to, size_t n, cudaStream_t stream=NULL
     cuda_check_status(status);
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// nvprof profiler interface
-///////////////////////////////////////////////////////////////////////////////
-
-// global variables for managing access to profiler
-bool is_running_nvprof = false;
-std::mutex gpu_profiler_mutex;
-
-void start_nvprof() {
-    std::lock_guard<std::mutex> guard(gpu_profiler_mutex);
-    if (!is_running_nvprof) {
-        cudaProfilerStart();
-    }
-    is_running_nvprof = true;
-}
-
-void stop_nvprof() {
-    std::lock_guard<std::mutex> guard(gpu_profiler_mutex);
-    if (is_running_nvprof) {
-        cudaProfilerStop();
-    }
-    is_running_nvprof = false;
-}

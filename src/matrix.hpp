@@ -87,6 +87,10 @@ public:
     // returns the pointer to the current buffer
     double* buffer_ptr();
 
+#ifdef COSMA_HAVE_GPU
+    double* device_buffer_ptr();
+#endif
+
     std::vector<double, mpi_allocator<double>>& buffer();
     const std::vector<double, mpi_allocator<double>>& buffer() const;
 

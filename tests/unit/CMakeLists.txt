@@ -33,8 +33,12 @@ set(TEST_SOURCES test_mapper.cpp unit_test.cpp)
 
 set(target unit_test.exe)
 add_executable(unit_test.exe ${TEST_SOURCES})
-target_link_libraries(${target} gtest)
-target_link_libraries(${target} cosma)
+if (COSMA_WITH_CUDA)
+    target_link_libraries(${target} gtest cosmacu cosma ${cosma_deps})
+else()
+    target_link_libraries(${target} gtest cosma ${cosma_deps})
+endif()
+
 add_test(layout-and-mapper-tests unit_test.exe)
 
 # debug with

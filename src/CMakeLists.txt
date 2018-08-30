@@ -15,15 +15,15 @@ set(sources
     interval.cpp
     timer.hpp
     buffer.cpp
-    mpi_allocator.hpp
     options.cpp
     math_utils.cpp
 )
 
 set (cuda_sources 
     gpu/gemm.cu
-    gpu/cuda_event.hpp
-    gpu/cuda_stream.hpp
+    #gpu/cuda_event.hpp
+    #gpu/cuda_stream.hpp
+    gpu/device_vector.cu
 )
 
 ###################

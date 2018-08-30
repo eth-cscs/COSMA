@@ -2,6 +2,7 @@
 
 Buffer::Buffer(char label, const Strategy& strategy, int rank, Mapper* mapper, Layout* layout):
     label_(label), strategy_(&strategy), rank_(rank), mapper_(mapper), layout_(layout) {
+    max_base_buffer_size_ = -1;
     compute_n_buckets();
     initialize_buffers();
 }
@@ -21,6 +22,10 @@ void Buffer::initialize_buffers() {
     }
 
     current_buffer_ = 0;
+
+#ifdef COSMA_HAVE_GPU
+    device_buffer_ = device_vector<double>(max_base_buffer_size_);
+#endif
 }
 
 void Buffer::compute_n_buckets() {
@@ -305,6 +310,8 @@ void Buffer::compute_max_buffer_size(Interval& m, Interval& n, Interval& k, Inte
             max_size = 1LL * m.length() * n.length();
         }
 
+        max_base_buffer_size_ = std::max(max_base_buffer_size_, max_size);
+
         if (max_size > max_recv_buffer_size_) {
             max_send_buffer_size_ = max_recv_buffer_size_;
             max_recv_buffer_size_ = max_size;
@@ -427,3 +434,9 @@ const long long Buffer::max_send_buffer_size() const {
 const long long Buffer::max_recv_buffer_size() const {
     return max_recv_buffer_size_;
 }
+
+#ifdef COSMA_HAVE_GPU
+double* Buffer::device_buffer_ptr() {
+    return device_buffer_.data();
+}
+#endif

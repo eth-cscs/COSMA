@@ -226,3 +226,8 @@ void CosmaMatrix::set_current_matrix(double* mat) {
     current_mat = mat;
 }
 
+#ifdef COSMA_HAVE_GPU
+double* CosmaMatrix::device_buffer_ptr() {
+    return buffer_.device_buffer_ptr();
+}
+#endif

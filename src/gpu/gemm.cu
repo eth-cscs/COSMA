@@ -9,15 +9,11 @@
 using value_type = double;
 using size_type  = size_t;
 
-void gpu_dgemm_(double* a, double*b, double*c,
+void gpu_dgemm_(double* a, double* b, double* c,
+          double* a_device, double* b_device, double* c_device,
           int m, int n, int k,
           double alpha, double beta)
 {
-
-    double* a_device = malloc_device<value_type>(m*k);
-    double* b_device = malloc_device<value_type>(k*n);
-    double* c_device = malloc_device<value_type>(m*n);
-
     // copy to device
     cuda_stream stream; // default stream
     auto start_event = stream.enqueue_event();
@@ -50,8 +46,4 @@ void gpu_dgemm_(double* a, double*b, double*c,
     auto time_H2D   = H2D_event.time_since(start_event);
     auto time_D2H   = end_event.time_since(kernel_event);
     auto time_dgemm = kernel_event.time_since(H2D_event);
-
-    cudaFree(a_device);
-    cudaFree(b_device);
-    cudaFree(c_device);
 }

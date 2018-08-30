@@ -6,6 +6,10 @@
 #include "layout.hpp"
 #include "mpi_allocator.hpp"
 
+#ifdef COSMA_HAVE_GPU
+#include "./gpu/device_vector.hpp"
+#endif
+
 /*
  * This class wrapps up a vector of buffers representing single matrix (A, B or C).
  * During the algorithm, a new buffer is allocated in each BFS step in which 
@@ -65,6 +69,11 @@ public:
     // used to get the sizes of buffers needed in each step
     Layout* layout_;
 
+#ifdef COSMA_HAVE_GPU
+    device_vector<double> device_buffer_;
+    double* device_buffer_ptr();
+#endif
+
 protected:
     // computes the buffer sizes that is needed for this matrix (where label_="A", "B" or "C");
     // the length of this vector is the number of different buffers that is needed.
@@ -109,6 +118,8 @@ protected:
     // (max_recv_buffer_size >= max_send_buffer_size);
     long long max_send_buffer_size_;
     long long max_recv_buffer_size_;
+    // max size of the matrix in the base case (among all base cases)
+    long long max_base_buffer_size_;
     const long long max_send_buffer_size() const;
     const long long max_recv_buffer_size() const;
 };
