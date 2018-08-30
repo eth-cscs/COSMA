@@ -1,3 +1,4 @@
+#pragma once
 #include "communicator.hpp"
 
 class one_sided_communicator: public communicator {

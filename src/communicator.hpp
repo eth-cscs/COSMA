@@ -156,11 +156,16 @@ public:
     // size of the initial communicator
     int comm_size();
 
+    // true if this rank is not taking part in the multiplication
+    // this might happen if the total number of ranks is e.g. prime
+    // or does not yield a convenient processor decomposition
     bool is_idle();
 
+    // wrappers around MPI_Comm_free and MPI_Group_free
     static void free_comm(MPI_Comm& comm);
     static void free_group(MPI_Group& comm_group);
 
+    // wrapper around MPI_Finalize
     static void finalize();
 
 protected:
