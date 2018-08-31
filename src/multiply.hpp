@@ -11,7 +11,9 @@
 #include <semiprof.hpp>
 #include "strategy.hpp"
 #include "timer.hpp"
+#ifdef COSMA_HAVE_GPU
 #include "gpu/gemm.hpp"
+#endif
 
 void multiply(CosmaMatrix& A, CosmaMatrix& B, CosmaMatrix& C,
               const Strategy& strategy, MPI_Comm comm=MPI_COMM_WORLD, 

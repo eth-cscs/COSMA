@@ -16,26 +16,6 @@ include_directories("${PRJ_ROOT_DIR}/src")
 ################
 
 if (COSMA_WITH_CUDA)
-    cuda_add_lib_executable(cosma-miniapp
-      cosma
-      cosmacu
-      ${cosma_deps})
-
-    cuda_add_lib_executable(temp-miniapp
-      cosma
-      cosmacu
-      ${cosma_deps})
-
-    cuda_add_lib_executable(cosma-statistics
-      cosma
-      cosmacu
-      ${cosma_deps})
-
-    cuda_add_lib_executable(test-strategy
-      cosma
-      cosmacu
-      ${cosma_deps})
-else()
     add_lib_executable(cosma-miniapp
       cosma
       ${cosma_deps})

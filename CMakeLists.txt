@@ -113,7 +113,7 @@ set(blas_deps ${COSMA_LAPACK_LIBRARY})
 ################
 option(COSMA_WITH_CUDA "use CUDA GPU backend for base case" OFF)
 if(COSMA_WITH_CUDA)
-    #enable_language(CUDA)
+    enable_language(CUDA)
     #set(CMAKE_CXX_STANDARD 11)
     find_package(CUDA REQUIRED)
     add_definitions(-DCOSMA_HAVE_GPU)

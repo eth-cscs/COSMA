@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 3.5)
 ###############
 
 set(sources
+    gpu/gemm.hpp
     communicator.cpp
     multiply.cpp
     matrix.cpp
@@ -20,20 +21,21 @@ set(sources
 )
 
 set (cuda_sources 
-    gpu/gemm.cu
+    #gpu/gemm.cu
     #gpu/cuda_event.hpp
     #gpu/cuda_stream.hpp
-    gpu/device_vector.cu
+    #gpu/device_vector.cu
 )
 
 ###################
 #  Cosma Library  #
 ###################
+
 add_library(cosma ${sources})
-target_link_libraries(cosma semiprof ${mpi_deps})
 
 if(COSMA_WITH_CUDA)
-    cuda_add_library(cosmacu ${cuda_sources})
-    target_link_libraries(cosmacu cublas)
+    target_link_libraries(cosma semiprof ${mpi_deps} cublas)
+else()
+    target_link_libraries(cosma semiprof ${mpi_deps})
 endif()
 
