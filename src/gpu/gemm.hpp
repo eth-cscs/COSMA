@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <cmath>
 #include <cstdio>
@@ -8,6 +9,7 @@
 using value_type = double;
 using size_type  = size_t;
 
+inline
 void gpu_dgemm_(double* a, double* b, double* c,
           double* a_device, double* b_device, double* c_device,
           int m, int n, int k,

@@ -15,20 +15,18 @@ include_directories("${PRJ_ROOT_DIR}/src")
 #  Build test  #
 ################
 
-if (COSMA_WITH_CUDA)
-    add_lib_executable(cosma-miniapp
-      cosma
-      ${cosma_deps})
+add_lib_executable(cosma-miniapp
+  cosma
+  ${cosma_deps})
 
-    add_lib_executable(temp-miniapp
-      cosma
-      ${cosma_deps})
+add_lib_executable(temp-miniapp
+  cosma
+  ${cosma_deps})
 
-    add_lib_executable(cosma-statistics
-      cosma
-      ${cosma_deps})
+add_lib_executable(cosma-statistics
+  cosma
+  ${cosma_deps})
 
-    add_lib_executable(test-strategy
-      cosma
-      ${cosma_deps})
-endif()
+add_lib_executable(test-strategy
+  cosma
+  ${cosma_deps})

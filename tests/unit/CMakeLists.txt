@@ -15,16 +15,9 @@ include_directories("${PRJ_ROOT_DIR}/src")
 #  Build test  #
 ################
 
-if (COSMA_WITH_CUDA)
-    cuda_add_lib_executable(cosma-test
-        cosma
-        cosmacu
-        ${cosma_deps})
-else()
-    add_lib_executable(cosma-test
-        cosma
-        ${cosma_deps})
-endif()
+add_lib_executable(cosma-test
+    cosma
+    ${cosma_deps})
 
 ################
 #  unit gtests #
@@ -33,11 +26,7 @@ set(TEST_SOURCES test_mapper.cpp unit_test.cpp)
 
 set(target unit_test.exe)
 add_executable(unit_test.exe ${TEST_SOURCES})
-if (COSMA_WITH_CUDA)
-    target_link_libraries(${target} gtest cosmacu cosma ${cosma_deps})
-else()
-    target_link_libraries(${target} gtest cosma ${cosma_deps})
-endif()
+target_link_libraries(${target} gtest cosma ${cosma_deps})
 
 add_test(layout-and-mapper-tests unit_test.exe)
 
