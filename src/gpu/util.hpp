@@ -7,6 +7,9 @@
 #include <cuda_runtime_api.h>
 #include <mutex>
 
+using value_type = double;
+using size_type  = size_t;
+
 // helper for initializing cublas
 // use only for demos: not threadsafe
 static cublasHandle_t get_cublas_handle() {

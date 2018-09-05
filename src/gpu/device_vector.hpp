@@ -12,10 +12,13 @@ public:
 
     // copy-constructors are not supported
     device_vector(device_vector& other) = delete;
-    device_vector(device_vector&& other) = delete;
+    // device_vector(device_vector&& other) = delete;
 
     // assignment operators are supported
     device_vector& operator=(device_vector&& other) {
+        if (this->data_) {
+            cudaFree(this->data_);
+        }
         this->data_ = other.data_;
         other.data_ = nullptr;
         this->size_ = other.size_;

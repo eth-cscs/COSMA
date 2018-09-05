@@ -33,7 +33,3 @@ void DFS(CosmaMatrix& A, CosmaMatrix& B, CosmaMatrix& C,
 void BFS(CosmaMatrix& A, CosmaMatrix& B, CosmaMatrix& C,
          Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
          const Strategy& strategy, double beta, communicator& comm);
-
-// to achieve the maximum performance, blas should be invoked few times
-// with a dummy computation, just so that it initializes the threading mechanism
-void initialize_blas();
