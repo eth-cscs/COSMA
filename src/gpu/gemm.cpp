@@ -11,10 +11,9 @@ void gpu_dgemm_(double* a, double* b, double* c,
     int k_gpu = k;
     int n_gpu = n;
 
-    /*
     int m_cpu = m;
     int k_cpu = k;
-    int n_cpu = 0;
+    int n_cpu = n - n_gpu;
 
     int lda = m;
     int ldb = k;
@@ -22,7 +21,6 @@ void gpu_dgemm_(double* a, double* b, double* c,
 
     char N = 'N';
     double one = 1.;
-    */
 
     // copy to device
     cuda_stream stream; // default stream
@@ -52,12 +50,12 @@ void gpu_dgemm_(double* a, double* b, double* c,
     auto end_event = stream.enqueue_event();
 
     // perform concurrently dgemm on CPU
-    //dgemm_(&N, &N, &m_cpu, &n_cpu, &k_cpu, &one, a, &lda, b + ldb * n_gpu, &ldb, &beta, c + ldc * n_gpu, &ldc);
+    dgemm_(&N, &N, &m_cpu, &n_cpu, &k_cpu, &one, a, &lda, b + ldb * n_gpu, &ldb, &beta, c + ldc * n_gpu, &ldc);
 
     end_event.wait();
 
-    auto time_total = end_event.time_since(start_event);
-    auto time_H2D   = H2D_event.time_since(start_event);
-    auto time_D2H   = end_event.time_since(kernel_event);
-    auto time_dgemm = kernel_event.time_since(H2D_event);
+    //auto time_total = end_event.time_since(start_event);
+    //auto time_H2D   = H2D_event.time_since(start_event);
+    //auto time_D2H   = end_event.time_since(kernel_event);
+    //auto time_dgemm = kernel_event.time_since(H2D_event);
 }

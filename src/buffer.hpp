@@ -7,6 +7,7 @@
 #include "mpi_allocator.hpp"
 
 #ifdef COSMA_HAVE_GPU
+//#include "./gpu/cuda_allocator.hpp"
 #include "./gpu/device_vector.hpp"
 #endif
 

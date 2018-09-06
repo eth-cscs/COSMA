@@ -34,8 +34,8 @@ set (cuda_sources
 add_library(cosma ${sources})
 
 if(COSMA_WITH_CUDA)
-    target_link_libraries(cosma semiprof ${mpi_deps} cublas)
+    target_link_libraries(cosma semiprof ${mpi_deps} ${blas_deps} cublas)
 else()
-    target_link_libraries(cosma semiprof ${mpi_deps})
+    target_link_libraries(cosma semiprof ${mpi_deps} ${blas_deps})
 endif()
 
