@@ -70,7 +70,7 @@ public:
      * in a single invocation of this function. Only blocks belonging to the 
      * current submatrix are being exchanged within a single invocation of copy.
      */
-    virtual void copy(Interval& P, double* in, double* out,
+    virtual void copy(Interval& P, double* in, double* out, double* reshuffle_buffer,
         std::vector<std::vector<int>>& size_before,
         std::vector<int>& total_before,
         int total_after, int step) = 0;
@@ -120,7 +120,7 @@ public:
      * in a single invocation of this function. Only blocks belonging to the 
      * current submatrix are being exchanged within a single invocation of reduce.
      */
-    virtual void reduce(Interval& P, double* in, double* out,
+    virtual void reduce(Interval& P, double* in, double* out, double* reshuffle_buffer,
         std::vector<std::vector<int>>& c_current,
         std::vector<int>& c_total_current,
         std::vector<std::vector<int>>& c_expanded,

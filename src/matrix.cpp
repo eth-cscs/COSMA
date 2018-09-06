@@ -66,6 +66,10 @@ double* CosmaMatrix::buffer_ptr() {
     return buffer_.buffer_ptr();
 }
 
+double* CosmaMatrix::reshuffle_buffer_ptr() {
+    return buffer_.reshuffle_buffer_ptr();
+}
+
 std::vector<double, mpi_allocator<double>>& CosmaMatrix::buffer() {
     return buffer_.buffer();
 }

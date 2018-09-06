@@ -2,14 +2,16 @@
 
 Buffer::Buffer(char label, const Strategy& strategy, int rank, Mapper* mapper, Layout* layout):
     label_(label), strategy_(&strategy), rank_(rank), mapper_(mapper), layout_(layout) {
-    max_base_buffer_size_ = -1;
     compute_n_buckets();
     initialize_buffers();
 }
 
 void Buffer::initialize_buffers() {
+    max_base_buffer_size_ = -1;
+    max_reshuffle_buffer_size_ = -1;
     max_send_buffer_size_ = (long long) mapper_->initial_size();
     max_recv_buffer_size_ = (long long) mapper_->initial_size();
+
     std::vector<long long> buff_sizes = compute_buffer_size();
 
     buffers_ = std::vector<std::vector<double, mpi_allocator<double>>>(buff_sizes.size()+1, std::vector<double, mpi_allocator<double>>());
@@ -19,6 +21,10 @@ void Buffer::initialize_buffers() {
     // in the initial buffers
     for (int i = 0; i < buff_sizes.size(); ++i) {
         buffers_[i+1].resize(buff_sizes[i]);
+    }
+
+    if (max_reshuffle_buffer_size_ > 0) {
+        reshuffle_buffer_ = std::unique_ptr<double[]>(new double[max_reshuffle_buffer_size_]);
     }
 
     current_buffer_ = 0;
@@ -77,6 +83,10 @@ const std::vector<double, mpi_allocator<double>>& Buffer::buffer() const {
 
 double* Buffer::buffer_ptr() {
     return buffer().data();
+}
+
+double* Buffer::reshuffle_buffer_ptr() {
+    return max_reshuffle_buffer_size_ > 0 ? reshuffle_buffer_.get() : nullptr;
 }
 
 std::vector<double, mpi_allocator<double>>& Buffer::initial_buffer() {
@@ -199,7 +209,6 @@ std::vector<long long> Buffer::compute_buffer_size(Interval& m, Interval& n, Int
         Interval newm = m.subinterval(divm, divm>1 ? partition_idx : 0);
         Interval newn = n.subinterval(divn, divn>1 ? partition_idx : 0);
         Interval newk = k.subinterval(divk, divk>1 ? partition_idx : 0); 
-        bool expanded = false;
 
         int offset = rank - newP.first();
 
@@ -210,12 +219,11 @@ std::vector<long long> Buffer::compute_buffer_size(Interval& m, Interval& n, Int
 
         long long max_size = -1;
 
-        if ((label_ == 'A' && !strategy_->split_A(step))
-                || (label_ == 'B' && !strategy_->split_B(step))
-                || (label_ == 'C' && !strategy_->split_C(step))) {
+        bool expanded = label_ == 'A' && !strategy_->split_A(step)
+                     || label_ == 'B' && !strategy_->split_B(step)
+                     || label_ == 'C' && !strategy_->split_C(step);
 
-            expanded = true;
-
+        if (expanded) {
             /*
              * this gives us the 2D interval of the matrix that will be expanded:
                  if divm > 1 => matrix B expanded => Interval2D(k, n)
@@ -247,6 +255,12 @@ std::vector<long long> Buffer::compute_buffer_size(Interval& m, Interval& n, Int
             long long old_size = total_before_expansion[rank - P.first()];
             long long new_size = total_after_expansion[rank - newP.first()];
             max_size = std::max(old_size, new_size);
+
+            int n_blocks = size_before_expansion[rank - P.first()].size();
+
+            if (n_blocks > 1) {
+                max_reshuffle_buffer_size_ = std::max(max_reshuffle_buffer_size_, new_size);
+            }
         }
 
         // invoke the recursion

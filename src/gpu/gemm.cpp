@@ -1,3 +1,4 @@
+#ifdef COSMA_HAVE_GPU
 #include "gemm.hpp"
 
 void gpu_dgemm_(double* a, double* b, double* c,
@@ -59,3 +60,4 @@ void gpu_dgemm_(double* a, double* b, double* c,
     //auto time_D2H   = end_event.time_since(kernel_event);
     //auto time_dgemm = kernel_event.time_since(H2D_event);
 }
+#endif

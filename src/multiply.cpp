@@ -310,6 +310,7 @@ void BFS(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
 
     double* original_matrix = expanded_mat.current_matrix();
     double* expanded_matrix = expanded_mat.buffer_ptr();
+    double* reshuffle_buffer = expanded_mat.reshuffle_buffer_ptr();
 
     // pack the data for the next recursive call
     expanded_mat.set_current_matrix(expanded_matrix);
@@ -321,7 +322,7 @@ void BFS(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
     // exactly the same data in the expanded matrix.
     if (strategy.split_m(step) || strategy.split_n(step)) {
         // copy the matrix that wasn't divided in this step
-        comm.copy(P, original_matrix, expanded_matrix,
+        comm.copy(P, original_matrix, expanded_matrix, reshuffle_buffer,
                   size_before_expansion, total_before_expansion, new_size, step);
     }
     PL();
@@ -344,7 +345,7 @@ void BFS(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
     PE(multiply_communication_reduce);
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
-        comm.reduce(P, expanded_matrix, original_matrix, size_before_expansion, 
+        comm.reduce(P, expanded_matrix, original_matrix, reshuffle_buffer, size_before_expansion, 
                 total_before_expansion, size_after_expansion, total_after_expansion, beta, step);
     }
     PL();

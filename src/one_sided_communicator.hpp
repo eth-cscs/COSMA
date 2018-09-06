@@ -23,7 +23,7 @@ public:
         return win;
     }
 
-    void copy(Interval& P, double* in, double* out,
+    void copy(Interval& P, double* in, double* out, double* reshuffle_buffer,
             std::vector<std::vector<int>>& size_before,
             std::vector<int>& total_before,
             int total_after, int step) override {
@@ -65,7 +65,7 @@ public:
 #endif
     }
 
-    void reduce(Interval& P, double* in, double* out,
+    void reduce(Interval& P, double* in, double* out, double* reshuffle_buffer,
             std::vector<std::vector<int>>& c_current,
             std::vector<int>& c_total_current,
             std::vector<std::vector<int>>& c_expanded,

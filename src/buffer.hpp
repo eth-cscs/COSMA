@@ -43,6 +43,7 @@ public:
 
     // returns the pointer to the current buffer
     double* buffer_ptr();
+    double* reshuffle_buffer_ptr();
     // returns a reference to the current buffer
     std::vector<double, mpi_allocator<double>>& buffer();
     const std::vector<double, mpi_allocator<double>>& buffer() const;
@@ -112,8 +113,14 @@ protected:
     // vector of buffers being used for the current matrix (given by label) 
     // by the current rank (determined by variable rank_)
     std::vector<std::vector<double, mpi_allocator<double>>> buffers_;
+    // temporary buffer used for reshuffling of data received from other ranks
+    // this happens when DFS steps are present, i.e. when n_blocks > 1
+    std::unique_ptr<double[]> reshuffle_buffer_;
     // pointer to the current buffer being used in the previous vector of buffers
     int current_buffer_;
+
+    // buffer used in DFS steps for reshuffling
+    long long max_reshuffle_buffer_size_;
 
     // computed by compute_max_buffer_size function. represent the two largest buffer sizes 
     // (max_recv_buffer_size >= max_send_buffer_size);
