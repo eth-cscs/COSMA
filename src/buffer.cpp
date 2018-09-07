@@ -462,6 +462,12 @@ void Buffer::compute_max_buffer_size(Interval& m, Interval& n, Interval& k, Inte
                 max_send_buffer_size_ = max_size;
             }
 
+            int n_blocks = size_before_expansion[rank - P.first()].size();
+
+            if (n_blocks > 1) {
+                max_reshuffle_buffer_size_ = std::max(max_reshuffle_buffer_size_, new_size);
+            }
+
             // if C was expanded, then reduce was invoked
             if (label_ == 'C' && beta > 0) {
                 int gp, off;
