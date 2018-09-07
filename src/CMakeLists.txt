@@ -20,22 +20,8 @@ set(sources
     math_utils.cpp
 )
 
-set (cuda_sources 
-    #gpu/gemm.cu
-    #gpu/cuda_event.hpp
-    #gpu/cuda_stream.hpp
-    #gpu/device_vector.cu
-)
-
 ###################
 #  Cosma Library  #
 ###################
-
 add_library(cosma ${sources})
-
-if(COSMA_WITH_CUDA)
-    target_link_libraries(cosma semiprof ${mpi_deps} ${blas_deps} cublas)
-else()
-    target_link_libraries(cosma semiprof ${mpi_deps} ${blas_deps})
-endif()
-
+target_link_libraries(cosma ${cosma_deps})

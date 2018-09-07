@@ -1,37 +1,17 @@
-cmake_minimum_required(VERSION 3.5)
-
-project(tests)
-
-set(BIN_TEST_DIR ${CMAKE_CURRENT_BINARY_DIR})
-set(TEST_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-
-####################
-#  Lib Dependancy  #
-####################
-
-include_directories("${PRJ_ROOT_DIR}/src")
-
 ################
 #  Build test  #
 ################
-
-add_lib_executable(cosma-test
-    cosma
-    ${cosma_deps})
+add_executable(cosma-test "cosma-test.cpp")
+target_link_libraries(cosma-test cosma ${cosma_deps})
 
 ################
 #  unit gtests #
 ################
 set(TEST_SOURCES test_mapper.cpp unit_test.cpp)
-
-set(target unit_test.exe)
 add_executable(unit_test.exe ${TEST_SOURCES})
-target_link_libraries(${target} gtest cosma ${cosma_deps})
+target_link_libraries(unit_test.exe gtest cosma ${cosma_deps})
 
 add_test(layout-and-mapper-tests unit_test.exe)
-
-# debug with
-# mpirun -np 1 xterm -e lldb -o run -- ./cosma-test  ...
 
 if (MPI_FOUND)
 # test the correctness of cosma

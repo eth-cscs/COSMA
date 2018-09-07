@@ -32,6 +32,9 @@ set(PRJ_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 option(COSMA_WITH_PROFILING "use the semiprof profiler" OFF)
 if(COSMA_WITH_PROFILING)
     add_definitions(-DSEMIPROF)
+    set(prof_deps semiprof)
+else()
+    set(prof_deps "")
 endif()
 
 include_directories("${PRJ_ROOT_DIR}/profiler")
@@ -119,12 +122,12 @@ if(COSMA_WITH_CUDA)
     add_definitions(-DCOSMA_HAVE_GPU)
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-arch=sm_60;-std=c++11;-Xcompiler -fPIC)
     #list(APPEND CMAKE_CUDA_FLAGS -arch=sm_60)
-    set(cuda_deps ${CUDA_LIBRARIES})
+    set(cuda_deps ${CUDA_LIBRARIES} cublas)
 else()
     set(cuda_deps "")
 endif()
 
-set(cosma_deps ${mpi_deps} ${blas_deps} ${cuda_deps})
+set(cosma_deps ${mpi_deps} ${blas_deps} ${cuda_deps} ${prof_deps})
 
 #############
 #  Testing  #
@@ -135,6 +138,8 @@ enable_testing()
 #####################################
 #  Adding various code directories  #
 #####################################
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src")
+
 add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(miniapp)
