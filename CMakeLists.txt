@@ -4,8 +4,6 @@ project(cosma)
 set(PROJECT_NAME cosma CXX C)
 set(CMAKE_CXX_STANDARD 14)
 
-include(./cmake/utils.cmake)
-
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING
     "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release." FORCE)
@@ -23,9 +21,6 @@ site_name(HOSTNAME)
 set(PRJ_CMAKE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 list(APPEND CMAKE_MODULE_PATH "${PRJ_CMAKE_DIR}")
 
-#local ref
-set(PRJ_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-
 #################################
 #          PROFILER             #
 #################################
@@ -37,8 +32,8 @@ else()
     set(prof_deps "")
 endif()
 
-include_directories("${PRJ_ROOT_DIR}/profiler")
-include_directories("${PRJ_ROOT_DIR}/profiler/include/semiprof")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/profiler")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/profiler/include/semiprof")
 
 #################################
 #        COVERAGE TEST          #
