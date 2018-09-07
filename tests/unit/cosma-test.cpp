@@ -154,7 +154,7 @@ bool run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD, bool one_sided_communication
 #endif
     }
 
-    multiply(A, B, C, s, comm, one_sided_communication);
+    multiply(A, B, C, s, comm, 0.0, one_sided_communication);
 
     //Then rank0 ask for other ranks data
     std::vector<double> Cs;

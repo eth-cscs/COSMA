@@ -82,7 +82,8 @@ public:
 #endif
     }
 
-    void reduce(Interval& P, double* LC, double* C, double* reshuffle_buffer,
+    void reduce(Interval& P, double* LC, double* C,
+            double* reshuffle_buffer, double* reduce_buffer,
             std::vector<std::vector<int>>& c_current,
             std::vector<int>& c_total_current,
             std::vector<std::vector<int>>& c_expanded,
@@ -127,21 +128,13 @@ public:
             }
         }
 
-        std::unique_ptr<double[]> receiving_buffer;
-        double* receive_pointer;
-
-        if (beta == 0) {
-            receive_pointer = C;
-        } else {
-            receiving_buffer = std::unique_ptr<double[]>(new double[recvcnts[gp]]);
-            receive_pointer = receiving_buffer.get();
-        }
+        double* receive_pointer = beta > 0 ? reduce_buffer : C;
 
         MPI_Reduce_scatter(send_pointer, receive_pointer, recvcnts.data(), MPI_DOUBLE, MPI_SUM, subcomm);
 
         if (beta > 0) {
             // sum up receiving_buffer with C
-            add(C, receive_pointer, recvcnts[gp]);
+            add(C, reduce_buffer, recvcnts[gp]);
         }
     }
 };

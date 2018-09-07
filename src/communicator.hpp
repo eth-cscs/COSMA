@@ -120,7 +120,8 @@ public:
      * in a single invocation of this function. Only blocks belonging to the 
      * current submatrix are being exchanged within a single invocation of reduce.
      */
-    virtual void reduce(Interval& P, double* in, double* out, double* reshuffle_buffer,
+    virtual void reduce(Interval& P, double* in, double* out,
+        double* reshuffle_buffer, double* reduce_buffer,
         std::vector<std::vector<int>>& c_current,
         std::vector<int>& c_total_current,
         std::vector<std::vector<int>>& c_expanded,
@@ -168,6 +169,22 @@ public:
     // wrapper around MPI_Finalize
     static void finalize();
 
+    static int relative_rank(Interval& P, int rank);
+    static int offset(Interval& P, int div, int rank);
+    static int group(Interval& P, int div, int rank);
+    static std::pair<int, int> group_and_offset(Interval& P, int div, int rank);
+
+    /*
+       We split P processors into div groups of P/div processors.
+     * gp from [0..(div-1)] is the id of the group of the current rank
+     * offset from [0..(newP.length()-1)] is the offset of current rank inside its group
+
+     We then define the communication ring of the current processor as:
+     i * (P/div) + offset, where i = 0..(div-1) and offset = rank() - i * (P/div)
+     */
+    static int rank_inside_ring(Interval& P, int div, int global_rank);
+    static int rank_outside_ring(Interval& P, int div, int off, int gp);
+
 protected:
     std::vector<MPI_Comm> comm_ring_;
     std::vector<MPI_Comm> comm_subproblem_;
@@ -182,23 +199,7 @@ protected:
     bool using_reduced_comm_;
     bool is_idle_;
 
-    static int relative_rank(Interval& P, int rank);
-    static int offset(Interval& P, int div, int rank);
-    static int group(Interval& P, int div, int rank);
-    static std::pair<int, int> group_and_offset(Interval& P, int div, int rank);
-
     void get_topology_edges(std::vector<int>& dest, std::vector<int>& weight);
-
-    /*
-       We split P processors into div groups of P/div processors.
-     * gp from [0..(div-1)] is the id of the group of the current rank
-     * offset from [0..(newP.length()-1)] is the offset of current rank inside its group
-
-     We then define the communication ring of the current processor as:
-     i * (P/div) + offset, where i = 0..(div-1) and offset = rank() - i * (P/div)
-     */
-    static int rank_inside_ring(Interval& P, int div, int global_rank);
-    static int rank_outside_ring(Interval& P, int div, int off, int i);
 
     void create_communicators(MPI_Comm comm);
     // same as create just uses MPI_Comm_split instead of MPI_Comm_create

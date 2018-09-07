@@ -17,4 +17,5 @@ namespace options {
     // finds the next int after start in the line
     int next_int(int start, const std::string& line);
     long long next_long_long(int start, const std::string& line);
+    double next_double(int start, const std::string& line);
 };

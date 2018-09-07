@@ -23,17 +23,20 @@ Strategy::Strategy(int argc, char** argv) {
     check_if_valid();
 }
 
-Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
-        std::string& dims, std::string& types, long long mem_limit, bool top) : m(mm), n(nn), k(kk), P(PP), memory_limit(mem_limit), topology(top) {
-    divisors = divs;
-    split_dimension = dims;
-    step_type = types;
-    n_steps = divisors.size();
+Strategy::Strategy(int mm, int nn, int kk, size_t PP,
+        std::vector<int>& divs, std::string& dims, std::string& types,
+        long long mem_limit, double b, bool top, bool one_sided)
+        : m(mm), n(nn), k(kk), P(PP), memory_limit(mem_limit), beta(b),
+          divisors(divs), split_dimension(dims), step_type(types),
+          n_steps(divisors.size()), topology(top),
+          one_sided_communication(one_sided) {
     check_if_valid();
 }
 
-Strategy::Strategy(int mm, int nn, int kk, size_t PP, long long mem_limit, bool top) : 
-    m(mm), n(nn), k(kk), P(PP), memory_limit(mem_limit), topology(top) {
+Strategy::Strategy(int mm, int nn, int kk, size_t PP,
+        long long mem_limit, double b, bool top, bool one_sided)
+        : m(mm), n(nn), k(kk), P(PP), memory_limit(mem_limit), beta(b),
+          topology(top), one_sided_communication(one_sided) {
     // default_strategy();
     // spartition_strategy();
     square_strategy();
@@ -63,6 +66,14 @@ void Strategy::initialize(const std::string& cmd_line) {
     topology = options::flag_exists("-t", "--topology", cmd_line);
 
     one_sided_communication = options::flag_exists("-o", "--one_sided_communication", cmd_line);
+
+    bool beta_predefined = options::flag_exists("-b", "--beta", cmd_line);
+    if (beta_predefined) {
+        auto beta_it = options::find_flag("-b", "--beta", "Beta parameter of gemm should be predefined.", cmd_line);
+        beta = options::next_double(beta_it, cmd_line);
+    } else {
+        beta = false;
+    }
 
     bool steps_predefined = options::flag_exists("-s", "--steps", cmd_line);
 

@@ -90,6 +90,10 @@ public:
     // that is used when n_blocks > 1 (i.e. when DFS steps are present)
     // as a temporary buffer in which the data is reshuffled.
     double* reshuffle_buffer_ptr();
+    // pointer to the reduce buffer that is used as a 
+    // temporary buffer in BFS-reduce (two-sided) communicator
+    // in case when beta > 0 in that step
+    double* reduce_buffer_ptr();
 
 #ifdef COSMA_HAVE_GPU
     double* device_buffer_ptr();

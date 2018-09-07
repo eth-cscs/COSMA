@@ -15,7 +15,7 @@
 
 // this is just a wrapper to initialize and call the recursive function
 void multiply(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
-              const Strategy& strategy, MPI_Comm comm, bool one_sided_communication) {
+              const Strategy& strategy, MPI_Comm comm, double beta, bool one_sided_communication) {
     Interval mi = Interval(0, strategy.m-1);
     Interval ni = Interval(0, strategy.n-1);
     Interval ki = Interval(0, strategy.k-1);
@@ -33,7 +33,7 @@ void multiply(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
 
     if (!cosma_comm->is_idle()) {
         multiply(matrixA, matrixB, matrixC,
-                 mi, ni, ki, Pi, 0, strategy, 0.0, *cosma_comm);
+                 mi, ni, ki, Pi, 0, strategy, *cosma_comm, beta);
     }
 
     if (cosma_comm->rank() == 0) {
@@ -45,8 +45,8 @@ void multiply(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
 // dispatch to local call, BFS, or DFS as appropriate
 void multiply(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
               Interval& m, Interval& n, Interval& k, Interval& P,
-              size_t step, const Strategy& strategy, double beta,
-              communicator& comm) {
+              size_t step, const Strategy& strategy,
+              communicator& comm, double beta) {
     PE(multiply_layout);
     // current submatrices that are being computed
     Interval2D a_range(m, k);
@@ -80,9 +80,9 @@ void multiply(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
         local_multiply(matrixA, matrixB, matrixC, m.length(), n.length(), k.length(), beta);
     else {
         if (strategy.bfs_step(step))
-            BFS(matrixA, matrixB, matrixC, m, n, k, P, step, strategy, beta, comm);
+            BFS(matrixA, matrixB, matrixC, m, n, k, P, step, strategy, comm, beta);
         else
-            DFS(matrixA, matrixB, matrixC, m, n, k, P, step, strategy, beta, comm);
+            DFS(matrixA, matrixB, matrixC, m, n, k, P, step, strategy, comm, beta);
     }
     PE(multiply_layout);
 
@@ -147,14 +147,14 @@ void local_multiply(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
  */
 void DFS(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
          Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
-         const Strategy& strategy, double beta, communicator& comm) {
+         const Strategy& strategy, communicator& comm, double beta) {
     // split the dimension but not the processors, all P processors are taking part
     // in each recursive call.
     if (strategy.split_m(step)) {
         for (int M = 0; M < strategy.divisor(step); ++M) {
             Interval newm = m.subinterval(strategy.divisor(step), M);
-            multiply(matrixA, matrixB, matrixC, newm, n, k, P, step+1, strategy, beta,
-                     comm);
+            multiply(matrixA, matrixB, matrixC, newm, n, k, P, step+1, strategy, 
+                    comm, beta);
         }
         return;
     }
@@ -162,8 +162,8 @@ void DFS(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
     if (strategy.split_n(step)) {
         for (int N = 0; N < strategy.divisor(step); ++N) {
             Interval newn = n.subinterval(strategy.divisor(step), N);
-            multiply(matrixA, matrixB, matrixC, m, newn, k, P, step+1, strategy, beta,
-                     comm);
+            multiply(matrixA, matrixB, matrixC, m, newn, k, P, step+1, strategy, 
+                     comm, beta);
         }
         return;
     }
@@ -175,7 +175,8 @@ void DFS(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
     if (strategy.split_k(step)) {
         for (int K = 0; K < strategy.divisor(step); ++K) {
             Interval newk = k.subinterval(strategy.divisor(step), K);
-            multiply(matrixA, matrixB, matrixC, m, n, newk, P, step+1, strategy, (K==0)&&(beta==0) ? 0 : 1, comm);
+            multiply(matrixA, matrixB, matrixC, m, n, newk, P, step+1, strategy, 
+                    comm, (K==0)&&(beta==0) ? 0 : 1);
         }
         return;
     }
@@ -233,7 +234,7 @@ T which_is_expanded(T&& A, T&& B, T&& C, const Strategy& strategy, size_t step) 
  */
 void BFS(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
          Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
-         const Strategy& strategy, double beta, communicator& comm) {
+         const Strategy& strategy, communicator& comm, double beta) {
     int divisor = strategy.divisor(step);
     int divisor_m = strategy.divisor_m(step);
     int divisor_n = strategy.divisor_n(step);
@@ -337,7 +338,7 @@ void BFS(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
         new_beta = 0;
     }
 
-    multiply(matrixA, matrixB, matrixC, newm, newn, newk, newP, step+1, strategy, new_beta, comm);
+    multiply(matrixA, matrixB, matrixC, newm, newn, newk, newP, step+1, strategy, comm, new_beta);
     // revert the current matrix
     expanded_mat.set_buffer_index(buffer_idx);
     expanded_mat.set_current_matrix(original_matrix);
@@ -345,8 +346,11 @@ void BFS(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
     PE(multiply_communication_reduce);
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
-        comm.reduce(P, expanded_matrix, original_matrix, reshuffle_buffer, size_before_expansion, 
-                total_before_expansion, size_after_expansion, total_after_expansion, beta, step);
+        double* reduce_buffer = expanded_mat.reduce_buffer_ptr();
+        comm.reduce(P, expanded_matrix, original_matrix, 
+                reshuffle_buffer, reduce_buffer,
+                size_before_expansion, total_before_expansion, 
+                size_after_expansion, total_after_expansion, beta, step);
     }
     PL();
 

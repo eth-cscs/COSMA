@@ -44,7 +44,7 @@ int options::next_int(int start, const std::string& line) {
     return result;
 }
 
-// finds the next int after start in the line
+// finds the next long long after start in the line
 long long options::next_long_long(int start, const std::string& line) {
     if (start < 0) 
         return -1;
@@ -54,3 +54,12 @@ long long options::next_long_long(int start, const std::string& line) {
     return result;
 }
 
+// finds the next double after start in the line
+double options::next_double(int start, const std::string& line) {
+    if (start < 0)
+        return -1;
+    std::regex double_expr("/^[0-9]+(\\.[0-9]+)?$");
+    auto it = std::sregex_iterator(line.begin() + start, line.end(), double_expr);
+    long long result = std::stod(it->str());
+    return result;
+}

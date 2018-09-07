@@ -20,8 +20,9 @@ public:
     int k;
     // number of processors
     size_t P;
-    // number of steps of the algorithm
-    size_t n_steps;
+    long long memory_limit;
+    // beta parameter of gemm
+    double beta;
     // stores the divisor in each step of the algorithm
     std::vector<int> divisors;
     // returns m, n or k character depending on 
@@ -29,13 +30,14 @@ public:
     std::string split_dimension;
     // describes whether step is DFS (d) or BFS (b) for each step
     std::string step_type;
+    // number of steps of the algorithm
+    size_t n_steps;
     // if true, MPI will try to relabel ranks such that
     // the ranks which communicate are physically close to each other
     bool topology;
     // if true, one sided communication backend will be used
     // otherwise, two sided communication backend is used
     bool one_sided_communication;
-    long long memory_limit;
     long long memory_used;
     int n_bfs_steps;
     int n_dfs_steps;
@@ -51,14 +53,14 @@ public:
     // constructs the Strategy form the command line
     Strategy(int argc, char** argv);
 
-    Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
-             std::string& dims, std::string& types,
+    Strategy(int mm, int nn, int kk, size_t PP,
+             std::vector<int>& divs, std::string& dims, std::string& types,
              long long mem_limit = std::numeric_limits<long long>::max(),
-             bool top = false);
+             double b = 0.0, bool top = false, bool one_sided = false);
 
     Strategy(int mm, int nn, int kk, size_t PP, 
             long long mem_limit = std::numeric_limits<long long>::max(),
-            bool top = false);
+            double b = 0.0, bool top = false, bool one_sided = false);
 
     // parses the command line options and initializes the varialbes
     void initialize(const std::string& cmd_line);

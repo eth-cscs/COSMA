@@ -5,6 +5,7 @@
 #include "mapper.hpp"
 #include "layout.hpp"
 #include "mpi_allocator.hpp"
+#include "communicator.hpp"
 
 #ifdef COSMA_HAVE_GPU
 //#include "./gpu/cuda_allocator.hpp"
@@ -43,7 +44,10 @@ public:
 
     // returns the pointer to the current buffer
     double* buffer_ptr();
+    // pointer to the reshuffle buffer used when n_blocks > 1
     double* reshuffle_buffer_ptr();
+    // pointer to the BFS-reduce buffer used when beta > 0
+    double* reduce_buffer_ptr();
     // returns a reference to the current buffer
     std::vector<double, mpi_allocator<double>>& buffer();
     const std::vector<double, mpi_allocator<double>>& buffer() const;
@@ -82,7 +86,7 @@ protected:
     // this function just triggers the recursive function with the same name
     std::vector<long long> compute_buffer_size();
     std::vector<long long> compute_buffer_size(Interval& m, Interval& n, Interval& k, Interval& P, 
-        int step, int rank);
+        int step, int rank, double beta);
 
     // when the number of blocks that the current rank owns from this matrix reaches 1
     // (meaning that there are no DFS steps left) then no new buffers are allocated. 
@@ -90,7 +94,7 @@ protected:
     // of the algorithm and finds the largest two buffers for this matrix that are needed. 
     // These two buffers will then be reused and swapped in the whole subtree of the execution.
     void compute_max_buffer_size(Interval& m, Interval& n, Interval& k, Interval& P, 
-        int step, int rank);
+        int step, int rank, double beta);
 
     // initializes two arrays:
     // 1. n_buckets_ : this vectors gives us for each step of the algorithm the number of 
@@ -116,11 +120,16 @@ protected:
     // temporary buffer used for reshuffling of data received from other ranks
     // this happens when DFS steps are present, i.e. when n_blocks > 1
     std::unique_ptr<double[]> reshuffle_buffer_;
+    // temporary buffer used in BFS-reduce step (two-sided communication)
+    // used when beta > 0 (to save current C)
+    std::unique_ptr<double[]> reduce_buffer_;
     // pointer to the current buffer being used in the previous vector of buffers
     int current_buffer_;
 
     // buffer used in DFS steps for reshuffling
     long long max_reshuffle_buffer_size_;
+    // buffer used in BFS reduce step, when beta == 1
+    long long max_reduce_buffer_size_;
 
     // computed by compute_max_buffer_size function. represent the two largest buffer sizes 
     // (max_recv_buffer_size >= max_send_buffer_size);
