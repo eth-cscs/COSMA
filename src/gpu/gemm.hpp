@@ -9,7 +9,7 @@
 #include <vector>
 #include <omp.h>
 
-#define nstreams 4
+#define nstreams 3
 
 void gpu_dgemm_(double* a, double* b, double* c,
           double* a_device, double* b_device, double* c_device,

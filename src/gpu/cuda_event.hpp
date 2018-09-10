@@ -47,7 +47,9 @@ class cuda_event {
     }
 
     // copy-constructor disabled
-    cuda_event(cuda_event& other) = delete;
+    cuda_event(cuda_event&) = delete;
+    // copy-operator disabled
+    cuda_event& operator=(cuda_event&) = delete;
 
     // return the underlying event handle
     cudaEvent_t& event() {

@@ -45,7 +45,9 @@ class cuda_stream {
     }
 
     // copy-constructor disabled
-    cuda_stream(cuda_stream& other) = delete;
+    cuda_stream(cuda_stream&) = delete;
+    // copy-operator disabled
+    cuda_stream& operator=(cuda_stream&) = delete;
 
     // insert event into stream
     // returns immediately

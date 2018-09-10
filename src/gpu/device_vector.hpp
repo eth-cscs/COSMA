@@ -10,8 +10,10 @@ public:
         data_(malloc_device<T>(n)),
         size_(n) {}
 
-    // copy-constructors are not supported
+    // copy-constructor are not supported
     device_vector(device_vector& other) = delete;
+    // copy-operator disabled
+    device_vector& operator=(device_vector&) = delete;
     // device_vector(device_vector&& other) = delete;
 
     // assignment operators are supported

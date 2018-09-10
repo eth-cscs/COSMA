@@ -6,9 +6,9 @@ void gpu_dgemm_(double* a, double* b, double* c,
           double alpha, double beta) {
 
     // define parameters
-    int tile_size_m = 4096;
-    int tile_size_n = 4096;
-    int tile_size_k = 4096;
+    int tile_size_m = 512;
+    int tile_size_n = 512;
+    int tile_size_k = 512;
     // short tile sizes (when dim not divisible by tile)
     int short_tile_size_m = m % tile_size_m;
     int short_tile_size_n = n % tile_size_n;
@@ -34,7 +34,6 @@ void gpu_dgemm_(double* a, double* b, double* c,
     int n_tiles_m = (int) std::ceil(1.0 * m / tile_size_m);
     int n_tiles_n = (int) std::ceil(1.0 * n / tile_size_n);
     int n_tiles_k = (int) std::ceil(1.0 * k / tile_size_k);
-    std::cout << "Tile sizes = " << n_tiles_m << ", " << n_tiles_n << ", " << n_tiles_k << std::endl;
 
     std::vector<cuda_stream> myStreams(nstreams);
 
@@ -77,7 +76,6 @@ void gpu_dgemm_(double* a, double* b, double* c,
                         // (that is, all previous operations in this stream have completed)
                         bufferfilled[ibuff].wait();
 
-                        std::cout << "Previous pinned to global matrix" << std::endl;
                         // copy result in pinned buffer back to global matrix
 // # pragma omp parallel for
                         for ( int i=0; i<actual_size_m; i++ ) {
@@ -98,7 +96,6 @@ void gpu_dgemm_(double* a, double* b, double* c,
                         }
                     }
 
-                    std::cout << "A: Current host -> pinned" << std::endl;
                     // copy next tile to pinned buffer
 // # pragma omp parallel for
                     for ( int i=0; i<actual_size_m; i++ ) {
@@ -115,7 +112,6 @@ void gpu_dgemm_(double* a, double* b, double* c,
                             }
                         }
                     }
-                    std::cout << "B: Current host -> pinned" << std::endl;
                     // copy next tile to pinned buffer
 // # pragma omp parallel for
                     for ( int i=0; i<actual_size_k; i++ ) {
@@ -132,7 +128,6 @@ void gpu_dgemm_(double* a, double* b, double* c,
                             }
                         }
                     }
-                    std::cout << "C: Current host -> pinned" << std::endl;
                     // copy next tile to pinned buffer
 // # pragma omp parallel for
                     for ( int i=0; i<actual_size_m; i++ ) {
@@ -150,21 +145,17 @@ void gpu_dgemm_(double* a, double* b, double* c,
                         }
                     }
 
-                    std::cout << "A: pinned -> device" << std::endl;
                     // copy tile data to device
                     copy_to_device_async(&pa[ibuff*offset_a], &d_a[ibuff*offset_a],
                             actual_size_m*actual_size_k, myStreams[ibuff].stream());
-                    std::cout << "B: pinned -> device" << std::endl;
                     copy_to_device_async(&pb[ibuff*offset_b], &d_b[ibuff*offset_b],
                             actual_size_k*actual_size_n, myStreams[ibuff].stream());
-                    std::cout << "C: pinned -> device" << std::endl;
                     copy_to_device_async(&pc[ibuff*offset_c], &d_c[ibuff*offset_c],
                             actual_size_m*actual_size_n, myStreams[ibuff].stream());
 
                     // tell cuBLAS which stream to use
                     cublasSetStream(cublasHandle, myStreams[ibuff].stream());
 
-                    std::cout << "dgemm" << std::endl;
                     // perform dgemm
                     cublasDgemm (cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N,
                             actual_size_m, actual_size_n, actual_size_k, &alpha,
@@ -175,7 +166,6 @@ void gpu_dgemm_(double* a, double* b, double* c,
                     p_row_tile[ibuff] = irowtile;
                     p_col_tile[ibuff] = icoltile;
 
-                    std::cout << "device -> host for result" << std::endl;
                     // copy result back to host
                     copy_to_host_async(&d_c[ibuff*offset_c], &pc[ibuff*offset_c],
                             actual_size_m*actual_size_n, myStreams[ibuff].stream());
@@ -195,7 +185,6 @@ void gpu_dgemm_(double* a, double* b, double* c,
         for ( itile=0; itile < nstreams; itile ++ ) {
             // make sure that buffers are free
             cudaStreamSynchronize (myStreams[itile].stream());
-            std::cout << "stream : " << itile << ", device -> host for result" << std::endl;
 
             // copy result in pinned buffer back to source
 // # pragma omp parallel for
