@@ -12,15 +12,42 @@ class cuda_event {
     cuda_event() {
         auto status = cudaEventCreate(&event_);
         cuda_check_status(status);
+        valid_ = true;
     }
 
     ~cuda_event() {
         // note that cudaEventDestroy can be called on an event before is has
         // been reached in a stream, and the CUDA runtime will defer clean up
         // of the event until it has been completed.
-        auto status = cudaEventDestroy(event_);
-        cuda_check_status(status);
+        if (valid_) {
+            auto status = cudaEventDestroy(event_);
+            cuda_check_status(status);
+        }
     }
+
+    // move constructor
+    cuda_event(cuda_event&& other) {
+        event_ = other.event_;
+        valid_ = other.valid_;
+        other.valid_ = false;
+    }
+
+    // move-assignment operator
+    cuda_event& operator=(cuda_event&& other) {
+        if (this != &other) {
+            if (valid_) {
+                auto status = cudaEventDestroy(event_);
+                cuda_check_status(status);
+            }
+            event_ = other.event_;
+            valid_ = other.valid_;
+            other.valid_ = false;
+        }
+        return *this;
+    }
+
+    // copy-constructor disabled
+    cuda_event(cuda_event& other) = delete;
 
     // return the underlying event handle
     cudaEvent_t& event() {
@@ -43,7 +70,7 @@ class cuda_event {
     }
 
   private:
-
+    bool valid_ = false;
     cudaEvent_t event_;
 };
 

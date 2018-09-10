@@ -16,12 +16,14 @@ public:
 
     // assignment operators are supported
     device_vector& operator=(device_vector&& other) {
-        if (this->data_) {
-            cudaFree(this->data_);
+        if (this != &other) {
+            if (this->data_) {
+                cudaFree(this->data_);
+            }
+            this->data_ = other.data_;
+            other.data_ = nullptr;
+            this->size_ = other.size_;
         }
-        this->data_ = other.data_;
-        other.data_ = nullptr;
-        this->size_ = other.size_;
         return *this;
     }
 

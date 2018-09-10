@@ -7,18 +7,45 @@
 class cuda_stream {
   public:
     cuda_stream():
-        stream_(new_stream())
+        stream_(new_stream()),
+        valid_(true)
     {};
 
     ~cuda_stream() {
-        auto status = cudaStreamDestroy(stream_);
-        cuda_check_status(status);
+        if (valid_) {
+            auto status = cudaStreamDestroy(stream_);
+            cuda_check_status(status);
+        }
     }
 
     // return the CUDA stream handle
     cudaStream_t stream() {
         return stream_;
     }
+
+    // move-constructor
+    cuda_stream(cuda_stream&& other) {
+        stream_ = other.stream_;
+        valid_ = other.valid_;
+        other.valid_ = false;
+    }
+
+    // move-assignment operator
+    cuda_stream& operator=(cuda_stream&& other) {
+        if (this != &other) {
+            if (valid_) {
+                auto status = cudaStreamDestroy(stream_);
+                cuda_check_status(status);
+            }
+            stream_ = other.stream_;
+            valid_ = other.valid_;
+            other.valid_ = false;
+        }
+        return *this;
+    }
+
+    // copy-constructor disabled
+    cuda_stream(cuda_stream& other) = delete;
 
     // insert event into stream
     // returns immediately
@@ -50,4 +77,5 @@ class cuda_stream {
     }
 
     cudaStream_t stream_;
+    bool valid_;
 };

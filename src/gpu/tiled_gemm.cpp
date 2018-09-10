@@ -2,18 +2,15 @@
 #include <stdio.h>
 #include <math.h>
 #include <omp.h>
-#include "cublas_v2.h"
-#include "cuda.h"
+#include <cublas_v2.h>
+#include <cuda.h>
 
 #define nstreams 4
 
-int main () {
-
-    // banner
-    printf ("\n\nGPU DGEMM Exercise\n");
-    printf (    "==========================================\n");
-    printf (  "\nTiled Matrix-Matrix Multiplication\n");
-    printf (    "Using NVIDIA cuBLAS Library with Streams\n");
+void gpu_dgemm_(double* a, double* b, double* c,
+          double* a_device, double* b_device, double* c_device,
+          int m, int n, int k,
+          double alpha, double beta) {
 
     // echo device data
     int idevice = 0;
@@ -24,41 +21,15 @@ int main () {
             dprops.name, dprops.major, dprops.minor);
 
     // define parameters
-    int n = 32768;   // matrix dimension - all matrices being multiplied will be square
-    int m = 4096;    // tile size - tiles will be square, n must be divisible by m
-    printf ("\nMatrix sizes: %d x %d, tile size: %d x %d\n", n,n,m,m);
-    if ( ( n % m ) != 0  ) {
-        printf ("\nmatrix size (n) has to be devisible by tile  size (m) !");
-        return 0 ;
-    }
-    printf ("Number of Streams: %d", nstreams);
-
-    // allocate arrays
-    double *a;
-    double *b;
-    double *c;
-    a = (double *) malloc ( n*n*sizeof(double) );
-    b = (double *) malloc ( n*n*sizeof(double) );
-    c = (double *) malloc ( n*n*sizeof(double) );
-
-    // initialize data
-#pragma omp parallel for
-    for ( int row = 0; row<n; row++ ) {
-        for ( int col = 0; col<n; col++ ) {
-            // data in row-major format
-            a[row*n+col] = row + col;
-            b[row*n+col] = (row == col )  ? 1.0 : 0.0;
-            c[row*n+col] = 0.0;
-        }
-    }
+    int tile = 4096;
 
     // create communcations arrays
     double *pa;
     double *pb;
     double *pc;
-    cudaMallocHost ( &pa, m*m*sizeof(double)*nstreams );
-    cudaMallocHost ( &pb, m*m*sizeof(double)*nstreams );
-    cudaMallocHost ( &pc, m*m*sizeof(double)*nstreams );
+    cudaMallocHost ( &pa, tile*tile*sizeof(double)*nstreams );
+    cudaMallocHost ( &pb, tile*tile*sizeof(double)*nstreams );
+    cudaMallocHost ( &pc, tile*tile*sizeof(double)*nstreams );
 
     // create a handle to cuBlas
     cublasHandle_t cublasHandle;
@@ -68,12 +39,14 @@ int main () {
     double *d_a;
     double *d_b;
     double *d_c;
-    cudaMalloc ( &d_a, nstreams*m*m*sizeof(double) );
-    cudaMalloc ( &d_b, nstreams*m*m*sizeof(double) );
-    cudaMalloc ( &d_c, nstreams*m*m*sizeof(double) );
+    cudaMalloc ( &d_a, nstreams*tile*tile*sizeof(double) );
+    cudaMalloc ( &d_b, nstreams*tile*tile*sizeof(double) );
+    cudaMalloc ( &d_c, nstreams*tile*tile*sizeof(double) );
 
-    int offset = m*m;
-    int ntiles = n/m;
+    int offset = tile*tile;
+
+    int longest_dim = std::max(m, std::max(n, k));
+    int ntiles = (longest_dim - 1) / tile + 1;
 
     cudaStream_t myStreams[nstreams];
     for ( int i=0; i<nstreams; i++ ) {
@@ -98,10 +71,6 @@ int main () {
 
     // PERFORM MULTIPLICATION
     {
-
-        double alpha = 1.0;
-        double beta = 1.0;
-
         int ibuff = 0;
         int itile = 0;
 
@@ -121,40 +90,40 @@ int main () {
                         cudaEventSynchronize ( bufferfilled[ibuff] );
 
                         // copy result in pinned buffer back to global matrix
-# pragma omp parallel for
-                        for ( int i=0; i<m; i++ ) {
-                            for ( int j=0; j<m; j++ ) {
-                                c[(prowtile[ibuff]*m+i)*n+pcoltile[ibuff]*m+j] = pc[ibuff*offset+i*m+j];
+// # pragma omp parallel for
+                        for ( int i=0; i<tile; i++ ) {
+                            for ( int j=0; j<tile; j++ ) {
+                                c[(prowtile[ibuff]*tile+i)*n+pcoltile[ibuff]*tile+j] = pc[ibuff*offset+i*tile+j];
                             }
                         }
                     }
 
                     // copy next tile to pinned buffer
-# pragma omp parallel for
-                    for ( int i=0; i<m; i++ ) {
-                        for ( int j=0; j<m; j++ ) {
-                            pa[ibuff*offset+i*m+j] = a[(irowtile*m+i)*n+iktile*m+j];
-                            pb[ibuff*offset+i*m+j] = b[(iktile*m+i)*n+icoltile*m+j];
-                            pc[ibuff*offset+i*m+j] = c[(irowtile*m+i)*n+icoltile*m+j];
+// # pragma omp parallel for
+                    for ( int i=0; i<tile; i++ ) {
+                        for ( int j=0; j<tile; j++ ) {
+                            pa[ibuff*offset+i*tile+j] = a[(irowtile*tile+i)*n+iktile*tile+j];
+                            pb[ibuff*offset+i*tile+j] = b[(iktile*tile+i)*n+icoltile*tile+j];
+                            pc[ibuff*offset+i*tile+j] = c[(irowtile*tile+i)*n+icoltile*tile+j];
                         }
                     }
 
                     // copy tile data to device
-                    cudaMemcpyAsync ( &d_a[ibuff*offset], &pa[ibuff*offset], m*m*sizeof(double), cudaMemcpyHostToDevice, myStreams[ibuff] );
-                    cudaMemcpyAsync ( &d_b[ibuff*offset], &pb[ibuff*offset], m*m*sizeof(double), cudaMemcpyHostToDevice, myStreams[ibuff] );
-                    cudaMemcpyAsync ( &d_c[ibuff*offset], &pc[ibuff*offset], m*m*sizeof(double), cudaMemcpyHostToDevice, myStreams[ibuff] );
+                    cudaMemcpyAsync ( &d_a[ibuff*offset], &pa[ibuff*offset], tile*tile*sizeof(double), cudaMemcpyHostToDevice, myStreams[ibuff] );
+                    cudaMemcpyAsync ( &d_b[ibuff*offset], &pb[ibuff*offset], tile*tile*sizeof(double), cudaMemcpyHostToDevice, myStreams[ibuff] );
+                    cudaMemcpyAsync ( &d_c[ibuff*offset], &pc[ibuff*offset], tile*tile*sizeof(double), cudaMemcpyHostToDevice, myStreams[ibuff] );
 
                     // tell cuBLAS which stream to use
                     cublasSetStream( cublasHandle, myStreams[ibuff] );
 
 
                     // perform dgemm
-                    cublasDgemm ( cublasHandle, CUBLAS_OP_T, CUBLAS_OP_T, m, m, m, &alpha, &d_a[ibuff*offset], m, &d_b[ibuff*offset], m, &beta, &d_c[ibuff*offset], m );
+                    cublasDgemm ( cublasHandle, CUBLAS_OP_T, CUBLAS_OP_T, tile, tile, tile, &alpha, &d_a[ibuff*offset], tile, &d_b[ibuff*offset], tile, &beta, &d_c[ibuff*offset], tile );
                     prowtile[ibuff] = irowtile;
                     pcoltile[ibuff] = icoltile;
 
                     // copy result back to host
-                    cudaMemcpyAsync ( &pc[ibuff*offset], &d_c[ibuff*offset], m*m*sizeof(double), cudaMemcpyDeviceToHost, myStreams[ibuff] );
+                    cudaMemcpyAsync ( &pc[ibuff*offset], &d_c[ibuff*offset], tile*tile*sizeof(double), cudaMemcpyDeviceToHost, myStreams[ibuff] );
 
                     // this event will signal when the D2H copy of the result has completed
                     cudaEventRecord ( bufferfilled[ibuff], myStreams[ibuff] );
@@ -175,9 +144,9 @@ int main () {
 
             // copy result in pinned buffer back to source
 # pragma omp parallel for
-            for ( int i=0; i<m; i++ ) {
-                for ( int j=0; j<m; j++ ) {
-                    c[(prowtile[itile]*m+i)*n+pcoltile[itile]*m+j] = pc[itile*offset+i*m+j];
+            for ( int i=0; i<tile; i++ ) {
+                for ( int j=0; j<tile; j++ ) {
+                    c[(prowtile[itile]*tile+i)*n+pcoltile[itile]*tile+j] = pc[itile*offset+i*tile+j];
                 }
             }
 
@@ -195,7 +164,7 @@ int main () {
     printf ("\nchecking results: ");
     bool correct = true;
     double abs_error, sum_abs_errors = 0;
-# pragma omp parallel for
+// # pragma omp parallel for
     for ( int row = 0;  row < n; row++ ) {
         for ( int col = 0; col < n; col++ ) {
 

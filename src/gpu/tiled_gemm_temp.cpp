@@ -1,14 +1,4 @@
-#pragma once
-#include <iostream>
-#include <cmath>
-#include <cstdio>
-#include "util.hpp"
-#include "cuda_stream.hpp"
-#include "cuda_event.hpp"
-#include "../blas.h"
-#include <omp.h>
-
-#define nstreams 4
+#include "gemm.hpp"
 
 void gpu_dgemm_(double* a, double* b, double* c,
           double* a_device, double* b_device, double* c_device,
@@ -20,9 +10,9 @@ void gpu_dgemm_(double* a, double* b, double* c,
     int tile_size_n = 4096;
     int tile_size_k = 4096;
     // short tile sizes (when dim not divisible by tile)
-    int short_tile_size_m = m % reg_tile_size_m;
-    int short_tile_size_n = n % reg_tile_size_n;
-    int short_tile_size_k = k % reg_tile_size_k;
+    int short_tile_size_m = m % tile_size_m;
+    int short_tile_size_n = n % tile_size_n;
+    int short_tile_size_k = k % tile_size_k;
 
     // create communcations arrays
     double *pa = malloc_pinned<double>(tile_size_m * tile_size_k * nstreams);
@@ -41,9 +31,10 @@ void gpu_dgemm_(double* a, double* b, double* c,
     int offset_b = tile_size_k * tile_size_n;
     int offset_c = tile_size_m * tile_size_n;
 
-    int n_tiles_m = (int) std::ceil(m / tile_size_m);
-    int n_tiles_n = (int) std::ceil(n / tile_size_n);
-    int n_tiles_k = (int) std::ceil(k / tile_size_k);
+    int n_tiles_m = (int) std::ceil(1.0 * m / tile_size_m);
+    int n_tiles_n = (int) std::ceil(1.0 * n / tile_size_n);
+    int n_tiles_k = (int) std::ceil(1.0 * k / tile_size_k);
+    std::cout << "Tile sizes = " << n_tiles_m << ", " << n_tiles_n << ", " << n_tiles_k << std::endl;
 
     std::vector<cuda_stream> myStreams(nstreams);
 
@@ -84,10 +75,11 @@ void gpu_dgemm_(double* a, double* b, double* c,
 
                         // block the host until this streams buffers are available
                         // (that is, all previous operations in this stream have completed)
-                        cudaEventSynchronize ( bufferfilled[ibuff] );
+                        bufferfilled[ibuff].wait();
 
+                        std::cout << "Previous pinned to global matrix" << std::endl;
                         // copy result in pinned buffer back to global matrix
-# pragma omp parallel for
+// # pragma omp parallel for
                         for ( int i=0; i<actual_size_m; i++ ) {
                             for ( int j=0; j<actual_size_n; j++ ) {
                                 // pinned buffers offsets
@@ -100,14 +92,15 @@ void gpu_dgemm_(double* a, double* b, double* c,
                                 // if statement ensures the correctness in cases when tile sizes don't 
                                 // perfectly divide the dimension of that matrix
                                 if (tile_offset_global + el_offset_global < m * n) {
-                                    c[tile_offset_global + el_offset_global] = pc[tile_offset + col_major_offset];
+                                    c[tile_offset_global + el_offset_global] = pc[tile_offset_pinned + el_offset_pinned];
                                 }
                             }
                         }
                     }
 
+                    std::cout << "A: Current host -> pinned" << std::endl;
                     // copy next tile to pinned buffer
-# pragma omp parallel for
+// # pragma omp parallel for
                     for ( int i=0; i<actual_size_m; i++ ) {
                         for ( int j=0; j<actual_size_k; j++ ) {
                             // pinned buffers offsets
@@ -122,7 +115,9 @@ void gpu_dgemm_(double* a, double* b, double* c,
                             }
                         }
                     }
-# pragma omp parallel for
+                    std::cout << "B: Current host -> pinned" << std::endl;
+                    // copy next tile to pinned buffer
+// # pragma omp parallel for
                     for ( int i=0; i<actual_size_k; i++ ) {
                         for ( int j=0; j<actual_size_n; j++ ) {
                             // pinned buffers offsets
@@ -137,7 +132,9 @@ void gpu_dgemm_(double* a, double* b, double* c,
                             }
                         }
                     }
-# pragma omp parallel for
+                    std::cout << "C: Current host -> pinned" << std::endl;
+                    // copy next tile to pinned buffer
+// # pragma omp parallel for
                     for ( int i=0; i<actual_size_m; i++ ) {
                         for ( int j=0; j<actual_size_n; j++ ) {
                                 // pinned buffers offsets
@@ -148,22 +145,26 @@ void gpu_dgemm_(double* a, double* b, double* c,
                                 int el_offset_global = irowtile * tile_size_m + i;
                                 // global -> pinned
                                 if (tile_offset_global + el_offset_global < m * n) {
-                                    c[tile_offset_global + el_offset_global] = pc[tile_offset + col_major_offset];
+                                    c[tile_offset_global + el_offset_global] = pc[tile_offset_pinned + el_offset_pinned];
                                 }
                         }
                     }
 
+                    std::cout << "A: pinned -> device" << std::endl;
                     // copy tile data to device
                     copy_to_device_async(&pa[ibuff*offset_a], &d_a[ibuff*offset_a],
                             actual_size_m*actual_size_k, myStreams[ibuff].stream());
+                    std::cout << "B: pinned -> device" << std::endl;
                     copy_to_device_async(&pb[ibuff*offset_b], &d_b[ibuff*offset_b],
                             actual_size_k*actual_size_n, myStreams[ibuff].stream());
+                    std::cout << "C: pinned -> device" << std::endl;
                     copy_to_device_async(&pc[ibuff*offset_c], &d_c[ibuff*offset_c],
                             actual_size_m*actual_size_n, myStreams[ibuff].stream());
 
                     // tell cuBLAS which stream to use
                     cublasSetStream(cublasHandle, myStreams[ibuff].stream());
 
+                    std::cout << "dgemm" << std::endl;
                     // perform dgemm
                     cublasDgemm (cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N,
                             actual_size_m, actual_size_n, actual_size_k, &alpha,
@@ -171,9 +172,10 @@ void gpu_dgemm_(double* a, double* b, double* c,
                             &d_b[ibuff*offset_b], actual_size_k, &beta,
                             &d_c[ibuff*offset_c], actual_size_m);
 
-                    prowtile[ibuff] = irowtile;
-                    pcoltile[ibuff] = icoltile;
+                    p_row_tile[ibuff] = irowtile;
+                    p_col_tile[ibuff] = icoltile;
 
+                    std::cout << "device -> host for result" << std::endl;
                     // copy result back to host
                     copy_to_host_async(&d_c[ibuff*offset_c], &pc[ibuff*offset_c],
                             actual_size_m*actual_size_n, myStreams[ibuff].stream());
@@ -193,9 +195,10 @@ void gpu_dgemm_(double* a, double* b, double* c,
         for ( itile=0; itile < nstreams; itile ++ ) {
             // make sure that buffers are free
             cudaStreamSynchronize (myStreams[itile].stream());
+            std::cout << "stream : " << itile << ", device -> host for result" << std::endl;
 
             // copy result in pinned buffer back to source
-# pragma omp parallel for
+// # pragma omp parallel for
             for ( int i=0; i<actual_size_m; i++ ) {
                 for ( int j=0; j<actual_size_n; j++ ) {
                     // pinned buffers offsets
@@ -208,7 +211,7 @@ void gpu_dgemm_(double* a, double* b, double* c,
                     // if statement ensures the correctness in cases when tile sizes don't 
                     // perfectly divide the dimension of that matrix
                     if (tile_offset_global + el_offset_global < m * n) {
-                        c[tile_offset_global + el_offset_global] = pc[tile_offset + col_major_offset];
+                        c[tile_offset_global + el_offset_global] = pc[tile_offset_pinned + el_offset_pinned];
                     }
                 }
             }

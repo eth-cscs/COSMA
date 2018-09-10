@@ -36,7 +36,7 @@ void Buffer::initialize_buffers() {
     current_buffer_ = 0;
 
 #ifdef COSMA_HAVE_GPU
-    device_buffer_ = device_vector<double>(max_base_buffer_size_);
+    // device_buffer_ = device_vector<double>(max_base_buffer_size_);
 #endif
 }
 

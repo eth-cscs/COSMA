@@ -6,6 +6,10 @@
 #include "cuda_stream.hpp"
 #include "cuda_event.hpp"
 #include "../blas.h"
+#include <vector>
+#include <omp.h>
+
+#define nstreams 4
 
 void gpu_dgemm_(double* a, double* b, double* c,
           double* a_device, double* b_device, double* c_device,
