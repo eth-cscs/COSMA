@@ -1,14 +1,45 @@
 #include "gemm.hpp"
 
+void copy_tile(double* from, double* to,
+        int tile_m, int tile_n,
+        int tile_size,
+        int actual_tile_m, int actual_tile_n,
+        int m, int n,
+        int p_row_tile, int p_col_tile,
+        int col,
+        int ibuff,
+        bool global_to_pinned) {
+
+    // pinned buffers offsets
+    int tile_offset = ibuff*tile_size;
+    int el_offset = col * actual_tile_m;
+    int offset = tile_offset + el_offset;
+
+    // input matrix offsets
+    int tile_offset_global = (p_col_tile * tile_n + col) * m;
+    int el_offset_global = p_row_tile * actual_tile_m;
+    int offset_global = tile_offset_global + el_offset_global;
+
+    int offset_from = global_to_pinned ? offset_global : offset;
+    int offset_to = global_to_pinned ? offset : offset_global;
+
+    std::memcpy(to + offset_to, from + offset_from, actual_tile_m * sizeof(double));
+}
+
 void gpu_dgemm_(double* a, double* b, double* c,
           double* a_device, double* b_device, double* c_device,
           int m, int n, int k,
           double alpha, double beta) {
 
     // define parameters
-    int tile_size_m = 512;
-    int tile_size_n = 512;
-    int tile_size_k = 512;
+    int tile_size_m = 4000;
+    int tile_size_n = 4000;
+    int tile_size_k = 4000;
+
+    tile_size_m = std::min(tile_size_m, m);
+    tile_size_n = std::min(tile_size_n, n);
+    tile_size_k = std::min(tile_size_k, k);
+
     // short tile sizes (when dim not divisible by tile)
     int short_tile_size_m = m % tile_size_m;
     int short_tile_size_n = n % tile_size_n;
@@ -71,85 +102,67 @@ void gpu_dgemm_(double* a, double* b, double* c,
                         actual_size_n = tile_size_n;
 
                     if (itile >= nstreams) {
-
                         // block the host until this streams buffers are available
                         // (that is, all previous operations in this stream have completed)
                         bufferfilled[ibuff].wait();
 
                         // copy result in pinned buffer back to global matrix
-// # pragma omp parallel for
-                        for ( int i=0; i<actual_size_m; i++ ) {
-                            for ( int j=0; j<actual_size_n; j++ ) {
-                                // pinned buffers offsets
-                                int tile_offset_pinned = ibuff*offset_c;
-                                int el_offset_pinned = j * tile_size_m + i;
-                                // input matrix offsets
-                                int tile_offset_global = (p_col_tile[ibuff] * tile_size_n + j) * m;
-                                int el_offset_global = p_row_tile[ibuff] * tile_size_m + i;
-                                // pindded buffer -> global matrix
-                                // if statement ensures the correctness in cases when tile sizes don't 
-                                // perfectly divide the dimension of that matrix
-                                if (tile_offset_global + el_offset_global < m * n) {
-                                    c[tile_offset_global + el_offset_global] = pc[tile_offset_pinned + el_offset_pinned];
-                                }
-                            }
+# pragma omp parallel for
+                        for ( int j=0; j<actual_size_n; j++ ) {
+                            copy_tile(pc, c, 
+                                    tile_size_m, tile_size_n, 
+                                    offset_c, 
+                                    actual_size_m, actual_size_n, 
+                                    m, n, 
+                                    p_row_tile[ibuff], p_col_tile[ibuff], 
+                                    j, ibuff, false);
                         }
                     }
 
                     // copy next tile to pinned buffer
-// # pragma omp parallel for
-                    for ( int i=0; i<actual_size_m; i++ ) {
-                        for ( int j=0; j<actual_size_k; j++ ) {
-                            // pinned buffers offsets
-                            int tile_offset_pinned = ibuff*offset_a;
-                            int el_offset_pinned = j * tile_size_m + i;
-                            // input matrices offsets
-                            int tile_offset_global = (iktile * tile_size_k + j) * m;
-                            int el_offset_global = irowtile * tile_size_m + i;
-                            // global -> pinned
-                            if (tile_offset_global + el_offset_global < m * k) {
-                                pa[tile_offset_pinned + el_offset_pinned] = a[tile_offset_global + el_offset_global];
-                            }
-                        }
-                    }
-                    // copy next tile to pinned buffer
-// # pragma omp parallel for
-                    for ( int i=0; i<actual_size_k; i++ ) {
-                        for ( int j=0; j<actual_size_n; j++ ) {
-                            // pinned buffers offsets
-                            int tile_offset_pinned = ibuff*offset_b;
-                            int el_offset_pinned = j * tile_size_k + i;
-                            // input matrices offsets
-                            int tile_offset_global = (icoltile * tile_size_n + j) * k;
-                            int el_offset_global = iktile * tile_size_k + i;
-                            // global -> pinned
-                            if (tile_offset_global + el_offset_global < k * n) {
-                                pb[tile_offset_pinned + el_offset_pinned] = b[tile_offset_global + el_offset_global];
-                            }
-                        }
-                    }
-                    // copy next tile to pinned buffer
-// # pragma omp parallel for
-                    for ( int i=0; i<actual_size_m; i++ ) {
-                        for ( int j=0; j<actual_size_n; j++ ) {
-                                // pinned buffers offsets
-                                int tile_offset_pinned = ibuff*offset_c;
-                                int el_offset_pinned = j * tile_size_m + i;
-                                // input matrix offsets
-                                int tile_offset_global = (icoltile * tile_size_n + j) * m;
-                                int el_offset_global = irowtile * tile_size_m + i;
-                                // global -> pinned
-                                if (tile_offset_global + el_offset_global < m * n) {
-                                    c[tile_offset_global + el_offset_global] = pc[tile_offset_pinned + el_offset_pinned];
-                                }
-                        }
+# pragma omp parallel for
+                    for ( int j=0; j<actual_size_k; j++ ) {
+                        copy_tile(a, pa,
+                                tile_size_m, tile_size_k,
+                                offset_a,
+                                actual_size_m, actual_size_k,
+                                m, k,
+                                p_row_tile[ibuff], p_col_tile[ibuff],
+                                j, ibuff, true);
                     }
 
                     // copy tile data to device
                     copy_to_device_async(&pa[ibuff*offset_a], &d_a[ibuff*offset_a],
                             actual_size_m*actual_size_k, myStreams[ibuff].stream());
+
+                    // copy next tile to pinned buffer
+
+# pragma omp parallel for
+                    for ( int j=0; j<actual_size_n; j++ ) {
+                        copy_tile(b, pb,
+                                tile_size_k, tile_size_n,
+                                offset_b,
+                                actual_size_k, actual_size_n,
+                                k, n,
+                                p_row_tile[ibuff], p_col_tile[ibuff],
+                                j, ibuff, true);
+                    }
+
                     copy_to_device_async(&pb[ibuff*offset_b], &d_b[ibuff*offset_b],
                             actual_size_k*actual_size_n, myStreams[ibuff].stream());
+
+                    // copy next tile to pinned buffer
+# pragma omp parallel for
+                    for ( int j=0; j<actual_size_n; j++ ) {
+                        copy_tile(c, pc,
+                                tile_size_m, tile_size_n,
+                                offset_c,
+                                actual_size_m, actual_size_n,
+                                m, n,
+                                p_row_tile[ibuff], p_col_tile[ibuff],
+                                j, ibuff, true);
+                    }
+
                     copy_to_device_async(&pc[ibuff*offset_c], &d_c[ibuff*offset_c],
                             actual_size_m*actual_size_n, myStreams[ibuff].stream());
 
@@ -187,22 +200,15 @@ void gpu_dgemm_(double* a, double* b, double* c,
             cudaStreamSynchronize (myStreams[itile].stream());
 
             // copy result in pinned buffer back to source
-// # pragma omp parallel for
-            for ( int i=0; i<actual_size_m; i++ ) {
-                for ( int j=0; j<actual_size_n; j++ ) {
-                    // pinned buffers offsets
-                    int tile_offset_pinned = ibuff*offset_c;
-                    int el_offset_pinned = j * tile_size_m + i;
-                    // input matrix offsets
-                    int tile_offset_global = (p_col_tile[ibuff] * tile_size_n + j) * m;
-                    int el_offset_global = p_row_tile[ibuff] * tile_size_m + i;
-                    // pindded buffer -> global matrix
-                    // if statement ensures the correctness in cases when tile sizes don't 
-                    // perfectly divide the dimension of that matrix
-                    if (tile_offset_global + el_offset_global < m * n) {
-                        c[tile_offset_global + el_offset_global] = pc[tile_offset_pinned + el_offset_pinned];
-                    }
-                }
+# pragma omp parallel for
+            for ( int j=0; j<actual_size_n; j++ ) {
+                copy_tile(pc, c,
+                        tile_size_m, tile_size_n,
+                        offset_c,
+                        actual_size_m, actual_size_n,
+                        m, n,
+                        p_row_tile[ibuff], p_col_tile[ibuff],
+                        j, ibuff, false);
             }
         }
     }

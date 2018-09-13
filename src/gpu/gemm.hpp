@@ -8,6 +8,7 @@
 #include "../blas.h"
 #include <vector>
 #include <omp.h>
+#include <cstring>
 
 #define nstreams 3
 
