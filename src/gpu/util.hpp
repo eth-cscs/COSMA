@@ -29,14 +29,14 @@ static void cuda_check_status(cudaError_t status) {
     if(status != cudaSuccess) {
         std::cerr << "error: CUDA API call : "
         << cudaGetErrorString(status) << std::endl;
-        exit(1);
+        throw(std::runtime_error("CUDA ERROR"));
     }
 }
 
 static void cublas_check_status(cublasStatus_t status) {
     if(status != CUBLAS_STATUS_SUCCESS) {
         std::cerr << "error: CUDABLAS API call\n";
-        exit(1);
+        throw(std::runtime_error("CUDA ERROR"));
     }
 }
 
@@ -45,7 +45,7 @@ static void cuda_check_last_kernel(std::string const& errstr) {
     if(status != cudaSuccess) {
         std::cout << "error: CUDA kernel launch : " << errstr << " : "
         << cudaGetErrorString(status) << std::endl;
-        exit(1);
+        throw(std::runtime_error("CUDA ERROR"));
     }
 }
 
@@ -56,6 +56,7 @@ static void cuda_check_last_kernel(std::string const& errstr) {
 // allocate space on GPU for n instances of type T
 template <typename T>
 T* malloc_device(size_t n) {
+    std::cout << "Allocating " << n << " on device " << std::endl;
     void* p;
     auto status = cudaMalloc(&p, n*sizeof(T));
     cuda_check_status(status);
@@ -65,6 +66,7 @@ T* malloc_device(size_t n) {
 // allocate managed memory
 template <typename T>
 T* malloc_managed(size_t n, T value=T()) {
+    std::cout << "Allocating " << n << " on managed " << std::endl;
     T* p;
     auto status = cudaMallocManaged(&p, n*sizeof(T));
     cuda_check_status(status);
@@ -74,11 +76,14 @@ T* malloc_managed(size_t n, T value=T()) {
 
 template <typename T>
 T* malloc_pinned(size_t N, T value=T()) {
+    std::cout << "Allocating " << N << " pinned " << std::endl;
+    auto status = cudaGetLastError();
+    cuda_check_status(status);
+    std::cout << "After get last error " << std::endl;
     T* ptr = nullptr;
-    cudaHostAlloc((void**)&ptr, N*sizeof(T), 0);
-
+    status = cudaHostAlloc((void**)&ptr, N*sizeof(T), 0);
+    cuda_check_status(status);
     std::fill(ptr, ptr+N, value);
-
     return ptr;
 }
 

@@ -15,9 +15,8 @@ void copy_tile(double* from, double* to,
     int el_offset = col * actual_tile_m;
     int offset = tile_offset + el_offset;
 
-    // input matrix offsets
-    int tile_offset_global = (p_col_tile * tile_n + col) * m;
-    int el_offset_global = p_row_tile * actual_tile_m;
+    int tile_offset_global = (p_col_tile*tile_n + col) * m;
+    int el_offset_global = p_row_tile * tile_m;
     int offset_global = tile_offset_global + el_offset_global;
 
     int offset_from = global_to_pinned ? offset_global : offset;
@@ -32,9 +31,9 @@ void gpu_dgemm_(double* a, double* b, double* c,
           double alpha, double beta) {
 
     // define parameters
-    int tile_size_m = 4000;
-    int tile_size_n = 4000;
-    int tile_size_k = 4000;
+    int tile_size_m = 3;
+    int tile_size_n = 3;
+    int tile_size_k = 3;
 
     tile_size_m = std::min(tile_size_m, m);
     tile_size_n = std::min(tile_size_n, n);
@@ -107,7 +106,7 @@ void gpu_dgemm_(double* a, double* b, double* c,
                         bufferfilled[ibuff].wait();
 
                         // copy result in pinned buffer back to global matrix
-# pragma omp parallel for
+// # pragma omp parallel for
                         for ( int j=0; j<actual_size_n; j++ ) {
                             copy_tile(pc, c, 
                                     tile_size_m, tile_size_n, 
@@ -120,49 +119,45 @@ void gpu_dgemm_(double* a, double* b, double* c,
                     }
 
                     // copy next tile to pinned buffer
-# pragma omp parallel for
+// # pragma omp parallel for
                     for ( int j=0; j<actual_size_k; j++ ) {
                         copy_tile(a, pa,
                                 tile_size_m, tile_size_k,
                                 offset_a,
                                 actual_size_m, actual_size_k,
                                 m, k,
-                                p_row_tile[ibuff], p_col_tile[ibuff],
+                                irowtile, iktile,
                                 j, ibuff, true);
                     }
 
                     // copy tile data to device
-                    copy_to_device_async(&pa[ibuff*offset_a], &d_a[ibuff*offset_a],
-                            actual_size_m*actual_size_k, myStreams[ibuff].stream());
-
-                    // copy next tile to pinned buffer
-
-# pragma omp parallel for
+// # pragma omp parallel for
                     for ( int j=0; j<actual_size_n; j++ ) {
                         copy_tile(b, pb,
                                 tile_size_k, tile_size_n,
                                 offset_b,
                                 actual_size_k, actual_size_n,
                                 k, n,
-                                p_row_tile[ibuff], p_col_tile[ibuff],
+                                iktile, icoltile,
                                 j, ibuff, true);
                     }
 
-                    copy_to_device_async(&pb[ibuff*offset_b], &d_b[ibuff*offset_b],
-                            actual_size_k*actual_size_n, myStreams[ibuff].stream());
-
                     // copy next tile to pinned buffer
-# pragma omp parallel for
+// # pragma omp parallel for
                     for ( int j=0; j<actual_size_n; j++ ) {
                         copy_tile(c, pc,
                                 tile_size_m, tile_size_n,
                                 offset_c,
                                 actual_size_m, actual_size_n,
                                 m, n,
-                                p_row_tile[ibuff], p_col_tile[ibuff],
+                                irowtile, icoltile,
                                 j, ibuff, true);
                     }
 
+                    copy_to_device_async(&pa[ibuff*offset_a], &d_a[ibuff*offset_a],
+                            actual_size_m*actual_size_k, myStreams[ibuff].stream());
+                    copy_to_device_async(&pb[ibuff*offset_b], &d_b[ibuff*offset_b],
+                            actual_size_k*actual_size_n, myStreams[ibuff].stream());
                     copy_to_device_async(&pc[ibuff*offset_c], &d_c[ibuff*offset_c],
                             actual_size_m*actual_size_n, myStreams[ibuff].stream());
 
@@ -200,19 +195,20 @@ void gpu_dgemm_(double* a, double* b, double* c,
             cudaStreamSynchronize (myStreams[itile].stream());
 
             // copy result in pinned buffer back to source
-# pragma omp parallel for
+//#  pragma omp parallel for
             for ( int j=0; j<actual_size_n; j++ ) {
                 copy_tile(pc, c,
                         tile_size_m, tile_size_n,
                         offset_c,
                         actual_size_m, actual_size_n,
                         m, n,
-                        p_row_tile[ibuff], p_col_tile[ibuff],
-                        j, ibuff, false);
+                        p_row_tile[itile], p_col_tile[itile],
+                        j, itile, false);
             }
         }
     }
 
+    cublasDestroy (cublasHandle);
     cudaFreeHost(pa);
     cudaFreeHost(pb);
     cudaFreeHost(pc);

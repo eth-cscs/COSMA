@@ -20,7 +20,8 @@ public:
     device_vector& operator=(device_vector&& other) {
         if (this != &other) {
             if (this->data_) {
-                cudaFree(this->data_);
+                auto status = cudaFree(this->data_);
+                cuda_check_status(status);
             }
             this->data_ = other.data_;
             other.data_ = nullptr;
