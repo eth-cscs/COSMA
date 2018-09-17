@@ -19,7 +19,7 @@ class cuda_stream {
     }
 
     // return the CUDA stream handle
-    cudaStream_t stream() {
+    cudaStream_t& stream() {
         return stream_;
     }
 

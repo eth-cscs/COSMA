@@ -214,11 +214,11 @@ void gpu_dgemm_(double* a, double* b, double* c,
 
     std::cout << "finished everything " << std::endl;
 
-    //cudaEvent_t t_end;
-    //cudaEventRecord (t_end,0);
-    //cudaEventSynchronize(t_end);
+    // cudaEvent_t t_end;
+    // cudaEventRecord (t_end,0);
+    // cudaEventSynchronize(t_end);
 
-    //cudaEventDestroy(t_end);
+    // cudaEventDestroy(t_end);
 
     cudaFreeHost(pa);
     cudaFreeHost(pb);
