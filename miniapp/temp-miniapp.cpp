@@ -52,6 +52,7 @@ long run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD) {
     int rank, size;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
+    get_cublas_handle();
 
     //Declare A,B and C COSMA matrices objects
     CosmaMatrix A('A', s, rank);
@@ -90,6 +91,7 @@ int main( int argc, char **argv ) {
     for (int i = 0; i < n_iter+1; ++i) {
         long t_run = 0;
         t_run = run(strategy);
+        std::cout << "finished run i = " << i << std::endl;
         if (i == 0) continue;
         times.push_back(t_run);
     }

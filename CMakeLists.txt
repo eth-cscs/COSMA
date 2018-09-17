@@ -62,7 +62,7 @@ endif()
 #Compiler must support c++14
 if (CMAKE_COMPILER_IS_GNUCXX)
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(CXX_FLAGS ${CXX_FLAGS} -Wall -O0 -ggdb -DDEBUG)
+        set(CXX_FLAGS ${CXX_FLAGS} -Wall -O0 -DDEBUG)
         # add address sanitizer for debugging purposes
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
     else ()
@@ -94,9 +94,6 @@ find_package(OpenMP REQUIRED)
 if(OPENMP_FOUND)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-    set(CXX_FLAGS ${CXX_FLAGS} -fopenmp)
-    add_compile_options(${CXX_FLAGS})
 endif()
 
 ################
@@ -115,7 +112,7 @@ if(COSMA_WITH_CUDA)
     #set(CMAKE_CXX_STANDARD 11)
     find_package(CUDA REQUIRED)
     add_definitions(-DCOSMA_HAVE_GPU)
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-arch=sm_60;-std=c++11;-Xcompiler -fPIC)
+    #set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-arch=sm_60;-std=c++11;-Xcompiler -fPIC)
     #list(APPEND CMAKE_CUDA_FLAGS -arch=sm_60)
     set(cuda_deps ${CUDA_LIBRARIES} cublas)
 else()
@@ -123,6 +120,7 @@ else()
 endif()
 
 set(cosma_deps ${mpi_deps} ${blas_deps} ${cuda_deps} ${prof_deps})
+message("cuda deps: ${cuda_deps}")
 
 #############
 #  Testing  #

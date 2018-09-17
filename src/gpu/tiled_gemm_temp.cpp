@@ -22,7 +22,9 @@ void copy_tile(double* from, double* to,
     int offset_from = global_to_pinned ? offset_global : offset;
     int offset_to = global_to_pinned ? offset : offset_global;
 
+    std::cout << "Before" << std::endl;
     std::memcpy(to + offset_to, from + offset_from, actual_tile_m * sizeof(double));
+    std::cout << "After" << std::endl;
 }
 
 void gpu_dgemm_(double* a, double* b, double* c,
@@ -48,9 +50,6 @@ void gpu_dgemm_(double* a, double* b, double* c,
     double *pa = malloc_pinned<double>(tile_size_m * tile_size_k * nstreams);
     double *pb = malloc_pinned<double>(tile_size_k * tile_size_n * nstreams);
     double *pc = malloc_pinned<double>(tile_size_m * tile_size_n * nstreams);
-
-    // create a handle to cuBlas
-    cublasHandle_t cublasHandle = get_cublas_handle();
 
     // allocate space on device - 3 tiles for a, b, c
     double *d_a = malloc_device<double>(tile_size_m * tile_size_k * nstreams);
@@ -106,7 +105,7 @@ void gpu_dgemm_(double* a, double* b, double* c,
                         bufferfilled[ibuff].wait();
 
                         // copy result in pinned buffer back to global matrix
-// # pragma omp parallel for
+//# pragma omp parallel for
                         for ( int j=0; j<actual_size_n; j++ ) {
                             copy_tile(pc, c, 
                                     tile_size_m, tile_size_n, 
@@ -116,10 +115,11 @@ void gpu_dgemm_(double* a, double* b, double* c,
                                     p_row_tile[ibuff], p_col_tile[ibuff], 
                                     j, ibuff, false);
                         }
+                        std::cout << "C: pinned -> global" << std::endl;
                     }
 
                     // copy next tile to pinned buffer
-// # pragma omp parallel for
+//# pragma omp parallel for
                     for ( int j=0; j<actual_size_k; j++ ) {
                         copy_tile(a, pa,
                                 tile_size_m, tile_size_k,
@@ -129,9 +129,10 @@ void gpu_dgemm_(double* a, double* b, double* c,
                                 irowtile, iktile,
                                 j, ibuff, true);
                     }
+                    std::cout << "A: global->pinned" << std::endl;
 
                     // copy tile data to device
-// # pragma omp parallel for
+//# pragma omp parallel for
                     for ( int j=0; j<actual_size_n; j++ ) {
                         copy_tile(b, pb,
                                 tile_size_k, tile_size_n,
@@ -141,9 +142,10 @@ void gpu_dgemm_(double* a, double* b, double* c,
                                 iktile, icoltile,
                                 j, ibuff, true);
                     }
+                    std::cout << "B: global->pinned" << std::endl;
 
                     // copy next tile to pinned buffer
-// # pragma omp parallel for
+//# pragma omp parallel for
                     for ( int j=0; j<actual_size_n; j++ ) {
                         copy_tile(c, pc,
                                 tile_size_m, tile_size_n,
@@ -153,6 +155,7 @@ void gpu_dgemm_(double* a, double* b, double* c,
                                 irowtile, icoltile,
                                 j, ibuff, true);
                     }
+                    std::cout << "C: global->pinned" << std::endl;
 
                     copy_to_device_async(&pa[ibuff*offset_a], &d_a[ibuff*offset_a],
                             actual_size_m*actual_size_k, myStreams[ibuff].stream());
@@ -162,10 +165,10 @@ void gpu_dgemm_(double* a, double* b, double* c,
                             actual_size_m*actual_size_n, myStreams[ibuff].stream());
 
                     // tell cuBLAS which stream to use
-                    cublasSetStream(cublasHandle, myStreams[ibuff].stream());
+                    cublasSetStream(get_cublas_handle(), myStreams[ibuff].stream());
 
                     // perform dgemm
-                    cublasDgemm (cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N,
+                    cublasDgemm (get_cublas_handle(), CUBLAS_OP_N, CUBLAS_OP_N,
                             actual_size_m, actual_size_n, actual_size_k, &alpha,
                             &d_a[ibuff*offset_a], actual_size_m,
                             &d_b[ibuff*offset_b], actual_size_k, &beta,
@@ -205,15 +208,27 @@ void gpu_dgemm_(double* a, double* b, double* c,
                         p_row_tile[itile], p_col_tile[itile],
                         j, itile, false);
             }
+            std::cout << "C: pinned->global" << std::endl;
         }
     }
 
-    cublasDestroy (cublasHandle);
+    std::cout << "finished everything " << std::endl;
+
+    //cudaEvent_t t_end;
+    //cudaEventRecord (t_end,0);
+    //cudaEventSynchronize(t_end);
+
+    //cudaEventDestroy(t_end);
+
     cudaFreeHost(pa);
     cudaFreeHost(pb);
     cudaFreeHost(pc);
 
+    std::cout << "freed pinned" << std::endl;
+
     cudaFree(d_a);
     cudaFree(d_b);
     cudaFree(d_c);
+
+    std::cout << "freed device " << std::endl;
 }

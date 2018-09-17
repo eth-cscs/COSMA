@@ -35,8 +35,18 @@ void Buffer::initialize_buffers() {
 
     current_buffer_ = 0;
 
+
+#ifdef DEBUG
+    std::cout << "Buffer sizes for matrix " << label_ << " on rank " << rank_ << std::endl;
+    std::cout << "max_reshuffle_buffer_size_ = " << max_reshuffle_buffer_size_ << std::endl;
+    std::cout << "max_reduce_buffer_size_ = " << max_reduce_buffer_size_ << std::endl;
+    std::cout << "max_send_buffer_size_ = " << max_send_buffer_size_ << std::endl;
+    std::cout << "max_recv_buffer_size_ = " << max_recv_buffer_size_ << std::endl;
+    std::cout << "max_base_buffer_size_ = " << max_base_buffer_size_ << std::endl;
+#endif
+
 #ifdef COSMA_HAVE_GPU
-    // device_buffer_ = device_vector<double>(max_base_buffer_size_);
+    //device_buffer_ = device_vector<double>(max_base_buffer_size_);
 #endif
 }
 

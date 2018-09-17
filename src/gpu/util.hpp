@@ -5,22 +5,10 @@
 #include <cuda_profiler_api.h>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
-#include <mutex>
+//#include <mutex>
 
 using value_type = double;
 using size_type  = size_t;
-
-// helper for initializing cublas
-// use only for demos: not threadsafe
-static cublasHandle_t get_cublas_handle() {
-    static bool is_initialized = false;
-    static cublasHandle_t cublas_handle;
-
-    if(!is_initialized) {
-        cublasCreate(&cublas_handle);
-    }
-    return cublas_handle;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 // CUDA error checking
@@ -47,6 +35,45 @@ static void cuda_check_last_kernel(std::string const& errstr) {
         << cudaGetErrorString(status) << std::endl;
         throw(std::runtime_error("CUDA ERROR"));
     }
+}
+
+// helper for initializing cublas
+// use only for demos: not threadsafe
+static cublasHandle_t get_cublas_handle() {
+    static bool is_initialized = false;
+    static cublasHandle_t cublas_handle;
+
+    if(!is_initialized) {
+        int idevice = 0;
+        cudaSetDevice(idevice);
+        cudaDeviceProp dprops;
+        cudaGetDeviceProperties(&dprops, idevice);
+
+        printf("\nDevice name = %s, with compute capability %d.%d \n",
+                dprops.name, dprops.major, dprops.minor);
+
+        cublasCreate(&cublas_handle);
+        //cudaDeviceSynchronize();
+        //cudaThreadSynchronize();
+        cuda_check_last_kernel("cublasCreate");
+
+        is_initialized = true;
+    }
+    return cublas_handle;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// TOTAL AVAILABLE MEMORY ON GPU 
+///////////////////////////////////////////////////////////////////////////////
+inline
+std::size_t gpu_allocated_memory() {
+    cudaDeviceSynchronize();
+    auto status = cudaGetLastError();
+    cuda_check_status(status);
+    std::size_t free;
+    std::size_t total;
+    status = cudaMemGetInfo(&free, &total);
+    return status == cudaSuccess ? total-free : -1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -77,10 +104,11 @@ T* malloc_managed(size_t n, T value=T()) {
 template <typename T>
 T* malloc_pinned(size_t N, T value=T()) {
     std::cout << "Allocating " << N << " pinned " << std::endl;
+    cudaDeviceSynchronize();
     auto status = cudaGetLastError();
     cuda_check_status(status);
     std::cout << "After get last error " << std::endl;
-    T* ptr = nullptr;
+    T* ptr;
     status = cudaHostAlloc((void**)&ptr, N*sizeof(T), 0);
     cuda_check_status(status);
     std::fill(ptr, ptr+N, value);
