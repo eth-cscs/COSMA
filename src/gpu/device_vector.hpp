@@ -35,7 +35,9 @@ public:
 
     ~device_vector() {
         if (data_) {
+            std::cout << "Destructing device_vector" << std::endl;
             cudaFree(data_);
+            std::cout << "Destructed device_vector" << std::endl;
         }
     }
 

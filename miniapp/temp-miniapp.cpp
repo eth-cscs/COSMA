@@ -91,7 +91,6 @@ int main( int argc, char **argv ) {
     for (int i = 0; i < n_iter+1; ++i) {
         long t_run = 0;
         t_run = run(strategy);
-        std::cout << "finished run i = " << i << std::endl;
         if (i == 0) continue;
         times.push_back(t_run);
     }

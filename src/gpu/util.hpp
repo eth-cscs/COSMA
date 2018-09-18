@@ -46,12 +46,6 @@ static cublasHandle_t get_cublas_handle() {
     if(!is_initialized) {
         int idevice = 0;
         cudaSetDevice(idevice);
-        cudaDeviceProp dprops;
-        cudaGetDeviceProperties(&dprops, idevice);
-
-        printf("\nDevice name = %s, with compute capability %d.%d \n",
-                dprops.name, dprops.major, dprops.minor);
-
         cublasCreate(&cublas_handle);
         //cudaDeviceSynchronize();
         //cudaThreadSynchronize();
@@ -83,7 +77,6 @@ std::size_t gpu_allocated_memory() {
 // allocate space on GPU for n instances of type T
 template <typename T>
 T* malloc_device(size_t n) {
-    std::cout << "Allocating " << n << " on device " << std::endl;
     void* p;
     auto status = cudaMalloc(&p, n*sizeof(T));
     cuda_check_status(status);
@@ -93,7 +86,6 @@ T* malloc_device(size_t n) {
 // allocate managed memory
 template <typename T>
 T* malloc_managed(size_t n, T value=T()) {
-    std::cout << "Allocating " << n << " on managed " << std::endl;
     T* p;
     auto status = cudaMallocManaged(&p, n*sizeof(T));
     cuda_check_status(status);
@@ -103,13 +95,8 @@ T* malloc_managed(size_t n, T value=T()) {
 
 template <typename T>
 T* malloc_pinned(size_t N, T value=T()) {
-    std::cout << "Allocating " << N << " pinned " << std::endl;
-    cudaDeviceSynchronize();
-    auto status = cudaGetLastError();
-    cuda_check_status(status);
-    std::cout << "After get last error " << std::endl;
     T* ptr;
-    status = cudaHostAlloc((void**)&ptr, N*sizeof(T), 0);
+    auto status = cudaHostAlloc((void**)&ptr, N*sizeof(T), 0);
     cuda_check_status(status);
     std::fill(ptr, ptr+N, value);
     return ptr;
@@ -142,7 +129,7 @@ void copy_to_device_async(const T* from, T* to, size_t n, cudaStream_t stream=NU
     if(status != cudaSuccess) {
         std::cout << "error: CUDA kernel launch:"
         << cudaGetErrorString(status) << std::endl;
-        exit(1);
+        throw(std::runtime_error("CUDA ERROR"));
     }
 
     status =
