@@ -6,23 +6,28 @@ void copy_tile(double* from, double* to,
         int actual_tile_m, int actual_tile_n,
         int m, int n,
         int p_row_tile, int p_col_tile,
-        int col,
         int ibuff,
         bool global_to_pinned) {
 
-    // pinned buffers offsets
-    int tile_offset = ibuff*tile_size;
-    int el_offset = col * actual_tile_m;
-    int offset = tile_offset + el_offset;
+//# pragma omp parallel for
+    for (int col = 0; col < actual_tile_n; ++col) {
+        // pinned buffers offsets
+        int tile_offset = ibuff*tile_size;
+        int el_offset = col * actual_tile_m;
+        int offset = tile_offset + el_offset;
 
-    int tile_offset_global = (p_col_tile*tile_n + col) * m;
-    int el_offset_global = p_row_tile * tile_m;
-    int offset_global = tile_offset_global + el_offset_global;
+        int tile_offset_global = (p_col_tile*tile_n + col) * m;
+        int el_offset_global = p_row_tile * tile_m;
+        int offset_global = tile_offset_global + el_offset_global;
 
-    int offset_from = global_to_pinned ? offset_global : offset;
-    int offset_to = global_to_pinned ? offset : offset_global;
+        int offset_from = global_to_pinned ? offset_global : offset;
+        int offset_to = global_to_pinned ? offset : offset_global;
 
-    std::memcpy(to + offset_to, from + offset_from, actual_tile_m * sizeof(double));
+        std::cout << "offset_from = " << offset_from << std::endl;
+        std::cout << "offset_to = " << offset_to << std::endl;
+
+        std::memcpy(to + offset_to, from + offset_from, actual_tile_m * sizeof(double));
+    }
 }
 
 void gpu_dgemm_(double* a, double* b, double* c,
@@ -48,6 +53,9 @@ void gpu_dgemm_(double* a, double* b, double* c,
     double *pa = malloc_pinned<double>(tile_size_m * tile_size_k * nstreams);
     double *pb = malloc_pinned<double>(tile_size_k * tile_size_n * nstreams);
     double *pc = malloc_pinned<double>(tile_size_m * tile_size_n * nstreams);
+    //double *pa = malloc_device<double>(tile_size_m * tile_size_k * nstreams);
+    //double *pb = malloc_device<double>(tile_size_k * tile_size_n * nstreams);
+    //double *pc = malloc_device<double>(tile_size_m * tile_size_n * nstreams);
 
     // allocate space on device - 3 tiles for a, b, c
     double *d_a = malloc_device<double>(tile_size_m * tile_size_k * nstreams);
@@ -62,6 +70,10 @@ void gpu_dgemm_(double* a, double* b, double* c,
     int n_tiles_n = (int) std::ceil(1.0 * n / tile_size_n);
     int n_tiles_k = (int) std::ceil(1.0 * k / tile_size_k);
 
+    std::cout << "n_tiles_m = " << n_tiles_m << std::endl;
+    std::cout << "n_tiles_n = " << n_tiles_n << std::endl;
+    std::cout << "n_tiles_k = " << n_tiles_k << std::endl;
+
     std::vector<cuda_stream> myStreams(nstreams);
 
     std::vector<cuda_event> bufferfilled(nstreams);
@@ -69,6 +81,8 @@ void gpu_dgemm_(double* a, double* b, double* c,
     // caches for indices of previous tiles in streams
     std::vector<int> p_row_tile(nstreams);
     std::vector<int> p_col_tile(nstreams);
+
+    std::cout << "Total memory used on GPU = " << gpu_allocated_memory() << std::endl;
 
     // PERFORM MULTIPLICATION
     {
@@ -97,59 +111,61 @@ void gpu_dgemm_(double* a, double* b, double* c,
                     else
                         actual_size_n = tile_size_n;
 
+                    std::cout << "tile_index_m = " << irowtile << std::endl;
+                    std::cout << "tile_index_n = " << icoltile << std::endl;
+                    std::cout << "tile_index_k = " << iktile << std::endl;
+
+                    std::cout << "========================="<< std::endl;
+
+                    std::cout << "actual_size_m = " << actual_size_m << std::endl;
+                    std::cout << "actual_size_n = " << actual_size_n << std::endl;
+                    std::cout << "actual_size_k = " << actual_size_k << std::endl;
+
                     if (itile >= nstreams) {
                         // block the host until this streams buffers are available
                         // (that is, all previous operations in this stream have completed)
                         bufferfilled[ibuff].wait();
 
                         // copy result in pinned buffer back to global matrix
-//# pragma omp parallel for
-                        for ( int j=0; j<actual_size_n; j++ ) {
-                            copy_tile(pc, c, 
-                                    tile_size_m, tile_size_n, 
-                                    offset_c, 
-                                    actual_size_m, actual_size_n, 
-                                    m, n, 
-                                    p_row_tile[ibuff], p_col_tile[ibuff], 
-                                    j, ibuff, false);
-                        }
+                        copy_tile(pc, c, 
+                                tile_size_m, tile_size_n, 
+                                offset_c, 
+                                actual_size_m, actual_size_n, 
+                                m, n, 
+                                p_row_tile[ibuff], p_col_tile[ibuff], 
+                                ibuff, false);
+                        std::cout << "Copied PC->C" << std::endl;
                     }
 
                     // copy next tile to pinned buffer
-//# pragma omp parallel for
-                    for ( int j=0; j<actual_size_k; j++ ) {
-                        copy_tile(a, pa,
-                                tile_size_m, tile_size_k,
-                                offset_a,
-                                actual_size_m, actual_size_k,
-                                m, k,
-                                irowtile, iktile,
-                                j, ibuff, true);
-                    }
+                    copy_tile(a, pa,
+                            tile_size_m, tile_size_k,
+                            offset_a,
+                            actual_size_m, actual_size_k,
+                            m, k,
+                            irowtile, iktile,
+                            ibuff, true);
+                    std::cout << "Copied A->PA" << std::endl;
 
                     // copy tile data to device
-//# pragma omp parallel for
-                    for ( int j=0; j<actual_size_n; j++ ) {
-                        copy_tile(b, pb,
-                                tile_size_k, tile_size_n,
-                                offset_b,
-                                actual_size_k, actual_size_n,
-                                k, n,
-                                iktile, icoltile,
-                                j, ibuff, true);
-                    }
+                    copy_tile(b, pb,
+                            tile_size_k, tile_size_n,
+                            offset_b,
+                            actual_size_k, actual_size_n,
+                            k, n,
+                            iktile, icoltile,
+                            ibuff, true);
+                    std::cout << "Copied B->PB" << std::endl;
 
                     // copy next tile to pinned buffer
-//# pragma omp parallel for
-                    for ( int j=0; j<actual_size_n; j++ ) {
-                        copy_tile(c, pc,
-                                tile_size_m, tile_size_n,
-                                offset_c,
-                                actual_size_m, actual_size_n,
-                                m, n,
-                                irowtile, icoltile,
-                                j, ibuff, true);
-                    }
+                    copy_tile(c, pc,
+                            tile_size_m, tile_size_n,
+                            offset_c,
+                            actual_size_m, actual_size_n,
+                            m, n,
+                            irowtile, icoltile,
+                            ibuff, true);
+                    std::cout << "Copied C->PC" << std::endl;
 
                     copy_to_device_async(&pa[ibuff*offset_a], &d_a[ibuff*offset_a],
                             actual_size_m*actual_size_k, myStreams[ibuff].stream());
@@ -192,18 +208,18 @@ void gpu_dgemm_(double* a, double* b, double* c,
             cudaStreamSynchronize (myStreams[itile].stream());
 
             // copy result in pinned buffer back to source
-//#  pragma omp parallel for
-            for ( int j=0; j<actual_size_n; j++ ) {
-                copy_tile(pc, c,
-                        tile_size_m, tile_size_n,
-                        offset_c,
-                        actual_size_m, actual_size_n,
-                        m, n,
-                        p_row_tile[itile], p_col_tile[itile],
-                        j, itile, false);
-            }
+            copy_tile(pc, c,
+                    tile_size_m, tile_size_n,
+                    offset_c,
+                    actual_size_m, actual_size_n,
+                    m, n,
+                    p_row_tile[itile], p_col_tile[itile],
+                    itile, false);
+                std::cout << "Copied final PC->C" << std::endl;
         }
     }
+
+    std::cout << "finished the dgemm on gpu" << std::endl;
 
     // cudaEvent_t t_end;
     // cudaEventRecord (t_end,0);
@@ -213,8 +229,15 @@ void gpu_dgemm_(double* a, double* b, double* c,
     cudaFreeHost(pa);
     cudaFreeHost(pb);
     cudaFreeHost(pc);
+    // cudaFree(pa);
+    // cudaFree(pb);
+    // cudaFree(pc);
+
+    std::cout << "Freed up all pinned" << std::endl;
 
     cudaFree(d_a);
     cudaFree(d_b);
     cudaFree(d_c);
+
+    std::cout << "Finished dgemm on CUDA" << std::endl;
 }
