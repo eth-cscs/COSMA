@@ -31,9 +31,9 @@ void gpu_dgemm_(double* a, double* b, double* c,
           double alpha, double beta) {
 
     // define parameters
-    int tile_size_m = 4096;
-    int tile_size_n = 4096;
-    int tile_size_k = 4096;
+    int tile_size_m = 3;
+    int tile_size_n = 3;
+    int tile_size_k = 3;
 
     tile_size_m = std::min(tile_size_m, m);
     tile_size_n = std::min(tile_size_n, n);

@@ -4,11 +4,11 @@ communicator::communicator(const Strategy* strategy, MPI_Comm comm):
         strategy_(strategy), full_comm_(comm) {
     MPI_Group group;
     MPI_Group reduced_group;
-    is_idle_ = false;
 
     MPI_Comm_rank(full_comm_, &rank_);
     MPI_Comm_size(full_comm_, &comm_size_);
     using_reduced_comm_ = comm_size_ != strategy->P;
+    is_idle_ = rank_ >= strategy->P;
 
     if (using_reduced_comm_) {
         MPI_Comm_group(comm, &group);
@@ -22,8 +22,6 @@ communicator::communicator(const Strategy* strategy, MPI_Comm comm):
 
         MPI_Group_free(&reduced_group);
         MPI_Group_free(&group);
-    } else {
-        is_idle_ = true;
     }
 
     if (is_idle_) {
@@ -47,9 +45,7 @@ communicator::communicator(const Strategy* strategy, MPI_Comm comm):
 
 communicator::~communicator() {
     if (!is_idle_) {
-        std::cout << "Freeing up the communicator" << std::endl;
         free_comms();
-        std::cout << "Freed up the communicator" << std::endl;
     }
 }
 

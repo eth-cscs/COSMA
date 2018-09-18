@@ -125,7 +125,7 @@ void local_multiply(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
 #endif
     PE(multiply_computation);
 #ifdef COSMA_HAVE_GPU
-    std::cout << "Total memory used on GPU = " << gpu_allocated_memory() << std::endl;
+    // std::cout << "Total memory used on GPU = " << gpu_allocated_memory() << std::endl;
     gpu_dgemm_(matrixA.current_matrix(), matrixB.current_matrix(), matrixC.current_matrix(),
             matrixA.device_buffer_ptr(), matrixB.device_buffer_ptr(), matrixC.device_buffer_ptr(),
             m, n, k, 1.0, beta);
