@@ -67,9 +67,7 @@ long run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD) {
     MPI_Barrier(comm);
     auto start = std::chrono::steady_clock::now();
     multiply(A, B, C, s, comm, s.one_sided_communication);
-    std::cout << "Finished multiplication" << std::endl;
     MPI_Barrier(comm);
-    std::cout << "Finished barrier" << std::endl;
     auto end = std::chrono::steady_clock::now();
 
     return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
