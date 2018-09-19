@@ -20,7 +20,7 @@ void copy_tile(double* from, double* to,
     int actual_tile_m = actual_size(n_tiles_m, p_row_tile, tile_m, short_tile_m);
     int actual_tile_n = actual_size(n_tiles_n, p_col_tile, tile_n, short_tile_n);
 
-//# pragma omp parallel for
+# pragma omp parallel for
     for (int col = 0; col < actual_tile_n; ++col) {
         // pinned buffers offsets
         int tile_offset = ibuff*tile_size;
@@ -44,9 +44,9 @@ void gpu_dgemm_(double* a, double* b, double* c,
           double alpha, double beta) {
 
     // define parameters
-    int tile_size_m = 3;
-    int tile_size_n = 3;
-    int tile_size_k = 3;
+    int tile_size_m = 3000;
+    int tile_size_n = 3000;
+    int tile_size_k = 3000;
 
     tile_size_m = std::min(tile_size_m, m);
     tile_size_n = std::min(tile_size_n, n);
@@ -143,15 +143,17 @@ void gpu_dgemm_(double* a, double* b, double* c,
                             iktile, icoltile,
                             ibuff, true);
 
-                    // copy next tile to pinned buffer
-                    copy_tile(c, pc,
-                            tile_size_m, tile_size_n,
-                            offset_c,
-                            short_tile_size_m, short_tile_size_n,
-                            m, n,
-                            n_tiles_m, n_tiles_n,
-                            irowtile, icoltile,
-                            ibuff, true);
+                    if (new_beta > 0) {
+                        // copy next tile to pinned buffer
+                        copy_tile(c, pc,
+                                tile_size_m, tile_size_n,
+                                offset_c,
+                                short_tile_size_m, short_tile_size_n,
+                                m, n,
+                                n_tiles_m, n_tiles_n,
+                                irowtile, icoltile,
+                                ibuff, true);
+                    }
 
                     copy_to_device_async(&pa[ibuff*offset_a], &d_a[ibuff*offset_a],
                             actual_size_m*actual_size_k, myStreams[ibuff].stream());
