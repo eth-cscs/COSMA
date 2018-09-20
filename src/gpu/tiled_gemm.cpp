@@ -1,132 +1,194 @@
-// include libraries
-#include <stdio.h>
-#include <math.h>
-#include <omp.h>
-#include <cublas_v2.h>
-#include <cuda.h>
+#include "gemm.hpp"
 
-#define nstreams 4
+int actual_size(int n_tiles, int tile_id, int tile_length, int tile_remainder) {
+    bool last_tile = tile_id == n_tiles - 1;
+    bool not_divisible = tile_remainder > 0;
+
+    return last_tile && not_divisible ? tile_remainder : tile_length;
+}
+
+void copy_tile(double* from, double* to,
+        int tile_m, int tile_n,
+        int tile_size,
+        int short_tile_m, int short_tile_n,
+        int m, int n,
+        int n_tiles_m, int n_tiles_n,
+        int p_row_tile, int p_col_tile,
+        int ibuff,
+        bool global_to_pinned) {
+
+    int actual_tile_m = actual_size(n_tiles_m, p_row_tile, tile_m, short_tile_m);
+    int actual_tile_n = actual_size(n_tiles_n, p_col_tile, tile_n, short_tile_n);
+
+# pragma omp parallel for
+    for (int col = 0; col < actual_tile_n; ++col) {
+        // pinned buffers offsets
+        int tile_offset = ibuff*tile_size;
+        int el_offset = col * actual_tile_m;
+        int offset = tile_offset + el_offset;
+
+        int tile_offset_global = (p_col_tile*tile_n + col) * m;
+        int el_offset_global = p_row_tile * tile_m;
+        int offset_global = tile_offset_global + el_offset_global;
+
+        int offset_from = global_to_pinned ? offset_global : offset;
+        int offset_to = global_to_pinned ? offset : offset_global;
+
+        std::memcpy(to + offset_to, from + offset_from, actual_tile_m * sizeof(double));
+    }
+}
 
 void gpu_dgemm_(double* a, double* b, double* c,
           double* a_device, double* b_device, double* c_device,
           int m, int n, int k,
           double alpha, double beta) {
 
-    // echo device data
-    int idevice = 0;
-    cudaSetDevice(idevice);
-    cudaDeviceProp dprops;
-    cudaGetDeviceProperties( &dprops, idevice );
-    printf ("\nDevice name = %s, with compute capability %d.%d \n",
-            dprops.name, dprops.major, dprops.minor);
-
     // define parameters
-    int tile = 4096;
+    int tile_size_m = 4096;
+    int tile_size_n = 4096;
+    int tile_size_k = 4096;
+
+    tile_size_m = std::min(tile_size_m, m);
+    tile_size_n = std::min(tile_size_n, n);
+    tile_size_k = std::min(tile_size_k, k);
+
+    // short tile sizes (when dim not divisible by tile)
+    int short_tile_size_m = m % tile_size_m;
+    int short_tile_size_n = n % tile_size_n;
+    int short_tile_size_k = k % tile_size_k;
 
     // create communcations arrays
-    double *pa;
-    double *pb;
-    double *pc;
-    cudaMallocHost ( &pa, tile*tile*sizeof(double)*nstreams );
-    cudaMallocHost ( &pb, tile*tile*sizeof(double)*nstreams );
-    cudaMallocHost ( &pc, tile*tile*sizeof(double)*nstreams );
-
-    // create a handle to cuBlas
-    cublasHandle_t cublasHandle;
-    cublasCreate( &cublasHandle );
+    double *pa = malloc_pinned<double>(tile_size_m * tile_size_k * nstreams);
+    double *pb = malloc_pinned<double>(tile_size_k * tile_size_n * nstreams);
+    double *pc = malloc_pinned<double>(tile_size_m * tile_size_n * nstreams);
+    //double *pa = malloc_device<double>(tile_size_m * tile_size_k * nstreams);
+    //double *pb = malloc_device<double>(tile_size_k * tile_size_n * nstreams);
+    //double *pc = malloc_device<double>(tile_size_m * tile_size_n * nstreams);
+    //std::vector<double> pa_vec(tile_size_m * tile_size_k * nstreams);
+    //std::vector<double> pb_vec(tile_size_k * tile_size_n * nstreams);
+    //std::vector<double> pc_vec(tile_size_m * tile_size_n * nstreams);
+    //double *pa = pa_vec.data();
+    //double *pb = pb_vec.data();
+    //double *pc = pc_vec.data();
 
     // allocate space on device - 3 tiles for a, b, c
-    double *d_a;
-    double *d_b;
-    double *d_c;
-    cudaMalloc ( &d_a, nstreams*tile*tile*sizeof(double) );
-    cudaMalloc ( &d_b, nstreams*tile*tile*sizeof(double) );
-    cudaMalloc ( &d_c, nstreams*tile*tile*sizeof(double) );
+    double *d_a = malloc_device<double>(tile_size_m * tile_size_k * nstreams);
+    double *d_b = malloc_device<double>(tile_size_k * tile_size_n * nstreams);
+    double *d_c = malloc_device<double>(tile_size_m * tile_size_n * nstreams);
 
-    int offset = tile*tile;
+    int offset_a = tile_size_m * tile_size_k;
+    int offset_b = tile_size_k * tile_size_n;
+    int offset_c = tile_size_m * tile_size_n;
 
-    int longest_dim = std::max(m, std::max(n, k));
-    int ntiles = (longest_dim - 1) / tile + 1;
+    int n_tiles_m = (int) std::ceil(1.0 * m / tile_size_m);
+    int n_tiles_n = (int) std::ceil(1.0 * n / tile_size_n);
+    int n_tiles_k = (int) std::ceil(1.0 * k / tile_size_k);
 
-    cudaStream_t myStreams[nstreams];
-    for ( int i=0; i<nstreams; i++ ) {
-        cudaStreamCreate( &myStreams[i] );
-    }
+    std::vector<cuda_stream> myStreams(nstreams);
 
-    cudaEvent_t bufferfilled[nstreams];
-    for ( int i=0; i<nstreams; i++ ) {
-        cudaEventCreate ( &bufferfilled[i] );
-    }
-
-    // record start time
-    cudaEvent_t t_start;
-    cudaEvent_t t_end;
-    cudaEventCreate (&t_start);
-    cudaEventCreate (&t_end);
-    cudaEventRecord (t_start,0);
+    std::vector<cuda_event> bufferfilled(nstreams);
 
     // caches for indices of previous tiles in streams
-    int prowtile[nstreams];
-    int pcoltile[nstreams];
+    std::vector<int> p_row_tile(nstreams);
+    std::vector<int> p_col_tile(nstreams);
+
 
     // PERFORM MULTIPLICATION
     {
         int ibuff = 0;
         int itile = 0;
+        int actual_size_k, actual_size_m, actual_size_n;
 
         // loop over inner tile dimension
-        for ( int iktile = 0; iktile < ntiles; iktile++ ) {
+        for (int iktile = 0; iktile < n_tiles_k; iktile++) {
+            actual_size_k = actual_size(n_tiles_k, iktile, tile_size_k, short_tile_size_k);
+
+            double new_beta = iktile == 0 ? beta : 1.0;
 
             // loop over row tiles
-            for ( int irowtile = 0; irowtile < ntiles; irowtile++ ) {
+            for (int irowtile = 0; irowtile < n_tiles_m; irowtile++) {
+                actual_size_m = actual_size(n_tiles_m, irowtile, tile_size_m, short_tile_size_m);
 
                 // loop over column tiles
-                for ( int icoltile = 0; icoltile < ntiles; icoltile++ ) {
+                for (int icoltile = 0; icoltile < n_tiles_n; icoltile++) {
+                    actual_size_n = actual_size(n_tiles_n, icoltile, tile_size_n, short_tile_size_n);
 
-                    if ( itile >= nstreams ) {
-
+                    if (itile >= nstreams) {
                         // block the host until this streams buffers are available
                         // (that is, all previous operations in this stream have completed)
-                        cudaEventSynchronize ( bufferfilled[ibuff] );
+                        bufferfilled[ibuff].wait();
 
                         // copy result in pinned buffer back to global matrix
-// # pragma omp parallel for
-                        for ( int i=0; i<tile; i++ ) {
-                            for ( int j=0; j<tile; j++ ) {
-                                c[(prowtile[ibuff]*tile+i)*n+pcoltile[ibuff]*tile+j] = pc[ibuff*offset+i*tile+j];
-                            }
-                        }
+                        copy_tile(pc, c, 
+                                tile_size_m, tile_size_n, 
+                                offset_c, 
+                                short_tile_size_m, short_tile_size_n,
+                                m, n,
+                                n_tiles_m, n_tiles_n,
+                                p_row_tile[ibuff], p_col_tile[ibuff], 
+                                ibuff, false);
                     }
 
                     // copy next tile to pinned buffer
-// # pragma omp parallel for
-                    for ( int i=0; i<tile; i++ ) {
-                        for ( int j=0; j<tile; j++ ) {
-                            pa[ibuff*offset+i*tile+j] = a[(irowtile*tile+i)*n+iktile*tile+j];
-                            pb[ibuff*offset+i*tile+j] = b[(iktile*tile+i)*n+icoltile*tile+j];
-                            pc[ibuff*offset+i*tile+j] = c[(irowtile*tile+i)*n+icoltile*tile+j];
-                        }
-                    }
+                    copy_tile(a, pa,
+                            tile_size_m, tile_size_k,
+                            offset_a,
+                            short_tile_size_m, short_tile_size_k,
+                            m, k,
+                            n_tiles_m, n_tiles_k,
+                            irowtile, iktile,
+                            ibuff, true);
 
                     // copy tile data to device
-                    cudaMemcpyAsync ( &d_a[ibuff*offset], &pa[ibuff*offset], tile*tile*sizeof(double), cudaMemcpyHostToDevice, myStreams[ibuff] );
-                    cudaMemcpyAsync ( &d_b[ibuff*offset], &pb[ibuff*offset], tile*tile*sizeof(double), cudaMemcpyHostToDevice, myStreams[ibuff] );
-                    cudaMemcpyAsync ( &d_c[ibuff*offset], &pc[ibuff*offset], tile*tile*sizeof(double), cudaMemcpyHostToDevice, myStreams[ibuff] );
+                    copy_tile(b, pb,
+                            tile_size_k, tile_size_n,
+                            offset_b,
+                            short_tile_size_k, short_tile_size_n,
+                            k, n,
+                            n_tiles_k, n_tiles_n,
+                            iktile, icoltile,
+                            ibuff, true);
+
+                    if (new_beta > 0) {
+                        // copy next tile to pinned buffer
+                        copy_tile(c, pc,
+                                tile_size_m, tile_size_n,
+                                offset_c,
+                                short_tile_size_m, short_tile_size_n,
+                                m, n,
+                                n_tiles_m, n_tiles_n,
+                                irowtile, icoltile,
+                                ibuff, true);
+                    }
+
+                    copy_to_device_async(&pa[ibuff*offset_a], &d_a[ibuff*offset_a],
+                            actual_size_m*actual_size_k, myStreams[ibuff].stream());
+                    copy_to_device_async(&pb[ibuff*offset_b], &d_b[ibuff*offset_b],
+                            actual_size_k*actual_size_n, myStreams[ibuff].stream());
+                    if (new_beta > 0) {
+                        copy_to_device_async(&pc[ibuff*offset_c], &d_c[ibuff*offset_c],
+                                actual_size_m*actual_size_n, myStreams[ibuff].stream());
+                    }
 
                     // tell cuBLAS which stream to use
-                    cublasSetStream( cublasHandle, myStreams[ibuff] );
-
+                    cublasSetStream(get_cublas_handle(), myStreams[ibuff].stream());
 
                     // perform dgemm
-                    cublasDgemm ( cublasHandle, CUBLAS_OP_T, CUBLAS_OP_T, tile, tile, tile, &alpha, &d_a[ibuff*offset], tile, &d_b[ibuff*offset], tile, &beta, &d_c[ibuff*offset], tile );
-                    prowtile[ibuff] = irowtile;
-                    pcoltile[ibuff] = icoltile;
+                    cublasDgemm (get_cublas_handle(), CUBLAS_OP_N, CUBLAS_OP_N,
+                            actual_size_m, actual_size_n, actual_size_k, &alpha,
+                            &d_a[ibuff*offset_a], actual_size_m,
+                            &d_b[ibuff*offset_b], actual_size_k, &new_beta,
+                            &d_c[ibuff*offset_c], actual_size_m);
+
+                    p_row_tile[ibuff] = irowtile;
+                    p_col_tile[ibuff] = icoltile;
 
                     // copy result back to host
-                    cudaMemcpyAsync ( &pc[ibuff*offset], &d_c[ibuff*offset], tile*tile*sizeof(double), cudaMemcpyDeviceToHost, myStreams[ibuff] );
+                    copy_to_host_async(&d_c[ibuff*offset_c], &pc[ibuff*offset_c],
+                            actual_size_m*actual_size_n, myStreams[ibuff].stream());
 
                     // this event will signal when the D2H copy of the result has completed
-                    cudaEventRecord ( bufferfilled[ibuff], myStreams[ibuff] );
+                    bufferfilled[ibuff] = myStreams[ibuff].enqueue_event();
 
                     // update buffer / stream
                     ibuff++;
@@ -138,71 +200,52 @@ void gpu_dgemm_(double* a, double* b, double* c,
         }
 
         for ( itile=0; itile < nstreams; itile ++ ) {
-
             // make sure that buffers are free
-            cudaStreamSynchronize ( myStreams[itile] );
+            cudaStreamSynchronize (myStreams[itile].stream());
 
             // copy result in pinned buffer back to source
-# pragma omp parallel for
-            for ( int i=0; i<tile; i++ ) {
-                for ( int j=0; j<tile; j++ ) {
-                    c[(prowtile[itile]*tile+i)*n+pcoltile[itile]*tile+j] = pc[itile*offset+i*tile+j];
-                }
-            }
-
+            copy_tile(pc, c,
+                    tile_size_m, tile_size_n,
+                    offset_c,
+                    short_tile_size_m, short_tile_size_n,
+                    m, n,
+                    n_tiles_m, n_tiles_n,
+                    p_row_tile[itile], p_col_tile[itile],
+                    itile, false);
         }
-
     }
 
-    // record end time
-    cudaEventRecord (t_end,0);
-    cudaEventSynchronize(t_end);
-    float et;
-    cudaEventElapsedTime (&et, t_start, t_end);
+#ifdef DEBUG
+    std::cout << "Total memory used on GPU = " << gpu_allocated_memory() << std::endl;
+    std::cout << "Testing the result of GPU multiplication..." << std::endl;
+    bool wrong = false;
 
-    // check results
-    printf ("\nchecking results: ");
-    bool correct = true;
-    double abs_error, sum_abs_errors = 0;
-// # pragma omp parallel for
-    for ( int row = 0;  row < n; row++ ) {
-        for ( int col = 0; col < n; col++ ) {
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n; ++j) {
+            double result_c = c[j * m + i];
+            double real_result = 0;
 
-            abs_error = fabs(c[row * n + col] - a[row * n + col] );
-            sum_abs_errors += abs_error;
-            if (  abs_error > 10e-5 ) {
-                printf ("FAILED\n\nerror: c[%d]: %f != a[%d]: %f",
-                        row * n + col,  c[row * n + col], row * n + col,  a[row * n + col]);
-                correct = false;
-                break;
+            for (int x = 0; x < k; ++x) {
+                real_result += a[x * m + i] * b[j * k + x];
+            }
+
+            wrong = wrong || (std::abs(result_c - real_result) > 1e-5);
+            if (wrong) {
+                std::cout << "WRONG RESULT: GPU c[" << i << ", " << j << "] = " << result_c << ", instead of " << real_result << std::endl;
             }
         }
     }
 
-    // report results
-    if ( correct ) {
-        printf ("SUCCESS");
-        printf ("\nSum abs errors: %f", sum_abs_errors);
-        printf("\nelapsedTime        = %4.4f seconds\n", (double)et/1000.);     // cudaEventElapsedTime is in milliseconds
-        printf(  "gigaflops achieved = %4.4f Gflops/s\n\n\n", 2.0e-6*n*n*n/et); // 2( * and + ) *n (inner dimension)*n^2(result size)/(time in ms.)
-    } else {
-        printf ("\nResult not correct, check your code !\n");
+    if (!wrong) {
+        std::cout << "Result correct on this rank" << std::endl;
     }
+#endif
 
-    // clean up
-    cublasDestroy ( cublasHandle );
-    cudaEventDestroy ( t_start  );
-    cudaEventDestroy ( t_end );
+    cudaFreeHost(pa);
+    cudaFreeHost(pb);
+    cudaFreeHost(pc);
 
-    cudaFreeHost ( pa );
-    cudaFreeHost ( pb );
-    cudaFreeHost ( pc );
-
-    cudaFree ( d_a );
-    cudaFree ( d_b );
-    cudaFree ( d_c );
-
-    free (a);
-    free (b);
-    free (c);
+    cudaFree(d_a);
+    cudaFree(d_b);
+    cudaFree(d_c);
 }

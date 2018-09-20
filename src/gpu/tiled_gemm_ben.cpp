@@ -86,7 +86,6 @@ void gpu_dgemm_(double* a, double* b, double* c,
     std::vector<int> p_row_tile(nstreams);
     std::vector<int> p_col_tile(nstreams);
 
-
     // PERFORM MULTIPLICATION
     {
         int ibuff = 0;
@@ -143,8 +142,8 @@ void gpu_dgemm_(double* a, double* b, double* c,
                             iktile, icoltile,
                             ibuff, true);
 
+                    // copy next tile to pinned buffer
                     if (new_beta > 0) {
-                        // copy next tile to pinned buffer
                         copy_tile(c, pc,
                                 tile_size_m, tile_size_n,
                                 offset_c,
