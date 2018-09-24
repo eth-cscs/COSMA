@@ -44,9 +44,9 @@ void gpu_dgemm_(double* a, double* b, double* c,
           double alpha, double beta) {
 
     // define parameters
-    int tile_size_m = 3000;
-    int tile_size_n = 3000;
-    int tile_size_k = 3000;
+    int tile_size_m = 4096;
+    int tile_size_n = 4096;
+    int tile_size_k = 4096;
 
     tile_size_m = std::min(tile_size_m, m);
     tile_size_n = std::min(tile_size_n, n);
@@ -64,6 +64,12 @@ void gpu_dgemm_(double* a, double* b, double* c,
     //double *pa = malloc_device<double>(tile_size_m * tile_size_k * nstreams);
     //double *pb = malloc_device<double>(tile_size_k * tile_size_n * nstreams);
     //double *pc = malloc_device<double>(tile_size_m * tile_size_n * nstreams);
+    //std::vector<double> pa_vec(tile_size_m * tile_size_k * nstreams);
+    //std::vector<double> pb_vec(tile_size_k * tile_size_n * nstreams);
+    //std::vector<double> pc_vec(tile_size_m * tile_size_n * nstreams);
+    //double *pa = pa_vec.data();
+    //double *pb = pb_vec.data();
+    //double *pc = pc_vec.data();
 
     // allocate space on device - 3 tiles for a, b, c
     double *d_a = malloc_device<double>(tile_size_m * tile_size_k * nstreams);
@@ -85,6 +91,7 @@ void gpu_dgemm_(double* a, double* b, double* c,
     // caches for indices of previous tiles in streams
     std::vector<int> p_row_tile(nstreams);
     std::vector<int> p_col_tile(nstreams);
+
 
     // PERFORM MULTIPLICATION
     {
@@ -142,8 +149,8 @@ void gpu_dgemm_(double* a, double* b, double* c,
                             iktile, icoltile,
                             ibuff, true);
 
-                    // copy next tile to pinned buffer
                     if (new_beta > 0) {
+                        // copy next tile to pinned buffer
                         copy_tile(c, pc,
                                 tile_size_m, tile_size_n,
                                 offset_c,
