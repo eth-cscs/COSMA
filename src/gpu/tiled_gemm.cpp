@@ -108,6 +108,19 @@ void gpu_dgemm_(double* a, double* b, double* c,
             for (int icoltile = 0; icoltile < n_tiles_n; icoltile++, itile_mn++) {
                 actual_size_n = actual_size(n_tiles_n, icoltile, tile_size_n, short_tile_size_n);
 
+                if (itile_mn >= nstreams) {
+                    bufferfilled[ibuff].wait();
+                    // copy result in pinned buffer back to global matrix
+                    copy_tile(pc, c, 
+                            tile_size_m, tile_size_n, 
+                            offset_c, 
+                            short_tile_size_m, short_tile_size_n,
+                            m, n,
+                            n_tiles_m, n_tiles_n,
+                            p_row_tile[ibuff], p_col_tile[ibuff],
+                            ibuff, false);
+                }
+
                 cuda_event copy_event;
 
                 // loop over inner tile dimension
@@ -183,19 +196,6 @@ void gpu_dgemm_(double* a, double* b, double* c,
                     // this event will signal when the D2H copy of the result has completed
                     bufferfilled[ibuff] = myStreams[ibuff].enqueue_event();
 
-                    if (iktile == n_tiles_k - 1) {
-                        bufferfilled[ibuff].wait();
-                        // copy result in pinned buffer back to global matrix
-                        copy_tile(pc, c, 
-                                tile_size_m, tile_size_n, 
-                                offset_c, 
-                                short_tile_size_m, short_tile_size_n,
-                                m, n,
-                                n_tiles_m, n_tiles_n,
-                                irowtile, icoltile,
-                                ibuff, false);
-                    }
-
                     // update buffer / stream
                     itile++;
                 }
@@ -205,6 +205,20 @@ void gpu_dgemm_(double* a, double* b, double* c,
                 ibuff = (ibuff + 1) % nstreams;
             }
         }
+
+        for (ibuff = 0; ibuff < std::min(nstreams, itile); ++ibuff) {
+            bufferfilled[ibuff].wait();
+            // copy result in pinned buffer back to global matrix
+            copy_tile(pc, c, 
+                    tile_size_m, tile_size_n, 
+                    offset_c, 
+                    short_tile_size_m, short_tile_size_n,
+                    m, n,
+                    n_tiles_m, n_tiles_n,
+                    p_row_tile[ibuff], p_col_tile[ibuff],
+                    ibuff, false);
+        }
+
     }
 
 #ifdef DEBUG
