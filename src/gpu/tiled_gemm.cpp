@@ -192,7 +192,7 @@ void gpu_dgemm_(double* a, double* b, double* c,
                                 short_tile_size_m, short_tile_size_n,
                                 m, n,
                                 n_tiles_m, n_tiles_n,
-                                p_row_tile[ibuff], p_col_tile[ibuff],
+                                irowtile, icoltile,
                                 ibuff, false);
                     }
 
