@@ -99,7 +99,7 @@ void gpu_dgemm_(double* a, double* b, double* c,
         int actual_size_k, actual_size_m, actual_size_n;
         int itile_mn = 0;
 
-#pragma omp parallel for collapse(2) num_threads(nstreams)
+//#pragma omp parallel for collapse(2) num_threads(nstreams)
         // loop over row tiles
         for (int irowtile = 0; irowtile < n_tiles_m; irowtile++) {
             // loop over column tiles
@@ -107,7 +107,7 @@ void gpu_dgemm_(double* a, double* b, double* c,
                 actual_size_m = actual_size(n_tiles_m, irowtile, tile_size_m, short_tile_size_m);
                 actual_size_n = actual_size(n_tiles_n, icoltile, tile_size_n, short_tile_size_n);
 
-                int ibuff = omp_get_thread_num();
+                int ibuff = itile % nstreams;
 
                 if (itile_mn >= nstreams) {
                     bufferfilled[ibuff].wait();
@@ -121,6 +121,8 @@ void gpu_dgemm_(double* a, double* b, double* c,
                             p_row_tile[ibuff], p_col_tile[ibuff],
                             ibuff, false);
                 }
+
+                //dgemm_(&N, &N, &m_cpu, &n_cpu, &k_cpu, &one, a, &lda, b + ldb * n_gpu, &ldb, &beta, c + ldc * n_gpu, &ldc);
 
                 cuda_event copy_event;
 
@@ -174,8 +176,6 @@ void gpu_dgemm_(double* a, double* b, double* c,
                     }
 
                     copy_event = myStreams[ibuff].enqueue_event();
-
-                    //dgemm_(&N, &N, &m_cpu, &n_cpu, &k_cpu, &one, a, &lda, b + ldb * n_gpu, &ldb, &beta, c + ldc * n_gpu, &ldc);
 
                     // tell cuBLAS which stream to use
                     cublasSetStream(get_cublas_handle(), myStreams[ibuff].stream());
