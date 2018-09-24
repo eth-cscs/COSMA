@@ -99,14 +99,15 @@ void gpu_dgemm_(double* a, double* b, double* c,
         int actual_size_k, actual_size_m, actual_size_n;
         int itile_mn = 0;
 
-//#pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2) num_threads(nstreams)
         // loop over row tiles
         for (int irowtile = 0; irowtile < n_tiles_m; irowtile++) {
-            actual_size_m = actual_size(n_tiles_m, irowtile, tile_size_m, short_tile_size_m);
-
             // loop over column tiles
-            for (int icoltile = 0; icoltile < n_tiles_n; icoltile++, itile_mn++) {
+            for (int icoltile = 0; icoltile < n_tiles_n; icoltile++) {
+                actual_size_m = actual_size(n_tiles_m, irowtile, tile_size_m, short_tile_size_m);
                 actual_size_n = actual_size(n_tiles_n, icoltile, tile_size_n, short_tile_size_n);
+
+                int ibuff = omp_get_thread_num();
 
                 if (itile_mn >= nstreams) {
                     bufferfilled[ibuff].wait();
@@ -186,23 +187,22 @@ void gpu_dgemm_(double* a, double* b, double* c,
                             &d_b[ibuff*offset_b], actual_size_k, &new_beta,
                             &d_c[ibuff*offset_c], actual_size_m);
 
-
-                    if (iktile == n_tiles_k - 1) {
-                        // copy result back to host
-                        copy_to_host_async(&d_c[ibuff*offset_c], &pc[ibuff*offset_c],
-                                actual_size_m*actual_size_n, myStreams[ibuff].stream());
-                    }
-
-                    // this event will signal when the D2H copy of the result has completed
-                    bufferfilled[ibuff] = myStreams[ibuff].enqueue_event();
-
                     // update buffer / stream
                     itile++;
                 }
 
+                // copy result back to host
+                copy_to_host_async(&d_c[ibuff*offset_c], &pc[ibuff*offset_c],
+                        actual_size_m*actual_size_n, myStreams[ibuff].stream());
+
+                // this event will signal when the D2H copy of the result has completed
+                bufferfilled[ibuff] = myStreams[ibuff].enqueue_event();
+
                 p_row_tile[ibuff] = irowtile;
                 p_col_tile[ibuff] = icoltile;
-                ibuff = (ibuff + 1) % nstreams;
+                //ibuff = (ibuff + 1) % nstreams;
+
+                itile_mn++;
             }
         }
 
