@@ -76,8 +76,16 @@ public:
     Layout* layout_;
 
 #ifdef COSMA_HAVE_GPU
+    static const int tile_size_m = 4200;
+    static const int tile_size_n = 4200;
+    static const int tile_size_k = 4200;
+    static const int n_streams = 3;
+
     device_vector<double> device_buffer_;
     double* device_buffer_ptr();
+    // buffer used for overlapping tiled gemm
+    std::vector<double> intermediate_buffer_;
+    double* intermediate_buffer_ptr();
 #endif
 
 protected:

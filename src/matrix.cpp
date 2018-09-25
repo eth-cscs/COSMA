@@ -238,4 +238,8 @@ void CosmaMatrix::set_current_matrix(double* mat) {
 double* CosmaMatrix::device_buffer_ptr() {
     return buffer_.device_buffer_ptr();
 }
+
+double* CosmaMatrix::intermediate_buffer_ptr() {
+    return buffer_.intermediate_buffer_ptr();
+}
 #endif

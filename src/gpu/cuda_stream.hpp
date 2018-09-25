@@ -72,7 +72,7 @@ class cuda_stream {
     cudaStream_t new_stream() {
         cudaStream_t s;
 
-        auto status = cudaStreamCreate(&s);
+        auto status = cudaStreamCreateWithFlags(&s, cudaStreamNonBlocking);
         cuda_check_status(status);
 
         return s;

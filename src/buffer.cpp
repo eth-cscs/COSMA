@@ -46,7 +46,20 @@ void Buffer::initialize_buffers() {
 #endif
 
 #ifdef COSMA_HAVE_GPU
-    //device_buffer_ = device_vector<double>(max_base_buffer_size_);
+    // device_buffer_ = device_vector<double>(max_base_buffer_size_);
+    int mat_dimension = 0;
+
+    if (label_ == 'A')
+        mat_dimension = tile_size_m * tile_size_k;
+    else if (label_ == 'B')
+        mat_dimension = tile_size_k * tile_size_n;
+    else
+        mat_dimension = tile_size_m * tile_size_n;
+
+    mat_dimension = std::min((long long) mat_dimension, max_base_buffer_size_);
+
+    device_buffer_ = device_vector<double>(mat_dimension * n_streams);
+    intermediate_buffer_ = std::vector<double>(mat_dimension * n_streams);
 #endif
 }
 
@@ -297,7 +310,6 @@ std::vector<long long> Buffer::compute_buffer_size(Interval& m, Interval& n, Int
                 int target = communicator::rank_outside_ring(P, div, off, gp);
                 max_reduce_buffer_size_ = std::max(max_reduce_buffer_size_,
                                                    (long long) total_before_expansion[target]);
-                std::cout << "max_reduce_buffer_size = " << max_reduce_buffer_size_ << std::endl;
             }
         }
 
@@ -531,5 +543,9 @@ const long long Buffer::max_recv_buffer_size() const {
 #ifdef COSMA_HAVE_GPU
 double* Buffer::device_buffer_ptr() {
     return device_buffer_.data();
+}
+
+double* Buffer::intermediate_buffer_ptr() {
+    return intermediate_buffer_.data();
 }
 #endif

@@ -10,7 +10,7 @@ class cuda_event {
   public:
 
     cuda_event() {
-        auto status = cudaEventCreate(&event_);
+        auto status = cudaEventCreateWithFlags(&event_, cudaEventDisableTiming);
         cuda_check_status(status);
         valid_ = true;
     }
