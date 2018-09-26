@@ -59,7 +59,8 @@ void Buffer::initialize_buffers() {
     mat_dimension = std::min((long long) mat_dimension, max_base_buffer_size_);
 
     device_buffer_ = device_vector<double>(mat_dimension * n_streams);
-    intermediate_buffer_ = std::vector<double>(mat_dimension * n_streams);
+    // intermediate_buffer_ = std::vector<double>(mat_dimension * n_streams);
+    intermediate_buffer_ = malloc_pinned<double>(mat_dimension * n_streams, 0.0);
 #endif
 }
 
@@ -546,6 +547,7 @@ double* Buffer::device_buffer_ptr() {
 }
 
 double* Buffer::intermediate_buffer_ptr() {
-    return intermediate_buffer_.data();
+    //return intermediate_buffer_.data();
+    return intermediate_buffer_;
 }
 #endif

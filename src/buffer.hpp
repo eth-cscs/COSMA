@@ -84,7 +84,7 @@ public:
     device_vector<double> device_buffer_;
     double* device_buffer_ptr();
     // buffer used for overlapping tiled gemm
-    std::vector<double> intermediate_buffer_;
+    double* intermediate_buffer_;
     double* intermediate_buffer_ptr();
 #endif
 

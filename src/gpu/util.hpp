@@ -47,8 +47,8 @@ static cublasHandle_t get_cublas_handle() {
         int idevice = 0;
         cudaSetDevice(idevice);
         cublasCreate(&cublas_handle);
-        //cudaDeviceSynchronize();
-        //cudaThreadSynchronize();
+        // cudaDeviceSynchronize();
+        // cudaThreadSynchronize();
         cuda_check_last_kernel("cublasCreate");
 
         is_initialized = true;
