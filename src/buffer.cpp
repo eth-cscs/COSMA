@@ -50,17 +50,17 @@ void Buffer::initialize_buffers() {
     int mat_dimension = 0;
 
     if (label_ == 'A')
-        mat_dimension = tile_size_m * tile_size_k;
+        mat_dimension = TILE_SIZE_M * TILE_SIZE_K;
     else if (label_ == 'B')
-        mat_dimension = tile_size_k * tile_size_n;
+        mat_dimension = TILE_SIZE_K * TILE_SIZE_N;
     else
-        mat_dimension = tile_size_m * tile_size_n;
+        mat_dimension = TILE_SIZE_M * TILE_SIZE_N;
 
     mat_dimension = std::min((long long) mat_dimension, max_base_buffer_size_);
 
-    device_buffer_ = device_vector<double>(mat_dimension * n_streams);
-    // intermediate_buffer_ = std::vector<double>(mat_dimension * n_streams);
-    intermediate_buffer_ = malloc_pinned<double>(mat_dimension * n_streams, 0.0);
+    device_buffer_ = device_vector<double>(mat_dimension * N_STREAMS);
+    // intermediate_buffer_ = std::vector<double>(mat_dimension * N_STREAMS);
+    // intermediate_buffer_ = malloc_pinned<double>(mat_dimension * N_STREAMS, 0.0);
 #endif
 }
 

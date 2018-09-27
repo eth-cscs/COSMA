@@ -9,8 +9,7 @@
 #include <vector>
 #include <omp.h>
 #include <cstring>
-
-#define nstreams 3
+#include "tile_description.hpp"
 
 void gpu_dgemm_(double* a, double* b, double* c,
           double* a_device, double* b_device, double* c_device,
