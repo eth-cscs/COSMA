@@ -96,6 +96,10 @@ void gpu_dgemm_(double* a, double* b, double* c,
         int tile_size_m, int tile_size_n, int tile_size_k,
         double alpha, double beta) {
     // omp_set_nested(1);
+    //
+    // cudaHostRegister(a, m * k * sizeof(double), cudaHostRegisterDefault);
+    // cudaHostRegister(b, k * n * sizeof(double), cudaHostRegisterDefault);
+    // cudaHostRegister(c, m * n * sizeof(double), cudaHostRegisterDefault);
 
     tile_size_m = std::min(tile_size_m, m);
     tile_size_n = std::min(tile_size_n, n);
@@ -120,13 +124,11 @@ void gpu_dgemm_(double* a, double* b, double* c,
 
     std::vector<cuda_event> bufferfilled(n_streams);
 
-    std::vector<cuda_event> previous_copy(n_streams);
-    std::vector<bool> ready(n_streams, false);
-    ready[0] = true;
-
     // caches for indices of previous tiles in streams
     std::vector<int> p_row_tile(n_streams);
     std::vector<int> p_col_tile(n_streams);
+
+    cuda_event copy_event;
 
     // PERFORM MULTIPLICATION
     // int ibuff = 0;
@@ -166,10 +168,10 @@ void gpu_dgemm_(double* a, double* b, double* c,
 
                 double new_beta = iktile == 0 ? beta : 1.0;
 
-                if (ibuff > 0) {
-                    // only important in the first iteration
-                    previous_copy[ibuff - 1].wait();
-                }
+#pragma omp critical
+                {
+                myStreams[ibuff].wait_on_event(copy_event);
+                // copy_event.wait();
                 // copy next tile to device
                 copy_tile_to_device_async(a, a_device,
                         tile_size_m, tile_size_k,
@@ -204,8 +206,8 @@ void gpu_dgemm_(double* a, double* b, double* c,
                             ibuff,
                             myStreams[ibuff]);
                 }
-
-                previous_copy[ibuff] = myStreams[ibuff].enqueue_event();
+                copy_event = myStreams[ibuff].enqueue_event();
+                }
 
                 // tell cuBLAS which stream to use
                 cublasSetStream(get_cublas_handle(), myStreams[ibuff].stream());
@@ -240,7 +242,7 @@ void gpu_dgemm_(double* a, double* b, double* c,
         }
     }
 
-#pragma omp parallel for
+// #pragma omp parallel for
     for (int ibuff = 0; ibuff < n_streams; ++ibuff) {
         bufferfilled[ibuff].wait();
         // copy result in pinned buffer back to global matrix
@@ -279,4 +281,8 @@ void gpu_dgemm_(double* a, double* b, double* c,
         std::cout << "Result correct on this rank" << std::endl;
     }
 #endif
+
+    //cudaHostUnregister(a);
+    //cudaHostUnregister(b);
+    //cudaHostUnregister(c);
 }
