@@ -124,15 +124,15 @@ void copy_to_host(T* from, T* to, size_t n) {
 // the default (NULL) stream
 template <typename T>
 void copy_to_device_async(const T* from, T* to, size_t n, cudaStream_t stream=NULL) {
-    cudaDeviceSynchronize();
-    auto status = cudaGetLastError();
-    if(status != cudaSuccess) {
-        std::cout << "error: CUDA kernel launch:"
-        << cudaGetErrorString(status) << std::endl;
-        throw(std::runtime_error("CUDA ERROR"));
-    }
+    //cudaDeviceSynchronize();
+    // auto status = cudaGetLastError();
+    // if(status != cudaSuccess) {
+    //    std::cout << "error: CUDA kernel launch:"
+    //    << cudaGetErrorString(status) << std::endl;
+    //    throw(std::runtime_error("CUDA ERROR"));
+    //}
 
-    status =
+    auto status =
     cudaMemcpyAsync(to, from, n*sizeof(T), cudaMemcpyHostToDevice, stream);
     cuda_check_status(status);
 }

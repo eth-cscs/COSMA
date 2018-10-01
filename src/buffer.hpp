@@ -11,6 +11,7 @@
 //#include "./gpu/cuda_allocator.hpp"
 #include "./gpu/device_vector.hpp"
 #include "./gpu/tile_description.hpp"
+#include "./gpu/util.hpp"
 #endif
 
 /*
@@ -32,6 +33,10 @@ class Buffer {
 public:
     Buffer() = default;
     Buffer(char label, const Strategy& strategy, int rank, Mapper* mapper, Layout* layout);
+    ~Buffer();
+
+    Buffer& operator=(Buffer&) = delete;
+    Buffer& operator=(Buffer&&) = default;
 
     // allocates all the buffers that are needed for the current matrix and the current rank
     void initialize_buffers();
@@ -52,6 +57,12 @@ public:
     // returns a reference to the current buffer
     std::vector<double, mpi_allocator<double>>& buffer();
     const std::vector<double, mpi_allocator<double>>& buffer() const;
+    // returns index of a buffer that is used in gemm
+    // it can be either last or pre-last buffer
+    // depending on the parity of #BFS steps
+    // after the last DFS.
+    // (since only last two buffers keep swapping).
+    int buff_index_before_gemm() const;
 
     // returns the initial buffer (i.e. with index 0)
     // this buffer owns the initial matrix data

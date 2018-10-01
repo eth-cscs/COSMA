@@ -29,12 +29,11 @@ void Buffer::initialize_buffers() {
     }
 
     if (max_reduce_buffer_size_ > 0) {
-        std::cout << "BUFFER SIZE = Rank " << rank_ << " buffer size = " << max_reduce_buffer_size_ << std::endl;
+        // std::cout << "BUFFER SIZE = Rank " << rank_ << " buffer size = " << max_reduce_buffer_size_ << std::endl;
         reduce_buffer_ = std::unique_ptr<double[]>(new double[max_reduce_buffer_size_]);
     }
 
     current_buffer_ = 0;
-
 
 #ifdef DEBUG
     std::cout << "Buffer sizes for matrix " << label_ << " on rank " << rank_ << std::endl;
@@ -61,6 +60,29 @@ void Buffer::initialize_buffers() {
     device_buffer_ = device_vector<double>(mat_dimension * N_STREAMS);
     // intermediate_buffer_ = std::vector<double>(mat_dimension * N_STREAMS);
     // intermediate_buffer_ = malloc_pinned<double>(mat_dimension * N_STREAMS, 0.0);
+
+    // pin the buffer that will be used in gemm
+    int buff_index_to_pin = buff_index_before_gemm();
+    std::cout << "Buffer index to pin  for " << label_ << " = " << buff_index_to_pin << std::endl;
+    auto& buffer_to_pin = buffers_[buff_index_to_pin];
+    auto status = cudaHostRegister(buffer_to_pin.data(),
+            buffer_to_pin.size() * sizeof(double),
+            cudaHostRegisterDefault);
+    cuda_check_status(status);
+#endif
+}
+
+Buffer::~Buffer() {
+#ifdef COSMA_HAVE_GPU
+    //std::cout << "buffers_ size = " << buffers_.size() << std::endl;
+    // unpin the buffer that will be used in gemm
+    int buff_index_to_pin = buff_index_before_gemm();
+    //std::cout << "Buffer index to unpin: " << buff_index_to_pin << std::endl;
+    if (buff_index_to_pin >= 0) {
+        auto& buffer_to_pin = buffers_[buff_index_to_pin];
+        auto status = cudaHostUnregister(buffer_to_pin.data());
+        cuda_check_status(status);
+    }
 #endif
 }
 
@@ -93,6 +115,12 @@ void Buffer::compute_n_buckets() {
         }
         expanded_after_[step] = expanded;
     }
+}
+
+int Buffer::buff_index_before_gemm() const { 
+    if (buffers_.size() == 0) return -1;
+    if (buffers_.size() == 1) return 0;
+    return strategy_->bfs_steps_before_gemm(label_) % 2 == 0 ? buffers_.size() - 1 : buffers_.size() - 2;
 }
 
 std::vector<double, mpi_allocator<double>>& Buffer::buffer() {
@@ -498,7 +526,7 @@ void Buffer::compute_max_buffer_size(Interval& m, Interval& n, Interval& k, Inte
                 int target = communicator::rank_outside_ring(P, div, off, gp);
                 max_reduce_buffer_size_ = std::max(max_reduce_buffer_size_,
                                                    (long long) total_before_expansion[target]);
-                std::cout << "max_reduce_buffer_size = " << max_reduce_buffer_size_ << std::endl;
+                // std::cout << "max_reduce_buffer_size = " << max_reduce_buffer_size_ << std::endl;
             }
         }
 

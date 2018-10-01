@@ -670,6 +670,16 @@ const bool Strategy::final_step(size_t i) const {
     return i == n_steps;
 }
 
+const int Strategy::bfs_steps_before_gemm(char label) const {
+    if (label == 'A') 
+        return n_bfs_steps_before_gemm_a;
+    if (label == 'B') 
+        return n_bfs_steps_before_gemm_b;
+    if (label == 'C') 
+        return n_bfs_steps_before_gemm_c;
+    return -1;
+}
+
 long long Strategy::required_memory(Strategy& strategy) {
     long long m = strategy.m;
     long long n = strategy.n;
@@ -728,6 +738,16 @@ void Strategy::check_if_valid() {
 
         if (step_type[i] == 'b') {
             n_bfs_steps++;
+            if (!split_A(i)) {
+                n_bfs_steps_before_gemm_a++;
+            }
+            if (!split_B(i)) {
+                n_bfs_steps_before_gemm_b++;
+            }
+            if (!split_C(i)) {
+                n_bfs_steps_before_gemm_c++;
+            }
+
             if (Pi <= 1) {
                 throw_exception(std::string("Not enough processors for this division strategy.")
                         + "The product of all divisors in a BFS step should be equal "
@@ -742,6 +762,15 @@ void Strategy::check_if_valid() {
             Pi /= divisors[i];
         } else {
             n_dfs_steps++;
+            if (!split_A(i)) {
+                n_bfs_steps_before_gemm_a = 0;
+            }
+            if (!split_B(i)) {
+                n_bfs_steps_before_gemm_b = 0;
+            }
+            if (!split_C(i)) {
+                n_bfs_steps_before_gemm_c = 0;
+            }
         }
 
         if (split_dimension[i] == 'm') {

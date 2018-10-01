@@ -64,6 +64,31 @@ void copy_tile_to_device_async(double* from, double* to,
             cudaMemcpyHostToDevice, stream.stream());
 }
 
+void copy_tile_to_device(double* from, double* to,
+        int tile_m, int tile_n,
+        int tile_size,
+        int short_tile_m, int short_tile_n,
+        int m, int n,
+        int n_tiles_m, int n_tiles_n,
+        int p_row_tile, int p_col_tile,
+        int ibuff) {
+
+    int actual_tile_m = actual_size(n_tiles_m, p_row_tile, tile_m, short_tile_m);
+    int actual_tile_n = actual_size(n_tiles_n, p_col_tile, tile_n, short_tile_n);
+
+    // pinned buffers offsets
+    int offset_to = ibuff * tile_size;
+
+    int tile_offset_global = (p_col_tile*tile_n) * m;
+    int el_offset_global = p_row_tile * tile_m;
+    int offset_from = tile_offset_global + el_offset_global;
+
+    cudaMemcpy2D(to + offset_to, actual_tile_m * sizeof(double),
+            from + offset_from, m * sizeof(double),
+            actual_tile_m * sizeof(double), actual_tile_n,
+            cudaMemcpyHostToDevice);
+}
+
 void copy_tile_to_host_async(double* from, double* to,
         int tile_m, int tile_n,
         int tile_size,
@@ -87,6 +112,30 @@ void copy_tile_to_host_async(double* from, double* to,
             from + offset_from, actual_tile_m * sizeof(double),
             actual_tile_m * sizeof(double), actual_tile_n,
             cudaMemcpyDeviceToHost, stream.stream());
+}
+
+void copy_tile_to_host(double* from, double* to,
+        int tile_m, int tile_n,
+        int tile_size,
+        int short_tile_m, int short_tile_n,
+        int m, int n,
+        int n_tiles_m, int n_tiles_n,
+        int p_row_tile, int p_col_tile,
+        int ibuff) {
+
+    int actual_tile_m = actual_size(n_tiles_m, p_row_tile, tile_m, short_tile_m);
+    int actual_tile_n = actual_size(n_tiles_n, p_col_tile, tile_n, short_tile_n);
+
+    int offset_from = ibuff * tile_size;
+
+    int tile_offset_global = (p_col_tile*tile_n) * m;
+    int el_offset_global = p_row_tile * tile_m;
+    int offset_to = tile_offset_global + el_offset_global;
+
+    cudaMemcpy2D(to + offset_to, m * sizeof(double),
+            from + offset_from, actual_tile_m * sizeof(double),
+            actual_tile_m * sizeof(double), actual_tile_n,
+            cudaMemcpyDeviceToHost);
 }
 
 void gpu_dgemm_(double* a, double* b, double* c,
@@ -180,8 +229,7 @@ void gpu_dgemm_(double* a, double* b, double* c,
                         m, k,
                         n_tiles_m, n_tiles_k,
                         irowtile, iktile,
-                        ibuff,
-                        myStreams[ibuff]);
+                        ibuff, myStreams[ibuff]);
 
                 // copy next tile to device
                 copy_tile_to_device_async(b, b_device,
@@ -191,8 +239,7 @@ void gpu_dgemm_(double* a, double* b, double* c,
                         k, n,
                         n_tiles_k, n_tiles_n,
                         iktile, icoltile,
-                        ibuff,
-                        myStreams[ibuff]);
+                        ibuff, myStreams[ibuff]);
 
                 // copy next tile to device
                 if (iktile == 0 && beta > 0) {
@@ -203,12 +250,13 @@ void gpu_dgemm_(double* a, double* b, double* c,
                             m, n,
                             n_tiles_m, n_tiles_n,
                             irowtile, icoltile,
-                            ibuff,
-                            myStreams[ibuff]);
+                            ibuff, myStreams[ibuff]);
                 }
                 copy_event = myStreams[ibuff].enqueue_event();
                 }
 
+#pragma omp critical 
+            {
                 // tell cuBLAS which stream to use
                 cublasSetStream(get_cublas_handle(), myStreams[ibuff].stream());
 
@@ -218,6 +266,7 @@ void gpu_dgemm_(double* a, double* b, double* c,
                         &a_device[ibuff*offset_a], actual_size_m,
                         &b_device[ibuff*offset_b], actual_size_k, &new_beta,
                         &c_device[ibuff*offset_c], actual_size_m);
+            }
             }
 
             // copy result back to host
@@ -282,7 +331,7 @@ void gpu_dgemm_(double* a, double* b, double* c,
     }
 #endif
 
-    //cudaHostUnregister(a);
-    //cudaHostUnregister(b);
-    //cudaHostUnregister(c);
+    // cudaHostUnregister(a);
+    // cudaHostUnregister(b);
+    // cudaHostUnregister(c);
 }

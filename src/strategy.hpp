@@ -42,6 +42,10 @@ public:
     int n_bfs_steps;
     int n_dfs_steps;
 
+    int n_bfs_steps_before_gemm_a;
+    int n_bfs_steps_before_gemm_b;
+    int n_bfs_steps_before_gemm_c;
+
     // constructors
     Strategy();
     // move constructor
@@ -105,6 +109,7 @@ public:
     const int divisor_col(char matrix, size_t i) const;
 
     const bool final_step(size_t i) const;
+    const int bfs_steps_before_gemm(char label) const;
 
     static long long initial_memory(long long m, long long n, long long k, int P);
     static long long required_memory(Strategy& strategy);
