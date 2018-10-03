@@ -10,6 +10,7 @@
 #include <omp.h>
 #include <cstring>
 #include "tile_description.hpp"
+#include "cublas_handle.hpp"
 
 void gpu_dgemm_(double* a, double* b, double* c,
           double* a_device, double* b_device, double* c_device,

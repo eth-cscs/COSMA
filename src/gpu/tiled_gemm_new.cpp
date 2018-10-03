@@ -171,6 +171,12 @@ void gpu_dgemm_(double* a, double* b, double* c,
 
     std::vector<cuda_stream> myStreams(n_streams);
 
+#pragma omp parallel for num_threads(n_streams)
+    for (int i = 0; i < n_streams; ++i) {
+        // tell cuBLAS which stream to use
+        cublasSetStream(get_cublas_handle(i), myStreams[i].stream());
+    }
+
     std::vector<cuda_event> bufferfilled(n_streams);
 
     // caches for indices of previous tiles in streams
@@ -216,10 +222,10 @@ void gpu_dgemm_(double* a, double* b, double* c,
 
                 double new_beta = iktile == 0 ? beta : 1.0;
 
-#pragma omp critical (copying)
+#pragma omp critical
                 {
-                    myStreams[ibuff].wait_on_event(copy_event);
-                    // copy_event.wait();
+                    // myStreams[ibuff].wait_on_event(copy_event);
+                    copy_event.wait();
                     // copy next tile to device
                     copy_tile_to_device_async(a, a_device,
                             tile_size_m, tile_size_k,
@@ -254,18 +260,12 @@ void gpu_dgemm_(double* a, double* b, double* c,
                     copy_event = myStreams[ibuff].enqueue_event();
                 }
 
-#pragma omp critical (kernel)
-                {
-                    // tell cuBLAS which stream to use
-                    cublasSetStream(get_cublas_handle(), myStreams[ibuff].stream());
-
-                    // perform dgemm
-                    cublasDgemm(get_cublas_handle(), CUBLAS_OP_N, CUBLAS_OP_N,
-                            actual_size_m, actual_size_n, actual_size_k, &alpha,
-                            &a_device[ibuff*offset_a], actual_size_m,
-                            &b_device[ibuff*offset_b], actual_size_k, &new_beta,
-                            &c_device[ibuff*offset_c], actual_size_m);
-                }
+                // perform dgemm
+                cublasDgemm(get_cublas_handle(ibuff), CUBLAS_OP_N, CUBLAS_OP_N,
+                        actual_size_m, actual_size_n, actual_size_k, &alpha,
+                        &a_device[ibuff*offset_a], actual_size_m,
+                        &b_device[ibuff*offset_b], actual_size_k, &new_beta,
+                        &c_device[ibuff*offset_c], actual_size_m);
 
                 // copy result back to host
                 copy_tile_to_host_async(c_device, c,

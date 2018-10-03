@@ -37,25 +37,6 @@ static void cuda_check_last_kernel(std::string const& errstr) {
     }
 }
 
-// helper for initializing cublas
-// use only for demos: not threadsafe
-static cublasHandle_t get_cublas_handle() {
-    static bool is_initialized = false;
-    static cublasHandle_t cublas_handle;
-
-    if(!is_initialized) {
-        int idevice = 0;
-        cudaSetDevice(idevice);
-        cublasCreate(&cublas_handle);
-        // cudaDeviceSynchronize();
-        // cudaThreadSynchronize();
-        cuda_check_last_kernel("cublasCreate");
-
-        is_initialized = true;
-    }
-    return cublas_handle;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // TOTAL AVAILABLE MEMORY ON GPU 
 ///////////////////////////////////////////////////////////////////////////////

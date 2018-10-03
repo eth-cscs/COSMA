@@ -720,6 +720,11 @@ void Strategy::check_if_valid() {
     int ki = k;
     int Pi = P;
 
+    n_bfs_steps = 0;
+    n_bfs_steps_before_gemm_a = 0;
+    n_bfs_steps_before_gemm_b = 0;
+    n_bfs_steps_before_gemm_c = 0;
+
     for (size_t i = 0; i < n_steps; ++i) {
         if (divisors[i] <= 1) {
             throw_exception(std::string("Divisors in each step must be larger than 1.")
@@ -762,13 +767,13 @@ void Strategy::check_if_valid() {
             Pi /= divisors[i];
         } else {
             n_dfs_steps++;
-            if (!split_A(i)) {
+            if (split_A(i)) {
                 n_bfs_steps_before_gemm_a = 0;
             }
-            if (!split_B(i)) {
+            if (split_B(i)) {
                 n_bfs_steps_before_gemm_b = 0;
             }
-            if (!split_C(i)) {
+            if (split_C(i)) {
                 n_bfs_steps_before_gemm_c = 0;
             }
         }

@@ -15,13 +15,15 @@ void Buffer::initialize_buffers() {
 
     std::vector<long long> buff_sizes = compute_buffer_size();
 
-    buffers_ = std::vector<std::vector<double, mpi_allocator<double>>>(buff_sizes.size()+1, std::vector<double, mpi_allocator<double>>());
-    buffers_[0].resize(mapper_->initial_size());
-    //buffers_[0] = std::vector<double, mpi_allocator<double>>(mapper_->initial_size());
+    // buffers_ = std::vector<std::vector<double, mpi_allocator<double>>>(buff_sizes.size()+1, std::vector<double, mpi_allocator<double>>());
+    buffers_ = std::vector<std::vector<double, mpi_allocator<double>>>(buff_sizes.size(), std::vector<double, mpi_allocator<double>>());
+    //buffers_[0].resize(mapper_->initial_size());
+    // buffers_[0] = std::vector<double, mpi_allocator<double>>(mapper_->initial_size());
     // ignore the first buffer size since it's already allocated
     // in the initial buffers
     for (int i = 0; i < buff_sizes.size(); ++i) {
-        buffers_[i+1].resize(buff_sizes[i]);
+        buffers_[i].resize(buff_sizes[i]);
+        // buffers_[i].resize(buff_sizes[i]);
     }
 
     if (max_reshuffle_buffer_size_ > 0) {
@@ -63,7 +65,7 @@ void Buffer::initialize_buffers() {
 
     // pin the buffer that will be used in gemm
     int buff_index_to_pin = buff_index_before_gemm();
-    std::cout << "Buffer index to pin  for " << label_ << " = " << buff_index_to_pin << std::endl;
+    // std::cout << "Buffer index to pin  for " << label_ << " = " << buff_index_to_pin << std::endl;
     auto& buffer_to_pin = buffers_[buff_index_to_pin];
     auto status = cudaHostRegister(buffer_to_pin.data(),
             buffer_to_pin.size() * sizeof(double),
@@ -83,6 +85,7 @@ Buffer::~Buffer() {
         auto status = cudaHostUnregister(buffer_to_pin.data());
         cuda_check_status(status);
     }
+    // std::cout << "Matrix " << label_ << ", buffers_.size() = " << buffers_.size() << ", pinned_index = " << buff_index_to_pin << std::endl;
 #endif
 }
 
@@ -120,7 +123,7 @@ void Buffer::compute_n_buckets() {
 int Buffer::buff_index_before_gemm() const { 
     if (buffers_.size() == 0) return -1;
     if (buffers_.size() == 1) return 0;
-    return strategy_->bfs_steps_before_gemm(label_) % 2 == 0 ? buffers_.size() - 1 : buffers_.size() - 2;
+    return strategy_->bfs_steps_before_gemm(label_) % 2 != 0 ? buffers_.size() - 1 : buffers_.size() - 2;
 }
 
 std::vector<double, mpi_allocator<double>>& Buffer::buffer() {
