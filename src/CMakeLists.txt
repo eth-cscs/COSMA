@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.5)
 
 set(sources
     buffer.cpp
-    gpu/tiled_gemm_new.cpp
+    gpu/tiled_gemm.cpp
     communicator.cpp
     multiply.cpp
     matrix.cpp

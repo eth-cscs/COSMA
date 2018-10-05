@@ -1,4 +1,4 @@
-#define TILE_SIZE_M 4200
-#define TILE_SIZE_N 4200
-#define TILE_SIZE_K 5000
+#define TILE_SIZE_M 4096
+#define TILE_SIZE_N 4096
+#define TILE_SIZE_K 4096
 #define N_STREAMS 3

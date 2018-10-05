@@ -7,44 +7,106 @@ int actual_size(int n_tiles, int tile_id, int tile_length, int tile_remainder) {
     return last_tile && not_divisible ? tile_remainder : tile_length;
 }
 
-void copy_tile(double* from, double* to,
+void copy_tile_to_device_async(double* from, double* to,
         int tile_m, int tile_n,
-        int tile_size,
         int short_tile_m, int short_tile_n,
         int m, int n,
         int n_tiles_m, int n_tiles_n,
         int p_row_tile, int p_col_tile,
-        int ibuff,
-        bool global_to_pinned) {
+        int stream_id,
+        cuda_stream& stream) {
 
     int actual_tile_m = actual_size(n_tiles_m, p_row_tile, tile_m, short_tile_m);
     int actual_tile_n = actual_size(n_tiles_n, p_col_tile, tile_n, short_tile_n);
 
-# pragma omp parallel for num_threads(tile_descriptionn_streams)
-    for (int col = 0; col < actual_tile_n; ++col) {
-        // pinned buffers offsets
-        int tile_offset = ibuff*tile_size;
-        int el_offset = col * actual_tile_m;
-        int offset = tile_offset + el_offset;
+    int tile_size = tile_m * tile_n;
+    int offset_to = stream_id * tile_size;
 
-        int tile_offset_global = (p_col_tile*tile_n + col) * m;
-        int el_offset_global = p_row_tile * tile_m;
-        int offset_global = tile_offset_global + el_offset_global;
+    int tile_offset_global = (p_col_tile*tile_n) * m;
+    int el_offset_global = p_row_tile * tile_m;
+    int offset_from = tile_offset_global + el_offset_global;
 
-        int offset_from = global_to_pinned ? offset_global : offset;
-        int offset_to = global_to_pinned ? offset : offset_global;
+    cudaMemcpy2DAsync(to + offset_to, actual_tile_m * sizeof(double),
+            from + offset_from, m * sizeof(double),
+            actual_tile_m * sizeof(double), actual_tile_n,
+            cudaMemcpyHostToDevice, stream.stream());
+}
 
-        std::memcpy(to + offset_to, from + offset_from, actual_tile_m * sizeof(double));
-    }
+void copy_tile_to_device(double* from, double* to,
+        int tile_m, int tile_n,
+        int short_tile_m, int short_tile_n,
+        int m, int n,
+        int n_tiles_m, int n_tiles_n,
+        int p_row_tile, int p_col_tile,
+        int stream_id) {
+    int actual_tile_m = actual_size(n_tiles_m, p_row_tile, tile_m, short_tile_m);
+    int actual_tile_n = actual_size(n_tiles_n, p_col_tile, tile_n, short_tile_n);
+
+    int tile_size = tile_m * tile_n;
+    int offset_to = stream_id * tile_size;
+
+    int tile_offset_global = (p_col_tile*tile_n) * m;
+    int el_offset_global = p_row_tile * tile_m;
+    int offset_from = tile_offset_global + el_offset_global;
+
+    cudaMemcpy2D(to + offset_to, actual_tile_m * sizeof(double),
+            from + offset_from, m * sizeof(double),
+            actual_tile_m * sizeof(double), actual_tile_n,
+            cudaMemcpyHostToDevice);
+}
+
+void copy_tile_to_host_async(double* from, double* to,
+        int tile_m, int tile_n,
+        int short_tile_m, int short_tile_n,
+        int m, int n,
+        int n_tiles_m, int n_tiles_n,
+        int p_row_tile, int p_col_tile,
+        int stream_id,
+        cuda_stream& stream) {
+    int actual_tile_m = actual_size(n_tiles_m, p_row_tile, tile_m, short_tile_m);
+    int actual_tile_n = actual_size(n_tiles_n, p_col_tile, tile_n, short_tile_n);
+
+    int tile_size = tile_m * tile_n;
+    int offset_from = stream_id * tile_size;
+
+    int tile_offset_global = (p_col_tile*tile_n) * m;
+    int el_offset_global = p_row_tile * tile_m;
+    int offset_to = tile_offset_global + el_offset_global;
+
+    cudaMemcpy2DAsync(to + offset_to, m * sizeof(double),
+            from + offset_from, actual_tile_m * sizeof(double),
+            actual_tile_m * sizeof(double), actual_tile_n,
+            cudaMemcpyDeviceToHost, stream.stream());
+}
+
+void copy_tile_to_host(double* from, double* to,
+        int tile_m, int tile_n,
+        int short_tile_m, int short_tile_n,
+        int m, int n,
+        int n_tiles_m, int n_tiles_n,
+        int p_row_tile, int p_col_tile,
+        int stream_id) {
+    int actual_tile_m = actual_size(n_tiles_m, p_row_tile, tile_m, short_tile_m);
+    int actual_tile_n = actual_size(n_tiles_n, p_col_tile, tile_n, short_tile_n);
+
+    int tile_size = tile_m * tile_n;
+    int offset_from = stream_id * tile_size;
+
+    int tile_offset_global = (p_col_tile*tile_n) * m;
+    int el_offset_global = p_row_tile * tile_m;
+    int offset_to = tile_offset_global + el_offset_global;
+
+    cudaMemcpy2D(to + offset_to, m * sizeof(double),
+            from + offset_from, actual_tile_m * sizeof(double),
+            actual_tile_m * sizeof(double), actual_tile_n,
+            cudaMemcpyDeviceToHost);
 }
 
 void gpu_dgemm_(double* a, double* b, double* c,
         double* a_device, double* b_device, double* c_device,
-        double* a_intermediate, double* b_intermediate, double* c_intermediate,
         int m, int n, int k,
         int tile_size_m, int tile_size_n, int tile_size_k,
         double alpha, double beta) {
-    omp_set_nested(1);
 
     tile_size_m = std::min(tile_size_m, m);
     tile_size_n = std::min(tile_size_n, n);
@@ -63,136 +125,137 @@ void gpu_dgemm_(double* a, double* b, double* c,
     int n_tiles_n = (int) std::ceil(1.0 * n / tile_size_n);
     int n_tiles_k = (int) std::ceil(1.0 * k / tile_size_k);
 
-    std::vector<cuda_stream> myStreams(tile_descriptionn_streams);
+    // if the actual number of tiles is smaller 
+    // than the number of streams => use less streams
+    int n_streams = std::min(N_STREAMS, n_tiles_m * n_tiles_n * n_tiles_k);
 
-    std::vector<cuda_event> bufferfilled(tile_descriptionn_streams);
+    std::vector<cuda_stream> streams(n_streams);
 
-    // caches for indices of previous tiles in streams
-    std::vector<int> p_row_tile(tile_descriptionn_streams);
-    std::vector<int> p_col_tile(tile_descriptionn_streams);
+#pragma omp parallel for num_threads(n_streams)
+    for (int i = 0; i < n_streams; ++i) {
+        // let each thread use a separate cuBLAS handle
+        // and let each handle be bound to a separate stream
+        cublasSetStream(get_cublas_handle(i), streams[i].stream());
+    }
 
-    // PERFORM MULTIPLICATION
-    // int ibuff = 0;
-    int itile_mn = 0;
+    // contains the last events on each stream
+    std::vector<cuda_event> last_event_on_stream(n_streams);
 
-#pragma omp parallel for collapse(2) num_threads(tile_descriptionn_streams)
+    cuda_event copy_event;
+
+// ***********************
+//    MULTIPLICATION
+// ***********************
+#pragma omp parallel for collapse(2) num_threads(n_streams) shared (copy_event) schedule(dynamic)
     // loop over row tiles
-    for (int irowtile = 0; irowtile < n_tiles_m; irowtile++) {
+    for (int m_tile_id = 0; m_tile_id < n_tiles_m; m_tile_id++) {
         // loop over column tiles
-        for (int icoltile = 0; icoltile < n_tiles_n; icoltile++) {
-            int actual_size_m = actual_size(n_tiles_m, irowtile, tile_size_m, short_tile_size_m);
-            int actual_size_n = actual_size(n_tiles_n, icoltile, tile_size_n, short_tile_size_n);
+        for (int n_tile_id = 0; n_tile_id < n_tiles_n; n_tile_id++) {
+            int actual_size_m = actual_size(n_tiles_m, m_tile_id, tile_size_m, short_tile_size_m);
+            int actual_size_n = actual_size(n_tiles_n, n_tile_id, tile_size_n, short_tile_size_n);
 
-            int ibuff = omp_get_thread_num();
-            bool first_event = true;
+            int stream_id = omp_get_thread_num();
 
-            if (!first_event) {
-                bufferfilled[ibuff].wait();
-                // copy result in pinned buffer back to global matrix
-                copy_tile(c_intermediate, c, 
-                        tile_size_m, tile_size_n, 
-                        offset_c, 
+            // possibly invoke some dgemms on CPU
+            // dgemm_(&N, &N, &m_cpu, &n_cpu, &k_cpu, &one, a, &lda, b + ldb * n_gpu, &ldb, &beta, c + ldc * n_gpu, &ldc);
+
+            // We let each thread perform all k-tiles for fixed m_tile_id and n_tile_id
+            // so that the partial results can be reused and immediately reduced while on GPU.
+            // This way, we only have to copy matrix C at most 2 times: at the beginning 
+            // and at the very end, when all the k-tiles are computed.
+
+            // loop over k-tiles
+            for (int k_tile_id = 0; k_tile_id < n_tiles_k; k_tile_id++) {
+                int actual_size_k = actual_size(n_tiles_k, k_tile_id, tile_size_k, short_tile_size_k);
+
+                double new_beta = k_tile_id == 0 ? beta : 1.0;
+
+            /*  Without the critical region, the following might happen:
+             *  (since copy in the same direction is serialized even 
+             *  if on different streams, as well as cuBLAS kernels).
+             *
+             *  stream 0: copy A,         copy B, Kernel A*B, copy C
+             *  stream 1:         copy A,         copy B,     Kernel A*B, copy C
+             *
+             *  but the following is more efficient:
+             *
+             *  stream 0: copy A, copy B, Kernel A*B, copy C
+             *  stream 1:                 copy A, B,  Kernel A*B, copy C <----->
+             *                                                          difference
+             *
+             * For this reason, we want to enforce that coping A and B is never interrupted.
+             * We can achieve this by letting the stream wait for the copy-event from another stream
+             * (which induces the inter-stream synchronization and slows down the performance)
+             * or we can block the host from launching copy kernels until the previous 
+             * kernel has been finished. For this, we use a critical region and 
+             * a shared copy-event object, on which the stream blocks.
+             */
+#pragma omp critical
+                {
+                    // streams[stream_id].wait_on_event(copy_event);
+                    // make the host thread wait on the previous copy event
+                    // (from other host thread which has the lock).
+                    // this will not block the device but the host thread
+                    copy_event.wait();
+                    // copy next tile to device
+                    copy_tile_to_device_async(a, a_device,
+                            tile_size_m, tile_size_k,
+                            short_tile_size_m, short_tile_size_k,
+                            m, k,
+                            n_tiles_m, n_tiles_k,
+                            m_tile_id, k_tile_id,
+                            stream_id, streams[stream_id]);
+
+                    // copy next tile to device
+                    copy_tile_to_device_async(b, b_device,
+                            tile_size_k, tile_size_n,
+                            short_tile_size_k, short_tile_size_n,
+                            k, n,
+                            n_tiles_k, n_tiles_n,
+                            k_tile_id, n_tile_id,
+                            stream_id, streams[stream_id]);
+
+                    // copy next tile to device
+                    if (k_tile_id == 0 && beta > 0) {
+                        copy_tile_to_device_async(c, c_device,
+                                tile_size_m, tile_size_n,
+                                short_tile_size_m, short_tile_size_n,
+                                m, n,
+                                n_tiles_m, n_tiles_n,
+                                m_tile_id, n_tile_id,
+                                stream_id, streams[stream_id]);
+                    }
+                    copy_event = streams[stream_id].enqueue_event();
+                }
+
+                // perform dgemm
+                cublasDgemm(get_cublas_handle(stream_id), CUBLAS_OP_N, CUBLAS_OP_N,
+                        actual_size_m, actual_size_n, actual_size_k, &alpha,
+                        &a_device[stream_id*offset_a], actual_size_m,
+                        &b_device[stream_id*offset_b], actual_size_k, &new_beta,
+                        &c_device[stream_id*offset_c], actual_size_m);
+
+                // copy result back to host
+                copy_tile_to_host_async(c_device, c,
+                        tile_size_m, tile_size_n,
                         short_tile_size_m, short_tile_size_n,
                         m, n,
                         n_tiles_m, n_tiles_n,
-                        p_row_tile[ibuff], p_col_tile[ibuff],
-                        ibuff, false);
+                        m_tile_id, n_tile_id,
+                        stream_id,
+                        streams[stream_id]);
+
+                // if this is the last event on this stream => record it
+                if (m_tile_id == n_tiles_m - 1 && n_tile_id == n_tiles_n - 1)
+                    last_event_on_stream[stream_id] = streams[stream_id].enqueue_event();
             }
-
-            //dgemm_(&N, &N, &m_cpu, &n_cpu, &k_cpu, &one, a, &lda, b + ldb * n_gpu, &ldb, &beta, c + ldc * n_gpu, &ldc);
-
-            cuda_event copy_event;
-
-            // loop over inner tile dimension
-            for (int iktile = 0; iktile < n_tiles_k; iktile++) {
-                int actual_size_k = actual_size(n_tiles_k, iktile, tile_size_k, short_tile_size_k);
-
-                double new_beta = iktile == 0 ? beta : 1.0;
-
-                //myStreams[ibuff].wait_on_event(copy_event);
-                if (iktile > 0)
-                    copy_event.wait();
-
-                // copy next tile to pinned buffer
-                copy_tile(a, a_intermediate,
-                        tile_size_m, tile_size_k,
-                        offset_a,
-                        short_tile_size_m, short_tile_size_k,
-                        m, k,
-                        n_tiles_m, n_tiles_k,
-                        irowtile, iktile,
-                        ibuff, true);
-
-                copy_to_device_async(&a_intermediate[ibuff*offset_a], &a_device[ibuff*offset_a],
-                        actual_size_m*actual_size_k, myStreams[ibuff].stream());
-
-                // copy tile data to device
-                copy_tile(b, b_intermediate,
-                        tile_size_k, tile_size_n,
-                        offset_b,
-                        short_tile_size_k, short_tile_size_n,
-                        k, n,
-                        n_tiles_k, n_tiles_n,
-                        iktile, icoltile,
-                        ibuff, true);
-
-                copy_to_device_async(&b_intermediate[ibuff*offset_b], &b_device[ibuff*offset_b],
-                        actual_size_k*actual_size_n, myStreams[ibuff].stream());
-
-                // copy next tile to pinned buffer
-                if (iktile == 0 && beta > 0) {
-                    copy_tile(c, c_intermediate,
-                            tile_size_m, tile_size_n,
-                            offset_c,
-                            short_tile_size_m, short_tile_size_n,
-                            m, n,
-                            n_tiles_m, n_tiles_n,
-                            irowtile, icoltile,
-                            ibuff, true);
-
-                    copy_to_device_async(&c_intermediate[ibuff*offset_c], &c_device[ibuff*offset_c],
-                            actual_size_m*actual_size_n, myStreams[ibuff].stream());
-                }
-
-                copy_event = myStreams[ibuff].enqueue_event();
-
-                // tell cuBLAS which stream to use
-                cublasSetStream(get_cublas_handle(), myStreams[ibuff].stream());
-
-                // perform dgemm
-                cublasDgemm (get_cublas_handle(), CUBLAS_OP_N, CUBLAS_OP_N,
-                        actual_size_m, actual_size_n, actual_size_k, &alpha,
-                        &a_device[ibuff*offset_a], actual_size_m,
-                        &b_device[ibuff*offset_b], actual_size_k, &new_beta,
-                        &c_device[ibuff*offset_c], actual_size_m);
-            }
-
-            // copy result back to host
-            copy_to_host_async(&c_device[ibuff*offset_c], &c_intermediate[ibuff*offset_c],
-                    actual_size_m*actual_size_n, myStreams[ibuff].stream());
-
-            // this event will signal when the D2H copy of the result has completed
-            bufferfilled[ibuff] = myStreams[ibuff].enqueue_event();
-            first_event = false;
-
-            p_row_tile[ibuff] = irowtile;
-            p_col_tile[ibuff] = icoltile;
-            // ibuff = (ibuff + 1) % tile_descriptionn_streams;
         }
     }
 
-#pragma omp parallel for
-    for (int ibuff = 0; ibuff < std::min(tile_descriptionn_streams, n_tiles_m * n_tiles_n * n_tiles_k); ++ibuff) {
-        bufferfilled[ibuff].wait();
-        // copy result in pinned buffer back to global matrix
-        copy_tile(c_intermediate, c, 
-                tile_size_m, tile_size_n, 
-                offset_c, 
-                short_tile_size_m, short_tile_size_n,
-                m, n,
-                n_tiles_m, n_tiles_n,
-                p_row_tile[ibuff], p_col_tile[ibuff],
-                ibuff, false);
+    // block until all streams have finished all the work
+    for (int stream_id = 0; stream_id < n_streams; ++stream_id) {
+        int tid = omp_get_thread_num();
+        last_event_on_stream[tid].wait();
     }
 
 #ifdef DEBUG

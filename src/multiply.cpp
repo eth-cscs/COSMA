@@ -127,7 +127,6 @@ void local_multiply(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
 #ifdef COSMA_HAVE_GPU
     gpu_dgemm_(matrixA.current_matrix(), matrixB.current_matrix(), matrixC.current_matrix(),
         matrixA.device_buffer_ptr(), matrixB.device_buffer_ptr(), matrixC.device_buffer_ptr(),
-        matrixA.intermediate_buffer_ptr(), matrixB.intermediate_buffer_ptr(), matrixC.intermediate_buffer_ptr(),
         m, n, k, 
         TILE_SIZE_M, TILE_SIZE_N, TILE_SIZE_K,
         1.0, beta);

@@ -97,7 +97,6 @@ public:
 
 #ifdef COSMA_HAVE_GPU
     double* device_buffer_ptr();
-    double* intermediate_buffer_ptr();
 #endif
 
     std::vector<double, mpi_allocator<double>>& buffer();

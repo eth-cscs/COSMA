@@ -60,8 +60,6 @@ void Buffer::initialize_buffers() {
     mat_dimension = std::min((long long) mat_dimension, max_base_buffer_size_);
 
     device_buffer_ = device_vector<double>(mat_dimension * N_STREAMS);
-    // intermediate_buffer_ = std::vector<double>(mat_dimension * N_STREAMS);
-    // intermediate_buffer_ = malloc_pinned<double>(mat_dimension * N_STREAMS, 0.0);
 
     // pin the buffer that will be used in gemm
     int buff_index_to_pin = buff_index_before_gemm();
@@ -575,10 +573,5 @@ const long long Buffer::max_recv_buffer_size() const {
 #ifdef COSMA_HAVE_GPU
 double* Buffer::device_buffer_ptr() {
     return device_buffer_.data();
-}
-
-double* Buffer::intermediate_buffer_ptr() {
-    //return intermediate_buffer_.data();
-    return intermediate_buffer_;
 }
 #endif
