@@ -29,10 +29,10 @@ bool run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD, bool one_sided_communication
     int k = s.k;
     int P = s.P;
 
-    //Declare A,B and C CARMA matrices objects
-    CarmaMatrix A('A', s, rank);
-    CarmaMatrix B('B', s, rank);
-    CarmaMatrix C('C', s, rank);
+    //Declare A,B and C COSMA matrices objects
+    CosmaMatrix A('A', s, rank);
+    CosmaMatrix B('B', s, rank);
+    CosmaMatrix C('C', s, rank);
 
     // fill the matrices with random data
     srand48(rank);
@@ -154,7 +154,7 @@ bool run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD, bool one_sided_communication
 #endif
     }
 
-    multiply(A, B, C, s, comm, one_sided_communication);
+    multiply(A, B, C, s, comm, 0.0, one_sided_communication);
 
     //Then rank0 ask for other ranks data
     std::vector<double> Cs;
@@ -222,7 +222,6 @@ bool run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD, bool one_sided_communication
 #ifdef DEBUG
     for( int i = 0; i < P; i++ ) {
         if( rank == i ) {
-
             printf("(%d) A: ", i );
             for( auto j = 0; j < sizeA; j++ )
                 printf("%5.3f ", A.matrix()[j] );
@@ -245,21 +244,16 @@ bool run(Strategy& s, MPI_Comm comm=MPI_COMM_WORLD, bool one_sided_communication
 }
 
 int main( int argc, char **argv ) {
-    Strategy strategy(argc, argv);
-
     MPI_Init(&argc, &argv);
 
     int P, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &P);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    if (P != strategy.P) {
-        throw(std::runtime_error("Number of processors available not equal \
-                                 to the number of processors specified by flag P"));
-    }
+    Strategy strategy(argc, argv);
 
-    if (rank == 0) {
-        std::cout << strategy << std::endl;
+    if (rank == 0) { 
+        std::cout << "Strategy = " << strategy << std::endl;
     }
 
     // first run with two-sided communication backend
@@ -268,11 +262,7 @@ int main( int argc, char **argv ) {
     // then run it with one-sided communication backend
     isOK = isOK && run(strategy, MPI_COMM_WORLD, true);
 
-    if (rank == 0) {
-        MPI_Finalize();
-        return !isOK;
-    }
-
     MPI_Finalize();
-    return 0;
+
+    return rank==0 ? !isOK : 0;
 }

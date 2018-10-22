@@ -1,42 +1,14 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(tests)
-
-set(BIN_TEST_DIR ${CMAKE_CURRENT_BINARY_DIR})
-set(TEST_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-
-####################
-#  Lib Dependancy  #
-####################
-
-include_directories("${PRJ_ROOT_DIR}/src")
-
 ################
 #  Build test  #
 ################
+set(executables "cosma-miniapp" "test-strategy" "cosma-statistics")
 
-add_lib_executable(carma-statistics carma)
+foreach(exec ${executables})
+    add_executable(${exec} "${exec}.cpp")
+    target_link_libraries(${exec} cosma ${cosma_deps})
+endforeach()
 
-add_lib_executable(test-strategy carma)
-
-add_lib_executable(mpi_bug ${mpi_deps})
-
-if (CARMA_WITH_CUDA)
-    cuda_add_lib_executable(carma-miniapp
-      carma
-      carmacu
-      ${carma_deps})
-
-    cuda_add_lib_executable(temp-miniapp
-      carma
-      carmacu
-      ${carma_deps})
-else()
-    add_lib_executable(carma-miniapp
-      carma
-      ${carma_deps})
-
-    add_lib_executable(temp-miniapp
-      carma
-      ${carma_deps})
-endif()
+add_executable("cuda_test" "cuda_test.cpp")
+target_link_libraries("cuda_test" ${cuda_deps})

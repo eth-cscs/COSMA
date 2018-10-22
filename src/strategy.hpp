@@ -4,13 +4,13 @@
 #include <stdexcept>
 #include <vector>
 #include <string>
-#include <regex>
 #include <sstream>
 #include <iostream>
 #include <math.h>
 #include <limits>
 #include <tuple>
-#include "scheduleGenerator.h"
+#include "options.hpp"
+#include "math_utils.hpp"
 
 class Strategy {
 public:
@@ -20,8 +20,9 @@ public:
     int k;
     // number of processors
     size_t P;
-    // number of steps of the algorithm
-    size_t n_steps;
+    long long memory_limit;
+    // beta parameter of gemm
+    double beta;
     // stores the divisor in each step of the algorithm
     std::vector<int> divisors;
     // returns m, n or k character depending on 
@@ -29,16 +30,21 @@ public:
     std::string split_dimension;
     // describes whether step is DFS (d) or BFS (b) for each step
     std::string step_type;
+    // number of steps of the algorithm
+    size_t n_steps;
     // if true, MPI will try to relabel ranks such that
     // the ranks which communicate are physically close to each other
     bool topology;
     // if true, one sided communication backend will be used
     // otherwise, two sided communication backend is used
     bool one_sided_communication;
-    long long memory_limit;
     long long memory_used;
     int n_bfs_steps;
     int n_dfs_steps;
+
+    int n_bfs_steps_before_gemm_a;
+    int n_bfs_steps_before_gemm_b;
+    int n_bfs_steps_before_gemm_c;
 
     // constructors
     Strategy();
@@ -51,41 +57,20 @@ public:
     // constructs the Strategy form the command line
     Strategy(int argc, char** argv);
 
-    Strategy(int mm, int nn, int kk, size_t PP, std::vector<int>& divs,
-             std::string& dims, std::string& types,
+    Strategy(int mm, int nn, int kk, size_t PP,
+             std::vector<int>& divs, std::string& dims, std::string& types,
              long long mem_limit = std::numeric_limits<long long>::max(),
-             bool top = false);
+             double b = 0.0, bool top = false, bool one_sided = false);
 
     Strategy(int mm, int nn, int kk, size_t PP, 
             long long mem_limit = std::numeric_limits<long long>::max(),
-            bool top = false);
+            double b = 0.0, bool top = false, bool one_sided = false);
 
     // parses the command line options and initializes the varialbes
     void initialize(const std::string& cmd_line);
 
     // parses steps if defined manually by the user
     void process_steps(size_t start, const std::string& line);
-
-    // greates common divisor of a and b
-    int gcd(int a, int b);
-
-    // divides and rounds up long long integers
-    static long long divide_and_round_up(long long x, long long y);
-
-    // round to next multiple
-    int next_multiple_of(int n_to_round, int multiple);
-
-    // find all divisors of n
-    std::vector<int> find_divisors(int n);
-    // finds divm, divn and divk such that m/divm = n/divn = k/divk = cubic_root(mnk/P)
-    // or at least as close as possible to this such that divm*divn*divk = P
-    std::tuple<int, int, int> balanced_divisors(long long m, long long n, long long k, int P);
-
-    // prime decomposition of n
-    std::vector<int> decompose(int n);
-
-    // finds divisor of P closest to dimensions/target
-    int closest_divisor(int P, int dimension, double target);
 
     // default strategy dividing always the largest dimension in that step
     // if there is enough memory uses BFS step, if not uses DFS step
@@ -103,21 +88,6 @@ public:
     void process_token(const std::string& step_triplet);
 
     void throw_exception(const std::string& message);
-
-    // finds the position after the defined flag or throws an exception 
-    // if flag is not found in the line.
-    int find_flag(const std::string& short_flag, const std::string& long_flag, 
-                     const std::string& message, const std::string& line, 
-                     bool throw_exception=true);
-
-    // looks for the defined flag in the line
-    // if found return true, otherwise returns false
-    bool flag_exists(const std::string& short_flag, const std::string& long_flag, 
-            const std::string& line);
-
-    // finds the next int after start in the line
-    int next_int(int start, const std::string& line);
-    long long next_long_long(int start, const std::string& line);
 
     const bool split_m(size_t i) const;
     const bool split_n(size_t i) const;
@@ -139,6 +109,7 @@ public:
     const int divisor_col(char matrix, size_t i) const;
 
     const bool final_step(size_t i) const;
+    const int bfs_steps_before_gemm(char label) const;
 
     static long long initial_memory(long long m, long long n, long long k, int P);
     static long long required_memory(Strategy& strategy);

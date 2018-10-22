@@ -31,7 +31,7 @@ files=()
 
 for node_idx in ${!n_nodes[@]}
 do
-    if [ $node_idx -le 4 ]
+    if [ $node_idx -le 10 ]
     then
         m_values=($strong_scaling_square ${weak_scaling_p0[node_idx]} ${weak_scaling_p1[node_idx]} ${weak_scaling_p0_mn[node_idx]} ${weak_scaling_p1_mn[node_idx]})
         n_values=($strong_scaling_square ${weak_scaling_p0[node_idx]} ${weak_scaling_p1[node_idx]} ${weak_scaling_p0_mn[node_idx]} ${weak_scaling_p1_mn[node_idx]})

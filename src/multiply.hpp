@@ -11,27 +11,27 @@
 #include <semiprof.hpp>
 #include "strategy.hpp"
 #include "timer.hpp"
+#ifdef COSMA_HAVE_GPU
 #include "gpu/gemm.hpp"
+#include "gpu/tile_description.hpp"
+#endif
 
-void multiply(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
-              const Strategy& strategy, MPI_Comm comm=MPI_COMM_WORLD, 
+void multiply(CosmaMatrix& A, CosmaMatrix& B, CosmaMatrix& C,
+              const Strategy& strategy, MPI_Comm comm=MPI_COMM_WORLD,
+              double beta = 0.0,
               bool one_sided_communication=false);
 
-void multiply(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
+void multiply(CosmaMatrix& A, CosmaMatrix& B, CosmaMatrix& C,
               Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
-              const Strategy& strategy, double beta, communicator& comm);
+              const Strategy& strategy, communicator& comm, double beta = 0.0);
 
-void local_multiply(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
+void local_multiply(CosmaMatrix& A, CosmaMatrix& B, CosmaMatrix& C,
                     int m, int n, int k, double beta);
 
-void DFS(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
+void DFS(CosmaMatrix& A, CosmaMatrix& B, CosmaMatrix& C,
          Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
-         const Strategy& strategy, double beta, communicator& comm);
+         const Strategy& strategy, communicator& comm, double beta);
 
-void BFS(CarmaMatrix& A, CarmaMatrix& B, CarmaMatrix& C,
+void BFS(CosmaMatrix& A, CosmaMatrix& B, CosmaMatrix& C,
          Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
-         const Strategy& strategy, double beta, communicator& comm);
-
-// to achieve the maximum performance, blas should be invoked few times
-// with a dummy computation, just so that it initializes the threading mechanism
-void initialize_blas();
+         const Strategy& strategy, communicator& comm, double beta);

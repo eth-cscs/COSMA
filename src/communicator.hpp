@@ -70,7 +70,7 @@ public:
      * in a single invocation of this function. Only blocks belonging to the 
      * current submatrix are being exchanged within a single invocation of copy.
      */
-    virtual void copy(Interval& P, double* in, double* out,
+    virtual void copy(Interval& P, double* in, double* out, double* reshuffle_buffer,
         std::vector<std::vector<int>>& size_before,
         std::vector<int>& total_before,
         int total_after, int step) = 0;
@@ -121,6 +121,7 @@ public:
      * current submatrix are being exchanged within a single invocation of reduce.
      */
     virtual void reduce(Interval& P, double* in, double* out,
+        double* reshuffle_buffer, double* reduce_buffer,
         std::vector<std::vector<int>>& c_current,
         std::vector<int>& c_total_current,
         std::vector<std::vector<int>>& c_expanded,
@@ -156,26 +157,22 @@ public:
     // size of the initial communicator
     int comm_size();
 
+    // true if this rank is not taking part in the multiplication
+    // this might happen if the total number of ranks is e.g. prime
+    // or does not yield a convenient processor decomposition
+    bool is_idle();
+
+    // wrappers around MPI_Comm_free and MPI_Group_free
     static void free_comm(MPI_Comm& comm);
     static void free_group(MPI_Group& comm_group);
 
+    // wrapper around MPI_Finalize
     static void finalize();
-
-protected:
-    std::vector<MPI_Comm> comm_ring_;
-    std::vector<MPI_Comm> comm_subproblem_;
-    int rank_;
-    const Strategy* strategy_;
-    std::vector<int> step_to_comm_index_;
-    MPI_Comm full_comm_;
-    int comm_size_;
 
     static int relative_rank(Interval& P, int rank);
     static int offset(Interval& P, int div, int rank);
     static int group(Interval& P, int div, int rank);
     static std::pair<int, int> group_and_offset(Interval& P, int div, int rank);
-
-    void get_topology_edges(std::vector<int>& dest, std::vector<int>& weight);
 
     /*
        We split P processors into div groups of P/div processors.
@@ -186,7 +183,23 @@ protected:
      i * (P/div) + offset, where i = 0..(div-1) and offset = rank() - i * (P/div)
      */
     static int rank_inside_ring(Interval& P, int div, int global_rank);
-    static int rank_outside_ring(Interval& P, int div, int off, int i);
+    static int rank_outside_ring(Interval& P, int div, int off, int gp);
+
+protected:
+    std::vector<MPI_Comm> comm_ring_;
+    std::vector<MPI_Comm> comm_subproblem_;
+    int rank_;
+    const Strategy* strategy_;
+    std::vector<int> step_to_comm_index_;
+    MPI_Comm full_comm_;
+    int comm_size_;
+    // if true then not all processors were used
+    // this usually happens if given number of processors
+    // cannot be decomposed nicely (e.g. if P is prime)
+    bool using_reduced_comm_;
+    bool is_idle_;
+
+    void get_topology_edges(std::vector<int>& dest, std::vector<int>& weight);
 
     void create_communicators(MPI_Comm comm);
     // same as create just uses MPI_Comm_split instead of MPI_Comm_create

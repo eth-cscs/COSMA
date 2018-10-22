@@ -5,6 +5,8 @@ cmake_minimum_required(VERSION 3.5)
 ###############
 
 set(sources
+    buffer.cpp
+    gpu/tiled_gemm.cpp
     communicator.cpp
     multiply.cpp
     matrix.cpp
@@ -14,25 +16,12 @@ set(sources
     strategy.cpp
     interval.cpp
     timer.hpp
-    buffer.cpp
-    mpi_allocator.hpp
-    scheduleGenerator.cpp
-)
-
-set (cuda_sources 
-    gpu/gemm.cu
-    gpu/cuda_event.hpp
-    gpu/cuda_stream.hpp
+    options.cpp
+    math_utils.cpp
 )
 
 ###################
-#  Carma Library  #
+#  Cosma Library  #
 ###################
-add_library(carma ${sources})
-target_link_libraries(carma semiprof ${mpi_deps})
-
-if(CARMA_WITH_CUDA)
-    cuda_add_library(carmacu ${cuda_sources})
-    target_link_libraries(carmacu cublas)
-endif()
-
+add_library(cosma ${sources})
+target_link_libraries(cosma ${cosma_deps})

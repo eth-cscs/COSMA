@@ -1,6 +1,6 @@
 #include "matrix.hpp"
 
-CarmaMatrix::CarmaMatrix(char label, const Strategy& strategy, int rank) :
+CosmaMatrix::CosmaMatrix(char label, const Strategy& strategy, int rank) :
         label_(label), rank_(rank), strategy_(strategy) {
     PE(preprocessing_matrices);
     if (label_ == 'A') {
@@ -16,6 +16,11 @@ CarmaMatrix::CarmaMatrix(char label, const Strategy& strategy, int rank) :
         n_ = strategy.n;
     }
     P_ = strategy.P;
+
+    if (rank >= P_) {
+        return;
+    }
+
     mapper_ = Mapper(label, m_, n_, P_, strategy, rank);
     layout_ = Layout(label, m_, n_, P_, rank, mapper_.complete_layout());
     buffer_ = Buffer(label, strategy, rank, &mapper_, &layout_);
@@ -25,143 +30,164 @@ CarmaMatrix::CarmaMatrix(char label, const Strategy& strategy, int rank) :
     PL();
 }
 
-int CarmaMatrix::m() {
+int CosmaMatrix::m() {
     return m_;
 }
 
-int CarmaMatrix::n() {
+int CosmaMatrix::n() {
     return n_;
 }
 
-char CarmaMatrix::label() {
+char CosmaMatrix::label() {
     return label_;
 }
 
-const int CarmaMatrix::initial_size(int rank) const {
+const int CosmaMatrix::initial_size(int rank) const {
+    if (rank >= strategy_.P) 
+        return 0;
     return mapper_.initial_size(rank);
 }
 
-const int CarmaMatrix::initial_size() const {
+const int CosmaMatrix::initial_size() const {
+    if (rank_ >= strategy_.P) 
+        return 0;
     return mapper_.initial_size();
 }
 
-int CarmaMatrix::buffer_index() {
+int CosmaMatrix::buffer_index() {
     return buffer_.buffer_index();
 }
 
-void CarmaMatrix::set_buffer_index(int idx) {
+void CosmaMatrix::set_buffer_index(int idx) {
     buffer_.set_buffer_index(idx);
 }
 
-double* CarmaMatrix::buffer_ptr() {
+double* CosmaMatrix::buffer_ptr() {
     return buffer_.buffer_ptr();
 }
 
-std::vector<double, mpi_allocator<double>>& CarmaMatrix::buffer() {
+double* CosmaMatrix::reshuffle_buffer_ptr() {
+    return buffer_.reshuffle_buffer_ptr();
+}
+
+double* CosmaMatrix::reduce_buffer_ptr() {
+    return buffer_.reduce_buffer_ptr();
+}
+
+std::vector<double, mpi_allocator<double>>& CosmaMatrix::buffer() {
     return buffer_.buffer();
 }
 
-const std::vector<double, mpi_allocator<double>>& CarmaMatrix::buffer() const {
+const std::vector<double, mpi_allocator<double>>& CosmaMatrix::buffer() const {
     return buffer_.buffer();
 }
 
-void CarmaMatrix::advance_buffer() {
+void CosmaMatrix::advance_buffer() {
     buffer_.advance_buffer();
 }
 
-const std::vector<Interval2D>& CarmaMatrix::initial_layout(int rank) const {
+const std::vector<Interval2D>& CosmaMatrix::initial_layout(int rank) const {
     return mapper_.initial_layout(rank);
 }
 
-const std::vector<Interval2D>& CarmaMatrix::initial_layout() const {
+const std::vector<Interval2D>& CosmaMatrix::initial_layout() const {
     return initial_layout();
 }
 
 // (gi, gj) -> (local_id, rank)
-std::pair<int, int> CarmaMatrix::local_coordinates(int gi, int gj) {
+std::pair<int, int> CosmaMatrix::local_coordinates(int gi, int gj) {
     return mapper_.local_coordinates(gi, gj);
 }
 
 // (local_id, rank) -> (gi, gj)
-std::pair<int, int> CarmaMatrix::global_coordinates(int local_index, int rank) {
+std::pair<int, int> CosmaMatrix::global_coordinates(int local_index, int rank) {
     return mapper_.global_coordinates(local_index, rank);
 }
 
 // local_id -> (gi, gj) for local elements on the current rank
-const std::pair<int, int> CarmaMatrix::global_coordinates(int local_index) const {
+const std::pair<int, int> CosmaMatrix::global_coordinates(int local_index) const {
     return mapper_.global_coordinates(local_index);
 }
 
-double* CarmaMatrix::matrix_pointer() {
+double* CosmaMatrix::matrix_pointer() {
     //return matrix_.data();
+    if (rank_ >= strategy_.P) {
+        return nullptr;
+    }
     return buffer_.initial_buffer_ptr();
 }
 
-std::vector<double, mpi_allocator<double>>& CarmaMatrix::matrix() {
+std::vector<double, mpi_allocator<double>>& CosmaMatrix::matrix() {
     //return matrix_;
+    if (rank_ >= strategy_.P) {
+        return dummy_vector;
+    }
     return buffer_.initial_buffer();
 }
 
-const std::vector<double, mpi_allocator<double>>& CarmaMatrix::matrix() const {
+const std::vector<double, mpi_allocator<double>>& CosmaMatrix::matrix() const {
     //return matrix_;
+    if (rank_ >= strategy_.P) {
+        return dummy_vector;
+    }
     return buffer_.initial_buffer();
 }
 
-char CarmaMatrix::which_matrix() {
+char CosmaMatrix::which_matrix() {
     return label_;
 }
 
-int CarmaMatrix::shift(int rank, int dfs_bucket) {
+int CosmaMatrix::shift(int rank, int dfs_bucket) {
     int offset = layout_.offset(rank, dfs_bucket);
     current_mat += offset;
     return offset;
 }
 
-int CarmaMatrix::shift(int dfs_bucket) {
+int CosmaMatrix::shift(int dfs_bucket) {
     int offset = layout_.offset(dfs_bucket);
     current_mat += offset;
     return offset;
 }
 
-void CarmaMatrix::unshift(int offset) {
+void CosmaMatrix::unshift(int offset) {
     current_mat -= offset;
 }
 
-int CarmaMatrix::dfs_bucket(int rank) {
+int CosmaMatrix::dfs_bucket(int rank) {
     return layout_.dfs_bucket(rank); 
 }
 
-int CarmaMatrix::dfs_bucket() {
+int CosmaMatrix::dfs_bucket() {
     return layout_.dfs_bucket();
 }
 
-void CarmaMatrix::update_buckets(Interval& P, Interval2D& range) {
+void CosmaMatrix::update_buckets(Interval& P, Interval2D& range) {
     layout_.update_buckets(P, range);
 }
 
-std::vector<int> CarmaMatrix::dfs_buckets(Interval& newP) {
+std::vector<int> CosmaMatrix::dfs_buckets(Interval& newP) {
     return layout_.dfs_buckets(newP);
 }
 
-void CarmaMatrix::set_dfs_buckets(Interval& newP, std::vector<int>& pointers) {
+void CosmaMatrix::set_dfs_buckets(Interval& newP, std::vector<int>& pointers) {
     layout_.set_dfs_buckets(newP, pointers);
 }
 
-int CarmaMatrix::size(int rank) {
+int CosmaMatrix::size(int rank) {
     return layout_.size(rank);
 }
 
-int CarmaMatrix::size() {
+int CosmaMatrix::size() {
     return layout_.size();
 }
 
-void CarmaMatrix::buffers_before_expansion(Interval& P, Interval2D& range,
+void CosmaMatrix::buffers_before_expansion(Interval& P, Interval2D& range,
         std::vector<std::vector<int>>& size_per_rank,
         std::vector<int>& total_size_per_rank) {
     layout_.buffers_before_expansion(P, range, size_per_rank, total_size_per_rank);
 }
 
-void CarmaMatrix::buffers_after_expansion(Interval& P, Interval& newP,
+void CosmaMatrix::buffers_after_expansion(Interval& P, Interval& newP,
         std::vector<std::vector<int>>& size_per_rank,
         std::vector<int>& total_size_per_rank,
         std::vector<std::vector<int>>& new_size,
@@ -170,27 +196,27 @@ void CarmaMatrix::buffers_after_expansion(Interval& P, Interval& newP,
             new_size, new_total);
 }
 
-void CarmaMatrix::set_sizes(Interval& newP, std::vector<std::vector<int>>& size_per_rank, 
+void CosmaMatrix::set_sizes(Interval& newP, std::vector<std::vector<int>>& size_per_rank, 
     int offset) {
     layout_.set_sizes(newP, size_per_rank, offset);
 }
-void CarmaMatrix::set_sizes(Interval& newP, std::vector<std::vector<int>>& size_per_rank) {
+void CosmaMatrix::set_sizes(Interval& newP, std::vector<std::vector<int>>& size_per_rank) {
     layout_.set_sizes(newP, size_per_rank);
 }
 
-void CarmaMatrix::set_sizes(int rank, std::vector<int>& sizes, int start) {
+void CosmaMatrix::set_sizes(int rank, std::vector<int>& sizes, int start) {
     layout_.set_sizes(rank, sizes, start);
 }
 
-double& CarmaMatrix::operator[](const std::vector<double>::size_type index) {
+double& CosmaMatrix::operator[](const std::vector<double>::size_type index) {
     return matrix()[index];
 }
 
-double CarmaMatrix::operator[](const std::vector<double>::size_type index) const {
+double CosmaMatrix::operator[](const std::vector<double>::size_type index) const {
     return matrix()[index];
 }
 
-std::ostream& operator<<(std::ostream& os, const CarmaMatrix& mat) {
+std::ostream& operator<<(std::ostream& os, const CosmaMatrix& mat) {
     for (auto local = 0; local < mat.initial_size(); ++local) {
         double value = mat[local];
         int row, col;
@@ -200,11 +226,16 @@ std::ostream& operator<<(std::ostream& os, const CarmaMatrix& mat) {
     return os;
 }
 
-double* CarmaMatrix::current_matrix() {
+double* CosmaMatrix::current_matrix() {
     return current_mat;
 }
 
-void CarmaMatrix::set_current_matrix(double* mat) {
+void CosmaMatrix::set_current_matrix(double* mat) {
     current_mat = mat;
 }
 
+#ifdef COSMA_HAVE_GPU
+double* CosmaMatrix::device_buffer_ptr() {
+    return buffer_.device_buffer_ptr();
+}
+#endif

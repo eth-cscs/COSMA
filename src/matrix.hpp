@@ -18,9 +18,9 @@
 #include "strategy.hpp"
 #include "buffer.hpp"
 
-class CarmaMatrix {
+class CosmaMatrix {
 public:
-    CarmaMatrix(char label, const Strategy& strategy, int rank);
+    CosmaMatrix(char label, const Strategy& strategy, int rank);
 
     int m();
     int n();
@@ -86,6 +86,18 @@ public:
     void set_buffer_index(int idx);
     // returns the pointer to the current buffer
     double* buffer_ptr();
+    // returns the pointer to the reshuffle buffer
+    // that is used when n_blocks > 1 (i.e. when DFS steps are present)
+    // as a temporary buffer in which the data is reshuffled.
+    double* reshuffle_buffer_ptr();
+    // pointer to the reduce buffer that is used as a 
+    // temporary buffer in BFS-reduce (two-sided) communicator
+    // in case when beta > 0 in that step
+    double* reduce_buffer_ptr();
+
+#ifdef COSMA_HAVE_GPU
+    double* device_buffer_ptr();
+#endif
 
     std::vector<double, mpi_allocator<double>>& buffer();
     const std::vector<double, mpi_allocator<double>>& buffer() const;
@@ -99,7 +111,7 @@ public:
     // outputs matrix in a format:
     //      row, column, value
     // for all local elements on the current rank
-    friend std::ostream& operator<<(std::ostream& os, const CarmaMatrix& mat);
+    friend std::ostream& operator<<(std::ostream& os, const CosmaMatrix& mat);
 
     double* matrix_pointer();
     std::vector<double, mpi_allocator<double>>& matrix();
@@ -136,4 +148,6 @@ protected:
     Mapper mapper_;
     Layout layout_;
     Buffer buffer_;
+
+    std::vector<double, mpi_allocator<double>> dummy_vector;
 };

@@ -13,59 +13,40 @@
  Assumption: we assume that at each step only 1 dimension is split
  */
 
-// invoke some dummy computation of blas, just so that it initializes
-// the threading mechanism
-void initialize_blas() {
-    int dim = 256;
-    int n_runs = 3;
-    std::vector<double> a(dim*dim);
-    std::vector<double> c(dim*dim);
-
-    double one = 1.;
-    double zero = 0.;
-    char N = 'N';
-
-    for (int i = 0; i < n_runs; ++i) {
-        dgemm_(&N, &N, &dim, &dim, &dim, &one, a.data(), &dim, a.data(), &dim, &zero, c.data(), &dim);
-    }
-}
-
 // this is just a wrapper to initialize and call the recursive function
-void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
-              const Strategy& strategy, MPI_Comm comm, bool one_sided_communication) {
+void multiply(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
+              const Strategy& strategy, MPI_Comm comm, double beta, bool one_sided_communication) {
     Interval mi = Interval(0, strategy.m-1);
     Interval ni = Interval(0, strategy.n-1);
     Interval ki = Interval(0, strategy.k-1);
     Interval Pi = Interval(0, strategy.P-1);
 
-    // PE(blasinit);
-    // initialize_blas();
-    // PL();
-
     PE(preprocessing_communicators);
-    std::unique_ptr<communicator> carma_comm;
+    std::unique_ptr<communicator> cosma_comm;
     if (one_sided_communication) {
-        carma_comm = std::make_unique<one_sided_communicator>(&strategy, comm);
+        cosma_comm = std::make_unique<one_sided_communicator>(&strategy, comm);
 
     } else {
-        carma_comm = std::make_unique<two_sided_communicator>(&strategy, comm);
+        cosma_comm = std::make_unique<two_sided_communicator>(&strategy, comm);
     }
     PL();
 
-    multiply(matrixA, matrixB, matrixC,
-             mi, ni, ki, Pi, 0, strategy, 0.0, *carma_comm);
+    if (!cosma_comm->is_idle()) {
+        multiply(matrixA, matrixB, matrixC,
+                 mi, ni, ki, Pi, 0, strategy, *cosma_comm, beta);
+    }
 
-    if (carma_comm->rank() == 0) {
+    if (cosma_comm->rank() == 0) {
         PP();
     }
 
 }
 
 // dispatch to local call, BFS, or DFS as appropriate
-void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
+void multiply(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
               Interval& m, Interval& n, Interval& k, Interval& P,
-              size_t step, const Strategy& strategy, double beta,
-              communicator& comm) {
+              size_t step, const Strategy& strategy,
+              communicator& comm, double beta) {
     PE(multiply_layout);
     // current submatrices that are being computed
     Interval2D a_range(m, k);
@@ -99,9 +80,9 @@ void multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
         local_multiply(matrixA, matrixB, matrixC, m.length(), n.length(), k.length(), beta);
     else {
         if (strategy.bfs_step(step))
-            BFS(matrixA, matrixB, matrixC, m, n, k, P, step, strategy, beta, comm);
+            BFS(matrixA, matrixB, matrixC, m, n, k, P, step, strategy, comm, beta);
         else
-            DFS(matrixA, matrixB, matrixC, m, n, k, P, step, strategy, beta, comm);
+            DFS(matrixA, matrixB, matrixC, m, n, k, P, step, strategy, comm, beta);
     }
     PE(multiply_layout);
 
@@ -128,7 +109,7 @@ void printMat(int m, int n, double*A, char label) {
     std::cout << std::endl;
 }
 
-void local_multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC, int m, int n, int k, double beta) {
+void local_multiply(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC, int m, int n, int k, double beta) {
     char N = 'N';
     double one = 1.;
 #ifdef DEBUG
@@ -143,11 +124,16 @@ void local_multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& mat
     }
 #endif
     PE(multiply_computation);
-#ifdef CARMA_HAVE_GPU
-    gpu_dgemm_(matrixA.current_matrix(), matrixB.current_matrix(), matrixC.current_matrix(), m, n, k, 1.0, beta);
+#ifdef COSMA_HAVE_GPU
+    gpu_dgemm_(matrixA.current_matrix(), matrixB.current_matrix(), matrixC.current_matrix(),
+        matrixA.device_buffer_ptr(), matrixB.device_buffer_ptr(), matrixC.device_buffer_ptr(),
+        m, n, k, 
+        TILE_SIZE_M, TILE_SIZE_N, TILE_SIZE_K,
+        1.0, beta);
 #else
     dgemm_(&N, &N, &m, &n, &k, &one, matrixA.current_matrix(), &m, matrixB.current_matrix(), &k, &beta, matrixC.current_matrix(), &m);
 #endif
+    // dgemm_(&N, &N, &m, &n, &k, &one, matrixA.current_matrix(), &m, matrixB.current_matrix(), &k, &beta, matrixC.current_matrix(), &m);
     PL();
 #ifdef DEBUG
     std::cout << "After multiplication: " << std::endl;
@@ -162,16 +148,16 @@ void local_multiply(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& mat
  In each DFS step, one of the dimensions is split, and each of the subproblems is solved
  sequentially by all P processors.
  */
-void DFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
+void DFS(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
          Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
-         const Strategy& strategy, double beta, communicator& comm) {
+         const Strategy& strategy, communicator& comm, double beta) {
     // split the dimension but not the processors, all P processors are taking part
     // in each recursive call.
     if (strategy.split_m(step)) {
         for (int M = 0; M < strategy.divisor(step); ++M) {
             Interval newm = m.subinterval(strategy.divisor(step), M);
-            multiply(matrixA, matrixB, matrixC, newm, n, k, P, step+1, strategy, beta,
-                     comm);
+            multiply(matrixA, matrixB, matrixC, newm, n, k, P, step+1, strategy, 
+                    comm, beta);
         }
         return;
     }
@@ -179,8 +165,8 @@ void DFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     if (strategy.split_n(step)) {
         for (int N = 0; N < strategy.divisor(step); ++N) {
             Interval newn = n.subinterval(strategy.divisor(step), N);
-            multiply(matrixA, matrixB, matrixC, m, newn, k, P, step+1, strategy, beta,
-                     comm);
+            multiply(matrixA, matrixB, matrixC, m, newn, k, P, step+1, strategy, 
+                     comm, beta);
         }
         return;
     }
@@ -192,7 +178,8 @@ void DFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     if (strategy.split_k(step)) {
         for (int K = 0; K < strategy.divisor(step); ++K) {
             Interval newk = k.subinterval(strategy.divisor(step), K);
-            multiply(matrixA, matrixB, matrixC, m, n, newk, P, step+1, strategy, (K==0)&&(beta==0) ? 0 : 1, comm);
+            multiply(matrixA, matrixB, matrixC, m, n, newk, P, step+1, strategy, 
+                    comm, (K==0)&&(beta==0) ? 0 : 1);
         }
         return;
     }
@@ -248,9 +235,9 @@ T which_is_expanded(T&& A, T&& B, T&& C, const Strategy& strategy, size_t step) 
  had to own what was previously owned by P processors) here we have the opposite - P ranks
  should own what was previously owned by newP ranks - thus local matrices are shrinked.
  */
-void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
+void BFS(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
          Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
-         const Strategy& strategy, double beta, communicator& comm) {
+         const Strategy& strategy, communicator& comm, double beta) {
     int divisor = strategy.divisor(step);
     int divisor_m = strategy.divisor_m(step);
     int divisor_n = strategy.divisor_n(step);
@@ -304,7 +291,7 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
      if divn > 1 => matrix A is expanded
      if divk > 1 => matrix C is expanded
      */
-    CarmaMatrix& expanded_mat = which_is_expanded(matrixA, matrixB, matrixC, strategy, step);
+    CosmaMatrix& expanded_mat = which_is_expanded(matrixA, matrixB, matrixC, strategy, step);
     // gets the buffer sizes before and after expansion.
     // this still does not modify the buffer sizes inside layout
     // it just tells us what they would be.
@@ -327,6 +314,7 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
 
     double* original_matrix = expanded_mat.current_matrix();
     double* expanded_matrix = expanded_mat.buffer_ptr();
+    double* reshuffle_buffer = expanded_mat.reshuffle_buffer_ptr();
 
     // pack the data for the next recursive call
     expanded_mat.set_current_matrix(expanded_matrix);
@@ -338,7 +326,7 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     // exactly the same data in the expanded matrix.
     if (strategy.split_m(step) || strategy.split_n(step)) {
         // copy the matrix that wasn't divided in this step
-        comm.copy(P, original_matrix, expanded_matrix,
+        comm.copy(P, original_matrix, expanded_matrix, reshuffle_buffer,
                   size_before_expansion, total_before_expansion, new_size, step);
     }
     PL();
@@ -353,7 +341,7 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
         new_beta = 0;
     }
 
-    multiply(matrixA, matrixB, matrixC, newm, newn, newk, newP, step+1, strategy, new_beta, comm);
+    multiply(matrixA, matrixB, matrixC, newm, newn, newk, newP, step+1, strategy, comm, new_beta);
     // revert the current matrix
     expanded_mat.set_buffer_index(buffer_idx);
     expanded_mat.set_current_matrix(original_matrix);
@@ -361,8 +349,11 @@ void BFS(CarmaMatrix& matrixA, CarmaMatrix& matrixB, CarmaMatrix& matrixC,
     PE(multiply_communication_reduce);
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
-        comm.reduce(P, expanded_matrix, original_matrix, size_before_expansion, 
-                total_before_expansion, size_after_expansion, total_after_expansion, beta, step);
+        double* reduce_buffer = expanded_mat.reduce_buffer_ptr();
+        comm.reduce(P, expanded_matrix, original_matrix, 
+                reshuffle_buffer, reduce_buffer,
+                size_before_expansion, total_before_expansion, 
+                size_after_expansion, total_after_expansion, beta, step);
     }
     PL();
 

@@ -7,20 +7,84 @@ Buffer::Buffer(char label, const Strategy& strategy, int rank, Mapper* mapper, L
 }
 
 void Buffer::initialize_buffers() {
+    max_base_buffer_size_ = -1;
+    max_reduce_buffer_size_ = -1;
+    max_reshuffle_buffer_size_ = -1;
     max_send_buffer_size_ = (long long) mapper_->initial_size();
     max_recv_buffer_size_ = (long long) mapper_->initial_size();
+
     std::vector<long long> buff_sizes = compute_buffer_size();
 
-    buffers_ = std::vector<std::vector<double, mpi_allocator<double>>>(buff_sizes.size()+1, std::vector<double, mpi_allocator<double>>());
-    buffers_[0].resize(mapper_->initial_size());
-    //buffers_[0] = std::vector<double, mpi_allocator<double>>(mapper_->initial_size());
+    // buffers_ = std::vector<std::vector<double, mpi_allocator<double>>>(buff_sizes.size()+1, std::vector<double, mpi_allocator<double>>());
+    buffers_ = std::vector<std::vector<double, mpi_allocator<double>>>(buff_sizes.size(), std::vector<double, mpi_allocator<double>>());
+    //buffers_[0].resize(mapper_->initial_size());
+    // buffers_[0] = std::vector<double, mpi_allocator<double>>(mapper_->initial_size());
     // ignore the first buffer size since it's already allocated
     // in the initial buffers
     for (int i = 0; i < buff_sizes.size(); ++i) {
-        buffers_[i+1].resize(buff_sizes[i]);
+        buffers_[i].resize(buff_sizes[i]);
+        // buffers_[i].resize(buff_sizes[i]);
+    }
+
+    if (max_reshuffle_buffer_size_ > 0) {
+        reshuffle_buffer_ = std::unique_ptr<double[]>(new double[max_reshuffle_buffer_size_]);
+    }
+
+    if (max_reduce_buffer_size_ > 0) {
+        // std::cout << "BUFFER SIZE = Rank " << rank_ << " buffer size = " << max_reduce_buffer_size_ << std::endl;
+        reduce_buffer_ = std::unique_ptr<double[]>(new double[max_reduce_buffer_size_]);
     }
 
     current_buffer_ = 0;
+
+#ifdef DEBUG
+    std::cout << "Buffer sizes for matrix " << label_ << " on rank " << rank_ << std::endl;
+    std::cout << "max_reshuffle_buffer_size_ = " << max_reshuffle_buffer_size_ << std::endl;
+    std::cout << "max_reduce_buffer_size_ = " << max_reduce_buffer_size_ << std::endl;
+    std::cout << "max_send_buffer_size_ = " << max_send_buffer_size_ << std::endl;
+    std::cout << "max_recv_buffer_size_ = " << max_recv_buffer_size_ << std::endl;
+    std::cout << "max_base_buffer_size_ = " << max_base_buffer_size_ << std::endl;
+#endif
+
+#ifdef COSMA_HAVE_GPU
+    // device_buffer_ = device_vector<double>(max_base_buffer_size_);
+    int mat_dimension = 0;
+
+    if (label_ == 'A')
+        mat_dimension = TILE_SIZE_M * TILE_SIZE_K;
+    else if (label_ == 'B')
+        mat_dimension = TILE_SIZE_K * TILE_SIZE_N;
+    else
+        mat_dimension = TILE_SIZE_M * TILE_SIZE_N;
+
+    mat_dimension = std::min((long long) mat_dimension, max_base_buffer_size_);
+
+    device_buffer_ = device_vector<double>(mat_dimension * N_STREAMS);
+
+    // pin the buffer that will be used in gemm
+    int buff_index_to_pin = buff_index_before_gemm();
+    // std::cout << "Buffer index to pin  for " << label_ << " = " << buff_index_to_pin << std::endl;
+    auto& buffer_to_pin = buffers_[buff_index_to_pin];
+    auto status = cudaHostRegister(buffer_to_pin.data(),
+            buffer_to_pin.size() * sizeof(double),
+            cudaHostRegisterDefault);
+    cuda_check_status(status);
+#endif
+}
+
+Buffer::~Buffer() {
+#ifdef COSMA_HAVE_GPU
+    //std::cout << "buffers_ size = " << buffers_.size() << std::endl;
+    // unpin the buffer that will be used in gemm
+    int buff_index_to_pin = buff_index_before_gemm();
+    //std::cout << "Buffer index to unpin: " << buff_index_to_pin << std::endl;
+    if (buff_index_to_pin >= 0) {
+        auto& buffer_to_pin = buffers_[buff_index_to_pin];
+        auto status = cudaHostUnregister(buffer_to_pin.data());
+        cuda_check_status(status);
+    }
+    // std::cout << "Matrix " << label_ << ", buffers_.size() = " << buffers_.size() << ", pinned_index = " << buff_index_to_pin << std::endl;
+#endif
 }
 
 void Buffer::compute_n_buckets() {
@@ -54,6 +118,12 @@ void Buffer::compute_n_buckets() {
     }
 }
 
+int Buffer::buff_index_before_gemm() const { 
+    if (buffers_.size() == 0) return -1;
+    if (buffers_.size() == 1) return 0;
+    return strategy_->bfs_steps_before_gemm(label_) % 2 != 0 ? buffers_.size() - 1 : buffers_.size() - 2;
+}
+
 std::vector<double, mpi_allocator<double>>& Buffer::buffer() {
     return buffers_[current_buffer_];
 }
@@ -72,6 +142,14 @@ const std::vector<double, mpi_allocator<double>>& Buffer::buffer() const {
 
 double* Buffer::buffer_ptr() {
     return buffer().data();
+}
+
+double* Buffer::reshuffle_buffer_ptr() {
+    return max_reshuffle_buffer_size_ > 0 ? reshuffle_buffer_.get() : nullptr;
+}
+
+double* Buffer::reduce_buffer_ptr() {
+    return max_reduce_buffer_size_ > 0 ? reduce_buffer_.get() : nullptr;
 }
 
 std::vector<double, mpi_allocator<double>>& Buffer::initial_buffer() {
@@ -106,13 +184,14 @@ std::vector<long long> Buffer::compute_buffer_size() {
     Interval k(0, strategy_->k - 1);
     Interval P(0, strategy_->P - 1);
 
-    return compute_buffer_size(m, n, k, P, 0, rank_);
+    return compute_buffer_size(m, n, k, P, 0, rank_, strategy_->beta);
 }
 
 
 std::vector<long long> Buffer::compute_buffer_size(Interval& m, Interval& n, Interval& k, 
-    Interval& P, int step, int rank) {
+    Interval& P, int step, int rank, double beta) {
     if (strategy_->final_step(step)) return {};
+
     std::vector<long long> sizes;
     // current submatrices that are being computed
     Interval2D a_range(m, k);
@@ -140,7 +219,7 @@ std::vector<long long> Buffer::compute_buffer_size(Interval& m, Interval& n, Int
 
     // recursively invoke BFS or DFS:
     if (n_buckets_[step] == 1) {
-        compute_max_buffer_size(m, n, k, P, step, rank);
+        compute_max_buffer_size(m, n, k, P, step, rank, beta);
         if (expanded_after_[step])
             return {max_send_buffer_size_, max_recv_buffer_size_};
         else
@@ -158,9 +237,16 @@ std::vector<long long> Buffer::compute_buffer_size(Interval& m, Interval& n, Int
             Interval newn = n.subinterval(divn, divn>1 ? i : 0);
             Interval newk = k.subinterval(divk, divk>1 ? i : 0);
 
+            // update beta value
+            double new_beta = beta;
+            if (label_ == 'C' && divk > 1) {
+                new_beta = 1;
+                // new_beta = i == 0 && beta == 0 ? 0 : 1;
+            }
+
             // recursive call
             std::vector<long long> subsizes = compute_buffer_size(newm, newn, newk, P, 
-                    step+1, rank);
+                    step+1, rank, new_beta);
 
             // initialize the sizes vector in the first branch of DFS
             if (i == 0) {
@@ -194,7 +280,6 @@ std::vector<long long> Buffer::compute_buffer_size(Interval& m, Interval& n, Int
         Interval newm = m.subinterval(divm, divm>1 ? partition_idx : 0);
         Interval newn = n.subinterval(divn, divn>1 ? partition_idx : 0);
         Interval newk = k.subinterval(divk, divk>1 ? partition_idx : 0); 
-        bool expanded = false;
 
         int offset = rank - newP.first();
 
@@ -205,12 +290,11 @@ std::vector<long long> Buffer::compute_buffer_size(Interval& m, Interval& n, Int
 
         long long max_size = -1;
 
-        if ((label_ == 'A' && !strategy_->split_A(step))
-                || (label_ == 'B' && !strategy_->split_B(step))
-                || (label_ == 'C' && !strategy_->split_C(step))) {
+        bool expanded = label_ == 'A' && !strategy_->split_A(step)
+                     || label_ == 'B' && !strategy_->split_B(step)
+                     || label_ == 'C' && !strategy_->split_C(step);
 
-            expanded = true;
-
+        if (expanded) {
             /*
              * this gives us the 2D interval of the matrix that will be expanded:
                  if divm > 1 => matrix B expanded => Interval2D(k, n)
@@ -242,10 +326,35 @@ std::vector<long long> Buffer::compute_buffer_size(Interval& m, Interval& n, Int
             long long old_size = total_before_expansion[rank - P.first()];
             long long new_size = total_after_expansion[rank - newP.first()];
             max_size = std::max(old_size, new_size);
+
+            int n_blocks = size_before_expansion[rank - P.first()].size();
+
+            if (n_blocks > 1) {
+                max_reshuffle_buffer_size_ = std::max(max_reshuffle_buffer_size_, new_size);
+            }
+
+            // if C was expanded, then reduce was invoked
+            if (label_ == 'C' && beta > 0) {
+                int gp, off;
+                std::tie(gp, off) = communicator::group_and_offset(P, div, rank);
+                int target = communicator::rank_outside_ring(P, div, off, gp);
+                max_reduce_buffer_size_ = std::max(max_reduce_buffer_size_,
+                                                   (long long) total_before_expansion[target]);
+            }
+        }
+
+        // if division by k, and we are in the branch where beta > 0, then
+        // reset beta to 0, but keep in mind that on the way back from the recursion
+        // we will have to sum the result with the local data in C
+        // this is necessary since reduction happens AFTER the recursion
+        // so we cannot pass beta = 1 if the data is not present there BEFORE the recursion.
+        int new_beta = beta;
+        if (strategy_->split_k(step) && beta > 0) {
+            new_beta = 0;
         }
 
         // invoke the recursion
-        std::vector<long long> subsizes = compute_buffer_size(newm, newn, newk, newP, step+1, rank);
+        std::vector<long long> subsizes = compute_buffer_size(newm, newn, newk, newP, step+1, rank, new_beta);
 
         if (expanded) {
             sizes = std::vector<long long>(subsizes.size() + 1);
@@ -265,7 +374,7 @@ std::vector<long long> Buffer::compute_buffer_size(Interval& m, Interval& n, Int
 }
 
 void Buffer::compute_max_buffer_size(Interval& m, Interval& n, Interval& k, Interval& P, 
-    int step, int rank) {
+    int step, int rank, double beta) {
     // current submatrices that are being computed
     Interval2D a_range(m, k);
     Interval2D b_range(k, n);
@@ -305,6 +414,8 @@ void Buffer::compute_max_buffer_size(Interval& m, Interval& n, Interval& k, Inte
             max_size = 1LL * m.length() * n.length();
         }
 
+        max_base_buffer_size_ = std::max(max_base_buffer_size_, max_size);
+
         if (max_size > max_recv_buffer_size_) {
             max_send_buffer_size_ = max_recv_buffer_size_;
             max_recv_buffer_size_ = max_size;
@@ -321,7 +432,14 @@ void Buffer::compute_max_buffer_size(Interval& m, Interval& n, Interval& k, Inte
             Interval newm = m.subinterval(divm, divm>1 ? i : 0);
             Interval newn = n.subinterval(divn, divn>1 ? i : 0);
             Interval newk = k.subinterval(divk, divk>1 ? i : 0);
-            compute_max_buffer_size(newm, newn, newk, P, step+1, rank);
+
+            // update beta value
+            double new_beta = beta;
+            if (label_ == 'C' && divk > 1) {
+                new_beta = i == 0 && beta == 0 ? 0 : 1;
+            }
+
+            compute_max_buffer_size(newm, newn, newk, P, step+1, rank, new_beta);
 
             // if dividing over absent dimension, then all the branches are the same
             // so skip the rest
@@ -344,8 +462,7 @@ void Buffer::compute_max_buffer_size(Interval& m, Interval& n, Interval& k, Inte
         // (see the definition of group and offset below)
         Interval newm = m.subinterval(divm, divm>1 ? partition_idx : 0);
         Interval newn = n.subinterval(divn, divn>1 ? partition_idx : 0);
-        Interval newk = k.subinterval(divk, divk>1 ? partition_idx : 0); 
-        bool expanded = false;
+        Interval newk = k.subinterval(divk, divk>1 ? partition_idx : 0);
 
         int offset = rank - newP.first();
 
@@ -354,12 +471,11 @@ void Buffer::compute_max_buffer_size(Interval& m, Interval& n, Interval& k, Inte
         std::vector<std::vector<int>> size_after_expansion(newP.length());
         std::vector<int> total_after_expansion(newP.length());
 
-        if ((label_ == 'A' && !strategy_->split_A(step))
-                || (label_ == 'B' && !strategy_->split_B(step))
-                || (label_ == 'C' && !strategy_->split_C(step))) {
+        bool expanded = (label_ == 'A' && !strategy_->split_A(step))
+                     || (label_ == 'B' && !strategy_->split_B(step))
+                     || (label_ == 'C' && !strategy_->split_C(step));
 
-            expanded = true;
-
+        if (expanded) {
             /*
              * this gives us the 2D interval of the matrix that will be expanded:
                  if divm > 1 => matrix B expanded => Interval2D(k, n)
@@ -397,10 +513,36 @@ void Buffer::compute_max_buffer_size(Interval& m, Interval& n, Interval& k, Inte
             } else if (max_size > max_send_buffer_size_) {
                 max_send_buffer_size_ = max_size;
             }
+
+            int n_blocks = size_before_expansion[rank - P.first()].size();
+
+            if (n_blocks > 1) {
+                max_reshuffle_buffer_size_ = std::max(max_reshuffle_buffer_size_, new_size);
+            }
+
+            // if C was expanded, then reduce was invoked
+            if (label_ == 'C' && beta > 0) {
+                int gp, off;
+                std::tie(gp, off) = communicator::group_and_offset(P, div, rank);
+                int target = communicator::rank_outside_ring(P, div, off, gp);
+                max_reduce_buffer_size_ = std::max(max_reduce_buffer_size_,
+                                                   (long long) total_before_expansion[target]);
+                // std::cout << "max_reduce_buffer_size = " << max_reduce_buffer_size_ << std::endl;
+            }
+        }
+
+        // if division by k, and we are in the branch where beta > 0, then
+        // reset beta to 0, but keep in mind that on the way back from the recursion
+        // we will have to sum the result with the local data in C
+        // this is necessary since reduction happens AFTER the recursion
+        // so we cannot pass beta = 1 if the data is not present there BEFORE the recursion.
+        int new_beta = beta;
+        if (strategy_->split_k(step) && beta > 0) {
+            new_beta = 0;
         }
 
         // invoke the recursion
-        compute_max_buffer_size(newm, newn, newk, newP, step+1, rank);
+        compute_max_buffer_size(newm, newn, newk, newP, step+1, rank, new_beta);
 
         if (expanded) {
             // the buffer sizes are back to the previous values
@@ -427,3 +569,9 @@ const long long Buffer::max_send_buffer_size() const {
 const long long Buffer::max_recv_buffer_size() const {
     return max_recv_buffer_size_;
 }
+
+#ifdef COSMA_HAVE_GPU
+double* Buffer::device_buffer_ptr() {
+    return device_buffer_.data();
+}
+#endif

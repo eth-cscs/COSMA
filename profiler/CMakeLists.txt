@@ -5,7 +5,7 @@ project(semiprof)
 enable_language(CXX)
 
 # set path for headers
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # create the semiprof library
-add_library(semiprof src/profiler.cpp)
+add_library(semiprof profiler.cpp)

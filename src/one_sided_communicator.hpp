@@ -1,3 +1,4 @@
+#pragma once
 #include "communicator.hpp"
 
 class one_sided_communicator: public communicator {
@@ -23,6 +24,7 @@ public:
     }
 
     void copy(Interval& P, double* in, double* out,
+            double* reshuffle_buffer,
             std::vector<std::vector<int>>& size_before,
             std::vector<int>& total_before,
             int total_after, int step) override {
@@ -65,6 +67,7 @@ public:
     }
 
     void reduce(Interval& P, double* in, double* out,
+            double* reshuffle_buffer, double* reduce_buffer,
             std::vector<std::vector<int>>& c_current,
             std::vector<int>& c_total_current,
             std::vector<std::vector<int>>& c_expanded,

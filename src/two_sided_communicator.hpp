@@ -1,3 +1,4 @@
+#pragma once
 #include "communicator.hpp"
 
 class two_sided_communicator: public communicator {
@@ -18,7 +19,7 @@ public:
      *        reshuffle the local data by putting first blocks from each rank first,
      *        then all second blocks from each rank and so on.
      */ 
-    void copy(Interval& P, double* in, double* out,
+    void copy(Interval& P, double* in, double* out, double* reshuffle_buffer,
             std::vector<std::vector<int>>& size_before,
             std::vector<int>& total_before,
             int total_after, int step) {
@@ -45,15 +46,7 @@ public:
         }
 
         int n_blocks = size_before[relative_rank(P)].size();
-        double* receive_pointer;
-        std::unique_ptr<double[]> receiving_buffer;
-
-        if (n_blocks > 1) {
-            receiving_buffer = std::unique_ptr<double[]>(new double[total_after]);
-            receive_pointer = receiving_buffer.get();
-        } else {
-            receive_pointer = out;
-        }
+        double* receive_pointer = n_blocks > 1 ? reshuffle_buffer : out;
 
         if (same_size) {
             MPI_Allgather(in, local_size, MPI_DOUBLE, receive_pointer, local_size,
@@ -72,7 +65,7 @@ public:
                     int target = rank_outside_ring(P, div, off, rank);
                     int dsp = dspls[rank] + block_offset[rank];
                     int b_size = size_before[target][block];
-                    std::copy(receiving_buffer.get() + dsp, receiving_buffer.get() + dsp + b_size, out + index);
+                    std::copy(reshuffle_buffer + dsp, reshuffle_buffer + dsp + b_size, out + index);
                     index += b_size;
                     block_offset[rank] += b_size;
                 }
@@ -90,6 +83,7 @@ public:
     }
 
     void reduce(Interval& P, double* LC, double* C,
+            double* reshuffle_buffer, double* reduce_buffer,
             std::vector<std::vector<int>>& c_current,
             std::vector<int>& c_total_current,
             std::vector<std::vector<int>>& c_expanded,
@@ -107,8 +101,7 @@ public:
         // first all blocks that should be sent to rank 0 then all blocks for rank 1 and so on...
         int n_blocks = c_expanded[off].size();
         std::vector<int> block_offset(n_blocks);
-        std::unique_ptr<double[]> send_buffer;
-        double* send_pointer;
+        double* send_pointer = n_blocks > 1 ? reshuffle_buffer : LC;
 
         int sum = 0;
         for (int i = 0; i < n_blocks; ++i) {
@@ -117,13 +110,6 @@ public:
         }
 
         std::vector<int> recvcnts(div);
-
-        if (n_blocks > 1) {
-            send_buffer = std::unique_ptr<double[]>(new double[c_total_expanded[off]]);
-            send_pointer = send_buffer.get();
-        } else {
-            send_pointer = LC;
-        }
 
         int index = 0;
         // go through the communication ring
@@ -135,28 +121,20 @@ public:
                 for (int block = 0; block < n_blocks; ++block) {
                     int b_offset = block_offset[block];
                     int b_size = c_current[target][block];
-                    std::copy(LC + b_offset, LC + b_offset + b_size, send_buffer.get() + index);
+                    std::copy(LC + b_offset, LC + b_offset + b_size, reshuffle_buffer + index);
                     index += b_size;
                     block_offset[block] += b_size;
                 }
             }
         }
 
-        std::unique_ptr<double[]> receiving_buffer;
-        double* receive_pointer;
-
-        if (beta == 0) {
-            receive_pointer = C;
-        } else {
-            receiving_buffer = std::unique_ptr<double[]>(new double[recvcnts[gp]]);
-            receive_pointer = receiving_buffer.get();
-        }
+        double* receive_pointer = beta > 0 ? reduce_buffer : C;
 
         MPI_Reduce_scatter(send_pointer, receive_pointer, recvcnts.data(), MPI_DOUBLE, MPI_SUM, subcomm);
 
         if (beta > 0) {
             // sum up receiving_buffer with C
-            add(C, receive_pointer, recvcnts[gp]);
+            add(C, reduce_buffer, recvcnts[gp]);
         }
     }
 };
