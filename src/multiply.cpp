@@ -21,6 +21,8 @@ void multiply(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
     Interval ki = Interval(0, strategy.k-1);
     Interval Pi = Interval(0, strategy.P-1);
 
+    omp_set_nested(1);
+
     PE(preprocessing_communicators);
     std::unique_ptr<communicator> cosma_comm;
     if (one_sided_communication) {
@@ -328,6 +330,186 @@ void BFS(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
         // copy the matrix that wasn't divided in this step
         comm.copy(P, original_matrix, expanded_matrix, reshuffle_buffer,
                   size_before_expansion, total_before_expansion, new_size, step);
+    }
+    PL();
+
+    // if division by k, and we are in the branch where beta > 0, then
+    // reset beta to 0, but keep in mind that on the way back from the recursion
+    // we will have to sum the result with the local data in C
+    // this is necessary since reduction happens AFTER the recursion
+    // so we cannot pass beta = 1 if the data is not present there BEFORE the recursion.
+    int new_beta = beta;
+    if (strategy.split_k(step) && beta > 0) {
+        new_beta = 0;
+    }
+
+    multiply(matrixA, matrixB, matrixC, newm, newn, newk, newP, step+1, strategy, comm, new_beta);
+    // revert the current matrix
+    expanded_mat.set_buffer_index(buffer_idx);
+    expanded_mat.set_current_matrix(original_matrix);
+
+    PE(multiply_communication_reduce);
+    // if division by k do additional reduction of C
+    if (strategy.split_k(step)) {
+        double* reduce_buffer = expanded_mat.reduce_buffer_ptr();
+        comm.reduce(P, expanded_matrix, original_matrix, 
+                reshuffle_buffer, reduce_buffer,
+                size_before_expansion, total_before_expansion, 
+                size_after_expansion, total_after_expansion, beta, step);
+    }
+    PL();
+
+    PE(multiply_layout);
+    // after the memory is freed, the buffer sizes are back to the previous values
+    // (the values at the beginning of this BFS step)
+    expanded_mat.set_sizes(newP, size_before_expansion, newP.first() - P.first());
+    PL();
+}
+
+int int_div_up(int numerator, int denominator) {
+    return numerator / denominator +
+        (((numerator < 0) ^ (denominator > 0)) && (numerator%denominator));
+}
+
+void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
+         Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
+         const Strategy& strategy, communicator& comm, double beta) {
+    int divisor = strategy.divisor(step);
+    int divisor_m = strategy.divisor_m(step);
+    int divisor_n = strategy.divisor_n(step);
+    int divisor_k = strategy.divisor_k(step);
+    // processor subinterval which the current rank belongs to
+    int partition_idx = P.partition_index(divisor, comm.rank());
+    Interval newP = P.subinterval(divisor, partition_idx);
+    // intervals of M, N and K that the current rank is in charge of,
+    // together with other ranks from its group.
+    // (see the definition of group and offset below)
+    Interval newm = m.subinterval(divisor_m, divisor_m>1 ? partition_idx : 0);
+    Interval newn = n.subinterval(divisor_n, divisor_n>1 ? partition_idx : 0);
+    Interval newk = k.subinterval(divisor_k, divisor_k>1 ? partition_idx : 0);
+
+    PE(multiply_layout);
+    /*
+     * size_before_expansion:
+     maps rank i from interval P to the vector [bucket1.size(), bucket2.size()...]
+     containing buckets which are inside "range" that rank i owns
+
+     * total_before_expansion:
+     maps rank i from interval P to the sum of all buckets inside size_before_expansion[i]
+
+     * size_after_expansion:
+     maps rank i from interval newP to the vector of [bucket1.size(), bucket2.size()...]
+     but each bucket here is expanded, i.e. each bucket size in this vector
+     is actually the sum of the sizes of this bucket in all the ranks
+     from the communication ring of the current rank.
+
+     * total_after_expansion:
+     maps rank i from interval P to the sum of all buckets inside size_after_expansion[i]
+     */
+    std::vector<std::vector<int>> size_before_expansion(P.length());
+    std::vector<int> total_before_expansion(P.length());
+    std::vector<std::vector<int>> size_after_expansion(newP.length());
+    std::vector<int> total_after_expansion(newP.length());
+
+    /*
+     * this gives us the 2D interval of the matrix that will be expanded:
+     if divm > 1 => matrix B expanded => Interval2D(k, n)
+     if divn > 1 => matrix A expanded => Interval2D(m, k)
+     if divk > 1 => matrix C expanded => Interval2D(m, n)
+     */
+    Interval row_copy = which_is_expanded(m, k, m, strategy, step);
+    Interval col_copy = which_is_expanded(k, n, n, strategy, step);
+    Interval2D range(row_copy, col_copy);
+
+    /*
+     * this gives us a matrix that is expanded:
+     if divm > 1 => matrix B is expanded
+     if divn > 1 => matrix A is expanded
+     if divk > 1 => matrix C is expanded
+     */
+    CosmaMatrix& expanded_mat = which_is_expanded(matrixA, matrixB, matrixC, strategy, step);
+    // gets the buffer sizes before and after expansion.
+    // this still does not modify the buffer sizes inside layout
+    // it just tells us what they would be.
+    expanded_mat.buffers_before_expansion(P, range,
+        size_before_expansion, total_before_expansion);
+
+    expanded_mat.buffers_after_expansion(P, newP,
+        size_before_expansion, total_before_expansion,
+        size_after_expansion, total_after_expansion);
+
+    // increase the buffer sizes before the recursive call
+    expanded_mat.set_sizes(newP, size_after_expansion);
+    // this is the sum of sizes of all the buckets after expansion
+    // that the current rank will own.
+    // which is also the size of the matrix after expansion
+    int new_size = total_after_expansion[comm.relative_rank(newP)];
+
+    int buffer_idx = expanded_mat.buffer_index();
+    expanded_mat.advance_buffer();
+
+    double* original_matrix = expanded_mat.current_matrix();
+    double* expanded_matrix = expanded_mat.buffer_ptr();
+    double* reshuffle_buffer = expanded_mat.reshuffle_buffer_ptr();
+
+    // pack the data for the next recursive call
+    expanded_mat.set_current_matrix(expanded_matrix);
+    PL();
+
+    PE(multiply_communication_copy);
+    // if divided along m or n then copy original matrix inside communication ring
+    // to get the expanded matrix (all ranks inside communication ring should own
+    // exactly the same data in the expanded matrix.
+    if (strategy.split_m(step)) {
+        // copy the matrix that wasn't divided in this step
+        double* out = expanded_matrix;
+        int gp, off;
+        std::tie(gp, off) = comm.group_and_offset(P, divisor);
+        int local_size = total_before_expansion[comm.relative_rank(P)];
+
+        int n_blocks = size_before_expansion[comm.relative_rank(P)].size();
+        std::vector<int> rank_offset(divisor);
+
+        int displacement = 0;
+        // if last BFS step, then there is only 1 block
+        // (since no DFS steps are following)
+        int block = 0;
+
+        // // create MPI type for copying 2D sub-block
+        // // from column-major matrix
+        // MPI_Datatype submatrix;
+        // // block length corresponds to #rows of a block
+        // int blklen = k;
+        // // count corresponds to #columns of a block
+        // int count = n.subinterval(divisor, partition_idx);
+        // // stride corresponds to #rows of a whole matrix
+        // int stride = k;
+        // int err = MPI_Type_vector(count, blklen, stride,
+        //         MPI_DOUBLE, &submatrix);
+        // MPI_Type_commit(&submatrix);
+
+        // memory enough for the largest block
+        // used to overlap communication and computation
+        std::vector<double> buffer_for_block(k * int_div_up(n.length(), divisor));
+
+        // use MPI_Recv_init inside the for loop with MPI_Startall
+        // instead of using MPI_Irecv
+        for (int rank = 0, int reqi = 0; rank < divisor; ++rank) {
+            int target = comm.rank_outside_ring(P, divisor, off, rank);
+            int b_size = size_before_expansion[target][block];
+
+            // skip the current rank
+            if (rank != gp) {
+                MPI_Recv_init(out + displacement, b_size, MPI_DOUBLE, target,
+                        MPI_ANY_TAG, comm, &req[reqi++]);
+            }
+
+            rank_offset[rank] += b_size;
+            displacement += b_size;
+        }
+
+        // clean up the type
+        // MPI_Type_free(&submatrix);
     }
     PL();
 

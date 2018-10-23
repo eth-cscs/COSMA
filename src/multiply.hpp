@@ -35,3 +35,7 @@ void DFS(CosmaMatrix& A, CosmaMatrix& B, CosmaMatrix& C,
 void BFS(CosmaMatrix& A, CosmaMatrix& B, CosmaMatrix& C,
          Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
          const Strategy& strategy, communicator& comm, double beta);
+
+void BFS_overlapped(CosmaMatrix& A, CosmaMatrix& B, CosmaMatrix& C,
+         Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
+         const Strategy& strategy, communicator& comm, double beta);
