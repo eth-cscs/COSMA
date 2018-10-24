@@ -110,8 +110,8 @@ void printMat(int m, int n, double*A, char label) {
     }
     std::cout << std::endl;
 }
-
-void local_multiply(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC, int m, int n, int k, double beta) {
+void local_multiply(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC, 
+        int m, int n, int k, double beta) {
     char N = 'N';
     double one = 1.;
 #ifdef DEBUG
@@ -470,7 +470,6 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
         int n_blocks = size_before_expansion[comm.relative_rank(P)].size();
         std::vector<int> rank_offset(divisor);
 
-        int displacement = 0;
         // if last BFS step, then there is only 1 block
         // (since no DFS steps are following)
         int block = 0;
@@ -491,6 +490,11 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
         // memory enough for the largest block
         // used to overlap communication and computation
         std::vector<double> buffer_for_block(k * int_div_up(n.length(), divisor));
+        // offsets in the expanded matrix for each rank
+        std::vector<int> displacements_b(divisor);
+        std::vector<int> displacements_c(divisor);
+        int disp_b = 0;
+        int disp_c = 0;
 
         // use MPI_Recv_init inside the for loop with MPI_Startall
         // instead of using MPI_Irecv
@@ -500,16 +504,50 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
 
             // skip the current rank
             if (rank != gp) {
-                MPI_Recv_init(out + displacement, b_size, MPI_DOUBLE, target,
+                MPI_Recv_init(expanded_matrix + disp_b, b_size, MPI_DOUBLE, target,
                         MPI_ANY_TAG, comm, &req[reqi++]);
+                MPI_Send_init(original_matrix, local_size, MPI_DOUBLE, rank, MPI_ANY_TAG, comm);
             }
 
+            displacements_b[rank] = disp_b;
+            displacements_c[rank] = disp_c;
+
             rank_offset[rank] += b_size;
-            displacement += b_size;
+            disp_b += b_size;
+            disp_c += newm.length() * n.subinterval(divisor, rank).length();
         }
+
+        double* prev_a = matrixA.current_matrix();
+        double* prev_b = matrixB.current_matrix();
+        double* prev_c = matrixC.current_matrix();
+
+        MPI_Startall(divisor-1, req.data());
+#pragma omp parallel sections
+{
+#pragma omp section
+    {
+        // Compute the piece that you already own
+        matrixB.set_current_matrix(original_matrix);
+        matrixC.set_current_matrix(prev_c + displacements_c[gp]);
+        local_multiply(matrixA, matrixB, matrixC, newm.length(), 
+                n.subinterval(divisor, partition_idx).length(), k.length(), beta);
+    }
+#pragma omp section
+    {
+        for (int i = 0; i < divisor - 1; ++i) {
+            MPI_Waitany(divisor - 1, req, &index, MPI_STATUS_IGNORE);
+        }
+
+    }
+}
+        // Overlap waiting any and computing the previous one
+
+        // MPI_Waitall(divisor-1, req.data(), MPI_STATUSES_IGNORE);
 
         // clean up the type
         // MPI_Type_free(&submatrix);
+    } else if (strategy.split_n(step)) {
+        // TODO
     }
     PL();
 
