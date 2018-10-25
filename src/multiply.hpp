@@ -11,6 +11,7 @@
 #include <semiprof.hpp>
 #include "strategy.hpp"
 #include "timer.hpp"
+#include <omp.h>
 #ifdef COSMA_HAVE_GPU
 #include "gpu/gemm.hpp"
 #include "gpu/tile_description.hpp"

@@ -1,3 +1,4 @@
+#ifdef COSMA_HAVE_GPU
 #include "gemm.hpp"
 
 int actual_size(int n_tiles, int tile_id, int tile_length, int tile_remainder) {
@@ -284,3 +285,4 @@ void gpu_dgemm_(double* a, double* b, double* c,
     }
 #endif
 }
+#endif

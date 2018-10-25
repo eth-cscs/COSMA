@@ -64,7 +64,7 @@ if (CMAKE_COMPILER_IS_GNUCXX)
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         set(CXX_FLAGS ${CXX_FLAGS} -Wall -O0 -DDEBUG)
         # add address sanitizer for debugging purposes
-        #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
     else ()
         set(CXX_FLAGS ${CXX_FLAGS} -O3)
     endif ()
