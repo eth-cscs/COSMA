@@ -539,11 +539,9 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
 
         int idx = -1;
 
-        /*
 #pragma omp parallel
         {
-#pragma omp single
-            {
+#pragma omp single nowait
 #pragma omp critical
             {
             // Compute the piece that we already own
@@ -555,10 +553,8 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
             local_multiply(matrixA, matrixB, matrixC, newm.length(), 
                     n.subinterval(divisor, gp).length(), k.length(), beta);
             }
-#pragma omp nowait
-            }
 
-#pragma omp single
+#pragma omp single nowait
             for (int i = 0; i < divisor - 1; ++i) {
                 MPI_Waitany(divisor - 1, recv_req.data(), &idx, MPI_STATUS_IGNORE);
 #pragma omp task
@@ -574,10 +570,9 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
                             n.subinterval(divisor, idx).length(), k.length(), beta);
                 }
             }
-#pragma omp nowait
 #pragma omp taskwait
         }
-        */
+        /*
 #pragma omp parallel num_threads(2)
         {
             int tid = omp_get_thread_num();
@@ -612,6 +607,7 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
             }
 #pragma omp taskwait
         }
+        */
 
         MPI_Waitall(divisor - 1, send_req.data(), MPI_STATUSES_IGNORE);
 
