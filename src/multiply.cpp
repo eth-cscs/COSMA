@@ -522,24 +522,41 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
         double* prev_c = matrixC.current_matrix();
 
         MPI_Startall(divisor-1, req.data());
+
 #pragma omp parallel sections
-{
-#pragma omp section
-    {
-        // Compute the piece that you already own
-        matrixB.set_current_matrix(original_matrix);
-        matrixC.set_current_matrix(prev_c + displacements_c[gp]);
-        local_multiply(matrixA, matrixB, matrixC, newm.length(), 
-                n.subinterval(divisor, partition_idx).length(), k.length(), beta);
-    }
-#pragma omp section
-    {
-        for (int i = 0; i < divisor - 1; ++i) {
-            MPI_Waitany(divisor - 1, req, &index, MPI_STATUS_IGNORE);
+        {
+#pragma omp section single
+            {
+                // Compute the piece that we already own
+                double* pointer_b = original_matrix;
+                double* pointer_c = prev_c + displacements_c[gp];
+
+                matrixB.set_current_matrix(pointer_b);
+                matrixC.set_current_matrix(pointer_c);
+                local_multiply(matrixA, matrixB, matrixC, newm.length(), 
+                        n.subinterval(divisor, gp).length(), k.length(), beta);
+            }
+#pragma omp section single
+            for (int i = 0; i < divisor - 1; ++i) {
+                MPI_Waitany(divisor - 1, req, &index, MPI_STATUS_IGNORE);
+#pragma omp task
+                {
+                    // Compute the piece that has arrived
+                    double* pointer_b = prev_b + displacements_b[index];
+                    double* pointer_c = prev_c + displacements_c[index];
+
+                    matrixB.set_current_matrix(pointer_b);
+                    matrixC.set_current_matrix(pointer_c);
+                    local_multiply(matrixA, matrixB, matrixC, newm.length(), 
+                            n.subinterval(divisor, index).length(), k.length(), beta);
+                }
+            }
+
         }
 
-    }
-}
+        matrixA.set_current_matrix(prev_a);
+        matrixB.set_current_matrix(prev_b);
+        matrixC.set_current_matrix(prev_c);
         // Overlap waiting any and computing the previous one
 
         // MPI_Waitall(divisor-1, req.data(), MPI_STATUSES_IGNORE);
