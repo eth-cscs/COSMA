@@ -504,8 +504,8 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
         int disp_b = 0;
         int disp_c = 0;
 
-        std::vector<MPI_Request> send_req(divisor - 1);
-        std::vector<MPI_Request> recv_req(divisor - 1);
+        std::vector<MPI_Request> send_req(divisor - 1, MPI_REQUEST_NULL);
+        std::vector<MPI_Request> recv_req(divisor - 1, MPI_REQUEST_NULL);
 
         // use MPI_Recv_init inside the for loop with MPI_Startall
         // instead of using MPI_Irecv
@@ -519,7 +519,7 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
             if (rank != gp) {
                 MPI_Recv_init(expanded_matrix + disp_b, b_size, MPI_DOUBLE, target,
                         0, mpi_comm, &recv_req[recv_reqi++]);
-                MPI_Send_init(original_matrix, local_size, MPI_DOUBLE, rank, 0, mpi_comm, &send_req[send_reqi++]);
+                MPI_Send_init(original_matrix, local_size, MPI_DOUBLE, target, 0, mpi_comm, &send_req[send_reqi++]);
             }
 
             displacements_b[rank] = disp_b;
@@ -530,8 +530,9 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
             disp_c += newm.length() * n.subinterval(divisor, rank).length();
         }
 
+        expanded_mat.set_buffer_index(buffer_idx);
         double* prev_a = matrixA.current_matrix();
-        double* prev_b = matrixB.current_matrix();
+        double* prev_b = expanded_matrix;
         double* prev_c = matrixC.current_matrix();
 
         MPI_Startall(divisor-1, recv_req.data());
@@ -560,6 +561,7 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
 #pragma omp task
 #pragma omp critical
                 {
+                    if (idx >= gp) idx++;
                     // Compute the piece that has arrived
                     double* pointer_b = expanded_matrix + displacements_b[idx];
                     double* pointer_c = prev_c + displacements_c[idx];
@@ -611,9 +613,9 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
 
         MPI_Waitall(divisor - 1, send_req.data(), MPI_STATUSES_IGNORE);
 
-        matrixA.set_current_matrix(prev_a);
-        matrixB.set_current_matrix(prev_b);
-        matrixC.set_current_matrix(prev_c);
+        // matrixA.set_current_matrix(prev_a);
+        // matrixB.set_current_matrix(original_matrix);
+        // matrixC.set_current_matrix(prev_c);
         // Overlap waiting any and computing the previous one
 
         // MPI_Waitall(divisor-1, req.data(), MPI_STATUSES_IGNORE);
