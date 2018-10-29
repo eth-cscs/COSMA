@@ -304,11 +304,11 @@ void BFS(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
     // this still does not modify the buffer sizes inside layout
     // it just tells us what they would be.
     expanded_mat.buffers_before_expansion(P, range,
-                                          size_before_expansion, total_before_expansion);
+              size_before_expansion, total_before_expansion);
 
     expanded_mat.buffers_after_expansion(P, newP,
-                                         size_before_expansion, total_before_expansion,
-                                         size_after_expansion, total_after_expansion);
+             size_before_expansion, total_before_expansion,
+             size_after_expansion, total_after_expansion);
 
     // increase the buffer sizes before the recursive call
     expanded_mat.set_sizes(newP, size_after_expansion);
@@ -469,6 +469,9 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
     // to get the expanded matrix (all ranks inside communication ring should own
     // exactly the same data in the expanded matrix.
     if (strategy.split_m(step)) {
+        // ***********************************
+        //           DIVISION BY M
+        // ***********************************
         // copy the matrix that wasn't divided in this step
         double* out = expanded_matrix;
         int gp, off;
@@ -476,7 +479,6 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
         int local_size = total_before_expansion[comm.relative_rank(P)];
 
         int n_blocks = size_before_expansion[comm.relative_rank(P)].size();
-        std::vector<int> rank_offset(divisor);
 
         // if last BFS step, then there is only 1 block
         // (since no DFS steps are following)
@@ -519,13 +521,13 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
             if (rank != gp) {
                 MPI_Recv_init(expanded_matrix + disp_b, b_size, MPI_DOUBLE, target,
                         0, mpi_comm, &recv_req[recv_reqi++]);
-                MPI_Send_init(original_matrix, local_size, MPI_DOUBLE, target, 0, mpi_comm, &send_req[send_reqi++]);
+                MPI_Send_init(original_matrix, local_size, MPI_DOUBLE, target, 
+                        0, mpi_comm, &send_req[send_reqi++]);
             }
 
             displacements_b[rank] = disp_b;
             displacements_c[rank] = disp_c;
 
-            rank_offset[rank] += b_size;
             disp_b += b_size;
             disp_c += newm.length() * n.subinterval(divisor, rank).length();
         }
@@ -574,42 +576,6 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
             }
 #pragma omp taskwait
         }
-        /*
-#pragma omp parallel num_threads(2)
-        {
-            int tid = omp_get_thread_num();
-
-            if (tid == 1) {
-                // Compute the piece that we already own
-                double* pointer_b = original_matrix;
-                double* pointer_c = prev_c + displacements_c[gp];
-
-                matrixB.set_current_matrix(pointer_b);
-                matrixC.set_current_matrix(pointer_c);
-                local_multiply(matrixA, matrixB, matrixC, newm.length(), 
-                        n.subinterval(divisor, gp).length(), k.length(), beta);
-            }
-
-            if (tid == 0) {
-                for (int i = 0; i < divisor - 1; ++i) {
-                    MPI_Waitany(divisor - 1, recv_req.data(), &idx, MPI_STATUS_IGNORE);
-#pragma omp task
-#pragma omp critical
-                    {
-                        // Compute the piece that has arrived
-                        double* pointer_b = expanded_matrix + displacements_b[idx];
-                        double* pointer_c = prev_c + displacements_c[idx];
-
-                        matrixB.set_current_matrix(pointer_b);
-                        matrixC.set_current_matrix(pointer_c);
-                        local_multiply(matrixA, matrixB, matrixC, newm.length(), 
-                                n.subinterval(divisor, idx).length(), k.length(), beta);
-                    }
-                }
-            }
-#pragma omp taskwait
-        }
-        */
 
         MPI_Waitall(divisor - 1, send_req.data(), MPI_STATUSES_IGNORE);
 
@@ -623,7 +589,153 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
         // clean up the type
         // MPI_Type_free(&submatrix);
     } else if (strategy.split_n(step)) {
-        // TODO
+        // ***********************************
+        //           DIVISION BY N
+        // ***********************************
+        // copy the matrix that wasn't divided in this step
+        double* out = expanded_matrix;
+        int gp, off;
+        std::tie(gp, off) = comm.group_and_offset(P, divisor);
+        int local_size = total_before_expansion[comm.relative_rank(P)];
+
+        int n_blocks = size_before_expansion[comm.relative_rank(P)].size();
+
+        // if last BFS step, then there is only 1 block
+        // (since no DFS steps are following)
+        int block = 0;
+
+        // // create MPI type for copying 2D sub-block
+        // // from column-major matrix
+        // MPI_Datatype submatrix;
+        // // block length corresponds to #rows of a block
+        // int blklen = k;
+        // // count corresponds to #columns of a block
+        // int count = n.subinterval(divisor, partition_idx);
+        // // stride corresponds to #rows of a whole matrix
+        // int stride = k;
+        // int err = MPI_Type_vector(count, blklen, stride,
+        //         MPI_DOUBLE, &submatrix);
+        // MPI_Type_commit(&submatrix);
+
+        // memory enough for the largest block
+        // used to overlap communication and computation
+        std::vector<double> block_buffer(newn.length() * int_div_up(k.length(), divisor));
+        // offsets in the expanded matrix for each rank
+        std::vector<int> displacements_a(divisor);
+        std::vector<int> displacements_k(divisor);
+        std::vector<int> displacements_c(divisor);
+        int disp_a = 0;
+        int disp_c = 0;
+        int disp_k = 0;
+
+        std::vector<MPI_Request> send_req(divisor - 1, MPI_REQUEST_NULL);
+        std::vector<MPI_Request> recv_req(divisor - 1, MPI_REQUEST_NULL);
+
+        // use MPI_Recv_init inside the for loop with MPI_Startall
+        // instead of using MPI_Irecv
+        int send_reqi = 0;
+        int recv_reqi = 0;
+        for (int rank = 0; rank < divisor; ++rank) {
+            int target = comm.rank_outside_ring(P, divisor, off, rank);
+            int b_size = size_before_expansion[target][block];
+
+            // skip the current rank
+            if (rank != gp) {
+                MPI_Recv_init(expanded_matrix + disp_a, b_size, MPI_DOUBLE, target,
+                        0, mpi_comm, &recv_req[recv_reqi++]);
+                MPI_Send_init(original_matrix, local_size, MPI_DOUBLE, target,
+                        0, mpi_comm, &send_req[send_reqi++]);
+            }
+
+            displacements_a[rank] = disp_a;
+            displacements_k[rank] = disp_k;
+            displacements_c[rank] = disp_c;
+            disp_a += b_size;
+            disp_c += m.length() * n.subinterval(divisor, rank).length();
+            disp_k += k.subinterval(divisor, rank).length();
+        }
+
+        expanded_mat.set_buffer_index(buffer_idx);
+        double* prev_a = expanded_matrix;
+        double* prev_b = matrixB.current_matrix();
+        double* prev_c = matrixC.current_matrix();
+
+        MPI_Startall(divisor-1, recv_req.data());
+        MPI_Startall(divisor-1, send_req.data());
+
+        int idx = -1;
+
+        bool first_slice = true;
+
+#pragma omp parallel
+        {
+#pragma omp single nowait
+#pragma omp critical
+            {
+            // Compute the piece that we already own
+            double* pointer_a = original_matrix;
+            double* pointer_b = block_buffer.data(); 
+            double* pointer_c = prev_c + displacements_c[gp];
+
+            for (int col = 0; col < newn.length(); ++col) {
+                int column_size = k.subinterval(divisor, gp).length();
+                int start = displacements_k[gp] + k.length() * col;
+                std::memcpy(pointer_b + col * column_size,
+                        prev_b + start, column_size * sizeof(double));
+            }
+
+            matrixA.set_current_matrix(pointer_a);
+            matrixB.set_current_matrix(pointer_b);
+            matrixC.set_current_matrix(pointer_c);
+
+            int new_beta = first_slice ? beta : 1;
+
+            local_multiply(matrixA, matrixB, matrixC, m.length(),
+                    newn.length(),
+                    k.subinterval(divisor, gp).length(), new_beta);
+
+            first_slice = false;
+            }
+
+#pragma omp single nowait
+            for (int i = 0; i < divisor - 1; ++i) {
+                MPI_Waitany(divisor - 1, recv_req.data(), &idx, MPI_STATUS_IGNORE);
+#pragma omp task
+#pragma omp critical
+                {
+                    if (idx >= gp) idx++;
+                    // Compute the piece that has arrived
+                    double* pointer_a = expanded_matrix + displacements_a[idx];
+                    double* pointer_b = block_buffer.data(); 
+                    double* pointer_c = prev_c + displacements_c[gp];
+
+                    int index = 0;
+
+                    for (int col = 0; col < newn.length(); ++col) {
+                        int column_size = k.subinterval(divisor, idx).length();
+                        int start = displacements_k[idx] + k.length() * col;
+                        std::memcpy(pointer_b + col * column_size,
+                                prev_b + start, column_size * sizeof(double));
+                    }
+
+                    matrixA.set_current_matrix(pointer_a);
+                    matrixB.set_current_matrix(pointer_b);
+                    matrixC.set_current_matrix(pointer_c);
+
+                    int new_beta = first_slice ? beta : 1;
+                    local_multiply(matrixA, matrixB, matrixC, m.length(),
+                            newn.length(),
+                            k.subinterval(divisor, idx).length(), new_beta);
+                    first_slice = false;
+                }
+            }
+#pragma omp taskwait
+        }
+
+        matrixA.set_current_matrix(original_matrix);
+        matrixB.set_current_matrix(prev_b);
+        matrixC.set_current_matrix(prev_c);
+        MPI_Waitall(divisor - 1, send_req.data(), MPI_STATUSES_IGNORE);
     }
     PL();
 

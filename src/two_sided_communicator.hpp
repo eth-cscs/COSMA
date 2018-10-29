@@ -130,7 +130,8 @@ public:
 
         double* receive_pointer = beta > 0 ? reduce_buffer : C;
 
-        MPI_Reduce_scatter(send_pointer, receive_pointer, recvcnts.data(), MPI_DOUBLE, MPI_SUM, subcomm);
+        MPI_Reduce_scatter(send_pointer, receive_pointer, recvcnts.data(), 
+                MPI_DOUBLE, MPI_SUM, subcomm);
 
         if (beta > 0) {
             // sum up receiving_buffer with C
