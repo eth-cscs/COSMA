@@ -623,9 +623,7 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
         // offsets in the expanded matrix for each rank
         std::vector<int> displacements_a(divisor);
         std::vector<int> displacements_k(divisor);
-        std::vector<int> displacements_c(divisor);
         int disp_a = 0;
-        int disp_c = 0;
         int disp_k = 0;
 
         std::vector<MPI_Request> send_req(divisor - 1, MPI_REQUEST_NULL);
@@ -649,16 +647,13 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
 
             displacements_a[rank] = disp_a;
             displacements_k[rank] = disp_k;
-            displacements_c[rank] = disp_c;
             disp_a += b_size;
-            disp_c += m.length() * n.subinterval(divisor, rank).length();
             disp_k += k.subinterval(divisor, rank).length();
         }
 
         expanded_mat.set_buffer_index(buffer_idx);
         double* prev_a = expanded_matrix;
         double* prev_b = matrixB.current_matrix();
-        double* prev_c = matrixC.current_matrix();
 
         MPI_Startall(divisor-1, recv_req.data());
         MPI_Startall(divisor-1, send_req.data());
@@ -675,7 +670,6 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
             // Compute the piece that we already own
             double* pointer_a = original_matrix;
             double* pointer_b = block_buffer.data(); 
-            double* pointer_c = prev_c + displacements_c[gp];
 
             for (int col = 0; col < newn.length(); ++col) {
                 int column_size = k.subinterval(divisor, gp).length();
@@ -686,13 +680,11 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
 
             matrixA.set_current_matrix(pointer_a);
             matrixB.set_current_matrix(pointer_b);
-            matrixC.set_current_matrix(pointer_c);
 
             int new_beta = first_slice ? beta : 1;
 
             local_multiply(matrixA, matrixB, matrixC, m.length(),
-                    newn.length(),
-                    k.subinterval(divisor, gp).length(), new_beta);
+                    newn.length(), k.subinterval(divisor, gp).length(), new_beta);
 
             first_slice = false;
             }
@@ -707,7 +699,6 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
                     // Compute the piece that has arrived
                     double* pointer_a = expanded_matrix + displacements_a[idx];
                     double* pointer_b = block_buffer.data(); 
-                    double* pointer_c = prev_c + displacements_c[gp];
 
                     int index = 0;
 
@@ -720,7 +711,6 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
 
                     matrixA.set_current_matrix(pointer_a);
                     matrixB.set_current_matrix(pointer_b);
-                    matrixC.set_current_matrix(pointer_c);
 
                     int new_beta = first_slice ? beta : 1;
                     local_multiply(matrixA, matrixB, matrixC, m.length(),
@@ -734,7 +724,6 @@ void BFS_overlapped(CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& mat
 
         matrixA.set_current_matrix(original_matrix);
         matrixB.set_current_matrix(prev_b);
-        matrixC.set_current_matrix(prev_c);
         MPI_Waitall(divisor - 1, send_req.data(), MPI_STATUSES_IGNORE);
     }
     PL();
