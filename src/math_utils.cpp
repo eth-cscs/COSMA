@@ -23,7 +23,7 @@ int math_utils::next_multiple_of(int n_to_round, int multiple) {
 // find all divisors of a given number n
 std::vector<int> math_utils::find_divisors(int n) {
     std::vector<int> divs;
-    for (int i = 1; i < n; ++i) {
+    for (int i = 1; i <= n; ++i) {
         if (n % i == 0) {
             divs.push_back(i);
         }
@@ -37,6 +37,7 @@ std::tuple<int, int, int> math_utils::balanced_divisors(long long m, long long n
     std::sort(dimensions.begin(), dimensions.end());
 
     double target_tile_size = std::cbrt(1.0*dimensions[1]*dimensions[2] / P * dimensions[0]);
+    // std::cout << "target size = " << target_tile_size << std::endl;
 
     int error = std::numeric_limits<int>::max();
     int divm = 1;
@@ -46,6 +47,7 @@ std::tuple<int, int, int> math_utils::balanced_divisors(long long m, long long n
     for (const int& div1 : find_divisors(P)) {
         int error_lower_bound = std::abs(m/div1 - target_tile_size);
         if (error_lower_bound > error) {
+            // std::cout << "skipping " << error_lower_bound << std::endl;
             continue;
         }
         for (const int& div2 : find_divisors(P/div1)) {

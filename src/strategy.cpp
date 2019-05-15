@@ -48,6 +48,7 @@ Strategy::Strategy(int mm, int nn, int kk, size_t PP,
     // default_strategy();
     // spartition_strategy();
     square_strategy();
+    compress_steps();
     n_steps = divisors.size();
     check_if_valid();
     compute_min_sizes();
@@ -102,6 +103,7 @@ void Strategy::initialize(const std::string& cmd_line) {
         // default_strategy();
         // spartition_strategy();
         square_strategy();
+        compress_steps();
     }
 }
 
@@ -844,6 +846,55 @@ void Strategy::check_if_valid() {
                 + "steps to decrease the required memory.)");
     }
     */
+}
+
+void Strategy::compress_steps() {
+    int p_divm = 1;
+    int p_divn = 1;
+    int p_divk = 1;
+    int s_divm = 1;
+    int s_divn = 1;
+    int s_divk = 1;
+
+    for (size_t i = 0; i < split_dimension.size(); ++i) {
+        if (parallel_step(i)) {
+            p_divm *= divisor_m(i);
+            p_divn *= divisor_n(i);
+            p_divk *= divisor_k(i);
+        } else {
+            s_divm *= divisor_m(i);
+            s_divn *= divisor_n(i);
+            s_divk *= divisor_k(i);
+        }
+    }
+
+    std::vector<int> divs = {p_divm, p_divn, p_divk, s_divm, s_divn, s_divk};
+
+    n_steps = 0;
+    divisors = std::vector<int>();
+    split_dimension = "";
+    step_type = "";
+
+    for (size_t i = 0; i < divs.size(); ++i) {
+        if (divs[i] > 1) {
+            n_steps++;
+            divisors.push_back(divs[i]);
+
+            if (i < 3) {
+                step_type += "p";
+            } else {
+                step_type += "s";
+            }
+
+            if (i % 3 == 0) {
+                split_dimension += "m";
+            } else if (i % 3 == 1) {
+                split_dimension += "n";
+            } else {
+                split_dimension += "k";
+            }
+        }
+    }
 }
 
 void Strategy::compute_min_sizes() {

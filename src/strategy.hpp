@@ -123,9 +123,12 @@ public:
     static long long initial_memory(long long m, long long n, long long k, int P);
     static long long required_memory(Strategy& strategy);
 
+
     // checks if the strategy is well-defined
     void check_if_valid();
     void check_if_overlap_possible();
+    // prefers a single division by (a*b) over two divisions (one by a and one by b)
+    void compress_steps();
 
     bool should_overlap_comm_and_comp(int step) const;
 
