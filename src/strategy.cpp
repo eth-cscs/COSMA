@@ -79,7 +79,7 @@ void Strategy::initialize(const std::string& cmd_line) {
 
     if (options::flag_exists("-w", "--busy_waiting", cmd_line)) {
         use_busy_waiting = true;
-    } else if (options::flag_exists("-w", "--polling", cmd_line)) {
+    } else if (options::flag_exists("-l", "--polling", cmd_line)) {
         use_busy_waiting = false;
     } else {
         use_busy_waiting = true;
@@ -100,10 +100,27 @@ void Strategy::initialize(const std::string& cmd_line) {
         process_steps(steps_it, cmd_line);
     }
     else {
+        bool square_str = options::flag_exists("-q", "--square", cmd_line);
+        bool spartition_str = options::flag_exists("-p", "--spartition", cmd_line);
+        bool default_str = options::flag_exists("-d", "--default", cmd_line);
+
+        bool compress_strategy = options::flag_exists("-c", "--compress", cmd_line);
+
         // default_strategy();
         // spartition_strategy();
-        square_strategy();
-        compress_steps();
+        if (square_str) {
+            square_strategy();
+        } else if (spartition_str) {
+            spartition_strategy();
+        } else if (default_str) {
+            default_strategy();
+        } else {
+            square_strategy();
+        }
+
+        if (compress_strategy) {
+            compress_steps();
+        }
     }
 }
 
