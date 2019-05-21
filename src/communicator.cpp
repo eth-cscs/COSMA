@@ -22,7 +22,7 @@ communicator::communicator(const Strategy* strategy, MPI_Comm comm):
         }
 
         MPI_Group_excl(group, exclude_ranks.size(), exclude_ranks.data(), &full_comm_group_);
-        MPI_Comm_create_group(comm, reduced_group, 0, &full_comm_);
+        MPI_Comm_create_group(comm, full_comm_group_, 0, &full_comm_);
 
         // MPI_Group_free(&reduced_group);
         MPI_Group_free(&group);
