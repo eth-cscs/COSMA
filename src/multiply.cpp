@@ -13,18 +13,8 @@ void multiply(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMat
     Interval ki = Interval(0, strategy.k-1);
     Interval Pi = Interval(0, strategy.P-1);
 
-    // omp_set_nested(1);
-    // mkl_set_dynamic(0);
-
     PE(preprocessing_communicators);
-    std::unique_ptr<communicator> cosma_comm;
-    // if (strategy.one_sided_communication) {
-    //     cosma_comm = std::make_unique<one_sided_communicator>(&strategy, comm);
-
-    // } else {
-    //     cosma_comm = std::make_unique<two_sided_communicator>(&strategy, comm);
-    // }
-    cosma_comm = std::make_unique<hybrid_communicator>(&strategy, comm);
+    std::unique_ptr<communicator> cosma_comm = std::make_unique<hybrid_communicator>(&strategy, comm);
     PL();
 
     if (!cosma_comm->is_idle()) {
@@ -35,20 +25,19 @@ void multiply(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMat
     if (cosma_comm->rank() == 0) {
         PP();
     }
-
 }
 
 void multiply(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
               Interval& m, Interval& n, Interval& k, Interval& P,
               size_t step, const Strategy& strategy,
               communicator& comm, double beta) {
+    PE(multiply_other);
 #ifdef DEBUG
     std::cout << "matrix A, buffer index = " << matrixA.buffer_index() << std::endl;
     std::cout << "matrix B, buffer index = " << matrixB.buffer_index() << std::endl;
     std::cout << "matrix C, buffer index = " << matrixC.buffer_index() << std::endl;
 #endif
 
-    PE(multiply_layout);
     // current submatrices that are being computed
     Interval2D a_range(m, k);
     Interval2D b_range(k, n);
@@ -93,8 +82,8 @@ void multiply(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMat
             sequential(ctx, matrixA, matrixB, matrixC, m, n, k, P, step, strategy, comm, beta);
         }
     }
-    PE(multiply_layout);
 
+    PE(multiply_other);
     // shift the pointers of the current matrix back
     matrixA.unshift(offsetA);
     matrixB.unshift(offsetB);
@@ -201,6 +190,8 @@ T which_is_expanded(T&& A, T&& B, T&& C, const Strategy& strategy, size_t step) 
 void parallel(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
          Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
          const Strategy& strategy, communicator& comm, double beta) {
+    PE(multiply_other);
+
     int divisor = strategy.divisor(step);
     int divisor_m = strategy.divisor_m(step);
     int divisor_n = strategy.divisor_n(step);
@@ -215,7 +206,6 @@ void parallel(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMat
     Interval newn = n.subinterval(divisor_n, divisor_n>1 ? partition_idx : 0);
     Interval newk = k.subinterval(divisor_k, divisor_k>1 ? partition_idx : 0);
 
-    PE(multiply_layout);
     /*
      * size_before_expansion:
      maps rank i from interval P to the vector [bucket1.size(), bucket2.size()...]
@@ -283,7 +273,6 @@ void parallel(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMat
     expanded_mat.set_current_matrix(expanded_matrix);
     PL();
 
-    PE(multiply_communication_copy);
     // if divided along m or n then copy original matrix inside communication ring
     // to get the expanded matrix (all ranks inside communication ring should own
     // exactly the same data in the expanded matrix.
@@ -292,7 +281,6 @@ void parallel(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMat
         comm.copy(P, original_matrix, expanded_matrix, reshuffle_buffer,
                   size_before_expansion, total_before_expansion, new_size, step);
     }
-    PL();
 
     // if division by k, and we are in the branch where beta > 0, then
     // reset beta to 0, but keep in mind that on the way back from the substeps
@@ -319,7 +307,6 @@ void parallel(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMat
     std::cout << "buff_idx = " << buffer_idx << std::endl;
 #endif
 
-    PE(multiply_communication_reduce);
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
         double* reduce_buffer = expanded_mat.reduce_buffer_ptr();
@@ -328,9 +315,8 @@ void parallel(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMat
                 size_before_expansion, total_before_expansion, 
                 size_after_expansion, total_after_expansion, beta, step);
     }
-    PL();
 
-    PE(multiply_layout);
+    PE(multiply_other);
     // after the memory is freed, the buffer sizes are back to the previous values
     // (the values at the beginning of this parallel step)
     expanded_mat.set_sizes(newP, size_before_expansion, newP.first() - P.first());

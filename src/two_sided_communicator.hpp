@@ -39,6 +39,7 @@ public:
             std::vector<std::vector<int>>& size_before,
             std::vector<int>& total_before,
             int total_after) {
+        PE(multiply_communication_other);
         // int div = strategy_->divisor(step);
         // MPI_Comm subcomm = active_comm(step);
         int gp, off;
@@ -66,7 +67,9 @@ public:
 
         int n_blocks = size_before[relative_rank].size();
         double* receive_pointer = n_blocks > 1 ? reshuffle_buffer : out;
+        PL();
 
+        PE(multiply_communication_copy);
         if (same_size) {
             MPI_Allgather(in, local_size, MPI_DOUBLE, receive_pointer, local_size,
                     MPI_DOUBLE, comm);
@@ -74,7 +77,9 @@ public:
             MPI_Allgatherv(in, local_size, MPI_DOUBLE, receive_pointer,
                     total_size.data(), dspls.data(), MPI_DOUBLE, comm);
         }
+        PL();
 
+        PE(multiply_communication_other);
         if (n_blocks > 1) {
             int index = 0;
             std::vector<int> block_offset(div);
@@ -90,6 +95,7 @@ public:
                 }
             }
         }
+        PL();
 #ifdef DEBUG
         std::cout<<"Content of the copied matrix in rank "<<rank<<" is now: "
             <<std::endl;
@@ -109,6 +115,7 @@ public:
             std::vector<std::vector<int>>& c_expanded,
             std::vector<int>& c_total_expanded,
             int beta) {
+        PE(multiply_communication_other);
         // int div = strategy_->divisor(step);
         // MPI_Comm subcomm = active_comm(step);
 
@@ -152,16 +159,21 @@ public:
         }
 
         double* receive_pointer = beta > 0 ? reduce_buffer : C;
+        PL();
 
+        PE(multiply_communication_reduce);
         MPI_Reduce_scatter(send_pointer, receive_pointer, recvcnts.data(), 
                 MPI_DOUBLE, MPI_SUM, comm);
+        PL();
 
+        PE(multiply_communication_other);
         if (beta > 0) {
             // sum up receiving_buffer with C
             for (int el = 0; el < recvcnts[gp]; ++el) {
                 C[el] += reduce_buffer[el];
             }
         }
+        PL();
     }
 };
 }

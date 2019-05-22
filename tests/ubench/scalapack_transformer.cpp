@@ -9,11 +9,11 @@
 #include <array>
 #include <numeric>
 
-#include <layout_transformer/transform.hpp>
-#include <layout_transformer/scalapack_layout.hpp>
+#include <transform.hpp>
+#include <scalapack_layout.hpp>
 #include <math_utils.hpp>
 
-using namespace layout_transformer;
+using namespace grid2grid;
 
 extern "C" {
     /* Cblacs declarations */

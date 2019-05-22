@@ -90,10 +90,9 @@ int main( int argc, char **argv ) {
 
     int n_iter = get_n_iter();
     std::vector<long> times; 
-    for (int i = 0; i < n_iter+1; ++i) { 
+    for (int i = 0; i < n_iter; ++i) { 
         long t_run = 0;
         t_run = run(strategy, ctx);
-        if (i == 0) continue;
         times.push_back(t_run);
     }
     std::sort(times.begin(), times.end());

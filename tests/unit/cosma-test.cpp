@@ -142,7 +142,7 @@ bool run(Strategy& s, context& ctx, MPI_Comm comm=MPI_COMM_WORLD, bool overlap =
         //Now compute the result
         char N = 'N';
         double one = 1., zero = 0.;
-        dgemm_(&N, &N, &m, &n, &k, &one, globA.data(), &m, globB.data(), &k, &zero,
+        blas::dgemm(&N, &N, &m, &n, &k, &one, globA.data(), &m, globB.data(), &k, &zero,
             globCcheck.data(), &m);
 
 #ifdef DEBUG

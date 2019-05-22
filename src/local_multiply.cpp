@@ -15,6 +15,7 @@ void print_matrix(int m, int n, double*A, char label) {
 
 void local_multiply(context& ctx, double* matrixA, double* matrixB, double* matrixC,
         int m, int n, int k, double beta) {
+    PE(multiply_computation);
     char N = 'N';
     double one = 1.;
 #ifdef DEBUG
@@ -24,22 +25,21 @@ void local_multiply(context& ctx, double* matrixA, double* matrixB, double* matr
         std::cout << "C (before) = " << std::endl;
         print_matrix(m, n, matrixC, 'C');
         auto C_partial = std::unique_ptr<double[]>(new double[m * n]);
-        dgemm_(&N, &N, &m, &n, &k, &one, matrixA, &m, matrixB, &k, &zero, C_partial.get(), &m);
+        blas::dgemm(&N, &N, &m, &n, &k, &one, matrixA, &m, matrixB, &k, &zero, C_partial.get(), &m);
         std::cout << "C (partial) = " << std::endl;
         print_matrix(m, n, C_partial.get(), 'C');
     }
 #endif
-    PE(multiply_computation);
 #ifdef COSMA_HAVE_GPU
     // std::cout << "running from cpu gpu dgemm" << std::endl;
     gpu::dgemm(ctx.gpu_ctx, matrixA, matrixB, matrixC,
         m, n, k, 1.0, beta);
     // std::cout << "finished on cpu dgemm" << std::endl;
 #else
-    dgemm_(&N, &N, &m, &n, &k, &one, matrixA, &m, matrixB, &k, &beta, matrixC, &m);
+    blas::dgemm(&N, &N, &m, &n, &k, &one, matrixA, &m, matrixB, &k, &beta, matrixC, &m);
     // dgemm_cpu('n', 'n', m, n, k, 1.0, matrixA, m, matrixB, k, beta, matrixC, m);
 #endif
-    // dgemm_(&N, &N, &m, &n, &k, &one, matrixA, &m, matrixB, &k, &beta, matrixC, &m);
+    // blas::dgemm(&N, &N, &m, &n, &k, &one, matrixA, &m, matrixB, &k, &beta, matrixC, &m);
     PL();
 #ifdef DEBUG
     std::cout << "After multiplication: " << std::endl;
@@ -65,14 +65,14 @@ void local_multiply_cpu(double* matrixA, double* matrixB, double* matrixC,
         std::cout << "C (before) = " << std::endl;
         print_matrix(m, n, matrixC, 'C');
         auto C_partial = std::unique_ptr<double[]>(new double[m * n]);
-        dgemm_(&N, &N, &m, &n, &k, &one, matrixA, &m, matrixB, &k, &zero, C_partial.get(), &m);
+        blas::dgemm(&N, &N, &m, &n, &k, &one, matrixA, &m, matrixB, &k, &zero, C_partial.get(), &m);
         std::cout << "C (partial) = " << std::endl;
         print_matrix(m, n, C_partial.get(), 'C');
     }
 #endif
     PE(multiply_computation);
-    dgemm_(&N, &N, &m, &n, &k, &one, matrixA, &m, matrixB, &k, &beta, matrixC, &m);
-    // dgemm_(&N, &N, &m, &n, &k, &one, matrixA, &m, matrixB, &k, &beta, matrixC, &m);
+    blas::dgemm(&N, &N, &m, &n, &k, &one, matrixA, &m, matrixB, &k, &beta, matrixC, &m);
+    // blas::dgemm(&N, &N, &m, &n, &k, &one, matrixA, &m, matrixB, &k, &beta, matrixC, &m);
     PL();
 #ifdef DEBUG
     std::cout << "After multiplication: " << std::endl;

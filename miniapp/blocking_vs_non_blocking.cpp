@@ -54,7 +54,7 @@ void solve(double* a, double* b, double* c, int m, int n, int k) {
     char N = 'N';
     double one = 1.;
     double beta = 0;
-    dgemm_(&N, &N, &m, &n, &k, &one, a, &m, b, &k, &beta, c, &m);
+    blas::dgemm(&N, &N, &m, &n, &k, &one, a, &m, b, &k, &beta, c, &m);
 }
 
 int main(int argc, char** argv) {

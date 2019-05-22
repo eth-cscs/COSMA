@@ -137,6 +137,7 @@ public:
             Interval m, Interval k,
             std::vector<int>& displacements,
             std::atomic_int& ready, MPI_Comm comm) {
+        PE(multiply_communication_other);
         // copy the matrix that wasn't divided in this step
         int local_size = m.length() * k.subinterval(divisor, gp).length();
 
@@ -149,6 +150,8 @@ public:
             int rank = (gp + dist) % divisor;
             int b_size = m.length() * k.subinterval(divisor, rank).length();
 
+            PL();
+            PE(multiply_communication_copy);
             MPI_Request req;
             MPI_Rget(expanded_matrix + m.length() * displacements[rank], b_size, MPI_DOUBLE, rank,
                     0, b_size, MPI_DOUBLE, win, &req);
@@ -162,12 +165,15 @@ public:
                     ready++;
                 }
             }
+            PL();
 
+            PE(multiply_communication_other);
             dist++;
         }
 
         MPI_Win_unlock_all(win);
         MPI_Win_free(&win);
+        PL();
     }
 
     static void comm_task_mn_split_busy_waiting(int divisor, int gp,
@@ -176,6 +182,7 @@ public:
             std::vector<int>& displacements,
             std::atomic_int& ready, MPI_Comm comm) {
         // copy the matrix that wasn't divided in this step
+        PE(multiply_communication_other);
         int local_size = m.length() * k.subinterval(divisor, gp).length();
 
         MPI_Win win = create_window(comm, original_matrix, local_size, false);
@@ -196,10 +203,11 @@ public:
         while (dist < divisor) {
             int rank = (gp + dist) % divisor;
             int b_size = m.length() * k.subinterval(divisor, rank).length();
-
+            PL();
 #ifdef DEBUG
             std::cout << "Getting a piece from rank " << rank << std::endl;
 #endif
+            PE(multiply_communication_copy);
             MPI_Get(expanded_matrix + m.length() * displacements[rank], b_size, MPI_DOUBLE, rank,
                     0, b_size, MPI_DOUBLE, win);
 
@@ -208,13 +216,16 @@ public:
             // then it also means that after flush
             // it will also be completed remotely
             MPI_Win_flush_local(rank, win);
+            PL();
 
+            PE(multiply_communication_other);
             dist++;
             ready++;
         }
 
         MPI_Win_unlock_all(win);
         MPI_Win_free(&win);
+        PL();
     }
 
 /* OVERLAP OF M SPLIT WITH OPENMP
@@ -340,7 +351,7 @@ public:
     static void overlap_m_split(context& ctx, MPI_Comm comm, int rank, int divisor,
             CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
             Interval& m, Interval& n, Interval& k, Interval& P, double beta) {
-        PE(multiply_communication_copy);
+        PE(multiply_communication_other);
         int gp, off;
         std::tie(gp, off) = P.locate_in_subinterval(divisor, rank);
 
@@ -369,7 +380,6 @@ public:
         // c: newm * disp
 
         std::atomic_int ready(0);
-
         std::thread comm_thread(
                 communicator::use_busy_waiting ? comm_task_mn_split_busy_waiting : comm_task_mn_split_polling,
                 divisor, gp, original_matrix, expanded_matrix, k, n,
@@ -390,7 +400,7 @@ public:
         local_multiply(ctx, matrixA.current_matrix(), matrixB.current_matrix(), 
                 matrixC.current_matrix(), newm.length(), 
                 n.subinterval(divisor, gp).length(), k.length(), beta);
-        PE(multiply_communication_copy);
+        PE(multiply_communication_other);
 
         int dist = 1;
         while (dist < divisor) {
@@ -414,7 +424,6 @@ public:
             }
         }
 
-
         expanded_mat.set_current_matrix(original_matrix);
         expanded_mat.set_buffer_index(buffer_idx);
         matrixC.set_current_matrix(prev_c);
@@ -429,7 +438,7 @@ public:
     static void overlap_n_split(context& ctx, MPI_Comm comm, int rank, int divisor,
             CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
             Interval& m, Interval& n, Interval& k, Interval& P, double beta) {
-        PE(multiply_communication_copy);
+        PE(multiply_communication_other);
         int gp, off;
         std::tie(gp, off) = P.locate_in_subinterval(divisor, rank);
 
@@ -495,7 +504,7 @@ public:
                         matrixC.current_matrix(), m.length(),
                         newn.length(),
                         k.subinterval(divisor, idx).length(), new_beta);
-                PE(multiply_communication_copy);
+                PE(multiply_communication_other);
 
                 dist++;
                 ready--;
@@ -516,6 +525,7 @@ public:
             Interval m, Interval n, Interval P,
             std::vector<int>& displacements, int& ready, 
             std::mutex& mtx, std::condition_variable& cv, MPI_Comm comm) {
+        PE(multiply_communication_other);
 
         int local_size = m.length() * n.subinterval(divisor, gp).length();
         MPI_Win win = create_window(comm, recv_buffer, local_size, false);
@@ -540,15 +550,20 @@ public:
                 double* pointer_c = expanded_matrix + m.length() * displacements[idx];
                 int b_size = m.length() * n.subinterval(divisor, idx).length();
 
+                PL();
+                PE(multiply_communication_reduce);
                 MPI_Win_lock(MPI_LOCK_EXCLUSIVE, idx, 0, win);
                 MPI_Accumulate(pointer_c, b_size, MPI_DOUBLE,
                     idx, 0, b_size, MPI_DOUBLE, MPI_SUM, win);
                 MPI_Win_unlock(idx, win);
+                PL();
+                PE(multiply_communication_other);
                 i++;
             }
         }
 
         MPI_Win_free(&win);
+        PL();
     }
 
     static void compute(context& ctx, CosmaMatrix& A, CosmaMatrix& B, CosmaMatrix& C, 
@@ -577,7 +592,7 @@ public:
         local_multiply(ctx, A.current_matrix(), B.current_matrix(), 
                 C.current_matrix(), m.length(), 
             n_length, k.length(), beta);
-        PE(multiply_communication_reduce);
+        PE(multiply_communication_other);
     }
 
     // ***********************************
@@ -586,7 +601,7 @@ public:
     static void overlap_k_split(context& ctx, MPI_Comm comm, int rank, int divisor,
             CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
             Interval& m, Interval& n, Interval& k, Interval& P, double beta) {
-        PE(multiply_communication_reduce);
+        PE(multiply_communication_other);
         // int divisor = strategy.divisor(step);
         int gp, off;
         std::tie(gp, off) = P.locate_in_subinterval(divisor, rank);
