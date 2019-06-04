@@ -1,4 +1,4 @@
-#include "../gtest.h"
+#include <gtest.h>
 #include <mapper.hpp>
 
 using namespace cosma;

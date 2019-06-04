@@ -1,7 +1,9 @@
-#include "../gtest.h"
+#include <gtest.h>
 
 int main(int argc, char **argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+    // init gtest
+    ::testing::InitGoogleTest(&argc, argv);
+    // run all tests
+    return RUN_ALL_TESTS();
 }
 

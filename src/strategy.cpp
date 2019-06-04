@@ -35,6 +35,23 @@ Strategy::Strategy(int mm, int nn, int kk, size_t PP,
           overlap_comm_and_comp(overlap),
           use_busy_waiting(busy_waiting)
 {
+    n_steps = divisors.size();
+    check_if_valid();
+    compute_min_sizes();
+}
+
+Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::string steps,
+        long long mem_limit, double b, bool top, bool overlap, bool busy_waiting)
+        : m(mm), n(nn), k(kk), P(PP), memory_limit(mem_limit), beta(b), topology(top),
+          overlap_comm_and_comp(overlap), use_busy_waiting(busy_waiting) {
+    bool steps_predefined = options::flag_exists("-s", "--steps", steps);
+    if (steps_predefined) {
+        auto steps_it = options::find_flag("-s", "--steps", "Division steps have to be defined.", steps);
+        process_steps(steps_it, steps);
+    } else {
+        square_strategy();
+    }
+    n_steps = divisors.size();
     check_if_valid();
     compute_min_sizes();
 }
@@ -48,7 +65,7 @@ Strategy::Strategy(int mm, int nn, int kk, size_t PP,
     // default_strategy();
     // spartition_strategy();
     square_strategy();
-    compress_steps();
+    // compress_steps();
     n_steps = divisors.size();
     check_if_valid();
     compute_min_sizes();

@@ -69,6 +69,11 @@ public:
              double b = 0.0, bool top = false,
              bool overlap = true, bool busy_waiting = true);
 
+    Strategy(int mm, int nn, int kk, size_t PP, std::string steps,
+             long long mem_limit = std::numeric_limits<long long>::max(),
+             double b = 0.0, bool top = false,
+             bool overlap = true, bool busy_waiting = true);
+
     Strategy(int mm, int nn, int kk, size_t PP, 
             long long mem_limit = std::numeric_limits<long long>::max(),
             double b = 0.0, bool top = false, 

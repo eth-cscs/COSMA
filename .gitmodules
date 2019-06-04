@@ -10,3 +10,6 @@
 [submodule "libs/semiprof"]
 	path = libs/semiprof
 	url = https://github.com/kabicm/semiprof
+[submodule "tests/gtest_mpi"]
+	path = tests/gtest_mpi
+	url = https://github.com/kabicm/gtest_mpi
