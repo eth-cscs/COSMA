@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 project(cosma VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -10,12 +11,14 @@ if(NOT CMAKE_BUILD_TYPE)
     "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release." FORCE)
 endif()
 
+# COSMA library
+#
+add_library(cosma "")
+target_link_libraries(cosma ${cosma_deps})
+#target_link_libraries(cosma ${cosma_deps} /opt/cray/dmapp/7.1.1-6.0.7.0_34.3__g5a674e0.ari/lib64/libdmapp.so)
+# target_include_directories(cosma PUBLIC ${MPI_INCLUDE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 
-#cmake refs
-site_name(HOSTNAME)
-set(PRJ_CMAKE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-list(APPEND CMAKE_MODULE_PATH "${PRJ_CMAKE_DIR}")
 
 #################################
 #          PROFILER             #
@@ -55,6 +58,23 @@ if (CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 
+# Submodules dependencies:
+#   grid2grid, options, semiprof, TiledMM
+#
+find_package(Git QUIET)
+if(GIT_FOUND AND EXISTS "${cosma_SOURCE_DIR}/.git")
+  # Update submodules as needed
+  option(GIT_SUBMODULE_CHECK "Check submodules during build" ON)
+  if(GIT_SUBMODULE_CHECK)
+    message(STATUS "Submodule update")
+    execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                    RESULT_VARIABLE GIT_SUBMOD_RESULT)
+    if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+      message(FATAL_ERROR "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+    endif()
+  endif()
+endif()
 
 
 ############
@@ -122,13 +142,7 @@ endif()
 set(cosma_deps ${mpi_deps} ${blas_deps} options ${cuda_deps} semiprof grid2grid)
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-################
-# COSMA library
-#
-add_library(cosma "")
-target_link_libraries(cosma ${cosma_deps})
-#target_link_libraries(cosma ${cosma_deps} /opt/cray/dmapp/7.1.1-6.0.7.0_34.3__g5a674e0.ari/lib64/libdmapp.so)
-# target_include_directories(cosma PUBLIC ${MPI_INCLUDE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
 
 
 #############
