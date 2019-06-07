@@ -20,6 +20,13 @@ target_link_libraries(unit_test_mpi.exe gtest_mpi cosma ${cosma_deps})
 add_test(no_mpi_tests unit_test.exe)
 
 if (MPI_FOUND)
+
+    option(REMOTE "--oversubscribe flag for OpenMPI" OFF)
+    set(OVERSUBSCRIBE "--oversubscribe")
+    if(REMOTE)
+        set(OVERSUBSCRIBE "")
+    endif()
+
     add_test(NAME with_mpi_tests COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
         ${MPIEXEC_NUMPROC_FLAG} 16 unit_test_mpi.exe)
 endif ()
