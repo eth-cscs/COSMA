@@ -1,10 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
-
-###############
-#  Src files  #
-###############
-
-set(sources
+target_sources(cosma PRIVATE
     context.cpp
     buffer.cpp
     communicator.cpp
@@ -19,12 +13,3 @@ set(sources
     interval.cpp
     timer.hpp
     math_utils.cpp)
-
-###################
-#  Cosma Library  #
-###################
-message(${cosma_deps})
-add_library(cosma ${sources})
-#target_link_libraries(cosma ${cosma_deps} /opt/cray/dmapp/7.1.1-6.0.7.0_34.3__g5a674e0.ari/lib64/libdmapp.so)
-target_link_libraries(cosma ${cosma_deps})
-# target_include_directories(cosma PUBLIC ${MPI_INCLUDE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/src)

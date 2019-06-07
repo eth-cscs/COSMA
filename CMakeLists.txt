@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.5)
-PROJECT(cosma)
+cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
+project(cosma VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -9,6 +9,8 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING
     "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release." FORCE)
 endif()
+
+
 
 #cmake refs
 site_name(HOSTNAME)
@@ -52,6 +54,9 @@ if (CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -pthread")
 endif()
 
+
+
+
 ############
 # MPI Part #
 ############
@@ -80,9 +85,11 @@ endif()
 ################
 # BLAS Part    #
 ################
-include(cosma_lapack)
-cosma_find_lapack()
-set(blas_deps ${COSMA_LAPACK_LIBRARY})
+find_package(BLAS REQUIRED)
+set(blas_deps ${BLAS_LIBRARIES})
+#include(cosma_lapack)
+#cosma_find_lapack()
+#set(blas_deps ${COSMA_LAPACK_LIBRARY})
 
 ################
 #  ScaLAPACK   #
@@ -114,6 +121,15 @@ endif()
 
 set(cosma_deps ${mpi_deps} ${blas_deps} options ${cuda_deps} semiprof grid2grid)
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src")
+
+################
+# COSMA library
+#
+add_library(cosma "")
+target_link_libraries(cosma ${cosma_deps})
+#target_link_libraries(cosma ${cosma_deps} /opt/cray/dmapp/7.1.1-6.0.7.0_34.3__g5a674e0.ari/lib64/libdmapp.so)
+# target_include_directories(cosma PUBLIC ${MPI_INCLUDE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
 
 #############
 #  Testing  #
