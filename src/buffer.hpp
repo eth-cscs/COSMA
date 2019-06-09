@@ -145,8 +145,8 @@ protected:
     long long max_par_block_size_;
     // max size of the matrix in the base case (among all base cases)
     long long max_base_buffer_size_;
-    const long long max_send_buffer_size() const;
-    const long long max_recv_buffer_size() const;
+    long long max_send_buffer_size() const;
+    long long max_recv_buffer_size() const;
 
     void init_first_split_steps();
     // first seq step that splits the current matrix

@@ -176,11 +176,11 @@ void Mapper::compute_sizes(Interval m, Interval n, Interval P, int step, const S
     }
 }
 
-const size_t Mapper::initial_size(int rank) const {
+size_t Mapper::initial_size(int rank) const {
     return initial_buffer_size_[rank];
 }
 
-const size_t Mapper::initial_size() const {
+size_t Mapper::initial_size() const {
     return initial_size(rank_);
 }
 

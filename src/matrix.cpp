@@ -43,13 +43,13 @@ char CosmaMatrix::label() {
     return label_;
 }
 
-const int CosmaMatrix::initial_size(int rank) const {
+int CosmaMatrix::initial_size(int rank) const {
     if (rank >= strategy_.P) 
         return 0;
     return mapper_.initial_size(rank);
 }
 
-const int CosmaMatrix::initial_size() const {
+int CosmaMatrix::initial_size() const {
     if (rank_ >= strategy_.P) 
         return 0;
     return mapper_.initial_size();

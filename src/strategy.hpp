@@ -29,7 +29,7 @@ public:
     double beta = 0.0;
     // stores the divisor in each step of the algorithm
     std::vector<int> divisors;
-    // returns m, n or k character depending on 
+    // returns m, n or k character depending on
     // which dimension was split in each step
     std::string split_dimension = "";
     // describes whether a sequential step (s) or a parallel step (p) is used in each step
@@ -74,9 +74,9 @@ public:
              double b = 0.0, bool top = false,
              bool overlap = true, bool busy_waiting = true);
 
-    Strategy(int mm, int nn, int kk, size_t PP, 
+    Strategy(int mm, int nn, int kk, size_t PP,
             long long mem_limit = std::numeric_limits<long long>::max(),
-            double b = 0.0, bool top = false, 
+            double b = 0.0, bool top = false,
             bool overlap = true, bool busy_waiting = true);
 
     // parses the command line options and initializes the varialbes
@@ -102,28 +102,28 @@ public:
 
     void throw_exception(const std::string& message);
 
-    const bool split_m(size_t i) const;
-    const bool split_n(size_t i) const;
-    const bool split_k(size_t i) const;
+    bool split_m(size_t i) const;
+    bool split_n(size_t i) const;
+    bool split_k(size_t i) const;
 
-    const bool split_A(size_t i) const;
-    const bool split_B(size_t i) const;
-    const bool split_C(size_t i) const;
-    const bool split(char label, size_t i) const;
+    bool split_A(size_t i) const;
+    bool split_B(size_t i) const;
+    bool split_C(size_t i) const;
+    bool split(char label, size_t i) const;
 
-    const bool sequential_step(size_t i) const;
-    const bool parallel_step(size_t i) const;
+    bool sequential_step(size_t i) const;
+    bool parallel_step(size_t i) const;
 
-    const int divisor(size_t i) const;
-    const int divisor_m(size_t i) const;
-    const int divisor_n(size_t i) const;
-    const int divisor_k(size_t i) const;
+    int divisor(size_t i) const;
+    int divisor_m(size_t i) const;
+    int divisor_n(size_t i) const;
+    int divisor_k(size_t i) const;
 
-    const int divisor_row(char matrix, size_t i) const;
-    const int divisor_col(char matrix, size_t i) const;
+    int divisor_row(char matrix, size_t i) const;
+    int divisor_col(char matrix, size_t i) const;
 
-    const bool final_step(size_t i) const;
-    const int parallel_steps_before_gemm(char label) const;
+    bool final_step(size_t i) const;
+    int parallel_steps_before_gemm(char label) const;
 
     static long long initial_memory(long long m, long long n, long long k, int P);
     static long long required_memory(Strategy& strategy);

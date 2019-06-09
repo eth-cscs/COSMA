@@ -21,9 +21,9 @@ public:
     Mapper() = default;
     Mapper(char label, int m, int n, size_t P, const Strategy& strategy, int rank);
 
-    const size_t initial_size(int rank) const;
+    size_t initial_size(int rank) const;
 
-    const size_t initial_size() const;
+    size_t initial_size() const;
 
     std::vector<size_t> all_initial_sizes() const;
 
