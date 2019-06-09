@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 project(cosma VERSION 0.1 LANGUAGES CXX)
 
@@ -16,7 +16,6 @@ endif()
 add_library(cosma "")
 target_include_directories(cosma PUBLIC ${cosma_SOURCE_DIR}/src)
 #target_link_libraries(cosma ${cosma_deps} /opt/cray/dmapp/7.1.1-6.0.7.0_34.3__g5a674e0.ari/lib64/libdmapp.so)
-
 
 #################################
 #  Generic Compilation options  #
@@ -72,7 +71,6 @@ endif()
 option(COSMA_WITH_CUDA "use CUDA GPU backend for base case" OFF)
 if(COSMA_WITH_CUDA)
     enable_language(CUDA)
-    find_package(CUDA REQUIRED)
     target_compile_definitions(cosma PRIVATE -DCOSMA_HAVE_GPU)
     target_link_libraries(cosma PRIVATE cublas Tiled-MM)
     target_compile_options(cosma PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:"-arch=sm_60">) 
@@ -109,7 +107,6 @@ endif()
 #############
 #  Testing  #
 #############
-include(CTest)
 enable_testing()
 
 #####################################
