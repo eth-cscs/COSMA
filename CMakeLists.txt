@@ -14,18 +14,9 @@ endif()
 # COSMA library
 #
 add_library(cosma "")
+message(STATUS ${cosma_SOURCE_DIR})
 target_include_directories(cosma PUBLIC ${cosma_SOURCE_DIR}/src)
 #target_link_libraries(cosma ${cosma_deps} /opt/cray/dmapp/7.1.1-6.0.7.0_34.3__g5a674e0.ari/lib64/libdmapp.so)
-
-#################################
-#  Generic Compilation options  #
-#################################
-if (CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -lstdc++")
-    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -ggdb -DDEBUG")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -pthread")
-endif()
-
 
 # Submodules dependencies:
 #   grid2grid, options, semiprof, TiledMM
@@ -44,16 +35,14 @@ if(GIT_FOUND AND EXISTS "${cosma_SOURCE_DIR}/.git")
     endif()
   endif()
 endif()
-target_link_libraries(cosma PRIVATE options semiprof grid2grid)
+target_link_libraries(cosma PUBLIC grid2grid semiprof options)
 
 # Non-cmake dependencies
 #
 find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(BLAS REQUIRED)
-
-target_compile_definitions(cosma PRIVATE -DUSE_MPI)
-target_link_libraries(cosma PRIVATE MPI::MPI_CXX OpenMP::OpenMP_CXX ${BLAS_LIBRARIES})
+target_link_libraries(cosma PUBLIC MPI::MPI_CXX OpenMP::OpenMP_CXX ${BLAS_LIBRARIES})
 
 ################
 #  ScaLAPACK   #
