@@ -1,0 +1,8 @@
+---
+# Used for all options not set in this file
+BasedOnStyle:  LLVM
+AllowAllParametersOfDeclarationOnNextLine: false
+BinPackArguments: false
+BinPackParameters: false
+BreakConstructorInitializersBeforeComma: true
+AlwaysBreakTemplateDeclarations: Yes
