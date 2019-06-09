@@ -1,17 +1,20 @@
 #pragma once
-#include <future>
-#include "blas.h"
-#include "interval.hpp"
+
+#include <cosma/strategy.hpp>
+#include <cosma/matrix.hpp>
+#include <cosma/local_multiply.hpp>
+#include <cosma/interval.hpp>
+#include <cosma/math_utils.hpp>
+#include <cosma/blas.h>
+#include <cosma/interval.hpp>
+
 #include <mpi.h>
+
+#include <future>
 #include <stdlib.h>
 #include <algorithm>
 #include <iostream>
 #include <tuple>
-#include "strategy.hpp"
-#include "matrix.hpp"
-#include "local_multiply.hpp"
-#include "interval.hpp"
-#include "math_utils.hpp"
 #include <thread>
 #include <atomic>
 #include <chrono>

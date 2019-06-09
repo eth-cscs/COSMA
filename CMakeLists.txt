@@ -102,6 +102,6 @@ enable_testing()
 #  Adding various code directories  #
 #####################################
 add_subdirectory(libs)
-add_subdirectory(src)
+add_subdirectory(src/cosma)
 add_subdirectory(miniapp)
 add_subdirectory(tests)

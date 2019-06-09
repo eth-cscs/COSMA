@@ -1,6 +1,7 @@
 #pragma once
 
-//STL
+#include <cosma/interval.hpp>
+
 #include <cassert>
 #include <fstream>
 #include <memory>
@@ -10,9 +11,10 @@
 #include <string>
 #include <vector>
 #include <set>
-#include "interval.hpp"
 #include <unordered_map>
 #include <algorithm>
+
+
 
 namespace cosma {
 class Layout {

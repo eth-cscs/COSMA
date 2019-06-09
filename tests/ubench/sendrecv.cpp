@@ -1,3 +1,8 @@
+#include <cosma/interval.hpp>
+#include <cosma/timer.hpp>
+
+#include <mpi.h>
+
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
@@ -5,9 +10,6 @@
 #include <string>
 #include <vector>
 #include <chrono>
-#include <mpi.h>
-#include <interval.hpp>
-#include <timer.hpp>
 
 using namespace cosma;
 

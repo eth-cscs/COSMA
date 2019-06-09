@@ -1,4 +1,13 @@
 #pragma once
+
+#include <cosma/interval.hpp>
+#include <cosma/mapper.hpp>
+#include <cosma/layout.hpp>
+#include <cosma/strategy.hpp>
+#include <cosma/buffer.hpp>
+
+#include <semiprof.hpp>
+
 #include <cassert>
 #include <fstream>
 #include <iostream>
@@ -9,14 +18,8 @@
 #include <string>
 #include <vector>
 #include <set>
-#include "interval.hpp"
-#include <unordered_map>
 #include <algorithm>
-#include "mapper.hpp"
-#include "layout.hpp"
-#include <semiprof.hpp>
-#include "strategy.hpp"
-#include "buffer.hpp"
+#include <unordered_map>
 
 namespace cosma {
 class CosmaMatrix {

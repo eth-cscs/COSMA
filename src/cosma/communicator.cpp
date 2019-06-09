@@ -1,4 +1,4 @@
-#include "communicator.hpp"
+#include <cosma/communicator.hpp>
 
 namespace cosma {
 bool communicator::use_busy_waiting = true;

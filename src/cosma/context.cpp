@@ -1,4 +1,4 @@
-#include "context.hpp"
+#include <cosma/context.hpp>
 
 namespace cosma {
 // constructor

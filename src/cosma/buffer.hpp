@@ -1,10 +1,11 @@
 #pragma once
-#include "interval.hpp"
-#include "strategy.hpp"
+#include <cosma/interval.hpp>
+#include <cosma/strategy.hpp>
+#include <cosma/mapper.hpp>
+#include <cosma/layout.hpp>
+#include <cosma/mpi_allocator.hpp>
+
 #include <vector>
-#include "mapper.hpp"
-#include "layout.hpp"
-#include "mpi_allocator.hpp"
 
 #ifdef COSMA_HAVE_GPU
 #include <cuda.h>

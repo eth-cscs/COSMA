@@ -1,4 +1,4 @@
-#include "interval.hpp"
+#include <cosma/interval.hpp>
 
 namespace cosma {
 // interval of consecutive numbers

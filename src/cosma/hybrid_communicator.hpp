@@ -1,7 +1,7 @@
 #pragma once
-#include "communicator.hpp"
-#include "one_sided_communicator.hpp"
-#include "two_sided_communicator.hpp"
+#include <cosma/communicator.hpp>
+#include <cosma/one_sided_communicator.hpp>
+#include <cosma/two_sided_communicator.hpp>
 
 namespace cosma {
 class hybrid_communicator: public communicator {

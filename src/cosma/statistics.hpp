@@ -1,5 +1,5 @@
-#include "matrix.hpp"
-#include "strategy.hpp"
+#include <cosma/matrix.hpp>
+#include <cosma/strategy.hpp>
 
 namespace cosma {
 /* Simulates the algorithm (without actually computing the matrix multiplication)

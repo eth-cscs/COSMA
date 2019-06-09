@@ -1,4 +1,5 @@
-#include "local_multiply.hpp"
+#include <cosma/local_multiply.hpp>
+
 #include <chrono>
 
 namespace cosma {

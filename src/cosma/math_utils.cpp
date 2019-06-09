@@ -1,4 +1,4 @@
-#include "math_utils.hpp"
+#include <cosma/math_utils.hpp>
 
 namespace cosma {
 int math_utils::gcd(int a, int b) {

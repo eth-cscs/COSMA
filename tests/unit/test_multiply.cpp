@@ -1,6 +1,7 @@
+#include <cosma-run.hpp>
+
 #include <gtest.h>
 #include <gtest_mpi.hpp>
-#include "cosma-run.hpp"
 
 MPI_Comm subcommunicator(int new_P, MPI_Comm comm = MPI_COMM_WORLD) {
     // original size

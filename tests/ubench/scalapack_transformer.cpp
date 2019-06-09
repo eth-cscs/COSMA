@@ -1,3 +1,7 @@
+#include <cosma/transform.hpp>
+#include <cosma/scalapack_layout.hpp>
+#include <cosma/math_utils.hpp>
+
 #include <mpi.h>
 
 #include <iostream>
@@ -8,10 +12,6 @@
 #include <chrono>
 #include <array>
 #include <numeric>
-
-#include <transform.hpp>
-#include <scalapack_layout.hpp>
-#include <math_utils.hpp>
 
 using namespace grid2grid;
 

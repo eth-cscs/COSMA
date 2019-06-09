@@ -1,4 +1,4 @@
-#include "strategy.hpp"
+#include <cosma/strategy.hpp>
 
 namespace cosma {
 // constructors

@@ -1,15 +1,16 @@
 #pragma once
 
-// STL
-#include <vector>
-#include "interval.hpp"
-#include "communicator.hpp"
-#include "hybrid_communicator.hpp"
-#include "matrix.hpp"
+#include <cosma/interval.hpp>
+#include <cosma/communicator.hpp>
+#include <cosma/hybrid_communicator.hpp>
+#include <cosma/matrix.hpp>
+#include <cosma/strategy.hpp>
+#include <cosma/timer.hpp>
+#include <cosma/local_multiply.hpp>
+
 #include <semiprof.hpp>
-#include "strategy.hpp"
-#include "timer.hpp"
-#include "local_multiply.hpp"
+
+#include <vector>
 
 namespace cosma {
 void multiply(context& ctx, CosmaMatrix& A, CosmaMatrix& B, CosmaMatrix& C,

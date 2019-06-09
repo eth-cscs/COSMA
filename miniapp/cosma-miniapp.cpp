@@ -1,4 +1,6 @@
-// STL
+#include <cosma/blas.h>
+#include <cosma/multiply.hpp>
+
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
@@ -12,11 +14,6 @@
 #include <iostream>
 #include <sstream>
 
-//Blas
-#include "blas.h"
-
-// Local
-#include <multiply.hpp>
 
 using namespace cosma;
 

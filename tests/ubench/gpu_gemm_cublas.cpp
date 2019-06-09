@@ -1,10 +1,12 @@
+#include <cosma/multiply.hpp>
+
 #include <cublasXt.h>
 #include <cuda_runtime_api.h>
+#include <gpu/util.hpp>
+
 #include <chrono>
 #include <vector>
 #include <iostream>
-#include <gpu/util.hpp>
-#include <multiply.hpp>
 
 long cublas_dgemm(cublasXtHandle_t& handle, int m, int n, int k) {
 

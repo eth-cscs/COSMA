@@ -1,4 +1,4 @@
-#include "matrix.hpp"
+#include <cosma/matrix.hpp>
 
 namespace cosma {
 CosmaMatrix::CosmaMatrix(char label, const Strategy& strategy, int rank, bool dry_run) :

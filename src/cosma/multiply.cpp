@@ -1,4 +1,4 @@
-#include "multiply.hpp"
+#include <cosma/multiply.hpp>
 
 namespace cosma {
 /*

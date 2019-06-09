@@ -1,4 +1,9 @@
 #pragma once
+
+#include <cosma/math_utils.hpp>
+
+#include <options.hpp>
+
 #include <stdexcept>
 #include <vector>
 #include <string>
@@ -7,8 +12,6 @@
 #include <math.h>
 #include <limits>
 #include <tuple>
-#include <options.hpp>
-#include "math_utils.hpp"
 
 namespace cosma {
 class Strategy {

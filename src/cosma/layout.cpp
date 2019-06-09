@@ -1,4 +1,4 @@
-#include "layout.hpp"
+#include <cosma/layout.hpp>
 
 namespace cosma {
 Layout::Layout(char label, int m, int n, size_t P,

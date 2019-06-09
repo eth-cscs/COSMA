@@ -1,11 +1,12 @@
 #pragma once
 
+#include <cosma/blas.h>
+#include <cosma/matrix.hpp>
+#include <cosma/timer.hpp>
+#include <cosma/context.hpp>
+
 #include <vector>
-#include "blas.h"
-#include "matrix.hpp"
 #include <semiprof.hpp>
-#include "timer.hpp"
-#include "context.hpp"
 // #include <libsci_acc.h>
 
 #ifdef COSMA_HAVE_GPU

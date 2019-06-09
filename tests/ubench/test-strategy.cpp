@@ -1,4 +1,4 @@
-#include <strategy.hpp>
+#include <cosma/strategy.hpp>
 
 int main(int argc, char** argv) {
     int m = 10000;

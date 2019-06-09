@@ -1,6 +1,8 @@
 #pragma once
 
-//STL
+#include <cosma/interval.hpp>
+#include <cosma/strategy.hpp>
+
 #include <cassert>
 #include <fstream>
 #include <memory>
@@ -10,10 +12,8 @@
 #include <string>
 #include <vector>
 #include <set>
-#include "interval.hpp"
 #include <unordered_map>
 #include <algorithm>
-#include "strategy.hpp"
 
 namespace cosma {
 class Mapper {

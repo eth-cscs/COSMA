@@ -1,7 +1,9 @@
+#include <cosma/local_multiply.hpp>
+#include <cosma/timer.hpp>
+
 #include <blas.h>
+
 #include <vector>
-#include <local_multiply.hpp>
-#include <timer.hpp>
 #include <chrono>
 
 using namespace cosma;

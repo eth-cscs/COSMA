@@ -1,4 +1,4 @@
-#include "mapper.hpp"
+#include <cosma/mapper.hpp>
 
 namespace cosma {
 Mapper::Mapper(char label, int m, int n, size_t P, const Strategy& strategy, int rank) :

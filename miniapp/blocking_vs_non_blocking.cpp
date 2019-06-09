@@ -1,10 +1,12 @@
-#include <iostream>
+#include <cosma/blas.h>
+
 #include <mpi.h>
+
+#include <iostream>
 #include <vector>
 #include <unistd.h>
 #include <chrono>
 #include <tuple>
-#include <blas.h>
 #include <cmath>
 
 class Timer {
