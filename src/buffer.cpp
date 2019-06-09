@@ -610,10 +610,10 @@ std::vector<double, mpi_allocator<double>> Buffer::operator[](const std::vector<
     return buffers_[index];
 }
 
-const long long Buffer::max_send_buffer_size() const {
+long long Buffer::max_send_buffer_size() const {
     return max_send_buffer_size_;
 }
-const long long Buffer::max_recv_buffer_size() const {
+long long Buffer::max_recv_buffer_size() const {
     return max_recv_buffer_size_;
 }
 }

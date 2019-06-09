@@ -30,8 +30,8 @@ public:
     // **********************************************
     // METHODS FROM mapper.hpp
     // **********************************************
-    const int initial_size(int rank) const;
-    const int initial_size() const;
+    int initial_size(int rank) const;
+    int initial_size() const;
 
     // (gi, gj) -> (local_id, rank)
     std::pair<int, int> local_coordinates(int gi, int gj);

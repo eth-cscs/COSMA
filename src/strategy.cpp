@@ -645,31 +645,31 @@ void Strategy::throw_exception(const std::string& message) {
     throw std::runtime_error(message);
 }
 
-const bool Strategy::split_m(size_t i) const {
+bool Strategy::split_m(size_t i) const {
     return split_dimension[i] == 'm';
 }
 
-const bool Strategy::split_n(size_t i) const {
+bool Strategy::split_n(size_t i) const {
     return split_dimension[i] == 'n';
 }
 
-const bool Strategy::split_k(size_t i) const {
+bool Strategy::split_k(size_t i) const {
     return split_dimension[i] == 'k';
 }
 
-const bool Strategy::split_A(size_t i) const {
+bool Strategy::split_A(size_t i) const {
     return split_m(i) || split_k(i);
 }
 
-const bool Strategy::split_B(size_t i) const {
+bool Strategy::split_B(size_t i) const {
     return split_k(i) || split_n(i);
 }
 
-const bool Strategy::split_C(size_t i) const {
+bool Strategy::split_C(size_t i) const {
     return split_m(i) || split_n(i);
 }
 
-const bool Strategy::split(char label, size_t step) const {
+bool Strategy::split(char label, size_t step) const {
     if (label == 'A')
         return split_A(step);
     else if (label == 'B')
@@ -678,31 +678,31 @@ const bool Strategy::split(char label, size_t step) const {
         return split_C(step);
 }
 
-const bool Strategy::sequential_step(size_t i) const {
+bool Strategy::sequential_step(size_t i) const {
     return step_type[i] == 's';
 }
 
-const bool Strategy::parallel_step(size_t i) const {
+bool Strategy::parallel_step(size_t i) const {
     return step_type[i] == 'p';
 }
 
-const int Strategy::divisor(size_t i) const {
+int Strategy::divisor(size_t i) const {
     return divisors[i];
 }
 
-const int Strategy::divisor_m(size_t i) const {
+int Strategy::divisor_m(size_t i) const {
     return split_m(i) ? divisors[i] : 1;
 }
 
-const int Strategy::divisor_n(size_t i) const {
+int Strategy::divisor_n(size_t i) const {
     return split_n(i) ? divisors[i] : 1;
 }
 
-const int Strategy::divisor_k(size_t i) const {
+int Strategy::divisor_k(size_t i) const {
     return split_k(i) ? divisors[i] : 1;
 }
 
-const int Strategy::divisor_row(char matrix, size_t i) const {
+int Strategy::divisor_row(char matrix, size_t i) const {
     if (matrix == 'A')
         return divisor_m(i);
     if (matrix == 'B')
@@ -712,7 +712,7 @@ const int Strategy::divisor_row(char matrix, size_t i) const {
     return 1;
 }
 
-const int Strategy::divisor_col(char matrix, size_t i) const {
+int Strategy::divisor_col(char matrix, size_t i) const {
     if (matrix == 'A')
         return divisor_k(i);
     if (matrix == 'B')
@@ -722,11 +722,11 @@ const int Strategy::divisor_col(char matrix, size_t i) const {
     return 1;
 }
 
-const bool Strategy::final_step(size_t i) const {
+bool Strategy::final_step(size_t i) const {
     return i == n_steps;
 }
 
-const int Strategy::parallel_steps_before_gemm(char label) const {
+int Strategy::parallel_steps_before_gemm(char label) const {
     if (label == 'A') 
         return n_parallel_steps_before_gemm_a;
     if (label == 'B') 
