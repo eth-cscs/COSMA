@@ -107,8 +107,8 @@ class CosmaMatrix {
     // in case when beta > 0 in that step
     double *reduce_buffer_ptr();
 
-    std::vector<double, mpi_allocator<double>> &buffer();
-    const std::vector<double, mpi_allocator<double>> &buffer() const;
+    mpi_buffer_t &buffer();
+    const mpi_buffer_t &buffer() const;
 
     // **********************************************
     // NEW METHODS
@@ -122,8 +122,8 @@ class CosmaMatrix {
     friend std::ostream &operator<<(std::ostream &os, const CosmaMatrix &mat);
 
     double *matrix_pointer();
-    std::vector<double, mpi_allocator<double>> &matrix();
-    const std::vector<double, mpi_allocator<double>> &matrix() const;
+    mpi_buffer_t &matrix();
+    const mpi_buffer_t &matrix() const;
 
     // pointer to send buffer
     // double* buffer_ptr();
@@ -157,6 +157,6 @@ class CosmaMatrix {
     Layout layout_;
     Buffer buffer_;
 
-    std::vector<double, mpi_allocator<double>> dummy_vector;
+    mpi_buffer_t dummy_vector;
 };
 } // namespace cosma

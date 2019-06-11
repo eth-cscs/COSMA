@@ -64,13 +64,9 @@ double *CosmaMatrix::reshuffle_buffer_ptr() {
 
 double *CosmaMatrix::reduce_buffer_ptr() { return buffer_.reduce_buffer_ptr(); }
 
-std::vector<double, mpi_allocator<double>> &CosmaMatrix::buffer() {
-    return buffer_.buffer();
-}
+mpi_buffer_t &CosmaMatrix::buffer() { return buffer_.buffer(); }
 
-const std::vector<double, mpi_allocator<double>> &CosmaMatrix::buffer() const {
-    return buffer_.buffer();
-}
+const mpi_buffer_t &CosmaMatrix::buffer() const { return buffer_.buffer(); }
 
 void CosmaMatrix::advance_buffer() { buffer_.advance_buffer(); }
 
@@ -106,7 +102,7 @@ double *CosmaMatrix::matrix_pointer() {
     return buffer_.initial_buffer_ptr();
 }
 
-std::vector<double, mpi_allocator<double>> &CosmaMatrix::matrix() {
+mpi_buffer_t &CosmaMatrix::matrix() {
     // return matrix_;
     if (rank_ >= strategy_.P) {
         return dummy_vector;
@@ -114,7 +110,7 @@ std::vector<double, mpi_allocator<double>> &CosmaMatrix::matrix() {
     return buffer_.initial_buffer();
 }
 
-const std::vector<double, mpi_allocator<double>> &CosmaMatrix::matrix() const {
+const mpi_buffer_t &CosmaMatrix::matrix() const {
     // return matrix_;
     if (rank_ >= strategy_.P) {
         return dummy_vector;
