@@ -5,15 +5,15 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <cstdlib>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <chrono>
 
 using namespace cosma;
 
-int main( int argc, char **argv ) {
+int main(int argc, char **argv) {
     MPI_Init(&argc, &argv);
 
     int P, rank;
@@ -29,8 +29,18 @@ int main( int argc, char **argv ) {
     const int n_rep = 10;
     for (int i = 0; i < n_rep; ++i) {
         int target = 1 - rank;
-        MPI_Sendrecv(in.data(), local_size, MPI_DOUBLE, target, 0,
-            result.data(), local_size, MPI_DOUBLE, target, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(in.data(),
+                     local_size,
+                     MPI_DOUBLE,
+                     target,
+                     0,
+                     result.data(),
+                     local_size,
+                     MPI_DOUBLE,
+                     target,
+                     0,
+                     MPI_COMM_WORLD,
+                     MPI_STATUS_IGNORE);
     }
 
     MPI_Finalize();

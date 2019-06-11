@@ -2,27 +2,29 @@
 
 #include <cosma/interval.hpp>
 
+#include <algorithm>
 #include <cassert>
 #include <fstream>
 #include <memory>
 #include <numeric>
-#include <tuple>
+#include <set>
 #include <stdexcept>
 #include <string>
-#include <vector>
-#include <set>
+#include <tuple>
 #include <unordered_map>
-#include <algorithm>
-
-
+#include <vector>
 
 namespace cosma {
 class Layout {
 
-public:
+  public:
     Layout() = default;
-    Layout(char label, int m, int n, size_t P,
-           int rank, std::vector<std::vector<Interval2D>> rank_to_range);
+    Layout(char label,
+           int m,
+           int n,
+           size_t P,
+           int rank,
+           std::vector<std::vector<Interval2D>> rank_to_range);
 
     int size(int rank);
     int size();
@@ -30,29 +32,35 @@ public:
     int offset(int rank, int prev_bucket);
     int offset(int prev_bucket);
 
-    void update_buckets(Interval& P, Interval2D& range);
+    void update_buckets(Interval &P, Interval2D &range);
     int seq_bucket(int rank);
     int seq_bucket();
-    std::vector<int> seq_buckets(Interval& newP);
-    void set_seq_buckets(Interval& newP, std::vector<int>& pointers);
+    std::vector<int> seq_buckets(Interval &newP);
+    void set_seq_buckets(Interval &newP, std::vector<int> &pointers);
 
-    void buffers_before_expansion(Interval& P, Interval2D& range,
-            std::vector<std::vector<int>>& size_per_rank,
-            std::vector<int>& total_size_per_rank);
+    void buffers_before_expansion(Interval &P,
+                                  Interval2D &range,
+                                  std::vector<std::vector<int>> &size_per_rank,
+                                  std::vector<int> &total_size_per_rank);
 
-    void buffers_after_expansion(Interval& P, Interval& newP,
-            std::vector<std::vector<int>>& size_per_rank,
-            std::vector<int>& total_size_per_rank,
-            std::vector<std::vector<int>>& new_size,
-            std::vector<int>& new_total);
+    void buffers_after_expansion(Interval &P,
+                                 Interval &newP,
+                                 std::vector<std::vector<int>> &size_per_rank,
+                                 std::vector<int> &total_size_per_rank,
+                                 std::vector<std::vector<int>> &new_size,
+                                 std::vector<int> &new_total);
 
-    std::vector<int> sizes_inside_range(Interval2D& range, int rank, int& total_size);
+    std::vector<int>
+    sizes_inside_range(Interval2D &range, int rank, int &total_size);
 
-    void set_sizes(Interval& newP, std::vector<std::vector<int>>& size_per_rank, int offset);
-    void set_sizes(Interval& newP, std::vector<std::vector<int>>& size_per_rank);
-    void set_sizes(int rank, std::vector<int>& sizes, int start);
+    void set_sizes(Interval &newP,
+                   std::vector<std::vector<int>> &size_per_rank,
+                   int offset);
+    void set_sizes(Interval &newP,
+                   std::vector<std::vector<int>> &size_per_rank);
+    void set_sizes(int rank, std::vector<int> &sizes, int start);
 
-protected:
+  protected:
     char label_;
 
     /// Number of rows of the global atrix
@@ -79,12 +87,11 @@ protected:
     Interval ni_;
     Interval Pi_;
 
-private:
+  private:
     void next(int rank);
     void next();
 
     void prev(int rank);
     void prev();
-
 };
-}
+} // namespace cosma

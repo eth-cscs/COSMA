@@ -8,7 +8,8 @@ TEST(strategy, spartition) {
     int m = 17408;
     int n = 17408;
     int k = 3735552;
-    long long memory_limit = 80000000; // #elements, per node, corresponding to 50GB
+    long long memory_limit =
+        80000000; // #elements, per node, corresponding to 50GB
     int nodes = 64;
     int ranks_per_node = 36;
     int P = nodes * ranks_per_node;
@@ -25,7 +26,8 @@ TEST(strategy, nested_sequential_parallel) {
     int m = 30000;
     int n = m;
     int k = m;
-    long long memory_limit = 80000000; // #elements, per node, corresponding to 50GB
+    long long memory_limit =
+        80000000; // #elements, per node, corresponding to 50GB
     int nodes = 10;
     int ranks_per_node = 36;
     int P = nodes * ranks_per_node;
@@ -65,7 +67,7 @@ TEST(mapper, bdb) {
         EXPECT_EQ(B.initial_size(i), B_initial_size_target[i]);
         EXPECT_EQ(C.initial_size(i), C_initial_size_target[i]);
     }
-    // check if the precomputed local->global mapper for 
+    // check if the precomputed local->global mapper for
     // local elements on the current rank match
     // the results from the on-demand computed local->global
     // mapper for any element and any rank
@@ -97,24 +99,24 @@ TEST(mapper, bdb) {
         EXPECT_EQ(gj, gj_local);
     }
 
-    // test rank_to_range map which specified for each rank, the list of Interval2D it owns
-    std::vector<std::vector<Interval2D>> A_rank_to_range_target = 
-            {{Interval2D(0, 1, 0, 0), Interval2D(2, 3, 0, 0)},
-             {Interval2D(0, 1, 1, 1), Interval2D(2, 3, 1, 1)},
-             {Interval2D(4, 5, 0, 0), Interval2D(6, 7, 0, 0)},
-             {Interval2D(4, 5, 1, 1), Interval2D(6, 7, 1, 1)}};
+    // test rank_to_range map which specified for each rank, the list of
+    // Interval2D it owns
+    std::vector<std::vector<Interval2D>> A_rank_to_range_target = {
+        {Interval2D(0, 1, 0, 0), Interval2D(2, 3, 0, 0)},
+        {Interval2D(0, 1, 1, 1), Interval2D(2, 3, 1, 1)},
+        {Interval2D(4, 5, 0, 0), Interval2D(6, 7, 0, 0)},
+        {Interval2D(4, 5, 1, 1), Interval2D(6, 7, 1, 1)}};
 
-    std::vector<Interval2D> B_rank_to_range_target = 
-            {Interval2D(0, 1, 0, 0),
-             Interval2D(0, 1, 2, 2),
-             Interval2D(0, 1, 1, 1),
-             Interval2D(0, 1, 3, 3)};
+    std::vector<Interval2D> B_rank_to_range_target = {Interval2D(0, 1, 0, 0),
+                                                      Interval2D(0, 1, 2, 2),
+                                                      Interval2D(0, 1, 1, 1),
+                                                      Interval2D(0, 1, 3, 3)};
 
-    std::vector<std::vector<Interval2D>> C_rank_to_range_target = 
-            {{Interval2D(0, 1, 0, 1), Interval2D(2, 3, 0, 1)},
-             {Interval2D(0, 1, 2, 3), Interval2D(2, 3, 2, 3)},
-             {Interval2D(4, 5, 0, 1), Interval2D(6, 7, 0, 1)},
-             {Interval2D(4, 5, 2, 3), Interval2D(6, 7, 2, 3)}};
+    std::vector<std::vector<Interval2D>> C_rank_to_range_target = {
+        {Interval2D(0, 1, 0, 1), Interval2D(2, 3, 0, 1)},
+        {Interval2D(0, 1, 2, 3), Interval2D(2, 3, 2, 3)},
+        {Interval2D(4, 5, 0, 1), Interval2D(6, 7, 0, 1)},
+        {Interval2D(4, 5, 2, 3), Interval2D(6, 7, 2, 3)}};
 
     auto A_rank_to_range = A.complete_layout();
     auto B_rank_to_range = B.complete_layout();
@@ -126,30 +128,42 @@ TEST(mapper, bdb) {
         EXPECT_EQ(C_rank_to_range[i].size(), 2);
 
         for (auto range = 0u; range < A_rank_to_range[i].size(); ++range) {
-            EXPECT_EQ(A_rank_to_range[i][range], A_rank_to_range_target[i][range]);
+            EXPECT_EQ(A_rank_to_range[i][range],
+                      A_rank_to_range_target[i][range]);
         }
 
         EXPECT_EQ(B_rank_to_range[i][0], B_rank_to_range_target[i]);
 
         for (auto range = 0u; range < C_rank_to_range[i].size(); ++range) {
-            EXPECT_EQ(C_rank_to_range[i][range], C_rank_to_range_target[i][range]);
+            EXPECT_EQ(C_rank_to_range[i][range],
+                      C_rank_to_range_target[i][range]);
         }
     }
 
     // test the mapping global<->local
-    std::vector<std::pair<int, int>> A_global_coord = {{0, 0}, {1, 0}, {2, 0}, {3, 0},
-                                                       {0, 1}, {1, 1}, {2, 1}, {3, 1},
-                                                       {4, 0}, {5, 0}, {6, 0}, {7, 0},
-                                                       {4, 1}, {5, 1}, {6, 1}, {7, 1}};
+    std::vector<std::pair<int, int>> A_global_coord = {{0, 0},
+                                                       {1, 0},
+                                                       {2, 0},
+                                                       {3, 0},
+                                                       {0, 1},
+                                                       {1, 1},
+                                                       {2, 1},
+                                                       {3, 1},
+                                                       {4, 0},
+                                                       {5, 0},
+                                                       {6, 0},
+                                                       {7, 0},
+                                                       {4, 1},
+                                                       {5, 1},
+                                                       {6, 1},
+                                                       {7, 1}};
 
-    std::vector<std::pair<int, int>> B_global_coord = {{0, 0}, {1, 0},
-                                                       {0, 2}, {1, 2},
-                                                       {0, 1}, {1, 1},
-                                                       {0, 3}, {1, 3}};
+    std::vector<std::pair<int, int>> B_global_coord = {
+        {0, 0}, {1, 0}, {0, 2}, {1, 2}, {0, 1}, {1, 1}, {0, 3}, {1, 3}};
 
     auto i = 0u;
-    for(auto rank = 0u; rank < P; ++rank) {
-        for(auto locIdx = 0u; locIdx < A_initial_size_target[rank]; ++locIdx) {
+    for (auto rank = 0u; rank < P; ++rank) {
+        for (auto locIdx = 0u; locIdx < A_initial_size_target[rank]; ++locIdx) {
             int gi, gj;
             std::tie(gi, gj) = A.global_coordinates(locIdx, rank);
             EXPECT_EQ(A_global_coord[i].first, gi);
@@ -164,8 +178,8 @@ TEST(mapper, bdb) {
     }
 
     i = 0u;
-    for(auto rank = 0u; rank < P; ++rank) {
-        for(auto locIdx = 0u; locIdx < B_initial_size_target[rank]; ++locIdx) {
+    for (auto rank = 0u; rank < P; ++rank) {
+        for (auto locIdx = 0u; locIdx < B_initial_size_target[rank]; ++locIdx) {
             int gi, gj;
             std::tie(gi, gj) = B.global_coordinates(locIdx, rank);
             EXPECT_EQ(B_global_coord[i].first, gi);
@@ -179,4 +193,3 @@ TEST(mapper, bdb) {
         }
     }
 }
-

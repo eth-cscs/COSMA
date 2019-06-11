@@ -5,15 +5,15 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <cstdlib>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <chrono>
 
 using namespace cosma;
 
-int main( int argc, char **argv ) {
+int main(int argc, char **argv) {
     MPI_Init(&argc, &argv);
 
     int P, rank;
@@ -41,23 +41,34 @@ int main( int argc, char **argv ) {
     std::vector<double> in_padded(max_size);
 
     std::vector<double> result(total_size);
-    std::vector<double> result_padded(P*max_size);
+    std::vector<double> result_padded(P * max_size);
 
     const int n_rep = 30;
 
     {
         Timer time(n_rep, "MPI_Allgatherv");
         for (int i = 0; i < n_rep; ++i) {
-            MPI_Allgatherv(in.data(), local_size, MPI_DOUBLE, result.data(),
-                    sizes.data(), dspls.data(), MPI_DOUBLE, MPI_COMM_WORLD);
+            MPI_Allgatherv(in.data(),
+                           local_size,
+                           MPI_DOUBLE,
+                           result.data(),
+                           sizes.data(),
+                           dspls.data(),
+                           MPI_DOUBLE,
+                           MPI_COMM_WORLD);
         }
     }
 
     {
         Timer time(n_rep, "MPI_Allgather");
         for (int i = 0; i < n_rep; ++i) {
-            MPI_Allgather(in_padded.data(), max_size, MPI_DOUBLE, result_padded.data(),
-                    max_size, MPI_DOUBLE, MPI_COMM_WORLD);
+            MPI_Allgather(in_padded.data(),
+                          max_size,
+                          MPI_DOUBLE,
+                          result_padded.data(),
+                          max_size,
+                          MPI_DOUBLE,
+                          MPI_COMM_WORLD);
         }
     }
 

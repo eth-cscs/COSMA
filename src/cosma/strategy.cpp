@@ -4,10 +4,10 @@ namespace cosma {
 // constructors
 Strategy::Strategy() = default;
 // move constructor
-Strategy::Strategy(Strategy&& other) = default;
+Strategy::Strategy(Strategy &&other) = default;
 
 // constructs the Strategy from the command line
-Strategy::Strategy(const std::string& cmd_line) {
+Strategy::Strategy(const std::string &cmd_line) {
     initialize(cmd_line);
     n_steps = divisors.size();
     check_if_valid();
@@ -15,7 +15,7 @@ Strategy::Strategy(const std::string& cmd_line) {
 }
 
 // constructs the Strategy form the command line
-Strategy::Strategy(int argc, char** argv) {
+Strategy::Strategy(int argc, char **argv) {
     std::string input;
     for (auto i = 1; i < argc; ++i) {
         input += std::string(argv[i]) + " ";
@@ -26,27 +26,59 @@ Strategy::Strategy(int argc, char** argv) {
     compute_min_sizes();
 }
 
-Strategy::Strategy(int mm, int nn, int kk, size_t PP,
-        std::vector<int>& divs, std::string& dims, std::string& types,
-        long long mem_limit, double b, bool top, bool overlap, bool busy_waiting)
-        : m(mm), n(nn), k(kk), P(PP), memory_limit(mem_limit), beta(b),
-          divisors(divs), split_dimension(dims), step_type(types),
-          n_steps(divisors.size()), topology(top),
-          overlap_comm_and_comp(overlap),
-          use_busy_waiting(busy_waiting)
-{
+Strategy::Strategy(int mm,
+                   int nn,
+                   int kk,
+                   size_t PP,
+                   std::vector<int> &divs,
+                   std::string &dims,
+                   std::string &types,
+                   long long mem_limit,
+                   double b,
+                   bool top,
+                   bool overlap,
+                   bool busy_waiting)
+    : m(mm)
+    , n(nn)
+    , k(kk)
+    , P(PP)
+    , memory_limit(mem_limit)
+    , beta(b)
+    , divisors(divs)
+    , split_dimension(dims)
+    , step_type(types)
+    , n_steps(divisors.size())
+    , topology(top)
+    , overlap_comm_and_comp(overlap)
+    , use_busy_waiting(busy_waiting) {
     n_steps = divisors.size();
     check_if_valid();
     compute_min_sizes();
 }
 
-Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::string steps,
-        long long mem_limit, double b, bool top, bool overlap, bool busy_waiting)
-        : m(mm), n(nn), k(kk), P(PP), memory_limit(mem_limit), beta(b), topology(top),
-          overlap_comm_and_comp(overlap), use_busy_waiting(busy_waiting) {
+Strategy::Strategy(int mm,
+                   int nn,
+                   int kk,
+                   size_t PP,
+                   std::string steps,
+                   long long mem_limit,
+                   double b,
+                   bool top,
+                   bool overlap,
+                   bool busy_waiting)
+    : m(mm)
+    , n(nn)
+    , k(kk)
+    , P(PP)
+    , memory_limit(mem_limit)
+    , beta(b)
+    , topology(top)
+    , overlap_comm_and_comp(overlap)
+    , use_busy_waiting(busy_waiting) {
     bool steps_predefined = options::flag_exists("-s", "--steps", steps);
     if (steps_predefined) {
-        auto steps_it = options::find_flag("-s", "--steps", "Division steps have to be defined.", steps);
+        auto steps_it = options::find_flag(
+            "-s", "--steps", "Division steps have to be defined.", steps);
         process_steps(steps_it, steps);
     } else {
         square_strategy();
@@ -56,12 +88,24 @@ Strategy::Strategy(int mm, int nn, int kk, size_t PP, std::string steps,
     compute_min_sizes();
 }
 
-Strategy::Strategy(int mm, int nn, int kk, size_t PP,
-        long long mem_limit, double b, bool top, bool overlap, bool busy_waiting)
-        : m(mm), n(nn), k(kk), P(PP), memory_limit(mem_limit), beta(b),
-          topology(top), overlap_comm_and_comp(overlap),
-          use_busy_waiting(busy_waiting)
-{
+Strategy::Strategy(int mm,
+                   int nn,
+                   int kk,
+                   size_t PP,
+                   long long mem_limit,
+                   double b,
+                   bool top,
+                   bool overlap,
+                   bool busy_waiting)
+    : m(mm)
+    , n(nn)
+    , k(kk)
+    , P(PP)
+    , memory_limit(mem_limit)
+    , beta(b)
+    , topology(top)
+    , overlap_comm_and_comp(overlap)
+    , use_busy_waiting(busy_waiting) {
     // default_strategy();
     // spartition_strategy();
     square_strategy();
@@ -71,14 +115,23 @@ Strategy::Strategy(int mm, int nn, int kk, size_t PP,
     compute_min_sizes();
 }
 
-void Strategy::initialize(const std::string& cmd_line) {
-    auto m_it = options::find_flag("-m", "--m_dimension", "Dimension m has to be defined.", cmd_line);
-    auto n_it = options::find_flag("-n", "--n_dimension", "Dimension n has to be defined.", cmd_line);
-    auto k_it = options::find_flag("-k", "--k_dimension", "Dimension k has to be defined.", cmd_line);
-    auto P_it = options::find_flag("-P", "--processors", 
-            "Number of processors has to be defined.", cmd_line);
-    auto M_it = options::find_flag("-L", "--memory", 
-            "Memory limit: maximum number of elements each rank can own.", cmd_line, false);
+void Strategy::initialize(const std::string &cmd_line) {
+    auto m_it = options::find_flag(
+        "-m", "--m_dimension", "Dimension m has to be defined.", cmd_line);
+    auto n_it = options::find_flag(
+        "-n", "--n_dimension", "Dimension n has to be defined.", cmd_line);
+    auto k_it = options::find_flag(
+        "-k", "--k_dimension", "Dimension k has to be defined.", cmd_line);
+    auto P_it = options::find_flag("-P",
+                                   "--processors",
+                                   "Number of processors has to be defined.",
+                                   cmd_line);
+    auto M_it = options::find_flag(
+        "-L",
+        "--memory",
+        "Memory limit: maximum number of elements each rank can own.",
+        cmd_line,
+        false);
     m = options::next_int(m_it, cmd_line);
     n = options::next_int(n_it, cmd_line);
     k = options::next_int(k_it, cmd_line);
@@ -104,7 +157,11 @@ void Strategy::initialize(const std::string& cmd_line) {
 
     bool beta_predefined = options::flag_exists("-b", "--beta", cmd_line);
     if (beta_predefined) {
-        auto beta_it = options::find_flag("-b", "--beta", "Beta parameter of gemm should be predefined.", cmd_line);
+        auto beta_it =
+            options::find_flag("-b",
+                               "--beta",
+                               "Beta parameter of gemm should be predefined.",
+                               cmd_line);
         beta = options::next_double(beta_it, cmd_line);
     } else {
         beta = false;
@@ -113,15 +170,17 @@ void Strategy::initialize(const std::string& cmd_line) {
     bool steps_predefined = options::flag_exists("-s", "--steps", cmd_line);
 
     if (steps_predefined) {
-        auto steps_it = options::find_flag("-s", "--steps", "Division steps have to be defined.", cmd_line);
+        auto steps_it = options::find_flag(
+            "-s", "--steps", "Division steps have to be defined.", cmd_line);
         process_steps(steps_it, cmd_line);
-    }
-    else {
+    } else {
         bool square_str = options::flag_exists("-q", "--square", cmd_line);
-        bool spartition_str = options::flag_exists("-p", "--spartition", cmd_line);
+        bool spartition_str =
+            options::flag_exists("-p", "--spartition", cmd_line);
         bool default_str = options::flag_exists("-d", "--default", cmd_line);
 
-        bool compress_strategy = options::flag_exists("-c", "--compress", cmd_line);
+        bool compress_strategy =
+            options::flag_exists("-c", "--compress", cmd_line);
 
         // default_strategy();
         // spartition_strategy();
@@ -141,7 +200,7 @@ void Strategy::initialize(const std::string& cmd_line) {
     }
 }
 
-void Strategy::process_steps(size_t start, const std::string& line) {
+void Strategy::process_steps(size_t start, const std::string &line) {
     // go to the end of the string or space
     auto end = line.find(start, ' ');
     if (end == std::string::npos) {
@@ -156,9 +215,11 @@ void Strategy::process_steps(size_t start, const std::string& line) {
     }
 }
 
-long long Strategy::initial_memory(long long m, long long n, long long k, int P) {
-    return math_utils::divide_and_round_up(m*n,P) + math_utils::divide_and_round_up(k*n,P) 
-        + math_utils::divide_and_round_up(m*k,P);
+long long
+Strategy::initial_memory(long long m, long long n, long long k, int P) {
+    return math_utils::divide_and_round_up(m * n, P) +
+           math_utils::divide_and_round_up(k * n, P) +
+           math_utils::divide_and_round_up(m * k, P);
 }
 
 void Strategy::default_strategy() {
@@ -171,12 +232,12 @@ void Strategy::default_strategy() {
     long long needed_memory = initial_memory(m, n, k, P);
 
     if (memory_limit < needed_memory) {
-        throw_exception(std::string("This multiplication requires the memory ")
-                + "for at least " + std::to_string(needed_memory)
-                + " units, but only " + std::to_string(memory_limit)
-                + " units are allowed. Either increase the memory limit "
-                + "or change the strategy by using more sequential "
-                + "steps.");
+        throw_exception(
+            std::string("This multiplication requires the memory ") +
+            "for at least " + std::to_string(needed_memory) +
+            " units, but only " + std::to_string(memory_limit) +
+            " units are allowed. Either increase the memory limit " +
+            "or change the strategy by using more sequential " + "steps.");
     }
 
     std::cout << "Default strategy" << std::endl;
@@ -187,12 +248,15 @@ void Strategy::default_strategy() {
         int next_div = factors[i];
 
         // m largest => split it
-        while (m/accumulated_div >= std::max(n, k) 
-              && needed_memory + math_utils::divide_and_round_up(k*n*next_div,P) <= memory_limit) {
+        while (m / accumulated_div >= std::max(n, k) &&
+               needed_memory +
+                       math_utils::divide_and_round_up(k * n * next_div, P) <=
+                   memory_limit) {
             accumulated_div = next_div;
             did_parallel = true;
             ++i;
-            if (i >= factors.size()) break;
+            if (i >= factors.size())
+                break;
             next_div *= factors[i];
         }
 
@@ -201,19 +265,23 @@ void Strategy::default_strategy() {
             step_type += "p";
             split_dimension += "m";
             divisors.push_back(accumulated_div);
-            needed_memory += math_utils::divide_and_round_up(k*n*accumulated_div,P);
+            needed_memory +=
+                math_utils::divide_and_round_up(k * n * accumulated_div, P);
             m /= accumulated_div;
             P /= accumulated_div;
             continue;
         }
 
         // n largest => split it
-        while (n/accumulated_div >= std::max(m, k) 
-              && needed_memory + math_utils::divide_and_round_up(k*m*next_div,P) <= memory_limit) {
+        while (n / accumulated_div >= std::max(m, k) &&
+               needed_memory +
+                       math_utils::divide_and_round_up(k * m * next_div, P) <=
+                   memory_limit) {
             accumulated_div = next_div;
             did_parallel = true;
             ++i;
-            if (i >= factors.size()) break;
+            if (i >= factors.size())
+                break;
             next_div *= factors[i];
         }
 
@@ -222,19 +290,23 @@ void Strategy::default_strategy() {
             step_type += "p";
             split_dimension += "n";
             divisors.push_back(accumulated_div);
-            needed_memory += math_utils::divide_and_round_up(k*m*accumulated_div,P);
+            needed_memory +=
+                math_utils::divide_and_round_up(k * m * accumulated_div, P);
             n /= accumulated_div;
             P /= accumulated_div;
             continue;
         }
 
         // k largest => split it
-        while (k/accumulated_div >= std::max(m, n) 
-              && needed_memory + math_utils::divide_and_round_up(n*m*next_div,P) <= memory_limit) {
+        while (k / accumulated_div >= std::max(m, n) &&
+               needed_memory +
+                       math_utils::divide_and_round_up(n * m * next_div, P) <=
+                   memory_limit) {
             accumulated_div = next_div;
             did_parallel = true;
             ++i;
-            if (i >= factors.size()) break;
+            if (i >= factors.size())
+                break;
             next_div *= factors[i];
         }
 
@@ -243,12 +315,12 @@ void Strategy::default_strategy() {
             step_type += "p";
             split_dimension += "k";
             divisors.push_back(accumulated_div);
-            needed_memory += math_utils::divide_and_round_up(m*n*accumulated_div,P);
+            needed_memory +=
+                math_utils::divide_and_round_up(m * n * accumulated_div, P);
             k /= accumulated_div;
             P /= accumulated_div;
             continue;
         }
-
 
         // if parallel steps were not possible
         // then perform a sequential step first
@@ -283,9 +355,14 @@ void Strategy::default_strategy() {
     }
 }
 
-bool Strategy::divide(std::vector<int>& div_factors, int& dim_i, 
-        long long& dim1, long long& dim2, long long& dim3, int& P,
-        long long& needed_memory, const std::string label) {
+bool Strategy::divide(std::vector<int> &div_factors,
+                      int &dim_i,
+                      long long &dim1,
+                      long long &dim2,
+                      long long &dim3,
+                      int &P,
+                      long long &needed_memory,
+                      const std::string label) {
 
     int next_div = 1;
     int accumulated_div = 1;
@@ -298,25 +375,30 @@ bool Strategy::divide(std::vector<int>& div_factors, int& dim_i,
     bool largest = dim1 >= std::max(dim2, dim3);
     bool first_run = true;
 
-    // std::cout << "m-split divide and round = " << math_utils::divide_and_round_up(k * n * next_div, P) << std::endl;
+    // std::cout << "m-split divide and round = " <<
+    // math_utils::divide_and_round_up(k * n * next_div, P) << std::endl;
     // std::cout << "m / acc_div = " << m/accumulated_div << std::endl;
     // if m largest => split it
     while (dim_i < div_factors.size() && (largest || first_run) &&
-            needed_memory + math_utils::divide_and_round_up(dim2*dim3*next_div,P) <= memory_limit) {
+           needed_memory +
+                   math_utils::divide_and_round_up(dim2 * dim3 * next_div, P) <=
+               memory_limit) {
         accumulated_div = next_div;
         did_parallel = true;
         dim_i++;
         // i++;
-        if (dim_i >= div_factors.size()) break;
+        if (dim_i >= div_factors.size())
+            break;
         next_div *= div_factors[dim_i];
 
         first_run = false;
-        largest = dim1/accumulated_div >= std::max(dim2, dim3);
+        largest = dim1 / accumulated_div >= std::max(dim2, dim3);
     }
 
     if (did_parallel) {
         // i--;
-        needed_memory += math_utils::divide_and_round_up(dim2*dim3*accumulated_div,P);
+        needed_memory +=
+            math_utils::divide_and_round_up(dim2 * dim3 * accumulated_div, P);
         split_dimension += label;
         step_type += "p";
         divisors.push_back(accumulated_div);
@@ -340,12 +422,12 @@ void Strategy::square_strategy() {
     long long needed_memory = initial_memory(m, n, k, P);
 
     if (memory_limit < needed_memory) {
-        throw_exception(std::string("This multiplication requires the memory ")
-                + "for at least " + std::to_string(needed_memory)
-                + " units, but only " + std::to_string(memory_limit)
-                + " units are allowed. Either increase the memory limit "
-                + "or change the strategy by using more sequential "
-                + "steps.");
+        throw_exception(
+            std::string("This multiplication requires the memory ") +
+            "for at least " + std::to_string(needed_memory) +
+            " units, but only " + std::to_string(memory_limit) +
+            " units are allowed. Either increase the memory limit " +
+            "or change the strategy by using more sequential " + "steps.");
     }
 
     while (P > 1) {
@@ -360,20 +442,23 @@ void Strategy::square_strategy() {
         int mi, ni, ki;
         mi = ni = ki = 0;
 
-        int total_divisors = divm_factors.size() + divn_factors.size()
-            + divk_factors.size();
+        int total_divisors =
+            divm_factors.size() + divn_factors.size() + divk_factors.size();
 
-        // Iterate through all prime factors of divm, divn and divk and 
+        // Iterate through all prime factors of divm, divn and divk and
         // divide each dimensions with corresponding prime factors as long
         // as that dimension is the largest one.
         // Instead of dividing immediately m/divm, n/divn and k/divk,
         // it's always better to divide the dimension with smaller factors first
-        // that are large enough to make that dimension NOT be the largest one after division
+        // that are large enough to make that dimension NOT be the largest one
+        // after division
         while (mi + ni + ki < total_divisors) {
             int i = mi + ni + ki;
-            // std::cout << "i = " << i << ", m = " << m << ", n = " << n << ", k = " << k << std::endl;
-            // std::cout << "mi = " << mi << ", ni = " << ni << ", ki = " << ki << ", P = " << P << std::endl;
-            // std::cout << "needed mem = " << needed_memory << ", mem limit = " << memory_limit << std::endl;
+            // std::cout << "i = " << i << ", m = " << m << ", n = " << n << ",
+            // k = " << k << std::endl; std::cout << "mi = " << mi << ", ni = "
+            // << ni << ", ki = " << ki << ", P = " << P << std::endl; std::cout
+            // << "needed mem = " << needed_memory << ", mem limit = " <<
+            // memory_limit << std::endl;
             bool did_parallel = false;
 
             long long mm = mi >= divm_factors.size() ? 1 : m;
@@ -381,18 +466,24 @@ void Strategy::square_strategy() {
             long long kk = ki >= divk_factors.size() ? 1 : k;
 
             if (mm >= std::max(nn, kk)) {
-                did_parallel = divide(divm_factors, mi, m, n, k, P, needed_memory, "m");
-                if (did_parallel) continue;
+                did_parallel =
+                    divide(divm_factors, mi, m, n, k, P, needed_memory, "m");
+                if (did_parallel)
+                    continue;
             }
 
             if (nn >= std::max(mm, kk)) {
-                did_parallel = divide(divn_factors, ni, n, m, k, P, needed_memory, "n");
-                if (did_parallel) continue;
+                did_parallel =
+                    divide(divn_factors, ni, n, m, k, P, needed_memory, "n");
+                if (did_parallel)
+                    continue;
             }
 
             if (kk >= std::max(mm, nn)) {
-                did_parallel = divide(divk_factors, ki, k, m, n, P, needed_memory, "k");
-                if (did_parallel) continue;
+                did_parallel =
+                    divide(divk_factors, ki, k, m, n, P, needed_memory, "k");
+                if (did_parallel)
+                    continue;
             }
 
             // if not enough memory for any of the proposed parallel steps
@@ -436,10 +527,9 @@ void Strategy::square_strategy() {
     for (int i = 0; i < divisors.size(); ++i) {
         if (step_type[i] == 'p') {
             int div = divisors[i];
-            while (i + 1 < divisors.size() && 
-                   step_type[i+1] == 'p' && 
-                   split_dimension[i+1] == split_dimension[i]) {
-                div *= divisors[i+1];
+            while (i + 1 < divisors.size() && step_type[i + 1] == 'p' &&
+                   split_dimension[i + 1] == split_dimension[i]) {
+                div *= divisors[i + 1];
                 i++;
             }
             step_type_shorter += "p";
@@ -454,11 +544,11 @@ void Strategy::square_strategy() {
         int divk = 1;
 
         while (step_type[j] == 's') {
-            if (split_dimension[j] == 'm') 
+            if (split_dimension[j] == 'm')
                 divm *= divisors[j];
             else if (split_dimension[j] == 'n')
                 divn *= divisors[j];
-            else 
+            else
                 divk *= divisors[j];
             j++;
         }
@@ -487,7 +577,12 @@ void Strategy::square_strategy() {
     divisors = divisors_shorter;
 }
 
-double communication_cost(long long M, long long N, long long K, int gridM, int gridN, int gridK) {
+double communication_cost(long long M,
+                          long long N,
+                          long long K,
+                          int gridM,
+                          int gridN,
+                          int gridK) {
     int sizeM = M / gridM;
     int sizeN = N / gridN;
     int sizeK = K / gridK;
@@ -496,10 +591,15 @@ double communication_cost(long long M, long long N, long long K, int gridM, int 
     return total_cost;
 }
 
-void processor_grid(unsigned p, 
-        int M, int N, int K,
-        int& gridM, int& gridN, int& gridK,
-        double maxCompLoss = 0.03, double maxCommLoss = 0.2) {
+void processor_grid(unsigned p,
+                    int M,
+                    int N,
+                    int K,
+                    int &gridM,
+                    int &gridN,
+                    int &gridK,
+                    double maxCompLoss = 0.03,
+                    double maxCommLoss = 0.2) {
 
     unsigned lostProcesses = p - gridM * gridN * gridK;
 
@@ -511,10 +611,11 @@ void processor_grid(unsigned p,
         unsigned gridMcurrent, gridNcurrent, gridKcurrent;
         for (unsigned i = 0; i < p * maxCompLoss; i++) {
             if (1.0 * curCommCost / optCommCost > 1 + maxCommLoss) {
-                std::tie(gridMcurrent, gridNcurrent, gridKcurrent) = math_utils::balanced_divisors(M, N, K, p - i);
-                curCommCost = communication_cost(M, N, K, gridMcurrent, gridNcurrent, gridKcurrent);
-            }
-            else {
+                std::tie(gridMcurrent, gridNcurrent, gridKcurrent) =
+                    math_utils::balanced_divisors(M, N, K, p - i);
+                curCommCost = communication_cost(
+                    M, N, K, gridMcurrent, gridNcurrent, gridKcurrent);
+            } else {
                 gridM = gridMcurrent;
                 gridN = gridNcurrent;
                 gridK = gridKcurrent;
@@ -539,29 +640,32 @@ void Strategy::spartition_strategy() {
 
     while (n_tiles_m * n_tiles_n * n_tiles_k > P) {
         if (a < std::sqrt(memory_limit)) {
-            //find which dimension requires least stretching 
-            int new_tile_size_m = n_tiles_m == 1 ? std::numeric_limits<int>::max() : (m - 1) / (n_tiles_m - 1) + 1;
-            int new_tile_size_n = n_tiles_n == 1 ? std::numeric_limits<int>::max() : (n - 1) / (n_tiles_n - 1) + 1;
-            int new_tile_size_k = n_tiles_k == 1 ? std::numeric_limits<int>::max() : (k - 1) / (n_tiles_k - 1) + 1;
+            // find which dimension requires least stretching
+            int new_tile_size_m = n_tiles_m == 1
+                                      ? std::numeric_limits<int>::max()
+                                      : (m - 1) / (n_tiles_m - 1) + 1;
+            int new_tile_size_n = n_tiles_n == 1
+                                      ? std::numeric_limits<int>::max()
+                                      : (n - 1) / (n_tiles_n - 1) + 1;
+            int new_tile_size_k = n_tiles_k == 1
+                                      ? std::numeric_limits<int>::max()
+                                      : (k - 1) / (n_tiles_k - 1) + 1;
             if (new_tile_size_k <= std::min(new_tile_size_m, new_tile_size_n)) {
                 n_tiles_k = (k - 1) / new_tile_size_k + 1;
-            }
-            else {
-                if (new_tile_size_n < new_tile_size_m && new_tile_size_n * tile_size_m < memory_limit) {
+            } else {
+                if (new_tile_size_n < new_tile_size_m &&
+                    new_tile_size_n * tile_size_m < memory_limit) {
                     n_tiles_n = (n - 1) / new_tile_size_n + 1;
-                }
-                else if (new_tile_size_m * tile_size_n < memory_limit) {
+                } else if (new_tile_size_m * tile_size_n < memory_limit) {
                     n_tiles_m = (m - 1) / new_tile_size_m + 1;
-                }
-                else {
+                } else {
                     n_tiles_k = (k - 1) / new_tile_size_k + 1;
                 }
             }
             if (n_tiles_m * n_tiles_n * n_tiles_k <= P) {
                 break;
             }
-        }
-        else {
+        } else {
             n_tiles_k = P / (n_tiles_m * n_tiles_n);
             if (n_tiles_m * n_tiles_n * n_tiles_k <= P) {
                 break;
@@ -569,14 +673,15 @@ void Strategy::spartition_strategy() {
         }
     }
 
-    //physical num cores refinement
+    // physical num cores refinement
     processor_grid(P, m, n, k, n_tiles_m, n_tiles_n, n_tiles_k);
 
     tile_size_m = (m - 1) / n_tiles_m + 1;
     tile_size_n = (n - 1) / n_tiles_n + 1;
     tile_size_k = (k - 1) / n_tiles_k + 1;
 
-    double localMemCapacity = 1.0 * memory_limit / std::max(tile_size_m, tile_size_n);
+    double localMemCapacity =
+        1.0 * memory_limit / std::max(tile_size_m, tile_size_n);
 
     std::vector<int> divisionsM = math_utils::decompose(n_tiles_m);
     std::vector<int> divisionsN = math_utils::decompose(n_tiles_n);
@@ -606,11 +711,10 @@ void Strategy::spartition_strategy() {
     }
 
     // Add parallel schedule
-    int max_num_divisors = std::max(divisionsM.size(),
-            std::max(divisionsN.size(), divisionsK.size()));
+    int max_num_divisors = std::max(
+        divisionsM.size(), std::max(divisionsN.size(), divisionsK.size()));
 
-    for (size_t i = 0; i < max_num_divisors; i++)
-    {
+    for (size_t i = 0; i < max_num_divisors; i++) {
         if (divisionsM.size() > i) {
             step_type += "p";
             split_dimension += "m";
@@ -632,42 +736,31 @@ void Strategy::spartition_strategy() {
 }
 
 // token is a triplet e.g. pm3 (denoting parallel (m / 3) step)
-void Strategy::process_token(const std::string& step_triplet) {
-    if (step_triplet.length() < 3) return;
+void Strategy::process_token(const std::string &step_triplet) {
+    if (step_triplet.length() < 3)
+        return;
     step_type += step_triplet[0];
     split_dimension += step_triplet[1];
     divisors.push_back(options::next_int(2, step_triplet));
 }
 
-void Strategy::throw_exception(const std::string& message) {
+void Strategy::throw_exception(const std::string &message) {
     std::cout << "Splitting strategy not well defined.\n";
     // std::cout << *this << std::endl;
     throw std::runtime_error(message);
 }
 
-bool Strategy::split_m(size_t i) const {
-    return split_dimension[i] == 'm';
-}
+bool Strategy::split_m(size_t i) const { return split_dimension[i] == 'm'; }
 
-bool Strategy::split_n(size_t i) const {
-    return split_dimension[i] == 'n';
-}
+bool Strategy::split_n(size_t i) const { return split_dimension[i] == 'n'; }
 
-bool Strategy::split_k(size_t i) const {
-    return split_dimension[i] == 'k';
-}
+bool Strategy::split_k(size_t i) const { return split_dimension[i] == 'k'; }
 
-bool Strategy::split_A(size_t i) const {
-    return split_m(i) || split_k(i);
-}
+bool Strategy::split_A(size_t i) const { return split_m(i) || split_k(i); }
 
-bool Strategy::split_B(size_t i) const {
-    return split_k(i) || split_n(i);
-}
+bool Strategy::split_B(size_t i) const { return split_k(i) || split_n(i); }
 
-bool Strategy::split_C(size_t i) const {
-    return split_m(i) || split_n(i);
-}
+bool Strategy::split_C(size_t i) const { return split_m(i) || split_n(i); }
 
 bool Strategy::split(char label, size_t step) const {
     if (label == 'A')
@@ -678,29 +771,17 @@ bool Strategy::split(char label, size_t step) const {
         return split_C(step);
 }
 
-bool Strategy::sequential_step(size_t i) const {
-    return step_type[i] == 's';
-}
+bool Strategy::sequential_step(size_t i) const { return step_type[i] == 's'; }
 
-bool Strategy::parallel_step(size_t i) const {
-    return step_type[i] == 'p';
-}
+bool Strategy::parallel_step(size_t i) const { return step_type[i] == 'p'; }
 
-int Strategy::divisor(size_t i) const {
-    return divisors[i];
-}
+int Strategy::divisor(size_t i) const { return divisors[i]; }
 
-int Strategy::divisor_m(size_t i) const {
-    return split_m(i) ? divisors[i] : 1;
-}
+int Strategy::divisor_m(size_t i) const { return split_m(i) ? divisors[i] : 1; }
 
-int Strategy::divisor_n(size_t i) const {
-    return split_n(i) ? divisors[i] : 1;
-}
+int Strategy::divisor_n(size_t i) const { return split_n(i) ? divisors[i] : 1; }
 
-int Strategy::divisor_k(size_t i) const {
-    return split_k(i) ? divisors[i] : 1;
-}
+int Strategy::divisor_k(size_t i) const { return split_k(i) ? divisors[i] : 1; }
 
 int Strategy::divisor_row(char matrix, size_t i) const {
     if (matrix == 'A')
@@ -722,21 +803,19 @@ int Strategy::divisor_col(char matrix, size_t i) const {
     return 1;
 }
 
-bool Strategy::final_step(size_t i) const {
-    return i == n_steps;
-}
+bool Strategy::final_step(size_t i) const { return i == n_steps; }
 
 int Strategy::parallel_steps_before_gemm(char label) const {
-    if (label == 'A') 
+    if (label == 'A')
         return n_parallel_steps_before_gemm_a;
-    if (label == 'B') 
+    if (label == 'B')
         return n_parallel_steps_before_gemm_b;
-    if (label == 'C') 
+    if (label == 'C')
         return n_parallel_steps_before_gemm_c;
     return -1;
 }
 
-long long Strategy::required_memory(Strategy& strategy) {
+long long Strategy::required_memory(Strategy &strategy) {
     long long m = strategy.m;
     long long n = strategy.n;
     long long k = strategy.k;
@@ -749,11 +828,11 @@ long long Strategy::required_memory(Strategy& strategy) {
 
         if (strategy.parallel_step(step)) {
             if (strategy.split_m(step))
-                initial_size += math_utils::divide_and_round_up(k*n*div,P);
+                initial_size += math_utils::divide_and_round_up(k * n * div, P);
             else if (strategy.split_n(step))
-                initial_size += math_utils::divide_and_round_up(m*k*div,P);
+                initial_size += math_utils::divide_and_round_up(m * k * div, P);
             else
-                initial_size += math_utils::divide_and_round_up(m*n*div,P);
+                initial_size += math_utils::divide_and_round_up(m * n * div, P);
             P /= div;
         }
 
@@ -783,13 +862,14 @@ void Strategy::check_if_valid() {
 
     for (size_t i = 0; i < n_steps; ++i) {
         if (divisors[i] <= 1) {
-            throw_exception(std::string("Divisors in each step must be larger than 1.")
-                    + "Divisor in step " + std::to_string(i) + " = " 
-                    + std::to_string(divisors[i]) + ".");
+            throw_exception(
+                std::string("Divisors in each step must be larger than 1.") +
+                "Divisor in step " + std::to_string(i) + " = " +
+                std::to_string(divisors[i]) + ".");
         }
 
-        if (split_dimension[i] != 'm' && split_dimension[i] != 'n' 
-                && split_dimension[i] != 'k') {
+        if (split_dimension[i] != 'm' && split_dimension[i] != 'n' &&
+            split_dimension[i] != 'k') {
             throw_exception("Split dimension in each step must be m, n or k");
         }
 
@@ -810,14 +890,18 @@ void Strategy::check_if_valid() {
             }
 
             if (Pi <= 1) {
-                throw_exception(std::string("Not enough processors for this division strategy.")
-                        + "The product of all divisors in a parallel step should be equal "
-                        + "to the number of processors");
+                throw_exception(
+                    std::string(
+                        "Not enough processors for this division strategy.") +
+                    "The product of all divisors in a parallel step should be "
+                    "equal " +
+                    "to the number of processors");
             }
 
             if (Pi % divisors[i] != 0) {
-                throw_exception(std::string("The number of processors left in each parallel step ")
-                        + "should be divisible by divisor.");
+                throw_exception(std::string("The number of processors left in "
+                                            "each parallel step ") +
+                                "should be divisible by divisor.");
             }
 
             Pi /= divisors[i];
@@ -838,45 +922,57 @@ void Strategy::check_if_valid() {
             mi /= divisors[i];
         }
 
-        // if last step, check if #columns >= #processors that share this block of matrix
-        // we only check dimensions n and k, because these are the dimensions defining
-        // the number of columns, i.e. dimension m does not denote the #columns of any matrix
+        // if last step, check if #columns >= #processors that share this block
+        // of matrix we only check dimensions n and k, because these are the
+        // dimensions defining the number of columns, i.e. dimension m does not
+        // denote the #columns of any matrix
         if (i == n_steps - 1) {
-            // since we are using column major ordering, the #columns of each matrix must be at least
-            // the number of processors left at that step
+            // since we are using column major ordering, the #columns of each
+            // matrix must be at least the number of processors left at that
+            // step
             if (split_dimension[i] == 'n') {
                 ni /= divisors[i];
                 if (ni < Pi) {
-                    throw_exception(std::string("Dimension n at step ") + std::to_string(i) + " = "
-                            + std::to_string(ni) + ", which is less than the number of processors left = "
-                            + std::to_string(Pi));
+                    throw_exception(std::string("Dimension n at step ") +
+                                    std::to_string(i) + " = " +
+                                    std::to_string(ni) +
+                                    ", which is less than the number of "
+                                    "processors left = " +
+                                    std::to_string(Pi));
                 }
             }
 
             if (split_dimension[i] == 'k') {
                 ki /= divisors[i];
                 if (ki < Pi) {
-                    throw_exception(std::string("Dimension k at step ") + std::to_string(i) + " = "
-                            + std::to_string(ki) + ", which is less than the number "
-                            + "of processors left = "
-                            + std::to_string(Pi));
+                    throw_exception(
+                        std::string("Dimension k at step ") +
+                        std::to_string(i) + " = " + std::to_string(ki) +
+                        ", which is less than the number " +
+                        "of processors left = " + std::to_string(Pi));
                 }
             }
         }
     }
     if (Pi != 1) {
-        throw_exception(std::string("Too many processors. The number of processors should be ")
-                + "equal to the product of divisors in all parallel steps.");
+        throw_exception(
+            std::string(
+                "Too many processors. The number of processors should be ") +
+            "equal to the product of divisors in all parallel steps.");
     }
 
     memory_used = required_memory(*this);
     // check if we have enough memory for this splitting strategy
     /*
     if (memory_limit < memory_used) {
-        throw_exception(std::string("The splitting strategy requires memory for roughly ")
-                + std::to_string(memory_used) + " elements, but the memory limit is only " 
-                + std::to_string(memory_limit) + " elements. Either increase the memory limit "
-                + "or change the strategy. (Hint: you could use some sequential "
+        throw_exception(std::string("The splitting strategy requires memory for
+    roughly ")
+                + std::to_string(memory_used) + " elements, but the memory limit
+    is only "
+                + std::to_string(memory_limit) + " elements. Either increase the
+    memory limit "
+                + "or change the strategy. (Hint: you could use some sequential
+    "
                 + "steps to decrease the required memory.)");
     }
     */
@@ -943,7 +1039,7 @@ void Strategy::compute_min_sizes() {
 }
 
 bool Strategy::should_overlap_comm_and_comp(int step) const {
-    bool last_step = step == n_steps-1;
+    bool last_step = step == n_steps - 1;
     if (!last_step) {
         return false;
     }
@@ -958,24 +1054,25 @@ bool Strategy::should_overlap_comm_and_comp(int step) const {
     int newk = min_k;
 
     // overlap requires that the number of columns of the expanded matrix
-    // i.e. the matrix that is not split is >= div, so that it can be split as well
-    bool overlap_possible = (split_m(step) && min_n >= div)
-                         || (split_n(step) && min_k >= div)
-                         || (split_k(step) && min_n >= div);
+    // i.e. the matrix that is not split is >= div, so that it can be split as
+    // well
+    bool overlap_possible = (split_m(step) && min_n >= div) ||
+                            (split_n(step) && min_k >= div) ||
+                            (split_k(step) && min_n >= div);
 
     if (split_m(step)) {
         newn /= div;
     } else if (split_n(step)) {
         newk /= div;
     } else {
-        newn /=div;
+        newn /= div;
     }
 
     bool overlap_turned_on = overlap_comm_and_comp;
     double score_no_overlap = math_utils::square_score(min_m, min_n, min_k);
     double score_with_overlap = math_utils::square_score(newm, newn, newk);
     auto diff = score_with_overlap - score_no_overlap;
-    bool should_overlap = diff/score_no_overlap >= 0.5;
+    bool should_overlap = diff / score_no_overlap >= 0.5;
 
     // std::cout << "overlap_possible = " << overlap_possible << std::endl;
     // std::cout << "last_step = " << last_step << std::endl;
@@ -993,9 +1090,9 @@ bool Strategy::should_overlap_comm_and_comp(int step) const {
     return condition;
 }
 
-std::ostream& operator<<(std::ostream& os, const Strategy& other) {
-    os << "Matrix dimensions (m, n, k) = (" << other.m << ", " << other.n << ", " 
-        << other.k << ")\n";
+std::ostream &operator<<(std::ostream &os, const Strategy &other) {
+    os << "Matrix dimensions (m, n, k) = (" << other.m << ", " << other.n
+       << ", " << other.k << ")\n";
     os << "Number of processors: " << other.P << "\n";
     if (other.topology) {
         os << "Communication-aware topology turned on.\n";
@@ -1003,9 +1100,11 @@ std::ostream& operator<<(std::ostream& os, const Strategy& other) {
     if (other.overlap_comm_and_comp) {
         os << "Overlap of communication and computation: ON.\n";
         if (other.use_busy_waiting) {
-            os << "Communication-thread policy (for overlap): " << "busy-waiting (using blocking one-sided MPI).\n";
+            os << "Communication-thread policy (for overlap): "
+               << "busy-waiting (using blocking one-sided MPI).\n";
         } else {
-            os << "Communication-thread policy (for overlap): " << "polling (using non-blocking one-sided MPI).\n";
+            os << "Communication-thread policy (for overlap): "
+               << "polling (using non-blocking one-sided MPI).\n";
         }
     } else {
         os << "Overlap of communication and computation: OFF.\n";
@@ -1013,13 +1112,17 @@ std::ostream& operator<<(std::ostream& os, const Strategy& other) {
     os << "Divisions strategy: \n";
     for (size_t i = 0; i < other.n_steps; ++i) {
         if (other.step_type[i] == 'p') {
-            os << "parallel (" << other.split_dimension[i] << " / " << other.divisors[i] << ")\n";
+            os << "parallel (" << other.split_dimension[i] << " / "
+               << other.divisors[i] << ")\n";
         } else {
-            os << "sequential (" << other.split_dimension[i] << " / " << other.divisors[i] << ")\n";
+            os << "sequential (" << other.split_dimension[i] << " / "
+               << other.divisors[i] << ")\n";
         }
     }
-    os << "Required memory per rank (in #elements): " << other.memory_used << "\n";
-    os << "Available memory per rank (in #elements): " << other.memory_limit << "\n";
+    os << "Required memory per rank (in #elements): " << other.memory_used
+       << "\n";
+    os << "Available memory per rank (in #elements): " << other.memory_limit
+       << "\n";
     return os;
 }
-}
+} // namespace cosma

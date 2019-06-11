@@ -8,7 +8,7 @@
 
 namespace cosma {
 class context {
-public:
+  public:
     context();
     context(int streams, int tile_m, int tile_n, int tile_k);
 
@@ -18,4 +18,4 @@ public:
 };
 context make_context();
 context make_context(int streams, int tile_m, int tile_n, int tile_k);
-}
+} // namespace cosma

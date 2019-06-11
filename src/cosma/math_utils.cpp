@@ -1,9 +1,7 @@
 #include <cosma/math_utils.hpp>
 
 namespace cosma {
-int math_utils::gcd(int a, int b) {
-    return b == 0 ? a : gcd(b, a % b);
-}
+int math_utils::gcd(int a, int b) { return b == 0 ? a : gcd(b, a % b); }
 
 long long math_utils::divide_and_round_up(long long x, long long y) {
     return 1 + ((x - 1) / y);
@@ -31,12 +29,14 @@ std::vector<int> math_utils::find_divisors(int n) {
     return divs;
 }
 
-std::tuple<int, int, int> math_utils::balanced_divisors(long long m, long long n, long long k, int P) {
-    // sort the dimensions 
+std::tuple<int, int, int>
+math_utils::balanced_divisors(long long m, long long n, long long k, int P) {
+    // sort the dimensions
     std::vector<int> dimensions = {(int)m, (int)n, (int)k};
     std::sort(dimensions.begin(), dimensions.end());
 
-    double target_tile_size = std::cbrt(1.0*dimensions[1]*dimensions[2] / P * dimensions[0]);
+    double target_tile_size =
+        std::cbrt(1.0 * dimensions[1] * dimensions[2] / P * dimensions[0]);
     // std::cout << "target size = " << target_tile_size << std::endl;
 
     int error = std::numeric_limits<int>::max();
@@ -44,19 +44,20 @@ std::tuple<int, int, int> math_utils::balanced_divisors(long long m, long long n
     int divn = 1;
     int divk = 1;
 
-    for (const int& div1 : find_divisors(P)) {
-        int error_lower_bound = std::abs(m/div1 - target_tile_size);
+    for (const int &div1 : find_divisors(P)) {
+        int error_lower_bound = std::abs(m / div1 - target_tile_size);
         if (error_lower_bound > error) {
             // std::cout << "skipping " << error_lower_bound << std::endl;
             continue;
         }
-        for (const int& div2 : find_divisors(P/div1)) {
+        for (const int &div2 : find_divisors(P / div1)) {
             int div3 = (P / div1) / div2;
-            // std::cout << "div1 = " << div1 << ", div2 = " << div2 << ", div3 = " << div3 << std::endl;
+            // std::cout << "div1 = " << div1 << ", div2 = " << div2 << ", div3
+            // = " << div3 << std::endl;
 
-            int current_error = std::abs(m/div1 - target_tile_size)
-                              + std::abs(n/div2 - target_tile_size)
-                              + std::abs(k/div3 - target_tile_size);
+            int current_error = std::abs(m / div1 - target_tile_size) +
+                                std::abs(n / div2 - target_tile_size) +
+                                std::abs(k / div3 - target_tile_size);
 
             // std::cout << "error = " << current_error << std::endl;
 
@@ -67,24 +68,27 @@ std::tuple<int, int, int> math_utils::balanced_divisors(long long m, long long n
 
                 error = current_error;
             }
-
         }
     }
-    // std::cout << "balanced divisors of " << m << ", " << n << ", " << k << " are " << divm << ", " << divn << ", " << divk << std::endl;
+    // std::cout << "balanced divisors of " << m << ", " << n << ", " << k << "
+    // are " << divm << ", " << divn << ", " << divk << std::endl;
     return std::make_tuple(divm, divn, divk);
 }
 
 /*
-std::tuple<int, int, int> math_utils::balanced_divisors(long long m, long long n, long long k, int P) {
-    // sort the dimensions 
+std::tuple<int, int, int> math_utils::balanced_divisors(long long m, long long
+n, long long k, int P) {
+    // sort the dimensions
     std::vector<int> dimensions = {(int)m, (int)n, (int)k};
     std::sort(dimensions.begin(), dimensions.end());
 
     int orig_P = P;
 
-    // find divm, divn, divk such that m/divm = n/divn = k/divk (as close as possible)
+    // find divm, divn, divk such that m/divm = n/divn = k/divk (as close as
+possible)
     // be careful when dividing, since the product mnk can be very large
-    double target_tile_size = std::cbrt(1.0*dimensions[1]*dimensions[2] / P * dimensions[0]);
+    double target_tile_size = std::cbrt(1.0*dimensions[1]*dimensions[2] / P *
+dimensions[0]);
     // std::cout << "target tile dimension = " << target_tile_size << std::endl;
     //
     std::cout << "target_size = " << target_tile_size << std::endl;
@@ -100,7 +104,8 @@ std::tuple<int, int, int> math_utils::balanced_divisors(long long m, long long n
     P /= div1;
     int div0 = P;
 
-    std::cout << "div0 = " << div0 << ", div1 = " << div1 << ", div2 = " << div2 << std::endl;
+    std::cout << "div0 = " << div0 << ", div1 = " << div1 << ", div2 = " << div2
+<< std::endl;
 
     std::vector<int> divisors = {div0, div1, div2};
 
@@ -118,7 +123,8 @@ std::tuple<int, int, int> math_utils::balanced_divisors(long long m, long long n
 
     int divk = divisors[0];
 
-    std::cout << "balanced divisors of " << m << ", " << n << ", " << k << ", " << orig_P << " are " << divm << ", " << divn << ", " << divk << std::endl;
+    std::cout << "balanced divisors of " << m << ", " << n << ", " << k << ", "
+<< orig_P << " are " << divm << ", " << divn << ", " << divk << std::endl;
     return std::make_tuple(divm, divn, divk);
 }
 */
@@ -129,18 +135,18 @@ std::vector<int> math_utils::decompose(int n) {
     int orig_n = n;
 
     // number of 2s that divide n
-    while (n%2 == 0) {
+    while (n % 2 == 0) {
         factors.push_back(2);
-        n = n/2;
+        n = n / 2;
     }
 
-    // n must be odd at this point. 
+    // n must be odd at this point.
     // we can skip one element
-    for (int i = 3; i <= std::sqrt(n); i = i+2) {
+    for (int i = 3; i <= std::sqrt(n); i = i + 2) {
         // while i divides n, print i and divide n
-        while (n%i == 0) {
+        while (n % i == 0) {
             factors.push_back(i);
-            n = n/i;
+            n = n / i;
         }
     }
 
@@ -164,7 +170,7 @@ int math_utils::closest_divisor(int P, int dimension, double target) {
     int best_div = 1;
 
     for (int i : find_divisors(P)) {
-        error = std::abs(1.0*dimension / i - target);
+        error = std::abs(1.0 * dimension / i - target);
 
         if (error <= best_error) {
             best_div = i;
@@ -172,13 +178,14 @@ int math_utils::closest_divisor(int P, int dimension, double target) {
         }
     }
 
-    std::cout << "closest divisor of " << dimension << " is " << best_div << std::endl;
+    std::cout << "closest divisor of " << dimension << " is " << best_div
+              << std::endl;
     return best_div;
 }
 
 int math_utils::int_div_up(int numerator, int denominator) {
     return numerator / denominator +
-        (((numerator < 0) ^ (denominator > 0)) && (numerator%denominator));
+           (((numerator < 0) ^ (denominator > 0)) && (numerator % denominator));
 }
 
 double math_utils::square_score(int rows, int cols) {
@@ -199,7 +206,7 @@ double math_utils::square_score(int m, int n, int k) {
 }
 
 std::pair<int, int> math_utils::invert_cantor_pairing(int z) {
-    int w = (int) std::floor((std::sqrt(8 * z + 1) - 1)/2);
+    int w = (int)std::floor((std::sqrt(8 * z + 1) - 1) / 2);
     int t = (w * w + w) / 2;
     int y = z - t;
     int x = w - y;
@@ -209,6 +216,6 @@ std::pair<int, int> math_utils::invert_cantor_pairing(int z) {
 // maps (N, N) -> N
 int math_utils::cantor_pairing(const int i, const int j) {
     int sum = i + j;
-    return (sum * (sum + 1))/2 + j;
+    return (sum * (sum + 1)) / 2 + j;
 }
-}
+} // namespace cosma

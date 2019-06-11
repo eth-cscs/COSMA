@@ -1,6 +1,6 @@
 #include <cosma/strategy.hpp>
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     int m = 10000;
     int n = m;
     int k = m;

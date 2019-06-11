@@ -6,20 +6,36 @@ namespace cosma {
  Assumption: we assume that at each step only 1 dimension is split
 */
 
-void multiply(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
-              const Strategy& strategy, MPI_Comm comm, double beta) {
-    Interval mi = Interval(0, strategy.m-1);
-    Interval ni = Interval(0, strategy.n-1);
-    Interval ki = Interval(0, strategy.k-1);
-    Interval Pi = Interval(0, strategy.P-1);
+void multiply(context &ctx,
+              CosmaMatrix &matrixA,
+              CosmaMatrix &matrixB,
+              CosmaMatrix &matrixC,
+              const Strategy &strategy,
+              MPI_Comm comm,
+              double beta) {
+    Interval mi = Interval(0, strategy.m - 1);
+    Interval ni = Interval(0, strategy.n - 1);
+    Interval ki = Interval(0, strategy.k - 1);
+    Interval Pi = Interval(0, strategy.P - 1);
 
     PE(preprocessing_communicators);
-    std::unique_ptr<communicator> cosma_comm = std::make_unique<hybrid_communicator>(&strategy, comm);
+    std::unique_ptr<communicator> cosma_comm =
+        std::make_unique<hybrid_communicator>(&strategy, comm);
     PL();
 
     if (!cosma_comm->is_idle()) {
-        multiply(ctx, matrixA, matrixB, matrixC,
-                 mi, ni, ki, Pi, 0, strategy, *cosma_comm, beta);
+        multiply(ctx,
+                 matrixA,
+                 matrixB,
+                 matrixC,
+                 mi,
+                 ni,
+                 ki,
+                 Pi,
+                 0,
+                 strategy,
+                 *cosma_comm,
+                 beta);
     }
 
     if (cosma_comm->rank() == 0) {
@@ -27,15 +43,26 @@ void multiply(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMat
     }
 }
 
-void multiply(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
-              Interval& m, Interval& n, Interval& k, Interval& P,
-              size_t step, const Strategy& strategy,
-              communicator& comm, double beta) {
+void multiply(context &ctx,
+              CosmaMatrix &matrixA,
+              CosmaMatrix &matrixB,
+              CosmaMatrix &matrixC,
+              Interval &m,
+              Interval &n,
+              Interval &k,
+              Interval &P,
+              size_t step,
+              const Strategy &strategy,
+              communicator &comm,
+              double beta) {
     PE(multiply_other);
 #ifdef DEBUG
-    std::cout << "matrix A, buffer index = " << matrixA.buffer_index() << std::endl;
-    std::cout << "matrix B, buffer index = " << matrixB.buffer_index() << std::endl;
-    std::cout << "matrix C, buffer index = " << matrixC.buffer_index() << std::endl;
+    std::cout << "matrix A, buffer index = " << matrixA.buffer_index()
+              << std::endl;
+    std::cout << "matrix B, buffer index = " << matrixB.buffer_index()
+              << std::endl;
+    std::cout << "matrix C, buffer index = " << matrixC.buffer_index()
+              << std::endl;
 #endif
 
     // current submatrices that are being computed
@@ -43,18 +70,19 @@ void multiply(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMat
     Interval2D b_range(k, n);
     Interval2D c_range(m, n);
 
-    // For each of P processors remember which sequential bucket we are currently on
+    // For each of P processors remember which sequential bucket we are
+    // currently on
     std::vector<int> bucketA = matrixA.seq_buckets(P);
     std::vector<int> bucketB = matrixB.seq_buckets(P);
     std::vector<int> bucketC = matrixC.seq_buckets(P);
 
     // Skip all buckets that are "before" the current submatrices.
     // the relation submatrix1 <before> submatrix2 is defined in Interval2D.
-    // Intuitively, this will skip all the buckets that are "above" or "on the left"
-    // of the current submatrices. We say "before" because whenever we split
-    // sequentially, we always first start with the "above" submatrix
-    // (if the splitting is horizontal) or with the left one (if the splitting is vertical).
-    // which explains the name of the relation "before".
+    // Intuitively, this will skip all the buckets that are "above" or "on the
+    // left" of the current submatrices. We say "before" because whenever we
+    // split sequentially, we always first start with the "above" submatrix (if
+    // the splitting is horizontal) or with the left one (if the splitting is
+    // vertical). which explains the name of the relation "before".
     matrixA.update_buckets(P, a_range);
     matrixB.update_buckets(P, b_range);
     matrixC.update_buckets(P, c_range);
@@ -67,19 +95,48 @@ void multiply(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMat
     PL();
 
     if (strategy.final_step(step))
-        local_multiply(ctx, matrixA.current_matrix(), matrixB.current_matrix(), 
-               matrixC.current_matrix(), m.length(), n.length(), k.length(), beta);
+        local_multiply(ctx,
+                       matrixA.current_matrix(),
+                       matrixB.current_matrix(),
+                       matrixC.current_matrix(),
+                       m.length(),
+                       n.length(),
+                       k.length(),
+                       beta);
     else {
         if (strategy.parallel_step(step)) {
             if (strategy.should_overlap_comm_and_comp(step)) {
-                comm.overlap_comm_and_comp(ctx, matrixA, matrixB, matrixC,
-                      m, n, k, P, step, beta);
-                // parallel(matrixA, matrixB, matrixC, m, n, k, P, step, strategy, comm, beta);
+                comm.overlap_comm_and_comp(
+                    ctx, matrixA, matrixB, matrixC, m, n, k, P, step, beta);
+                // parallel(matrixA, matrixB, matrixC, m, n, k, P, step,
+                // strategy, comm, beta);
             } else {
-                parallel(ctx, matrixA, matrixB, matrixC, m, n, k, P, step, strategy, comm, beta);
+                parallel(ctx,
+                         matrixA,
+                         matrixB,
+                         matrixC,
+                         m,
+                         n,
+                         k,
+                         P,
+                         step,
+                         strategy,
+                         comm,
+                         beta);
             }
         } else {
-            sequential(ctx, matrixA, matrixB, matrixC, m, n, k, P, step, strategy, comm, beta);
+            sequential(ctx,
+                       matrixA,
+                       matrixB,
+                       matrixC,
+                       m,
+                       n,
+                       k,
+                       P,
+                       step,
+                       strategy,
+                       comm,
+                       beta);
         }
     }
 
@@ -100,16 +157,35 @@ void multiply(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMat
  In each sequential step, one of the dimensions is split,
  and each of the subproblems is solved sequentially by all P processors.
 */
-void sequential(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
-         Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
-         const Strategy& strategy, communicator& comm, double beta) {
-    // split the dimension but not the processors, all P processors are taking part
-    // in each substep.
+void sequential(context &ctx,
+                CosmaMatrix &matrixA,
+                CosmaMatrix &matrixB,
+                CosmaMatrix &matrixC,
+                Interval &m,
+                Interval &n,
+                Interval &k,
+                Interval &P,
+                size_t step,
+                const Strategy &strategy,
+                communicator &comm,
+                double beta) {
+    // split the dimension but not the processors, all P processors are taking
+    // part in each substep.
     if (strategy.split_m(step)) {
         for (int M = 0; M < strategy.divisor(step); ++M) {
             Interval newm = m.subinterval(strategy.divisor(step), M);
-            multiply(ctx, matrixA, matrixB, matrixC, newm, n, k, P, step+1, strategy, 
-                    comm, beta);
+            multiply(ctx,
+                     matrixA,
+                     matrixB,
+                     matrixC,
+                     newm,
+                     n,
+                     k,
+                     P,
+                     step + 1,
+                     strategy,
+                     comm,
+                     beta);
         }
         return;
     }
@@ -117,28 +193,52 @@ void sequential(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaM
     if (strategy.split_n(step)) {
         for (int N = 0; N < strategy.divisor(step); ++N) {
             Interval newn = n.subinterval(strategy.divisor(step), N);
-            multiply(ctx, matrixA, matrixB, matrixC, m, newn, k, P, step+1, strategy, 
-                     comm, beta);
+            multiply(ctx,
+                     matrixA,
+                     matrixB,
+                     matrixC,
+                     m,
+                     newn,
+                     k,
+                     P,
+                     step + 1,
+                     strategy,
+                     comm,
+                     beta);
         }
         return;
     }
 
-    // if divided by k, then the result of each subproblem is just a partial result for C
-    // which should all be summed up. We solve this by letting beta parameter be 1
-    // in the substeps that follow so that dgemm automatically adds up the subsequent
-    // results to the previous partial results of C.
+    // if divided by k, then the result of each subproblem is just a partial
+    // result for C which should all be summed up. We solve this by letting beta
+    // parameter be 1 in the substeps that follow so that dgemm automatically
+    // adds up the subsequent results to the previous partial results of C.
     if (strategy.split_k(step)) {
         for (int K = 0; K < strategy.divisor(step); ++K) {
             Interval newk = k.subinterval(strategy.divisor(step), K);
-            multiply(ctx, matrixA, matrixB, matrixC, m, n, newk, P, step+1, strategy, 
-                    comm, (K==0)&&(beta==0) ? 0 : 1);
+            multiply(ctx,
+                     matrixA,
+                     matrixB,
+                     matrixC,
+                     m,
+                     n,
+                     newk,
+                     P,
+                     step + 1,
+                     strategy,
+                     comm,
+                     (K == 0) && (beta == 0) ? 0 : 1);
         }
         return;
     }
 }
 
-template<typename T>
-T which_is_expanded(T&& A, T&& B, T&& C, const Strategy& strategy, size_t step) {
+template <typename T>
+T which_is_expanded(T &&A,
+                    T &&B,
+                    T &&C,
+                    const Strategy &strategy,
+                    size_t step) {
     // divn > 1 => divm==divk==1 => matrix A has not been splitted
     // therefore it is expanded (in the communication of a parallel step)
     if (strategy.split_n(step))
@@ -164,32 +264,44 @@ T which_is_expanded(T&& A, T&& B, T&& C, const Strategy& strategy, size_t step) 
  such that each group of ranks is in charge of one piece of the split matrix.
 
  * if m split:
- Split matrix A and copy matrix B such that each of the "div" groups with newP processors
- contains the whole matrix B (that was previously owned by P processors).
- Communication is necessary since we want that newP<P processors own what was previously
- owned by P processors After the communication, each group of processors will contain
- identical data of matrix B in exactly the same order in all groups.
+ Split matrix A and copy matrix B such that each of the "div" groups with newP
+ processors contains the whole matrix B (that was previously owned by P
+ processors). Communication is necessary since we want that newP<P processors
+ own what was previously owned by P processors After the communication, each
+ group of processors will contain identical data of matrix B in exactly the same
+ order in all groups.
 
  * if n split:
- Split matrix B and copy matrix A such that each of the "div" groups with newP processors
- contains the whole matrix A (that was previously owned by P processors).
- Communication is necessary since we want that newP<P processors own what was previously
- owned by P processors After the communication, each group of processors will contain
- identical data of matrix A in exactly the same order in all groups.
+ Split matrix B and copy matrix A such that each of the "div" groups with newP
+ processors contains the whole matrix A (that was previously owned by P
+ processors). Communication is necessary since we want that newP<P processors
+ own what was previously owned by P processors After the communication, each
+ group of processors will contain identical data of matrix A in exactly the same
+ order in all groups.
 
  * if k split:
  Split both matrices A and B (since both of these matrices own dimension k).
  After the substep, each of "div" groups with newP processors will own
- a partial result of matrix C which should all be summed up (reduced) and splitted
- equally among all P processors. Thus, here we first sum up all the partial results
- that are owned by newP processors, and then we split it equally among P processors.
- While in the previous two cases we had to expand local matrices (since newP processors
- had to own what was previously owned by P processors) here we have the opposite - P ranks
- should own what was previously owned by newP ranks - thus local matrices are shrinked.
+ a partial result of matrix C which should all be summed up (reduced) and
+ splitted equally among all P processors. Thus, here we first sum up all the
+ partial results that are owned by newP processors, and then we split it equally
+ among P processors. While in the previous two cases we had to expand local
+ matrices (since newP processors had to own what was previously owned by P
+ processors) here we have the opposite - P ranks should own what was previously
+ owned by newP ranks - thus local matrices are shrinked.
  */
-void parallel(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
-         Interval& m, Interval& n, Interval& k, Interval& P, size_t step,
-         const Strategy& strategy, communicator& comm, double beta) {
+void parallel(context &ctx,
+              CosmaMatrix &matrixA,
+              CosmaMatrix &matrixB,
+              CosmaMatrix &matrixC,
+              Interval &m,
+              Interval &n,
+              Interval &k,
+              Interval &P,
+              size_t step,
+              const Strategy &strategy,
+              communicator &comm,
+              double beta) {
     PE(multiply_other);
 
     int divisor = strategy.divisor(step);
@@ -202,26 +314,29 @@ void parallel(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMat
     // intervals of M, N and K that the current rank is in charge of,
     // together with other ranks from its group.
     // (see the definition of group and offset below)
-    Interval newm = m.subinterval(divisor_m, divisor_m>1 ? partition_idx : 0);
-    Interval newn = n.subinterval(divisor_n, divisor_n>1 ? partition_idx : 0);
-    Interval newk = k.subinterval(divisor_k, divisor_k>1 ? partition_idx : 0);
+    Interval newm = m.subinterval(divisor_m, divisor_m > 1 ? partition_idx : 0);
+    Interval newn = n.subinterval(divisor_n, divisor_n > 1 ? partition_idx : 0);
+    Interval newk = k.subinterval(divisor_k, divisor_k > 1 ? partition_idx : 0);
 
     /*
      * size_before_expansion:
-     maps rank i from interval P to the vector [bucket1.size(), bucket2.size()...]
-     containing buckets which are inside "range" that rank i owns
+     maps rank i from interval P to the vector [bucket1.size(),
+     bucket2.size()...] containing buckets which are inside "range" that rank i
+     owns
 
      * total_before_expansion:
-     maps rank i from interval P to the sum of all buckets inside size_before_expansion[i]
+     maps rank i from interval P to the sum of all buckets inside
+     size_before_expansion[i]
 
      * size_after_expansion:
-     maps rank i from interval newP to the vector of [bucket1.size(), bucket2.size()...]
-     but each bucket here is expanded, i.e. each bucket size in this vector
-     is actually the sum of the sizes of this bucket in all the ranks
-     from the communication ring of the current rank.
+     maps rank i from interval newP to the vector of [bucket1.size(),
+     bucket2.size()...] but each bucket here is expanded, i.e. each bucket size
+     in this vector is actually the sum of the sizes of this bucket in all the
+     ranks from the communication ring of the current rank.
 
      * total_after_expansion:
-     maps rank i from interval P to the sum of all buckets inside size_after_expansion[i]
+     maps rank i from interval P to the sum of all buckets inside
+     size_after_expansion[i]
      */
     std::vector<std::vector<int>> size_before_expansion(P.length());
     std::vector<int> total_before_expansion(P.length());
@@ -244,16 +359,20 @@ void parallel(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMat
      if divn > 1 => matrix A is expanded
      if divk > 1 => matrix C is expanded
      */
-    CosmaMatrix& expanded_mat = which_is_expanded(matrixA, matrixB, matrixC, strategy, step);
+    CosmaMatrix &expanded_mat =
+        which_is_expanded(matrixA, matrixB, matrixC, strategy, step);
     // gets the buffer sizes before and after expansion.
     // this still does not modify the buffer sizes inside layout
     // it just tells us what they would be.
-    expanded_mat.buffers_before_expansion(P, range,
-              size_before_expansion, total_before_expansion);
+    expanded_mat.buffers_before_expansion(
+        P, range, size_before_expansion, total_before_expansion);
 
-    expanded_mat.buffers_after_expansion(P, newP,
-             size_before_expansion, total_before_expansion,
-             size_after_expansion, total_after_expansion);
+    expanded_mat.buffers_after_expansion(P,
+                                         newP,
+                                         size_before_expansion,
+                                         total_before_expansion,
+                                         size_after_expansion,
+                                         total_after_expansion);
 
     // increase the buffer sizes before the substeps
     expanded_mat.set_sizes(newP, size_after_expansion);
@@ -265,34 +384,52 @@ void parallel(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMat
     int buffer_idx = expanded_mat.buffer_index();
     expanded_mat.advance_buffer();
 
-    double* original_matrix = expanded_mat.current_matrix();
-    double* expanded_matrix = expanded_mat.buffer_ptr();
-    double* reshuffle_buffer = expanded_mat.reshuffle_buffer_ptr();
+    double *original_matrix = expanded_mat.current_matrix();
+    double *expanded_matrix = expanded_mat.buffer_ptr();
+    double *reshuffle_buffer = expanded_mat.reshuffle_buffer_ptr();
 
     // pack the data for the next substep
     expanded_mat.set_current_matrix(expanded_matrix);
     PL();
 
-    // if divided along m or n then copy original matrix inside communication ring
-    // to get the expanded matrix (all ranks inside communication ring should own
-    // exactly the same data in the expanded matrix.
+    // if divided along m or n then copy original matrix inside communication
+    // ring to get the expanded matrix (all ranks inside communication ring
+    // should own exactly the same data in the expanded matrix.
     if (strategy.split_m(step) || strategy.split_n(step)) {
         // copy the matrix that wasn't divided in this step
-        comm.copy(P, original_matrix, expanded_matrix, reshuffle_buffer,
-                  size_before_expansion, total_before_expansion, new_size, step);
+        comm.copy(P,
+                  original_matrix,
+                  expanded_matrix,
+                  reshuffle_buffer,
+                  size_before_expansion,
+                  total_before_expansion,
+                  new_size,
+                  step);
     }
 
     // if division by k, and we are in the branch where beta > 0, then
     // reset beta to 0, but keep in mind that on the way back from the substeps
     // we will have to sum the result with the local data in C
     // this is necessary since reduction happens AFTER the substeps
-    // so we cannot pass beta = 1 if the data is not present there BEFORE the substeps.
+    // so we cannot pass beta = 1 if the data is not present there BEFORE the
+    // substeps.
     int new_beta = beta;
     if (strategy.split_k(step) && beta > 0) {
         new_beta = 0;
     }
 
-    multiply(ctx, matrixA, matrixB, matrixC, newm, newn, newk, newP, step+1, strategy, comm, new_beta);
+    multiply(ctx,
+             matrixA,
+             matrixB,
+             matrixC,
+             newm,
+             newn,
+             newk,
+             newP,
+             step + 1,
+             strategy,
+             comm,
+             new_beta);
     // revert the current matrix
     expanded_mat.set_buffer_index(buffer_idx);
     expanded_mat.set_current_matrix(original_matrix);
@@ -309,17 +446,25 @@ void parallel(context& ctx, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMat
 
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
-        double* reduce_buffer = expanded_mat.reduce_buffer_ptr();
-        comm.reduce(P, expanded_matrix, original_matrix, 
-                reshuffle_buffer, reduce_buffer,
-                size_before_expansion, total_before_expansion, 
-                size_after_expansion, total_after_expansion, beta, step);
+        double *reduce_buffer = expanded_mat.reduce_buffer_ptr();
+        comm.reduce(P,
+                    expanded_matrix,
+                    original_matrix,
+                    reshuffle_buffer,
+                    reduce_buffer,
+                    size_before_expansion,
+                    total_before_expansion,
+                    size_after_expansion,
+                    total_after_expansion,
+                    beta,
+                    step);
     }
 
     PE(multiply_other);
-    // after the memory is freed, the buffer sizes are back to the previous values
-    // (the values at the beginning of this parallel step)
-    expanded_mat.set_sizes(newP, size_before_expansion, newP.first() - P.first());
+    // after the memory is freed, the buffer sizes are back to the previous
+    // values (the values at the beginning of this parallel step)
+    expanded_mat.set_sizes(
+        newP, size_before_expansion, newP.first() - P.first());
     PL();
 }
-}
+} // namespace cosma

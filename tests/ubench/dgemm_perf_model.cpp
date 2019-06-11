@@ -1,15 +1,16 @@
 #include <cosma/local_multiply.hpp>
 #include <cosma/timer.hpp>
 
-#include <blas.h>
+#include <cosma/blas.h>
 
-#include <vector>
 #include <chrono>
+#include <vector>
 
 using namespace cosma;
 
 double sq_score(double a, double b) {
-    double result = ((1.0 * a / b) + (1.0 * b / a)) / (2.0 * std::max(1.0 * a/b, 1.0 * b/a));
+    double result = ((1.0 * a / b) + (1.0 * b / a)) /
+                    (2.0 * std::max(1.0 * a / b, 1.0 * b / a));
     // double result = std::min(a, b) / std::max(a, b);
     return result;
 }
@@ -23,7 +24,7 @@ double score(double m, double n, double k) {
 }
 
 double throughput(double m, double n, double k, double time) {
-    return m * n * k * 2 / (1e6 *time);
+    return m * n * k * 2 / (1e6 * time);
 }
 
 struct problem {
@@ -37,11 +38,16 @@ struct problem {
     double tps;
 
     problem() = default;
-    problem(int mm, int nn, int kk, double tt, double ss, double thr) :
-    m(mm), n(nn), k(kk), time(tt), score(ss), tps(thr) {}
+    problem(int mm, int nn, int kk, double tt, double ss, double thr)
+        : m(mm)
+        , n(nn)
+        , k(kk)
+        , time(tt)
+        , score(ss)
+        , tps(thr) {}
 };
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     std::vector<double> a;
     std::vector<double> b;
     std::vector<double> c;
@@ -54,7 +60,6 @@ int main(int argc, char** argv) {
     int max_n = 1000;
     int max_k = 1000;
 
-
     int step_m = 500;
     int step_n = 500;
     int step_k = 500;
@@ -63,11 +68,12 @@ int main(int argc, char** argv) {
 
     // run random dgemm in order to initialize it
     for (int i = 0; i < n_rep; ++i) {
-        a = std::vector<double>(min_m*min_m);
-        b = std::vector<double>(min_m*min_m);
-        c = std::vector<double>(min_m*min_m);
+        a = std::vector<double>(min_m * min_m);
+        b = std::vector<double>(min_m * min_m);
+        c = std::vector<double>(min_m * min_m);
 
-        local_multiply_cpu(a.data(), b.data(), c.data(), min_m, min_m, min_m, 0.0);
+        local_multiply_cpu(
+            a.data(), b.data(), c.data(), min_m, min_m, min_m, 0.0);
     }
 
     std::vector<problem> timings;
@@ -81,11 +87,14 @@ int main(int argc, char** argv) {
                     b = std::vector<double>(k * n);
                     c = std::vector<double>(m * n);
 
-                    local_multiply_cpu(a.data(), b.data(), c.data(), m, n, k, 0.0);
+                    local_multiply_cpu(
+                        a.data(), b.data(), c.data(), m, n, k, 0.0);
                 }
                 auto finish = std::chrono::high_resolution_clock::now();
-                auto time = std::chrono::duration_cast<std::chrono::milliseconds>
-                (finish - start).count();
+                auto time =
+                    std::chrono::duration_cast<std::chrono::milliseconds>(
+                        finish - start)
+                        .count();
                 time /= 1.0 * n_rep;
                 double mul_score = score(m, n, k);
                 double tps = throughput(m, n, k, time);
@@ -95,13 +104,18 @@ int main(int argc, char** argv) {
         }
     }
 
-    std::sort(timings.begin(), timings.end(), [](const problem& lhs, const problem& rhs) {
-        return lhs.tps < rhs.tps;
-    });
+    std::sort(timings.begin(),
+              timings.end(),
+              [](const problem &lhs, const problem &rhs) {
+                  return lhs.tps < rhs.tps;
+              });
 
-    for (auto& problem : timings) {
-        std::cout << problem.m << " " << problem.tps << " " << problem.score << std::endl;
-        // std::cout << "(" << problem.m << ", " << problem.n << ", " << problem.k << "), tps = " << problem.tps << ", score = " << problem.score << std::endl;
+    for (auto &problem : timings) {
+        std::cout << problem.m << " " << problem.tps << " " << problem.score
+                  << std::endl;
+        // std::cout << "(" << problem.m << ", " << problem.n << ", " <<
+        // problem.k << "), tps = " << problem.tps << ", score = " <<
+        // problem.score << std::endl;
     }
     return 0;
 }

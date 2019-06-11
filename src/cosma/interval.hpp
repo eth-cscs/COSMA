@@ -5,7 +5,7 @@
 namespace cosma {
 // interval of consecutive numbers
 class Interval {
-public:
+  public:
     int start_;
     int end_;
 
@@ -43,15 +43,15 @@ public:
 
     bool contains(int num);
     bool contains(Interval other);
-    bool before(Interval& other);
+    bool before(Interval &other);
 
     bool operator==(const Interval &other) const;
 
-    friend std::ostream& operator<<(std::ostream& os, const Interval& inter);
+    friend std::ostream &operator<<(std::ostream &os, const Interval &inter);
 };
 
 class Interval2D {
-public:
+  public:
     Interval rows;
     Interval cols;
 
@@ -60,14 +60,15 @@ public:
     Interval2D(int row_start, int row_end, int col_start, int col_end);
 
     // splits the current Interval2D into divisor many submatrices by splitting
-    // only the columns interval and returns the size of the submatrix indexed with index
+    // only the columns interval and returns the size of the submatrix indexed
+    // with index
     int split_by(int divisor, int index);
 
     int size();
 
     bool contains(int row, int col);
     bool contains(Interval2D other);
-    bool before(Interval2D& other);
+    bool before(Interval2D &other);
 
     int local_index(int row, int col);
     std::pair<int, int> global_index(int local_index);
@@ -75,14 +76,14 @@ public:
     Interval2D submatrix(int divisor, int index);
 
     bool operator==(const Interval2D &other) const;
-    friend std::ostream& operator<<(std::ostream& os, const Interval2D& inter);
+    friend std::ostream &operator<<(std::ostream &os, const Interval2D &inter);
 };
 } // namespace cosma
 
 template <class T>
-inline void hash_combine(std::size_t & s, const T & v) {
+inline void hash_combine(std::size_t &s, const T &v) {
     std::hash<T> h;
-    s^= h(v) + 0x9e3779b9 + (s<< 6) + (s>> 2);
+    s ^= h(v) + 0x9e3779b9 + (s << 6) + (s >> 2);
 }
 
 // add hash function specialization for these struct-s
@@ -90,7 +91,7 @@ inline void hash_combine(std::size_t & s, const T & v) {
 namespace std {
 template <>
 struct hash<cosma::Interval> {
-    std::size_t operator()(const cosma::Interval& k) const {
+    std::size_t operator()(const cosma::Interval &k) const {
         using std::hash;
 
         // Compute individual hash values for first,
@@ -105,7 +106,7 @@ struct hash<cosma::Interval> {
 
 template <>
 struct hash<cosma::Interval2D> {
-    std::size_t operator()(const cosma::Interval2D& k) const {
+    std::size_t operator()(const cosma::Interval2D &k) const {
         using std::hash;
 
         // Compute individual hash values for first,

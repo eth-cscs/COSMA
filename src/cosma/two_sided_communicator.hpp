@@ -2,46 +2,50 @@
 
 #include <cosma/blas.h>
 #include <cosma/interval.hpp>
-#include <cosma/strategy.hpp>
-#include <cosma/matrix.hpp>
-#include <cosma/interval.hpp>
 #include <cosma/math_utils.hpp>
+#include <cosma/matrix.hpp>
+#include <cosma/strategy.hpp>
 
 #include <mpi.h>
 
-#include <future>
-#include <stdlib.h>
 #include <algorithm>
-#include <iostream>
-#include <tuple>
-#include <thread>
 #include <atomic>
 #include <chrono>
+#include <future>
+#include <iostream>
+#include <stdlib.h>
+#include <thread>
+#include <tuple>
 
 namespace cosma {
 class two_sided_communicator {
-public:
+  public:
     // two_sided_communicator() = default;
-    // two_sided_communicator(const Strategy* strategy, MPI_Comm comm): 
+    // two_sided_communicator(const Strategy* strategy, MPI_Comm comm):
     //     communicator::communicator(strategy, comm) {}
 
     /*
      * (first see the comment in communicator.hpp)
      * The idea is the following:
-     *      - if only 1 block per rank should be communicated: 
+     *      - if only 1 block per rank should be communicated:
      *        don't allocate new space, just perform all-gather
      *
      *      - if more than 1 blocks per rank should be communicated:
-     *        allocate new space and let the all-gather be performed 
+     *        allocate new space and let the all-gather be performed
      *        on the level of all blocks per rank. After the communication,
-     *        reshuffle the local data by putting first blocks from each rank first,
-     *        then all second blocks from each rank and so on.
-     */ 
-    static void copy(MPI_Comm comm, int rank, int div,
-            Interval& P, double* in, double* out, double* reshuffle_buffer,
-            std::vector<std::vector<int>>& size_before,
-            std::vector<int>& total_before,
-            int total_after) {
+     *        reshuffle the local data by putting first blocks from each rank
+     * first, then all second blocks from each rank and so on.
+     */
+    static void copy(MPI_Comm comm,
+                     int rank,
+                     int div,
+                     Interval &P,
+                     double *in,
+                     double *out,
+                     double *reshuffle_buffer,
+                     std::vector<std::vector<int>> &size_before,
+                     std::vector<int> &total_before,
+                     int total_after) {
         PE(multiply_communication_other);
         // int div = strategy_->divisor(step);
         // MPI_Comm subcomm = active_comm(step);
@@ -69,16 +73,27 @@ public:
         }
 
         int n_blocks = size_before[relative_rank].size();
-        double* receive_pointer = n_blocks > 1 ? reshuffle_buffer : out;
+        double *receive_pointer = n_blocks > 1 ? reshuffle_buffer : out;
         PL();
 
         PE(multiply_communication_copy);
         if (same_size) {
-            MPI_Allgather(in, local_size, MPI_DOUBLE, receive_pointer, local_size,
-                    MPI_DOUBLE, comm);
+            MPI_Allgather(in,
+                          local_size,
+                          MPI_DOUBLE,
+                          receive_pointer,
+                          local_size,
+                          MPI_DOUBLE,
+                          comm);
         } else {
-            MPI_Allgatherv(in, local_size, MPI_DOUBLE, receive_pointer,
-                    total_size.data(), dspls.data(), MPI_DOUBLE, comm);
+            MPI_Allgatherv(in,
+                           local_size,
+                           MPI_DOUBLE,
+                           receive_pointer,
+                           total_size.data(),
+                           dspls.data(),
+                           MPI_DOUBLE,
+                           comm);
         }
         PL();
 
@@ -92,7 +107,9 @@ public:
                     int target = P.locate_in_interval(div, rank, off);
                     int dsp = dspls[rank] + block_offset[rank];
                     int b_size = size_before[target][block];
-                    std::copy(reshuffle_buffer + dsp, reshuffle_buffer + dsp + b_size, out + index);
+                    std::copy(reshuffle_buffer + dsp,
+                              reshuffle_buffer + dsp + b_size,
+                              out + index);
                     index += b_size;
                     block_offset[rank] += b_size;
                 }
@@ -100,24 +117,29 @@ public:
         }
         PL();
 #ifdef DEBUG
-        std::cout<<"Content of the copied matrix in rank "<<rank<<" is now: "
-            <<std::endl;
-        for (int j=0; j<sum; j++) {
-            std::cout<<out[j]<<" , ";
+        std::cout << "Content of the copied matrix in rank " << rank
+                  << " is now: " << std::endl;
+        for (int j = 0; j < sum; j++) {
+            std::cout << out[j] << " , ";
         }
-        std::cout<<std::endl;
+        std::cout << std::endl;
 
 #endif
     }
 
-    static void reduce(MPI_Comm comm, int rank, int div,
-            Interval& P, double* LC, double* C,
-            double* reshuffle_buffer, double* reduce_buffer,
-            std::vector<std::vector<int>>& c_current,
-            std::vector<int>& c_total_current,
-            std::vector<std::vector<int>>& c_expanded,
-            std::vector<int>& c_total_expanded,
-            int beta) {
+    static void reduce(MPI_Comm comm,
+                       int rank,
+                       int div,
+                       Interval &P,
+                       double *LC,
+                       double *C,
+                       double *reshuffle_buffer,
+                       double *reduce_buffer,
+                       std::vector<std::vector<int>> &c_current,
+                       std::vector<int> &c_total_current,
+                       std::vector<std::vector<int>> &c_expanded,
+                       std::vector<int> &c_total_expanded,
+                       int beta) {
         PE(multiply_communication_other);
         // int div = strategy_->divisor(step);
         // MPI_Comm subcomm = active_comm(step);
@@ -130,10 +152,11 @@ public:
         // std::tie(gp, off) = group_and_offset(P, div);
 
         // reorder the elements as:
-        // first all blocks that should be sent to rank 0 then all blocks for rank 1 and so on...
+        // first all blocks that should be sent to rank 0 then all blocks for
+        // rank 1 and so on...
         int n_blocks = c_expanded[off].size();
         std::vector<int> block_offset(n_blocks);
-        double* send_pointer = n_blocks > 1 ? reshuffle_buffer : LC;
+        double *send_pointer = n_blocks > 1 ? reshuffle_buffer : LC;
 
         int sum = 0;
         for (int i = 0; i < n_blocks; ++i) {
@@ -153,20 +176,25 @@ public:
                 for (int block = 0; block < n_blocks; ++block) {
                     int b_offset = block_offset[block];
                     int b_size = c_current[target][block];
-                    std::copy(LC + b_offset, LC + b_offset + b_size, 
-                            reshuffle_buffer + index);
+                    std::copy(LC + b_offset,
+                              LC + b_offset + b_size,
+                              reshuffle_buffer + index);
                     index += b_size;
                     block_offset[block] += b_size;
                 }
             }
         }
 
-        double* receive_pointer = beta > 0 ? reduce_buffer : C;
+        double *receive_pointer = beta > 0 ? reduce_buffer : C;
         PL();
 
         PE(multiply_communication_reduce);
-        MPI_Reduce_scatter(send_pointer, receive_pointer, recvcnts.data(), 
-                MPI_DOUBLE, MPI_SUM, comm);
+        MPI_Reduce_scatter(send_pointer,
+                           receive_pointer,
+                           recvcnts.data(),
+                           MPI_DOUBLE,
+                           MPI_SUM,
+                           comm);
         PL();
 
         PE(multiply_communication_other);
@@ -179,4 +207,4 @@ public:
         PL();
     }
 };
-}
+} // namespace cosma

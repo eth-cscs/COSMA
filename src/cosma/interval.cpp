@@ -4,27 +4,19 @@ namespace cosma {
 // interval of consecutive numbers
 Interval::Interval() = default;
 
-Interval::Interval(int start, int end) : start_(start), end_(end) {}
+Interval::Interval(int start, int end)
+    : start_(start)
+    , end_(end) {}
 
-int Interval::first() const {
-    return start_;
-}
+int Interval::first() const { return start_; }
 
-int Interval::last() const {
-    return end_;
-}
+int Interval::last() const { return end_; }
 
-int Interval::length() {
-    return end_ - start_ + 1;
-}
+int Interval::length() { return end_ - start_ + 1; }
 
-bool Interval::empty() {
-    return start_ == end_;
-}
+bool Interval::empty() { return start_ == end_; }
 
-bool Interval::only_one() {
-    return length() == 1;
-}
+bool Interval::only_one() { return length() == 1; }
 
 // divides the interval into intervals of equal length.
 // if the interval is not divisible by divisor, then
@@ -66,7 +58,9 @@ std::pair<int, int> Interval::locate_in_subinterval(int divisor, int elem) {
     return {subint_index, offset};
 }
 
-int Interval::locate_in_interval(int divisor, int subint_index, int subint_offset) {
+int Interval::locate_in_interval(int divisor,
+                                 int subint_index,
+                                 int subint_offset) {
     int subset_size = length() / divisor;
     return subint_index * subset_size + subint_offset;
 }
@@ -86,8 +80,9 @@ Interval Interval::subinterval(int divisor, int box_index) {
     int start = length() * box_index / divisor;
     int end = length() * (box_index + 1) / divisor - 1;
 
-    // alternative that will first have all the bigger intervals and then the smaller ones
-    // int interval_length = length() / divisor + (box_index <= length() % divisor ? 1 : 0)
+    // alternative that will first have all the bigger intervals and then the
+    // smaller ones int interval_length = length() / divisor + (box_index <=
+    // length() % divisor ? 1 : 0)
 
     return Interval(start_ + start, start_ + end);
 }
@@ -100,29 +95,27 @@ int Interval::smallest_subinterval_length(int divisor) {
     return length() / divisor;
 }
 
-std::ostream& operator<<(std::ostream& os, const Interval& inter) {
+std::ostream &operator<<(std::ostream &os, const Interval &inter) {
     os << '[' << inter.start_ << ", " << inter.end_ << ']';
     return os;
 }
 
-bool Interval::contains(int num) {
-    return num >= first() && num <= last();
-}
+bool Interval::contains(int num) { return num >= first() && num <= last(); }
 
 bool Interval::contains(Interval other) {
     return first() <= other.first() && last() >= other.last();
 }
 
-bool Interval::before(Interval& other) {
-    return last() < other.first();
-}
+bool Interval::before(Interval &other) { return last() < other.first(); }
 
 bool Interval::operator==(const Interval &other) const {
     return start_ == other.start_ && end_ == other.end_;
 }
 
 Interval2D::Interval2D() = default;
-Interval2D::Interval2D(Interval row, Interval col) : rows(row), cols(col) {}
+Interval2D::Interval2D(Interval row, Interval col)
+    : rows(row)
+    , cols(col) {}
 
 Interval2D::Interval2D(int row_start, int row_end, int col_start, int col_end) {
     rows = Interval(row_start, row_end);
@@ -130,15 +123,21 @@ Interval2D::Interval2D(int row_start, int row_end, int col_start, int col_end) {
 }
 
 // splits the current Interval2D into divisor many submatrices by splitting
-// only the columns interval and returns the size of the submatrix indexed with index
+// only the columns interval and returns the size of the submatrix indexed with
+// index
 int Interval2D::split_by(int divisor, int index) {
     if (index >= divisor) {
-        std::cout << "Error in Interval2D.split_by: trying to access " << index << "-subinterval, out of " << divisor << " total subintervals\n";
+        std::cout << "Error in Interval2D.split_by: trying to access " << index
+                  << "-subinterval, out of " << divisor
+                  << " total subintervals\n";
         return -1;
     }
 
     if (cols.length() < divisor) {
-        std::cout << "Error in Interval2D.split_by: trying to divide the subinterval of length " << cols.length() << " into " << divisor << " many subintervals\n";
+        std::cout << "Error in Interval2D.split_by: trying to divide the "
+                     "subinterval of length "
+                  << cols.length() << " into " << divisor
+                  << " many subintervals\n";
         return -1;
     }
 
@@ -158,9 +157,10 @@ bool Interval2D::contains(Interval2D other) {
     return rows.contains(other.rows) && cols.contains(other.cols);
 }
 
-bool Interval2D::before(Interval2D& other) {
-    return (rows.before(other.rows) && other.cols.contains(cols))|| (cols.before(other.cols) && other.rows.contains(rows));
-    //return (rows.before(other.rows))|| (cols.before(other.cols));
+bool Interval2D::before(Interval2D &other) {
+    return (rows.before(other.rows) && other.cols.contains(cols)) ||
+           (cols.before(other.cols) && other.rows.contains(rows));
+    // return (rows.before(other.rows))|| (cols.before(other.cols));
 }
 
 int Interval2D::local_index(int row, int col) {
@@ -187,8 +187,8 @@ bool Interval2D::operator==(const Interval2D &other) const {
     return (rows == other.rows) && (cols == other.cols);
 }
 
-std::ostream& operator<<(std::ostream& os, const Interval2D& inter) {
+std::ostream &operator<<(std::ostream &os, const Interval2D &inter) {
     os << "rows " << inter.rows << "; columns: " << inter.cols;
     return os;
 }
-}
+} // namespace cosma

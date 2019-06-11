@@ -3,23 +3,28 @@
 #include <cosma/interval.hpp>
 #include <cosma/strategy.hpp>
 
+#include <algorithm>
 #include <cassert>
 #include <fstream>
 #include <memory>
 #include <numeric>
-#include <tuple>
+#include <set>
 #include <stdexcept>
 #include <string>
-#include <vector>
-#include <set>
+#include <tuple>
 #include <unordered_map>
-#include <algorithm>
+#include <vector>
 
 namespace cosma {
 class Mapper {
-public:
+  public:
     Mapper() = default;
-    Mapper(char label, int m, int n, size_t P, const Strategy& strategy, int rank);
+    Mapper(char label,
+           int m,
+           int n,
+           size_t P,
+           const Strategy &strategy,
+           int rank);
 
     size_t initial_size(int rank) const;
 
@@ -28,9 +33,9 @@ public:
     std::vector<size_t> all_initial_sizes() const;
 
     // rank -> list of ranges it owns initially
-    const std::vector<Interval2D>& initial_layout(int rank) const;
-    const std::vector<Interval2D>& initial_layout() const;
-    std::vector<std::vector<Interval2D>>& complete_layout();
+    const std::vector<Interval2D> &initial_layout(int rank) const;
+    const std::vector<Interval2D> &initial_layout() const;
+    std::vector<std::vector<Interval2D>> &complete_layout();
 
     // (gi, gj) -> (local_id, rank)
     std::pair<int, int> local_coordinates(int gi, int gj);
@@ -44,7 +49,7 @@ public:
 
     char which_matrix();
 
-protected:
+  protected:
     // A, B or C
     char label_;
     /// Number of rows of the global atrix
@@ -72,7 +77,7 @@ protected:
     Interval ni_;
     Interval Pi_;
 
-private:
+  private:
     // used by sequential steps.
     // rank -> number of submatrices fixed by the previous sequential step
     std::vector<int> skip_ranges_;
@@ -84,10 +89,14 @@ private:
 
     std::vector<std::pair<int, int>> global_coord;
 
-    void compute_sizes(Interval m, Interval n, Interval P, int step, const Strategy& strategy);
+    void compute_sizes(Interval m,
+                       Interval n,
+                       Interval P,
+                       int step,
+                       const Strategy &strategy);
     void output_layout();
     void compute_range_to_rank();
 
     void compute_global_coord();
 };
-}
+} // namespace cosma

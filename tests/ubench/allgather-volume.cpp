@@ -5,15 +5,15 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <cstdlib>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <chrono>
 
 using namespace cosma;
 
-int main( int argc, char **argv ) {
+int main(int argc, char **argv) {
     MPI_Init(&argc, &argv);
 
     int P, rank;
@@ -32,8 +32,13 @@ int main( int argc, char **argv ) {
     {
         Timer time(n_rep, "MPI_Allgather");
         for (int i = 0; i < n_rep; ++i) {
-            MPI_Allgather(in.data(), local_size, MPI_DOUBLE, result.data(),
-                    local_size, MPI_DOUBLE, MPI_COMM_WORLD);
+            MPI_Allgather(in.data(),
+                          local_size,
+                          MPI_DOUBLE,
+                          result.data(),
+                          local_size,
+                          MPI_DOUBLE,
+                          MPI_COMM_WORLD);
         }
     }
 

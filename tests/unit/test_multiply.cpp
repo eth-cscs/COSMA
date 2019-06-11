@@ -23,7 +23,8 @@ MPI_Comm subcommunicator(int new_P, MPI_Comm comm = MPI_COMM_WORLD) {
     }
 
     // create reduced group
-    MPI_Group_excl(group, exclude_ranks.size(), exclude_ranks.data(), &newcomm_group);
+    MPI_Group_excl(
+        group, exclude_ranks.size(), exclude_ranks.data(), &newcomm_group);
     // create reduced communicator
     MPI_Comm_create_group(comm, newcomm_group, 0, &newcomm);
 
@@ -42,17 +43,26 @@ struct multiply_state {
 
     multiply_state() = default;
 
-    multiply_state(int mm, int nn, int kk, int PP, std::string ssteps):
-        m(mm), n(nn), k(kk), P(PP), steps(ssteps) {}
+    multiply_state(int mm, int nn, int kk, int PP, std::string ssteps)
+        : m(mm)
+        , n(nn)
+        , k(kk)
+        , P(PP)
+        , steps(ssteps) {}
 
-    multiply_state(int mm, int nn, int kk, int PP):
-        m(mm), n(nn), k(kk), P(PP), steps("") {}
+    multiply_state(int mm, int nn, int kk, int PP)
+        : m(mm)
+        , n(nn)
+        , k(kk)
+        , P(PP)
+        , steps("") {}
 
-    friend std::ostream& operator<<(std::ostream& os, const multiply_state& obj) {
-    return os
-        << "(m, n, k) = (" << obj.m << ", " << obj.n << ", " << obj.k << ")\n"
-        << "Number of ranks: " << obj.P << "\n"
-        << "Strategy: " << obj.steps << "\n";
+    friend std::ostream &operator<<(std::ostream &os,
+                                    const multiply_state &obj) {
+        return os << "(m, n, k) = (" << obj.m << ", " << obj.n << ", " << obj.k
+                  << ")\n"
+                  << "Number of ranks: " << obj.P << "\n"
+                  << "Strategy: " << obj.steps << "\n";
     }
 };
 
@@ -66,12 +76,12 @@ struct MultiplyTest : testing::Test {
     }
 };
 
-struct MultiplyTestWithParams : MultiplyTest, testing::WithParamInterface<multiply_state> {
+struct MultiplyTestWithParams : MultiplyTest,
+                                testing::WithParamInterface<multiply_state> {
     MultiplyTestWithParams() = default;
 };
 
-TEST_P(MultiplyTestWithParams, multiply)
-{
+TEST_P(MultiplyTestWithParams, multiply) {
     auto state = GetParam();
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -90,7 +100,7 @@ TEST_P(MultiplyTestWithParams, multiply)
         std::string steps = state.steps;
         Strategy strategy(m, n, k, P, steps);
 
-        if (rank == 0) { 
+        if (rank == 0) {
             std::cout << "Strategy = " << strategy << std::endl;
         }
 
@@ -109,9 +119,11 @@ TEST_P(MultiplyTestWithParams, multiply)
     }
 }
 
-INSTANTIATE_TEST_CASE_P(Default, MultiplyTestWithParams,
+INSTANTIATE_TEST_CASE_P(
+    Default,
+    MultiplyTestWithParams,
     testing::Values(
-        multiply_state{4, 4, 4, 4,"-s sm2,pn2,pn2"},
+        multiply_state{4, 4, 4, 4, "-s sm2,pn2,pn2"},
 
         multiply_state{30, 35, 40, 4},
 
@@ -157,5 +169,4 @@ INSTANTIATE_TEST_CASE_P(Default, MultiplyTestWithParams,
         multiply_state{200, 200, 200, 8, "-s sk3,sm3,sn3,pk2,pn2,pm2"},
         multiply_state{200, 200, 200, 8},
 
-        multiply_state{200, 200, 200, 8, "-s sm3,pn2,sk3,pm2,sn3,pk2"}
-));
+        multiply_state{200, 200, 200, 8, "-s sm3,pn2,sk3,pm2,sn3,pk2"}));

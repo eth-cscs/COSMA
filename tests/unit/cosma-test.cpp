@@ -12,7 +12,7 @@
 
 using namespace cosma;
 
-int main( int argc, char **argv ) {
+int main(int argc, char **argv) {
     MPI_Init(&argc, &argv);
 
     int P, rank;
@@ -22,7 +22,7 @@ int main( int argc, char **argv ) {
     Strategy strategy(argc, argv);
     auto ctx = cosma::make_context();
 
-    if (rank == 0) { 
+    if (rank == 0) {
         std::cout << "Strategy = " << strategy << std::endl;
     }
 
@@ -34,5 +34,5 @@ int main( int argc, char **argv ) {
 
     MPI_Finalize();
 
-    return rank==0 ? !isOK : 0;
+    return rank == 0 ? !isOK : 0;
 }

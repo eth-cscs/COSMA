@@ -3,8 +3,9 @@
 namespace cosma {
 bool communicator::use_busy_waiting = true;
 
-communicator::communicator(const Strategy* strategy, MPI_Comm comm):
-        strategy_(strategy), full_comm_(comm) {
+communicator::communicator(const Strategy *strategy, MPI_Comm comm)
+    : strategy_(strategy)
+    , full_comm_(comm) {
     use_busy_waiting = strategy_->use_busy_waiting;
     MPI_Group group;
 
@@ -20,7 +21,10 @@ communicator::communicator(const Strategy* strategy, MPI_Comm comm):
             exclude_ranks.push_back(i);
         }
 
-        MPI_Group_excl(group, exclude_ranks.size(), exclude_ranks.data(), &full_comm_group_);
+        MPI_Group_excl(group,
+                       exclude_ranks.size(),
+                       exclude_ranks.data(),
+                       &full_comm_group_);
         MPI_Comm_create_group(comm, full_comm_group_, 0, &full_comm_);
 
         MPI_Group_free(&group);
@@ -41,7 +45,8 @@ communicator::communicator(const Strategy* strategy, MPI_Comm comm):
     int idx = 0;
     for (int i = 0; i < strategy_->n_steps; ++i) {
         step_to_comm_index_[i] = idx;
-        if (strategy_->parallel_step(i)) idx++;
+        if (strategy_->parallel_step(i))
+            idx++;
     }
 }
 
@@ -51,19 +56,18 @@ communicator::~communicator() {
     }
 }
 
-bool communicator::is_idle() {
-    return is_idle_;
-}
+bool communicator::is_idle() { return is_idle_; }
 
 // helper function for add_topology
 // every communication pair represents one edge in the topology graph
 // this functions finds all edges for the current rank
 // weight of the edge is given by the amount of communicated data
-void communicator::get_topology_edges(std::vector<int>& dest, std::vector<int>& weight) {
+void communicator::get_topology_edges(std::vector<int> &dest,
+                                      std::vector<int> &weight) {
     int m = strategy_->m;
     int n = strategy_->n;
     int k = strategy_->k;
-    Interval P(0, strategy_->P-1);
+    Interval P(0, strategy_->P - 1);
     int n_steps = strategy_->n_steps;
 
     for (int step = 0; step < n_steps; ++step) {
@@ -79,8 +83,10 @@ void communicator::get_topology_edges(std::vector<int>& dest, std::vector<int>& 
             std::tie(group, offset) = group_and_offset(P, div);
 
             for (int gp = 0; gp < div; ++gp) {
-                int neighbor = P.first() + rank_outside_ring(P, div, offset, gp);
-                if (neighbor == rank_) continue;
+                int neighbor =
+                    P.first() + rank_outside_ring(P, div, offset, gp);
+                if (neighbor == rank_)
+                    continue;
                 dest.push_back(neighbor);
 
                 int communication_size = 0;
@@ -112,22 +118,23 @@ void communicator::add_topology() {
     int degrees[1] = {degree};
 
     if (n_edges >= 1) {
-        MPI_Dist_graph_create(full_comm_, n_sources, source,
-                degrees, dest.data(), weight.data(), MPI_INFO_NULL, true, &full_comm_);
+        MPI_Dist_graph_create(full_comm_,
+                              n_sources,
+                              source,
+                              degrees,
+                              dest.data(),
+                              weight.data(),
+                              MPI_INFO_NULL,
+                              true,
+                              &full_comm_);
     }
 }
 
-void communicator::initialize(int * argc, char ***argv) {
-    MPI_Init(argc, argv);
-}
+void communicator::initialize(int *argc, char ***argv) { MPI_Init(argc, argv); }
 
-int communicator::rank() {
-    return rank_;
-}
+int communicator::rank() { return rank_; }
 
-void communicator::full_barrier() {
-    MPI_Barrier(full_comm_);
-}
+void communicator::full_barrier() { MPI_Barrier(full_comm_); }
 
 void communicator::barrier(int step) {
     int comm_index = step_to_comm_index_[step];
@@ -139,69 +146,53 @@ MPI_Comm communicator::active_comm(int step) {
     return comm_ring_[comm_index];
 }
 
-int communicator::comm_size() {
-    return comm_size_;
-}
+int communicator::comm_size() { return comm_size_; }
 
+void communicator::free_comm(MPI_Comm &comm) { MPI_Comm_free(&comm); }
 
-void communicator::free_comm(MPI_Comm& comm) {
-    MPI_Comm_free(&comm);
-}
+void communicator::free_group(MPI_Group &group) { MPI_Group_free(&group); }
 
-void communicator::free_group(MPI_Group& group) {
-    MPI_Group_free(&group);
-}
+void communicator::finalize() { MPI_Finalize(); }
 
-void communicator::finalize() {
-    MPI_Finalize();
-}
+int communicator::relative_rank(Interval &P, int r) { return r - P.first(); }
 
-int communicator::relative_rank(Interval& P, int r) {
-    return r - P.first();
-}
+int communicator::relative_rank(Interval &P) { return relative_rank(P, rank_); }
 
-int communicator::relative_rank(Interval& P) {
-    return relative_rank(P, rank_);
-}
-
-int communicator::offset(Interval& P, int div, int r) {
+int communicator::offset(Interval &P, int div, int r) {
     return P.subinterval_offset(div, r);
 }
 
-int communicator::offset(Interval& P, int div) {
-    return offset(P, div, rank_);
-}
+int communicator::offset(Interval &P, int div) { return offset(P, div, rank_); }
 
-int communicator::group(Interval& P, int div, int r) {
+int communicator::group(Interval &P, int div, int r) {
     return P.subinterval_index(div, r);
 }
 
-int communicator::group(Interval& P, int div) {
-    return group(P, div, rank_);
-}
+int communicator::group(Interval &P, int div) { return group(P, div, rank_); }
 
-std::pair<int, int> communicator::group_and_offset(Interval& P, int div, int r) {
+std::pair<int, int>
+communicator::group_and_offset(Interval &P, int div, int r) {
     return P.locate_in_subinterval(div, r);
 }
 
-std::pair<int, int> communicator::group_and_offset(Interval& P, int div) {
+std::pair<int, int> communicator::group_and_offset(Interval &P, int div) {
     return group_and_offset(P, div, rank_);
 }
 
-int communicator::rank_inside_ring(Interval& P, int div, int global_rank) {
+int communicator::rank_inside_ring(Interval &P, int div, int global_rank) {
     return group(P, div, global_rank);
 }
 
-int communicator::rank_inside_ring(Interval& P, int div) {
+int communicator::rank_inside_ring(Interval &P, int div) {
     return rank_inside_ring(P, div, rank_);
 }
 
-int communicator::rank_outside_ring(Interval& P, int div, int off, int i) {
+int communicator::rank_outside_ring(Interval &P, int div, int off, int i) {
     return P.locate_in_interval(div, i, off);
 }
 
 void communicator::split_communicators(MPI_Comm comm) {
-    //MPI_Comm_group(comm, &comm_group);
+    // MPI_Comm_group(comm, &comm_group);
     Interval P(0, strategy_->P - 1);
     // iterate through all steps and for each parallel
     // step, create a suitable subcommunicator
@@ -224,7 +215,7 @@ void communicator::split_communicators(MPI_Comm comm) {
 }
 
 void communicator::create_communicators(MPI_Comm comm) {
-    //MPI_Comm_group(comm, &comm_group);
+    // MPI_Comm_group(comm, &comm_group);
     Interval P(0, strategy_->P - 1);
     // iterate through all steps and for each parallel
     // step, create a suitable subcommunicator
@@ -238,13 +229,15 @@ void communicator::create_communicators(MPI_Comm comm) {
 
             MPI_Group ring_group;
             MPI_Comm ring_comm;
-            std::tie(ring_group, ring_comm) = create_comm_ring(comm, P, offset, div);
+            std::tie(ring_group, ring_comm) =
+                create_comm_ring(comm, P, offset, div);
             comm_ring_.push_back(ring_comm);
             comm_ring_group_.push_back(ring_group);
 
             MPI_Group subproblem_group;
             MPI_Comm subproblem_comm;
-            std::tie(subproblem_group, subproblem_comm) = create_comm_subproblem(comm, P, newP);
+            std::tie(subproblem_group, subproblem_comm) =
+                create_comm_subproblem(comm, P, newP);
             comm_subproblem_.push_back(subproblem_comm);
             comm_subproblem_group_.push_back(subproblem_group);
 
@@ -254,8 +247,10 @@ void communicator::create_communicators(MPI_Comm comm) {
     }
 }
 
-std::tuple<MPI_Group, MPI_Comm> communicator::create_comm_ring(MPI_Comm comm, Interval& P,
-        int offset, int div) {
+std::tuple<MPI_Group, MPI_Comm> communicator::create_comm_ring(MPI_Comm comm,
+                                                               Interval &P,
+                                                               int offset,
+                                                               int div) {
     MPI_Comm newcomm;
     MPI_Group subgroup;
 
@@ -276,8 +271,10 @@ std::tuple<MPI_Group, MPI_Comm> communicator::create_comm_ring(MPI_Comm comm, In
     return {subgroup, newcomm};
 }
 
-std::tuple<MPI_Group, MPI_Comm> communicator::create_comm_subproblem(MPI_Comm comm, Interval& P, 
-        Interval& newP) {
+std::tuple<MPI_Group, MPI_Comm>
+communicator::create_comm_subproblem(MPI_Comm comm,
+                                     Interval &P,
+                                     Interval &newP) {
     MPI_Comm newcomm;
     MPI_Group subgroup;
 
@@ -313,4 +310,4 @@ void communicator::free_comms() {
         free_comm(comm_subproblem_[i]);
     }
 }
-}
+} // namespace cosma

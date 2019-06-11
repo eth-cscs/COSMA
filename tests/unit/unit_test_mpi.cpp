@@ -10,7 +10,7 @@ int main(int argc, char **argv) {
     // new test environment (makes a copy of MPI_COMM_WORLD)
     ::testing::AddGlobalTestEnvironment(new gtest_mpi::MPITestEnvironment());
 
-    auto& test_listeners = ::testing::UnitTest::GetInstance()->listeners();
+    auto &test_listeners = ::testing::UnitTest::GetInstance()->listeners();
 
     // replace the default listener with the custom one
     delete test_listeners.Release(test_listeners.default_result_printer());
@@ -23,4 +23,3 @@ int main(int argc, char **argv) {
 
     return exit_code;
 }
-
