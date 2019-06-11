@@ -1,4 +1,11 @@
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+
+# Check if COSMA is bundled, disable test suit if it is.
+#
+if(NOT DEFINED PROJECT_NAME)
+  set(COSMA_NOT_SUBPROJECT ON)
+endif()
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 project(cosma VERSION 0.1 LANGUAGES CXX)
 
@@ -13,7 +20,20 @@ endif()
 
 # COSMA library
 #
-add_library(cosma "")
+add_library(cosma STATIC
+  "${cosma_SOURCE_DIR}/src/cosma/blas.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/buffer.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/communicator.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/context.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/interval.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/layout.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/local_multiply.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/mapper.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/math_utils.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/matrix.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/multiply.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/strategy.cpp"
+  )
 message(STATUS ${cosma_SOURCE_DIR})
 target_include_directories(cosma PUBLIC ${cosma_SOURCE_DIR}/src)
 #target_link_libraries(cosma ${cosma_deps} /opt/cray/dmapp/7.1.1-6.0.7.0_34.3__g5a674e0.ari/lib64/libdmapp.so)
@@ -76,36 +96,18 @@ if(COSMA_WITH_PROFILING)
     add_definitions(-DSEMIPROF)
 endif()
 
-#################################
-#        COVERAGE TEST          #
-#################################
-option(COSMA_COVERAGE_TEST "use lcov for the code coverage test" OFF)
-if(COSMA_COVERAGE_TEST)
-  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
-    set(CMAKE_LD_FLAGS "${CMAKE_LD_FLAGS} --coverage")
-
-    add_custom_target("coverage"
-                      COMMAND lcov --capture --directory ${CMAKE_CURRENT_BINARY_DIR} --output-file coverage.info
-                      COMMAND genhtml coverage.info --output-directory ${CMAKE_CURRENT_BINARY_DIR}/coverage
-                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-
-  else ()
-    message(WARNING "Coverage test can be used only with GCC.")
-    set(COSMA_COVERAGE_TEST "OFF" FORCE)
-  endif()
-endif()
-
 #############
 #  Testing  #
 #############
-enable_testing()
+if(COSMA_NOT_SUBPROJECT)
+  enable_testing()
+  include(CTest)
+  add_subdirectory(tests)
+endif()
 
 #####################################
 #  Adding various code directories  #
 #####################################
 add_subdirectory(libs)
-add_subdirectory(src/cosma)
 add_subdirectory(miniapp)
-add_subdirectory(tests)
 add_subdirectory(benchmarks)
