@@ -6,3 +6,4 @@ BinPackArguments: false
 BinPackParameters: false
 BreakConstructorInitializersBeforeComma: true
 AlwaysBreakTemplateDeclarations: Yes
+IndentWidth: 4
