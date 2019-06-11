@@ -20,7 +20,7 @@ class communicator {
   public:
     communicator() = default;
     communicator(const Strategy *strategy, MPI_Comm comm = MPI_COMM_WORLD);
-    ~communicator();
+    virtual ~communicator();
 
     /* In each communication step, processors are split and the communication is
      * performed. P processors are split into d groups (d = divisor in this
@@ -251,4 +251,5 @@ class communicator {
 
     void free_comms();
 };
+
 } // namespace cosma

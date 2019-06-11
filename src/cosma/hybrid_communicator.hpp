@@ -4,6 +4,10 @@
 #include <cosma/two_sided_communicator.hpp>
 
 namespace cosma {
+
+// NOTE: The vtable is emitted in every translation units, it's better to move
+// the method implementation to a cpp file (i.e. out of line).
+//
 class hybrid_communicator : public communicator {
   public:
     hybrid_communicator() = default;
@@ -19,7 +23,7 @@ class hybrid_communicator : public communicator {
               std::vector<std::vector<int>> &size_before,
               std::vector<int> &total_before,
               int total_after,
-              int step) {
+              int step) override {
         MPI_Comm comm = active_comm(step);
         two_sided_communicator::copy(comm,
                                      rank(),
@@ -43,7 +47,7 @@ class hybrid_communicator : public communicator {
                 std::vector<std::vector<int>> &c_expanded,
                 std::vector<int> &c_total_expanded,
                 int beta,
-                int step) {
+                int step) override {
         MPI_Comm comm = active_comm(step);
         two_sided_communicator::reduce(comm,
                                        rank(),
@@ -72,7 +76,7 @@ class hybrid_communicator : public communicator {
                                Interval &k,
                                Interval &P,
                                size_t step,
-                               double beta) {
+                               double beta) override {
         MPI_Comm comm = active_comm(step);
         one_sided_communicator::overlap_comm_and_comp(ctx,
                                                       comm,
