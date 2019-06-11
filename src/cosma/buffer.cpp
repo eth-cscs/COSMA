@@ -32,8 +32,7 @@ void Buffer::initialize_buffers(bool dry_run) {
         // buffers_ = std::vector<std::vector<double,
         // mpi_allocator<double>>>(buff_sizes.size()+1, std::vector<double,
         // mpi_allocator<double>>());
-        buffers_ = std::vector<std::vector<double, mpi_allocator<double>>>(
-            buff_sizes.size(), std::vector<double, mpi_allocator<double>>());
+        buffers_ = std::vector<mpi_buffer_t>(buff_sizes.size(), mpi_buffer_t());
         // std::cout << "buff sizes for " << label_ << " = " <<
         // buff_sizes.size() << std::endl;
         // buffers_[0].resize(mapper_->initial_size());
@@ -184,17 +183,13 @@ int Buffer::buff_index_before_gemm() const {
                : buffers_.size() - 2;
 }
 
-std::vector<double, mpi_allocator<double>> &Buffer::buffer() {
-    return buffers_[current_buffer_];
-}
+mpi_buffer_t &Buffer::buffer() { return buffers_[current_buffer_]; }
 
 int Buffer::buffer_index() { return current_buffer_; }
 
 void Buffer::set_buffer_index(int idx) { current_buffer_ = idx; }
 
-const std::vector<double, mpi_allocator<double>> &Buffer::buffer() const {
-    return buffers_[current_buffer_];
-}
+const mpi_buffer_t &Buffer::buffer() const { return buffers_[current_buffer_]; }
 
 double *Buffer::buffer_ptr() { return buffer().data(); }
 
@@ -206,14 +201,9 @@ double *Buffer::reduce_buffer_ptr() {
     return max_reduce_buffer_size_ > 0 ? reduce_buffer_.get() : nullptr;
 }
 
-std::vector<double, mpi_allocator<double>> &Buffer::initial_buffer() {
-    return buffers_[0];
-}
+mpi_buffer_t &Buffer::initial_buffer() { return buffers_[0]; }
 
-const std::vector<double, mpi_allocator<double>> &
-Buffer::initial_buffer() const {
-    return buffers_[0];
-}
+const mpi_buffer_t &Buffer::initial_buffer() const { return buffers_[0]; }
 
 double *Buffer::initial_buffer_ptr() {
     if (buffers_.size() == 0) {
@@ -657,13 +647,11 @@ void Buffer::compute_max_buffer_size(Interval &m,
     layout_->set_seq_buckets(P, buckets);
 }
 
-std::vector<double, mpi_allocator<double>> &Buffer::
-operator[](const std::vector<double, mpi_allocator<double>>::size_type index) {
+mpi_buffer_t &Buffer::operator[](const mpi_buffer_t::size_type index) {
     return buffers_[index];
 }
 
-std::vector<double, mpi_allocator<double>> Buffer::operator[](
-    const std::vector<double, mpi_allocator<double>>::size_type index) const {
+mpi_buffer_t Buffer::operator[](const mpi_buffer_t::size_type index) const {
     return buffers_[index];
 }
 

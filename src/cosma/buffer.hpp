@@ -63,8 +63,8 @@ class Buffer {
     // pointer to the parallel-reduce buffer used when beta > 0
     double *reduce_buffer_ptr();
     // returns a reference to the current buffer
-    std::vector<double, mpi_allocator<double>> &buffer();
-    const std::vector<double, mpi_allocator<double>> &buffer() const;
+    mpi_buffer_t &buffer();
+    const mpi_buffer_t &buffer() const;
     // returns index of a buffer that is used in gemm
     // it can be either last or pre-last buffer
     // depending on the parity of #parallel steps
@@ -75,15 +75,12 @@ class Buffer {
     // returns the initial buffer (i.e. with index 0)
     // this buffer owns the initial matrix data
     double *initial_buffer_ptr();
-    std::vector<double, mpi_allocator<double>> &initial_buffer();
-    const std::vector<double, mpi_allocator<double>> &initial_buffer() const;
+    mpi_buffer_t &initial_buffer();
+    const mpi_buffer_t &initial_buffer() const;
 
     // we can access i-th buffer of this class with [] operator
-    std::vector<double, mpi_allocator<double>> &operator[](
-        const std::vector<double, mpi_allocator<double>>::size_type index);
-    std::vector<double, mpi_allocator<double>> operator[](
-        const std::vector<double, mpi_allocator<double>>::size_type index)
-        const;
+    mpi_buffer_t &operator[](const mpi_buffer_t::size_type index);
+    mpi_buffer_t operator[](const mpi_buffer_t::size_type index) const;
 
     // can be A, B or C, determining the matrix
     char label_;
@@ -149,7 +146,7 @@ class Buffer {
 
     // vector of buffers being used for the current matrix (given by label)
     // by the current rank (determined by variable rank_)
-    std::vector<std::vector<double, mpi_allocator<double>>> buffers_;
+    std::vector<mpi_buffer_t> buffers_;
     // temporary buffer used for reshuffling of data received from other ranks
     // this happens when sequential steps are present, i.e. when n_blocks > 1
     std::unique_ptr<double[]> reshuffle_buffer_;

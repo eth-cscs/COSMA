@@ -4,6 +4,8 @@
 
 #include <exception>
 #include <iostream>
+#include <limits>
+#include <vector>
 
 /*
  * A custom allocator that:
@@ -101,4 +103,7 @@ class mpi_allocator {
                 this allocator in a nested scope (or inside a new function).");
     }
 };
+
+using mpi_buffer_t = std::vector<double, mpi_allocator<double>>;
+
 } // namespace cosma
