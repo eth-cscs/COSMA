@@ -2,12 +2,6 @@
 #define COSMA_BLAS_H
 #include <mpi.h>
 
-#ifdef COSMA_WITH_MKL
-#include <mkl_cblas.h>
-#else
-#include <cblas.h>
-#endif
-
 namespace cosma {
 void dgemm(const int M,
            const int N,
@@ -19,22 +13,23 @@ void dgemm(const int M,
            const int ldb,
            const double beta,
            double *C,
-           const int ldc) {
-    cblas_dgemm(CBLAS_LAYOUT::CblasColMajor,
-                CBLAS_TRANSPOSE::CblasNoTrans,
-                CBLAS_TRANSPOSE::CblasNoTrans,
-                M,
-                N,
-                K,
-                alpha,
-                A,
-                lda,
-                B,
-                ldb,
-                beta,
-                C,
-                ldc);
-}
+           const int ldc);
+//{
+//    cblas_dgemm(CBLAS_LAYOUT::CblasColMajor,
+//                CBLAS_TRANSPOSE::CblasNoTrans,
+//                CBLAS_TRANSPOSE::CblasNoTrans,
+//                M,
+//                N,
+//                K,
+//                alpha,
+//                A,
+//                lda,
+//                B,
+//                ldb,
+//                beta,
+//                C,
+//                ldc);
+//}
 } // namespace cosma
 
 namespace blas {
