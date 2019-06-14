@@ -1,4 +1,4 @@
-#include <cosma/blas.h>
+#include <cosma/blas.hpp>
 #include <cosma/multiply.hpp>
 
 #include <algorithm>

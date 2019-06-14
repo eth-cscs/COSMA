@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cosma/blas.h>
+#include <cosma/blas.hpp>
 #include <cosma/interval.hpp>
 #include <cosma/math_utils.hpp>
 #include <cosma/matrix.hpp>

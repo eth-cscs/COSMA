@@ -141,20 +141,17 @@ bool run(Strategy &s,
         // Now compute the result
         char N = 'N';
         double one = 1., zero = 0.;
-        blas::dgemm(&N,
-                    &N,
-                    &m,
-                    &n,
-                    &k,
-                    &one,
-                    globA.data(),
-                    &m,
-                    globB.data(),
-                    &k,
-                    &zero,
-                    globCcheck.data(),
-                    &m);
-
+        cosma::dgemm(m,
+                     n,
+                     k,
+                     1.0,
+                     globA.data(),
+                     m,
+                     globB.data(),
+                     k,
+                     0.0,
+                     globCcheck.data(),
+                     m);
 #ifdef DEBUG
         std::cout << "Complete matrix A: " << std::endl;
         for (int i = 0; i < m; i++) {

@@ -1,6 +1,6 @@
 #include <cosma/mapper.hpp>
 
-#include <gtest.h>
+#include <gtest/gtest.h>
 
 using namespace cosma;
 

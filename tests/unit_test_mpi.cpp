@@ -1,5 +1,5 @@
-#include <gtest.h>
-#include <gtest_mpi.hpp>
+#include <gtest/gtest.h>
+#include <gtest_mpi/gtest_mpi.hpp>
 
 int main(int argc, char **argv) {
     MPI_Init(&argc, &argv);
