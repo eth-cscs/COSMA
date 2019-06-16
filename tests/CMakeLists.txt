@@ -1,34 +1,31 @@
+option(IS_OPENMPI "Is MPI vendor OpenMPI?" OFF)
+if (IS_OPENMPI)
+    set(OVERSUBSCRIBE "--oversubscribe")
+endif()
+
 ################
 #  Build test  #
 ################
-add_executable(cosma-test cosma-test.cpp)
-target_link_libraries(cosma-test PRIVATE cosma)
-target_include_directories(cosma-test PRIVATE .)
+add_executable(test.cosma cosma-test.cpp)
+target_link_libraries(test.cosma PRIVATE cosma)
+target_include_directories(test.cosma PRIVATE .)
+#add_test(NAME test.cosma COMMAND test.cosma)
 
 ################
 #  unit gtests #
 ################
-add_executable(unit_test.exe test_mapper.cpp unit_test.cpp)
-target_link_libraries(unit_test.exe PRIVATE gtest cosma)
-target_include_directories(unit_test.exe PRIVATE .)
-# target_include_directories(unit_test.exe PUBLIC ${PROJECT_SOURCE_DIR}/libs/gtest)
+add_executable(test.strategy test-strategy.cpp)
+target_link_libraries(test.strategy PRIVATE cosma)
+add_test(NAME test.strategy COMMAND test.strategy)
 
-add_executable(unit_test_mpi.exe test_multiply.cpp unit_test_mpi.cpp)
-target_link_libraries(unit_test_mpi.exe PRIVATE gtest_mpi cosma)
-target_include_directories(unit_test_mpi.exe PRIVATE .)
-# target_include_directories(unit_test_mpi.exe PUBLIC ${PROJECT_SOURCE_DIR}/libs/gtest ${PROJECT_SOURCE_DIR}/libs/gtest_mpi)
+add_executable(test.mapper test_mapper.cpp unit_test.cpp)
+target_link_libraries(test.mapper PRIVATE gtest cosma)
+target_include_directories(test.mapper PRIVATE .)
+add_test(NAME test.mapper COMMAND test.mapper)
 
-add_test(no_mpi_tests unit_test.exe)
-
-if (MPI_FOUND)
-
-    option(REMOTE "--oversubscribe flag for OpenMPI" OFF)
-    set(OVERSUBSCRIBE "--oversubscribe")
-    if(REMOTE)
-        set(OVERSUBSCRIBE "")
-    endif()
-
-    add_test(NAME with_mpi_tests COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-        ${MPIEXEC_NUMPROC_FLAG} 16 unit_test_mpi.exe)
-endif ()
-
+add_executable(test.multiply test_multiply.cpp unit_test_mpi.cpp)
+target_link_libraries(test.multiply PRIVATE gtest_mpi cosma)
+target_include_directories(test.multiply PRIVATE .)
+add_test(NAME test.multiply
+         COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
+                 ${MPIEXEC_NUMPROC_FLAG} 16 test.multiply)
