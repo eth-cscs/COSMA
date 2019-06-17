@@ -13,7 +13,20 @@ endif()
 
 # COSMA library
 #
-add_library(cosma "")
+add_library(cosma STATIC
+  "${cosma_SOURCE_DIR}/src/cosma/blas.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/buffer.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/communicator.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/context.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/interval.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/layout.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/local_multiply.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/mapper.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/math_utils.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/matrix.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/multiply.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/strategy.cpp"
+  )
 message(STATUS ${cosma_SOURCE_DIR})
 target_include_directories(cosma PUBLIC ${cosma_SOURCE_DIR}/src)
 #target_link_libraries(cosma ${cosma_deps} /opt/cray/dmapp/7.1.1-6.0.7.0_34.3__g5a674e0.ari/lib64/libdmapp.so)
@@ -107,6 +120,5 @@ add_subdirectory(tests)
 #  Adding various code directories  #
 #####################################
 add_subdirectory(libs)
-add_subdirectory(src/cosma)
 add_subdirectory(miniapp)
 add_subdirectory(benchmarks)
