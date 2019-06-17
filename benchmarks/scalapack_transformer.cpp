@@ -1,7 +1,7 @@
-#include <cosma/transform.hpp>
-#include <cosma/scalapack_layout.hpp>
 #include <cosma/math_utils.hpp>
 
+#include <grid2grid/transform.hpp>
+#include <grid2grid/scalapack_layout.hpp>
 #include <mpi.h>
 
 #include <iostream>
