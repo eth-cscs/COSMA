@@ -89,26 +89,6 @@ if(COSMA_WITH_PROFILING)
     add_definitions(-DSEMIPROF)
 endif()
 
-#################################
-#        COVERAGE TEST          #
-#################################
-option(COSMA_COVERAGE_TEST "use lcov for the code coverage test" OFF)
-if(COSMA_COVERAGE_TEST)
-  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
-    set(CMAKE_LD_FLAGS "${CMAKE_LD_FLAGS} --coverage")
-
-    add_custom_target("coverage"
-                      COMMAND lcov --capture --directory ${CMAKE_CURRENT_BINARY_DIR} --output-file coverage.info
-                      COMMAND genhtml coverage.info --output-directory ${CMAKE_CURRENT_BINARY_DIR}/coverage
-                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-
-  else ()
-    message(WARNING "Coverage test can be used only with GCC.")
-    set(COSMA_COVERAGE_TEST "OFF" FORCE)
-  endif()
-endif()
-
 #############
 #  Testing  #
 #############
