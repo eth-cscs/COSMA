@@ -1,4 +1,4 @@
-#include <cosma/blas.h>
+#include <cosma/blas.hpp>
 
 #ifdef COSMA_WITH_MKL
 #include <mkl.h>

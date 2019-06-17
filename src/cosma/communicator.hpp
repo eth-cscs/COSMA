@@ -1,5 +1,5 @@
 #pragma once
-#include <cosma/blas.h>
+#include <cosma/blas.hpp>
 #include <cosma/context.hpp>
 #include <cosma/interval.hpp>
 #include <cosma/local_multiply.hpp>
