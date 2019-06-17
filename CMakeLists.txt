@@ -100,6 +100,8 @@ endif()
 #  Testing  #
 #############
 enable_testing()
+include(CTest)
+add_subdirectory(tests)
 
 #####################################
 #  Adding various code directories  #
@@ -107,5 +109,4 @@ enable_testing()
 add_subdirectory(libs)
 add_subdirectory(src/cosma)
 add_subdirectory(miniapp)
-add_subdirectory(tests)
 add_subdirectory(benchmarks)
