@@ -1,13 +1,16 @@
 #include <cosma/buffer.hpp>
 
+#include <complex>
+
 namespace cosma {
 
-Buffer::Buffer(char label,
-               const Strategy &strategy,
-               int rank,
-               Mapper *mapper,
-               Layout *layout,
-               bool dry_run)
+template <typename T>
+Buffer<T>::Buffer(char label,
+                  const Strategy &strategy,
+                  int rank,
+                  Mapper *mapper,
+                  Layout *layout,
+                  bool dry_run)
     : label_(label)
     , strategy_(&strategy)
     , rank_(rank)
@@ -17,7 +20,8 @@ Buffer::Buffer(char label,
     initialize_buffers(dry_run);
 }
 
-void Buffer::initialize_buffers(bool dry_run) {
+template <typename T>
+void Buffer<T>::initialize_buffers(bool dry_run) {
     max_base_buffer_size_ = -1;
     max_reduce_buffer_size_ = -1;
     max_reshuffle_buffer_size_ = -1;
@@ -54,13 +58,13 @@ void Buffer::initialize_buffers(bool dry_run) {
         // buffers_.size() << std::endl;
 
         if (max_reshuffle_buffer_size_ > 0) {
-            reshuffle_buffer_ = std::unique_ptr<double[]>(
-                new double[max_reshuffle_buffer_size_]);
+            reshuffle_buffer_ = std::unique_ptr<scalar_t[]>(
+                new scalar_t[max_reshuffle_buffer_size_]);
         }
 
         if (max_reduce_buffer_size_ > 0) {
-            reduce_buffer_ =
-                std::unique_ptr<double[]>(new double[max_reduce_buffer_size_]);
+            reduce_buffer_ = std::unique_ptr<scalar_t[]>(
+                new scalar_t[max_reduce_buffer_size_]);
         }
     }
 
@@ -94,7 +98,8 @@ void Buffer::initialize_buffers(bool dry_run) {
 #endif
 }
 
-Buffer::~Buffer() {
+template <typename T>
+Buffer<T>::~Buffer() {
 #ifdef COSMA_HAVE_GPU
     // std::cout << "buffers_ size = " << buffers_.size() << std::endl;
     // unpin the buffer that will be used in gemm
@@ -110,7 +115,8 @@ Buffer::~Buffer() {
 #endif
 }
 
-void Buffer::compute_n_buckets() {
+template <typename T>
+void Buffer<T>::compute_n_buckets() {
     n_buckets_ = std::vector<int>(strategy_->n_steps);
     expanded_after_ = std::vector<bool>(strategy_->n_steps);
     int prod_n_seq = 1;
@@ -137,7 +143,8 @@ void Buffer::compute_n_buckets() {
     }
 }
 
-void Buffer::init_first_split_steps() {
+template <typename T>
+void Buffer<T>::init_first_split_steps() {
     int step = 0;
     first_seq_split_step = -1;
     last_first_seq_split_step = -1;
@@ -171,7 +178,8 @@ void Buffer::init_first_split_steps() {
     }
 }
 
-int Buffer::buff_index_before_gemm() const {
+template <typename T>
+int Buffer<T>::buff_index_before_gemm() const {
     if (buffers_.size() == 0)
         return -1;
     if (buffers_.size() == 1)
@@ -183,29 +191,53 @@ int Buffer::buff_index_before_gemm() const {
                : buffers_.size() - 2;
 }
 
-mpi_buffer_t &Buffer::buffer() { return buffers_[current_buffer_]; }
+template <typename T>
+typename Buffer<T>::mpi_buffer_t &Buffer<T>::buffer() {
+    return buffers_[current_buffer_];
+}
 
-int Buffer::buffer_index() { return current_buffer_; }
+template <typename T>
+int Buffer<T>::buffer_index() {
+    return current_buffer_;
+}
 
-void Buffer::set_buffer_index(int idx) { current_buffer_ = idx; }
+template <typename T>
+void Buffer<T>::set_buffer_index(int idx) {
+    current_buffer_ = idx;
+}
 
-const mpi_buffer_t &Buffer::buffer() const { return buffers_[current_buffer_]; }
+template <typename T>
+const typename Buffer<T>::mpi_buffer_t &Buffer<T>::buffer() const {
+    return buffers_[current_buffer_];
+}
 
-double *Buffer::buffer_ptr() { return buffer().data(); }
+template <typename T>
+typename Buffer<T>::scalar_t *Buffer<T>::buffer_ptr() {
+    return buffer().data();
+}
 
-double *Buffer::reshuffle_buffer_ptr() {
+template <typename T>
+typename Buffer<T>::scalar_t *Buffer<T>::reshuffle_buffer_ptr() {
     return max_reshuffle_buffer_size_ > 0 ? reshuffle_buffer_.get() : nullptr;
 }
 
-double *Buffer::reduce_buffer_ptr() {
+template <typename T>
+typename Buffer<T>::scalar_t *Buffer<T>::reduce_buffer_ptr() {
     return max_reduce_buffer_size_ > 0 ? reduce_buffer_.get() : nullptr;
 }
 
-mpi_buffer_t &Buffer::initial_buffer() { return buffers_[0]; }
+template <typename T>
+typename Buffer<T>::mpi_buffer_t &Buffer<T>::initial_buffer() {
+    return buffers_[0];
+}
 
-const mpi_buffer_t &Buffer::initial_buffer() const { return buffers_[0]; }
+template <typename T>
+const typename Buffer<T>::mpi_buffer_t &Buffer<T>::initial_buffer() const {
+    return buffers_[0];
+}
 
-double *Buffer::initial_buffer_ptr() {
+template <typename T>
+typename Buffer<T>::scalar_t *Buffer<T>::initial_buffer_ptr() {
     if (buffers_.size() == 0) {
         return nullptr;
     }
@@ -213,7 +245,8 @@ double *Buffer::initial_buffer_ptr() {
 }
 
 // increases the index of the current buffer
-void Buffer::advance_buffer() {
+template <typename T>
+void Buffer<T>::advance_buffer() {
     // if we are at the last buffer, we then "swap" it with the pre-last buffer.
     // we do this by letting the current index point to the pre-last buffer.
     if (current_buffer_ == buffers_.size() - 1)
@@ -226,7 +259,8 @@ void Buffer::advance_buffer() {
         current_buffer_ = 0;
 }
 
-std::vector<long long> Buffer::compute_buffer_size() {
+template <typename T>
+std::vector<long long> Buffer<T>::compute_buffer_size() {
     Interval m(0, strategy_->m - 1);
     Interval n(0, strategy_->n - 1);
     Interval k(0, strategy_->k - 1);
@@ -235,13 +269,14 @@ std::vector<long long> Buffer::compute_buffer_size() {
     return compute_buffer_size(m, n, k, P, 0, rank_, strategy_->beta);
 }
 
-std::vector<long long> Buffer::compute_buffer_size(Interval &m,
-                                                   Interval &n,
-                                                   Interval &k,
-                                                   Interval &P,
-                                                   int step,
-                                                   int rank,
-                                                   double beta) {
+template <typename T>
+std::vector<long long> Buffer<T>::compute_buffer_size(Interval &m,
+                                                      Interval &n,
+                                                      Interval &k,
+                                                      Interval &P,
+                                                      int step,
+                                                      int rank,
+                                                      scalar_t beta) {
     std::vector<long long> sizes;
     // current submatrices that are being computed
     Interval2D a_range(m, k);
@@ -296,7 +331,7 @@ std::vector<long long> Buffer::compute_buffer_size(Interval &m,
             Interval newk = k.subinterval(divk, divk > 1 ? i : 0);
 
             // update beta value
-            double new_beta = beta;
+            scalar_t new_beta = beta;
             if (label_ == 'C' && divk > 1) {
                 new_beta = 1;
                 // new_beta = i == 0 && beta == 0 ? 0 : 1;
@@ -452,13 +487,14 @@ std::vector<long long> Buffer::compute_buffer_size(Interval &m,
     return sizes;
 }
 
-void Buffer::compute_max_buffer_size(Interval &m,
-                                     Interval &n,
-                                     Interval &k,
-                                     Interval &P,
-                                     int step,
-                                     int rank,
-                                     double beta) {
+template <typename T>
+void Buffer<T>::compute_max_buffer_size(Interval &m,
+                                        Interval &n,
+                                        Interval &k,
+                                        Interval &P,
+                                        int step,
+                                        int rank,
+                                        scalar_t beta) {
     // current submatrices that are being computed
     Interval2D a_range(m, k);
     Interval2D b_range(k, n);
@@ -647,14 +683,33 @@ void Buffer::compute_max_buffer_size(Interval &m,
     layout_->set_seq_buckets(P, buckets);
 }
 
-mpi_buffer_t &Buffer::operator[](const mpi_buffer_t::size_type index) {
+template <typename T>
+typename Buffer<T>::mpi_buffer_t &Buffer<T>::
+operator[](const typename mpi_buffer_t::size_type index) {
     return buffers_[index];
 }
 
-mpi_buffer_t Buffer::operator[](const mpi_buffer_t::size_type index) const {
+template <typename T>
+typename Buffer<T>::mpi_buffer_t Buffer<T>::
+operator[](const typename mpi_buffer_t::size_type index) const {
     return buffers_[index];
 }
 
-long long Buffer::max_send_buffer_size() const { return max_send_buffer_size_; }
-long long Buffer::max_recv_buffer_size() const { return max_recv_buffer_size_; }
+template <typename T>
+long long Buffer<T>::max_send_buffer_size() const {
+    return max_send_buffer_size_;
+}
+
+template <typename T>
+long long Buffer<T>::max_recv_buffer_size() const {
+    return max_recv_buffer_size_;
+}
+
+// Explicit instantiations
+//
+template class Buffer<double>;
+// template class Buffer<std::complex<double>>;
+template class Buffer<float>;
+// template class Buffer<std::complex<float>>;
+
 } // namespace cosma

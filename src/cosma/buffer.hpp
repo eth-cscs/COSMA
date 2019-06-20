@@ -32,9 +32,10 @@
 
 namespace cosma {
 
+template <typename Scalar>
 class Buffer {
   public:
-    using scalar_t = double; // TODO: Future template parameter
+    using scalar_t = Scalar; // TODO: Future template parameter
     using mpi_buffer_t = std::vector<scalar_t, mpi_allocator<scalar_t>>;
 
     Buffer() = default;
@@ -83,8 +84,8 @@ class Buffer {
     const mpi_buffer_t &initial_buffer() const;
 
     // we can access i-th buffer of this class with [] operator
-    mpi_buffer_t &operator[](const mpi_buffer_t::size_type index);
-    mpi_buffer_t operator[](const mpi_buffer_t::size_type index) const;
+    mpi_buffer_t &operator[](const typename mpi_buffer_t::size_type index);
+    mpi_buffer_t operator[](const typename mpi_buffer_t::size_type index) const;
 
     // can be A, B or C, determining the matrix
     char label_;
@@ -184,4 +185,5 @@ class Buffer {
     // matrix
     int first_par_extend_step;
 };
+
 } // namespace cosma

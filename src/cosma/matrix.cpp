@@ -1,6 +1,9 @@
 #include <cosma/matrix.hpp>
 
 namespace cosma {
+
+extern template class Buffer<double>;
+
 CosmaMatrix::CosmaMatrix(char label,
                          const Strategy &strategy,
                          int rank,
@@ -27,7 +30,7 @@ CosmaMatrix::CosmaMatrix(char label,
 
     mapper_ = Mapper(label, m_, n_, P_, strategy, rank);
     layout_ = Layout(label, m_, n_, P_, rank, mapper_.complete_layout());
-    buffer_ = Buffer(label, strategy, rank, &mapper_, &layout_, dry_run);
+    buffer_ = buffer_t(label, strategy, rank, &mapper_, &layout_, dry_run);
 
     current_mat = matrix_pointer();
 

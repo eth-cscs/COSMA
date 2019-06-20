@@ -25,8 +25,7 @@ namespace cosma {
 class CosmaMatrix {
   public:
     using scalar_t = double; // Future template parameter
-    // TODO: replace Buffer by buffer_t :
-    // `using buffer_t = Buffer<scalar_t>`
+    using buffer_t = Buffer<scalar_t>;
 
     CosmaMatrix(char label,
                 const Strategy &strategy,
@@ -159,7 +158,7 @@ class CosmaMatrix {
 
     Mapper mapper_;
     Layout layout_;
-    Buffer buffer_;
+    buffer_t buffer_;
 
     mpi_buffer_t dummy_vector;
 };
