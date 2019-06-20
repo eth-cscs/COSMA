@@ -24,6 +24,10 @@
 namespace cosma {
 class CosmaMatrix {
   public:
+    using scalar_t = double; // Future template parameter
+    // TODO: replace Buffer by buffer_t :
+    // `using buffer_t = Buffer<scalar_t>`
+
     CosmaMatrix(char label,
                 const Strategy &strategy,
                 int rank,
@@ -97,15 +101,15 @@ class CosmaMatrix {
     // sets the current buffer to idx
     void set_buffer_index(int idx);
     // returns the pointer to the current buffer
-    double *buffer_ptr();
+    scalar_t *buffer_ptr();
     // returns the pointer to the reshuffle buffer
     // that is used when n_blocks > 1 (i.e. when sequential steps are present)
     // as a temporary buffer in which the data is reshuffled.
-    double *reshuffle_buffer_ptr();
+    scalar_t *reshuffle_buffer_ptr();
     // pointer to the reduce buffer that is used as a
     // temporary buffer in parallel-reduce (two-sided) communicator
     // in case when beta > 0 in that step
-    double *reduce_buffer_ptr();
+    scalar_t *reduce_buffer_ptr();
 
     mpi_buffer_t &buffer();
     const mpi_buffer_t &buffer() const;
@@ -113,24 +117,24 @@ class CosmaMatrix {
     // **********************************************
     // NEW METHODS
     // **********************************************
-    double &operator[](const std::vector<double>::size_type index);
-    double operator[](const std::vector<double>::size_type index) const;
+    scalar_t &operator[](const std::vector<scalar_t>::size_type index);
+    scalar_t operator[](const std::vector<scalar_t>::size_type index) const;
 
     // outputs matrix in a format:
     //      row, column, value
     // for all local elements on the current rank
     friend std::ostream &operator<<(std::ostream &os, const CosmaMatrix &mat);
 
-    double *matrix_pointer();
+    scalar_t *matrix_pointer();
     mpi_buffer_t &matrix();
     const mpi_buffer_t &matrix() const;
 
     // pointer to send buffer
-    // double* buffer_ptr();
-    // std::vector<double, mpi_allocator<double>>& buffer();
+    // scalar_t* buffer_ptr();
+    // std::vector<scalar_t, mpi_allocator<scalar_t>>& buffer();
     // pointer to current matrix (send buffer)
-    double *current_matrix();
-    void set_current_matrix(double *mat);
+    scalar_t *current_matrix();
+    void set_current_matrix(scalar_t *mat);
 
   protected:
     // A, B or C
@@ -147,7 +151,7 @@ class CosmaMatrix {
     const Strategy &strategy_;
 
     /// temporary local matrix
-    double *current_mat;
+    scalar_t *current_mat;
 
     Interval mi_;
     Interval ni_;
