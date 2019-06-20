@@ -1,15 +1,17 @@
 #include <cosma/multiply.hpp>
 
 namespace cosma {
+
+extern template class CosmaMatrix<double>;
 /*
  Compute C = A * B
  Assumption: we assume that at each step only 1 dimension is split
 */
 
 void multiply(context &ctx,
-              CosmaMatrix &matrixA,
-              CosmaMatrix &matrixB,
-              CosmaMatrix &matrixC,
+              CosmaMatrix<double> &matrixA,
+              CosmaMatrix<double> &matrixB,
+              CosmaMatrix<double> &matrixC,
               const Strategy &strategy,
               MPI_Comm comm,
               double beta) {
@@ -44,9 +46,9 @@ void multiply(context &ctx,
 }
 
 void multiply(context &ctx,
-              CosmaMatrix &matrixA,
-              CosmaMatrix &matrixB,
-              CosmaMatrix &matrixC,
+              CosmaMatrix<double> &matrixA,
+              CosmaMatrix<double> &matrixB,
+              CosmaMatrix<double> &matrixC,
               Interval &m,
               Interval &n,
               Interval &k,
@@ -158,9 +160,9 @@ void multiply(context &ctx,
  and each of the subproblems is solved sequentially by all P processors.
 */
 void sequential(context &ctx,
-                CosmaMatrix &matrixA,
-                CosmaMatrix &matrixB,
-                CosmaMatrix &matrixC,
+                CosmaMatrix<double> &matrixA,
+                CosmaMatrix<double> &matrixB,
+                CosmaMatrix<double> &matrixC,
                 Interval &m,
                 Interval &n,
                 Interval &k,
@@ -291,9 +293,9 @@ T which_is_expanded(T &&A,
  owned by newP ranks - thus local matrices are shrinked.
  */
 void parallel(context &ctx,
-              CosmaMatrix &matrixA,
-              CosmaMatrix &matrixB,
-              CosmaMatrix &matrixC,
+              CosmaMatrix<double> &matrixA,
+              CosmaMatrix<double> &matrixB,
+              CosmaMatrix<double> &matrixC,
               Interval &m,
               Interval &n,
               Interval &k,
@@ -359,7 +361,7 @@ void parallel(context &ctx,
      if divn > 1 => matrix A is expanded
      if divk > 1 => matrix C is expanded
      */
-    CosmaMatrix &expanded_mat =
+    CosmaMatrix<double> &expanded_mat =
         which_is_expanded(matrixA, matrixB, matrixC, strategy, step);
     // gets the buffer sizes before and after expansion.
     // this still does not modify the buffer sizes inside layout

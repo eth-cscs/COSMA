@@ -68,9 +68,9 @@ class hybrid_communicator : public communicator {
     // computation use the one sided communication backend as it may be more
     // efficient in this case
     void overlap_comm_and_comp(context &ctx,
-                               CosmaMatrix &matrixA,
-                               CosmaMatrix &matrixB,
-                               CosmaMatrix &matrixC,
+                               CosmaMatrix<double> &matrixA,
+                               CosmaMatrix<double> &matrixB,
+                               CosmaMatrix<double> &matrixC,
                                Interval &m,
                                Interval &n,
                                Interval &k,

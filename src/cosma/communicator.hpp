@@ -149,9 +149,9 @@ class communicator {
                         int step) = 0;
 
     virtual void overlap_comm_and_comp(context &ctx,
-                                       CosmaMatrix &matrixA,
-                                       CosmaMatrix &matrixB,
-                                       CosmaMatrix &matrixC,
+                                       CosmaMatrix<double> &matrixA,
+                                       CosmaMatrix<double> &matrixB,
+                                       CosmaMatrix<double> &matrixC,
                                        Interval &m,
                                        Interval &n,
                                        Interval &k,

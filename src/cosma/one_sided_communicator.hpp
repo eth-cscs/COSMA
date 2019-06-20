@@ -405,9 +405,9 @@ class one_sided_communicator {
                                 MPI_Comm comm,
                                 int rank,
                                 int divisor,
-                                CosmaMatrix &matrixA,
-                                CosmaMatrix &matrixB,
-                                CosmaMatrix &matrixC,
+                                CosmaMatrix<double> &matrixA,
+                                CosmaMatrix<double> &matrixB,
+                                CosmaMatrix<double> &matrixC,
                                 Interval &m,
                                 Interval &n,
                                 Interval &k,
@@ -417,7 +417,7 @@ class one_sided_communicator {
         int gp, off;
         std::tie(gp, off) = P.locate_in_subinterval(divisor, rank);
 
-        CosmaMatrix &expanded_mat = matrixB;
+        CosmaMatrix<double> &expanded_mat = matrixB;
         int buffer_idx = expanded_mat.buffer_index();
         expanded_mat.advance_buffer();
 
@@ -521,9 +521,9 @@ class one_sided_communicator {
                                 MPI_Comm comm,
                                 int rank,
                                 int divisor,
-                                CosmaMatrix &matrixA,
-                                CosmaMatrix &matrixB,
-                                CosmaMatrix &matrixC,
+                                CosmaMatrix<double> &matrixA,
+                                CosmaMatrix<double> &matrixB,
+                                CosmaMatrix<double> &matrixC,
                                 Interval &m,
                                 Interval &n,
                                 Interval &k,
@@ -533,7 +533,7 @@ class one_sided_communicator {
         int gp, off;
         std::tie(gp, off) = P.locate_in_subinterval(divisor, rank);
 
-        CosmaMatrix &expanded_mat = matrixA;
+        CosmaMatrix<double> &expanded_mat = matrixA;
 
         int buffer_idx = expanded_mat.buffer_index();
         expanded_mat.advance_buffer();
@@ -694,9 +694,9 @@ class one_sided_communicator {
     }
 
     static void compute(context &ctx,
-                        CosmaMatrix &A,
-                        CosmaMatrix &B,
-                        CosmaMatrix &C,
+                        CosmaMatrix<double> &A,
+                        CosmaMatrix<double> &B,
+                        CosmaMatrix<double> &C,
                         double *pointer_b,
                         double *pointer_c,
                         Interval &m,
@@ -745,9 +745,9 @@ class one_sided_communicator {
                                 MPI_Comm comm,
                                 int rank,
                                 int divisor,
-                                CosmaMatrix &matrixA,
-                                CosmaMatrix &matrixB,
-                                CosmaMatrix &matrixC,
+                                CosmaMatrix<double> &matrixA,
+                                CosmaMatrix<double> &matrixB,
+                                CosmaMatrix<double> &matrixC,
                                 Interval &m,
                                 Interval &n,
                                 Interval &k,
@@ -758,7 +758,7 @@ class one_sided_communicator {
         int gp, off;
         std::tie(gp, off) = P.locate_in_subinterval(divisor, rank);
 
-        CosmaMatrix &expanded_mat = matrixC;
+        CosmaMatrix<double> &expanded_mat = matrixC;
         int buffer_idx = expanded_mat.buffer_index();
         expanded_mat.advance_buffer();
 
@@ -977,9 +977,9 @@ class one_sided_communicator {
                                       MPI_Comm comm,
                                       int rank,
                                       const Strategy *strategy,
-                                      CosmaMatrix &matrixA,
-                                      CosmaMatrix &matrixB,
-                                      CosmaMatrix &matrixC,
+                                      CosmaMatrix<double> &matrixA,
+                                      CosmaMatrix<double> &matrixB,
+                                      CosmaMatrix<double> &matrixC,
                                       Interval &m,
                                       Interval &n,
                                       Interval &k,

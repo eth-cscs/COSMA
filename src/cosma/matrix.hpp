@@ -22,10 +22,13 @@
 #include <vector>
 
 namespace cosma {
+
+template <typename Scalar>
 class CosmaMatrix {
   public:
-    using scalar_t = double; // Future template parameter
+    using scalar_t = Scalar;
     using buffer_t = Buffer<scalar_t>;
+    using mpi_buffer_t = typename buffer_t::mpi_buffer_t;
 
     CosmaMatrix(char label,
                 const Strategy &strategy,
@@ -116,13 +119,16 @@ class CosmaMatrix {
     // **********************************************
     // NEW METHODS
     // **********************************************
-    scalar_t &operator[](const std::vector<scalar_t>::size_type index);
-    scalar_t operator[](const std::vector<scalar_t>::size_type index) const;
+    scalar_t &operator[](const typename std::vector<scalar_t>::size_type index);
+    scalar_t
+    operator[](const typename std::vector<scalar_t>::size_type index) const;
 
     // outputs matrix in a format:
     //      row, column, value
     // for all local elements on the current rank
-    friend std::ostream &operator<<(std::ostream &os, const CosmaMatrix &mat);
+    template <typename Scalar_>
+    friend std::ostream &operator<<(std::ostream &os,
+                                    const CosmaMatrix<Scalar_> &mat);
 
     scalar_t *matrix_pointer();
     mpi_buffer_t &matrix();

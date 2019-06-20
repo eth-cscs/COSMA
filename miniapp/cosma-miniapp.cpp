@@ -3,36 +3,33 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <cstdlib>
-#include <iostream>
 #include <fstream>
+#include <iostream>
+#include <limits>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <chrono>
-#include <limits>
-#include <cstdlib>
-#include <iostream>
-#include <sstream>
-
 
 using namespace cosma;
 
-template<typename T>
-void fillInt(T& in) {
-  std::generate(in.begin(), in.end(),
-    [](){ return (int) (10*drand48()); });
+template <typename T>
+void fillInt(T &in) {
+    std::generate(in.begin(), in.end(), []() { return (int)(10 * drand48()); });
 }
 
 int get_n_iter() {
-    const char* value = std::getenv("n_iter");
+    const char *value = std::getenv("n_iter");
     std::stringstream strValue;
     strValue << value;
 
     unsigned int intValue;
     strValue >> intValue;
 
-    if (intValue<0 || intValue > 100) {
-        std::cout << "Number of iteration must be in the interval [1, 100]" << std::endl;
+    if (intValue < 0 || intValue > 100) {
+        std::cout << "Number of iteration must be in the interval [1, 100]"
+                  << std::endl;
         std::cout << "Setting it to 1 iteration instead" << std::endl;
         return 1;
     }
@@ -40,22 +37,22 @@ int get_n_iter() {
     return intValue;
 }
 
-void output_matrix(CosmaMatrix& M, int rank) {
+void output_matrix(CosmaMatrix<double> &M, int rank) {
     std::string local = M.which_matrix() + std::to_string(rank) + ".txt";
     std::ofstream local_file(local);
     local_file << M << std::endl;
     local_file.close();
 }
 
-long run(Strategy& s, context& ctx, MPI_Comm comm=MPI_COMM_WORLD) {
+long run(Strategy &s, context &ctx, MPI_Comm comm = MPI_COMM_WORLD) {
     int rank, size;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
 
-    //Declare A,B and C COSMA matrices objects
-    CosmaMatrix A('A', s, rank);
-    CosmaMatrix B('B', s, rank);
-    CosmaMatrix C('C', s, rank);
+    // Declare A,B and C COSMA matrices objects
+    CosmaMatrix<double> A('A', s, rank);
+    CosmaMatrix<double> B('B', s, rank);
+    CosmaMatrix<double> C('C', s, rank);
 
     // fill the matrices with random data
     srand48(rank);
@@ -68,10 +65,11 @@ long run(Strategy& s, context& ctx, MPI_Comm comm=MPI_COMM_WORLD) {
     MPI_Barrier(comm);
     auto end = std::chrono::steady_clock::now();
 
-    return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
+        .count();
 }
 
-int main( int argc, char **argv ) {
+int main(int argc, char **argv) {
     MPI_Init(&argc, &argv);
 
     int P, rank;
@@ -81,13 +79,13 @@ int main( int argc, char **argv ) {
     Strategy strategy(argc, argv);
     auto ctx = cosma::make_context();
 
-    if (rank == 0) { 
+    if (rank == 0) {
         std::cout << "Strategy = " << strategy << std::endl;
     }
 
     int n_iter = get_n_iter();
-    std::vector<long> times; 
-    for (int i = 0; i < n_iter; ++i) { 
+    std::vector<long> times;
+    for (int i = 0; i < n_iter; ++i) {
         long t_run = 0;
         t_run = run(strategy, ctx);
         times.push_back(t_run);
@@ -96,7 +94,7 @@ int main( int argc, char **argv ) {
 
     if (rank == 0) {
         std::cout << "COSMA TIMES [ms] = ";
-        for (auto& time : times) {
+        for (auto &time : times) {
             std::cout << time << " ";
         }
         std::cout << std::endl;

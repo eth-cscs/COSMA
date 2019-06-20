@@ -11,9 +11,9 @@ namespace cosma {
    computational volume
  */
 
-CosmaMatrix *matrixA;
-CosmaMatrix *matrixB;
-CosmaMatrix *matrixC;
+CosmaMatrix<double> *matrixA;
+CosmaMatrix<double> *matrixB;
+CosmaMatrix<double> *matrixC;
 
 long long total_communication = 0;
 long long max_buffer_size = 0;
@@ -62,9 +62,9 @@ void multiply(const Strategy &strategy, int n_rep = 1) {
 
     bool dry_run = true;
     // Declare A,B and COSMA matrices objects
-    matrixA = new CosmaMatrix('A', strategy, 0, dry_run);
-    matrixB = new CosmaMatrix('B', strategy, 0, dry_run);
-    matrixC = new CosmaMatrix('C', strategy, 0, dry_run);
+    matrixA = new CosmaMatrix<double>('A', strategy, 0, dry_run);
+    matrixB = new CosmaMatrix<double>('B', strategy, 0, dry_run);
+    matrixC = new CosmaMatrix<double>('C', strategy, 0, dry_run);
 
     // simulate the algorithm for each rank
     for (int rank = 0; rank < Pi.length(); ++rank) {
@@ -278,7 +278,7 @@ void parallel(Interval &m,
          if divn > 1 => matrix A is expanded
          if divk > 1 => matrix C is expanded
     */
-    CosmaMatrix *expanded_mat =
+    CosmaMatrix<double> *expanded_mat =
         which_is_expanded(matrixA, matrixB, matrixC, strategy, step);
     // gets the buffer sizes before and after expansion.
     // this still does not modify the buffer sizes inside layout

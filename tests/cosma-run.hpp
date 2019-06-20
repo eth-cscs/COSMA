@@ -21,9 +21,9 @@ bool run(Strategy &s,
     int P = s.P;
 
     // Declare A,B and C COSMA matrices objects
-    CosmaMatrix A('A', s, rank);
-    CosmaMatrix B('B', s, rank);
-    CosmaMatrix C('C', s, rank);
+    CosmaMatrix<double> A('A', s, rank);
+    CosmaMatrix<double> B('B', s, rank);
+    CosmaMatrix<double> C('C', s, rank);
 
     // fill the matrices with random data
     srand48(rank);
