@@ -1,4 +1,11 @@
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+
+# Check if COSMA is bundled, disable test suit if it is.
+#
+if(NOT DEFINED PROJECT_NAME)
+  set(COSMA_NOT_SUBPROJECT ON)
+endif()
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 project(cosma VERSION 0.1 LANGUAGES CXX)
 
@@ -92,9 +99,11 @@ endif()
 #############
 #  Testing  #
 #############
-enable_testing()
-include(CTest)
-add_subdirectory(tests)
+if(COSMA_NOT_SUBPROJECT)
+  enable_testing()
+  include(CTest)
+  add_subdirectory(tests)
+endif()
 
 #####################################
 #  Adding various code directories  #
