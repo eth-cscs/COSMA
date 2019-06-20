@@ -27,10 +27,10 @@ int main(int argc, char **argv) {
     }
 
     // first run without overlapping communication and computation
-    bool isOK = run(strategy, ctx, MPI_COMM_WORLD, false);
+    bool isOK = run<double>(strategy, ctx, MPI_COMM_WORLD, false);
     MPI_Barrier(MPI_COMM_WORLD);
     // then run with the overlap of communication and computation
-    isOK = isOK && run(strategy, ctx, MPI_COMM_WORLD, true);
+    isOK = isOK && run<double>(strategy, ctx, MPI_COMM_WORLD, true);
 
     MPI_Finalize();
 

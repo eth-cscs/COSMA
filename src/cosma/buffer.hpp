@@ -31,8 +31,13 @@
  */
 
 namespace cosma {
+
+template <typename Scalar>
 class Buffer {
   public:
+    using scalar_t = Scalar;
+    using mpi_buffer_t = std::vector<scalar_t, mpi_allocator<scalar_t>>;
+
     Buffer() = default;
     Buffer(char label,
            const Strategy &strategy,
@@ -57,11 +62,11 @@ class Buffer {
     void set_buffer_index(int idx);
 
     // returns the pointer to the current buffer
-    double *buffer_ptr();
+    scalar_t *buffer_ptr();
     // pointer to the reshuffle buffer used when n_blocks > 1
-    double *reshuffle_buffer_ptr();
+    scalar_t *reshuffle_buffer_ptr();
     // pointer to the parallel-reduce buffer used when beta > 0
-    double *reduce_buffer_ptr();
+    scalar_t *reduce_buffer_ptr();
     // returns a reference to the current buffer
     mpi_buffer_t &buffer();
     const mpi_buffer_t &buffer() const;
@@ -74,13 +79,13 @@ class Buffer {
 
     // returns the initial buffer (i.e. with index 0)
     // this buffer owns the initial matrix data
-    double *initial_buffer_ptr();
+    scalar_t *initial_buffer_ptr();
     mpi_buffer_t &initial_buffer();
     const mpi_buffer_t &initial_buffer() const;
 
     // we can access i-th buffer of this class with [] operator
-    mpi_buffer_t &operator[](const mpi_buffer_t::size_type index);
-    mpi_buffer_t operator[](const mpi_buffer_t::size_type index) const;
+    mpi_buffer_t &operator[](const typename mpi_buffer_t::size_type index);
+    mpi_buffer_t operator[](const typename mpi_buffer_t::size_type index) const;
 
     // can be A, B or C, determining the matrix
     char label_;
@@ -106,7 +111,7 @@ class Buffer {
                                                Interval &P,
                                                int step,
                                                int rank,
-                                               double beta);
+                                               scalar_t beta);
 
     // when the number of blocks that the current rank owns from this matrix
     // reaches 1 (meaning that there are no sequential steps left) then no new
@@ -120,7 +125,7 @@ class Buffer {
                                  Interval &P,
                                  int step,
                                  int rank,
-                                 double beta);
+                                 scalar_t beta);
 
     // initializes two arrays:
     // 1. n_buckets_ : this vectors gives us for each step of the algorithm the
@@ -149,10 +154,10 @@ class Buffer {
     std::vector<mpi_buffer_t> buffers_;
     // temporary buffer used for reshuffling of data received from other ranks
     // this happens when sequential steps are present, i.e. when n_blocks > 1
-    std::unique_ptr<double[]> reshuffle_buffer_;
+    std::unique_ptr<scalar_t[]> reshuffle_buffer_;
     // temporary buffer used in parallel-reduce step (two-sided communication)
     // used when beta > 0 (to save current C)
-    std::unique_ptr<double[]> reduce_buffer_;
+    std::unique_ptr<scalar_t[]> reduce_buffer_;
     // pointer to the current buffer being used in the previous vector of
     // buffers
     int current_buffer_;
@@ -180,4 +185,5 @@ class Buffer {
     // matrix
     int first_par_extend_step;
 };
+
 } // namespace cosma

@@ -1,44 +1,69 @@
+#include <cosma/mpi_mapper.hpp>
 #include <cosma/multiply.hpp>
+
+#include <complex>
+#include <random>
 
 using namespace cosma;
 
-template <typename T>
-void fillInt(T &in) {
-    std::generate(in.begin(), in.end(), []() { return (int)(10 * drand48()); });
+template <typename Real, typename Allocator>
+void fill_matrix(std::vector<Real, Allocator> &data) {
+    std::random_device dev;                        // seed
+    std::mt19937 rng(dev());                       // generator
+    std::uniform_real_distribution<Real> dist(1.); // distribution
+
+    for (auto &el : data) {
+        el = Real{dist(rng)};
+    }
 }
 
+template <typename Real, typename Allocator>
+void fill_matrix(std::vector<std::complex<Real>, Allocator> &data) {
+    std::random_device dev;                        // seed
+    std::mt19937 rng(dev());                       // generator
+    std::uniform_real_distribution<Real> dist(1.); // distribution
+
+    for (auto &el : data) {
+        el = std::complex<Real>{dist(rng), dist(rng)};
+    }
+}
+
+// TODO: generalize to generate complex numbers
+
+template <typename Scalar>
 bool run(Strategy &s,
          context &ctx,
          MPI_Comm comm = MPI_COMM_WORLD,
          bool overlap = false) {
-    int rank, size;
-    s.overlap_comm_and_comp = overlap;
+    constexpr auto epsilon = std::numeric_limits<float>::epsilon();
+
+    int rank;
+    int size;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
+
+    auto mpi_type = cosma::mpi_mapper<Scalar>::getType();
+
+    s.overlap_comm_and_comp = overlap;
     int m = s.m;
     int n = s.n;
     int k = s.k;
     int P = s.P;
 
     // Declare A,B and C COSMA matrices objects
-    CosmaMatrix A('A', s, rank);
-    CosmaMatrix B('B', s, rank);
-    CosmaMatrix C('C', s, rank);
+    CosmaMatrix<Scalar> A('A', s, rank);
+    CosmaMatrix<Scalar> B('B', s, rank);
+    CosmaMatrix<Scalar> C('C', s, rank);
 
     // fill the matrices with random data
     srand48(rank);
-    fillInt(A.matrix());
-    fillInt(B.matrix());
+    fill_matrix(A.matrix());
+    fill_matrix(B.matrix());
 
     // initial sizes
     auto sizeA = A.initial_size();
     auto sizeB = B.initial_size();
     auto sizeC = C.initial_size();
-
-    // fill the matrices with random data
-    srand48(rank);
-    fillInt(A.matrix());
-    fillInt(B.matrix());
 
 #ifdef DEBUG
     std::cout << "Initial data in A and B:" << std::endl;
@@ -61,11 +86,11 @@ bool run(Strategy &s,
     bool isOK;
 
     // Then rank0 ask for other ranks data
-    std::vector<double> As, Bs;
+    std::vector<Scalar> As, Bs;
     if (rank == 0) {
-        As = std::vector<double>(m * k);
+        As = std::vector<Scalar>(m * k);
         std::copy(A.matrix().cbegin(), A.matrix().cend(), As.begin());
-        Bs = std::vector<double>(k * n);
+        Bs = std::vector<Scalar>(k * n);
         std::copy(B.matrix().cbegin(), B.matrix().cend(), Bs.begin());
 
         int offsetA = sizeA;
@@ -77,14 +102,14 @@ bool run(Strategy &s,
             // Rank 0 receive data
             MPI_Recv(As.data() + offsetA,
                      receive_size_A,
-                     MPI_DOUBLE,
+                     mpi_type,
                      i,
                      0,
                      comm,
                      MPI_STATUSES_IGNORE);
             MPI_Recv(Bs.data() + offsetB,
                      receive_size_B,
-                     MPI_DOUBLE,
+                     mpi_type,
                      i,
                      0,
                      comm,
@@ -96,16 +121,16 @@ bool run(Strategy &s,
     }
     // Rank i send data
     if (rank > 0) {
-        MPI_Send(A.matrix_pointer(), sizeA, MPI_DOUBLE, 0, 0, comm);
-        MPI_Send(B.matrix_pointer(), sizeB, MPI_DOUBLE, 0, 0, comm);
+        MPI_Send(A.matrix_pointer(), sizeA, mpi_type, 0, 0, comm);
+        MPI_Send(B.matrix_pointer(), sizeB, mpi_type, 0, 0, comm);
     }
 
     MPI_Barrier(comm);
 
     // Then rank 0 must reorder data locally
-    std::vector<double> globA;
-    std::vector<double> globB;
-    std::vector<double> globCcheck;
+    std::vector<Scalar> globA;
+    std::vector<Scalar> globB;
+    std::vector<Scalar> globCcheck;
     if (rank == 0) {
         globA.resize(m * k);
         globB.resize(k * n);
@@ -139,17 +164,15 @@ bool run(Strategy &s,
             offsetB += local_size_B;
         }
         // Now compute the result
-        char N = 'N';
-        double one = 1., zero = 0.;
         cosma::dgemm(m,
                      n,
                      k,
-                     1.0,
+                     Scalar{1.0},
                      globA.data(),
                      m,
                      globB.data(),
                      k,
-                     0.0,
+                     Scalar{0.0},
                      globCcheck.data(),
                      m);
 #ifdef DEBUG
@@ -181,12 +204,12 @@ bool run(Strategy &s,
 #endif
     }
 
-    multiply(ctx, A, B, C, s, comm, 0.0);
+    multiply(ctx, A, B, C, s, comm, Scalar{0});
 
     // Then rank0 ask for other ranks data
-    std::vector<double> Cs;
+    std::vector<Scalar> Cs;
     if (rank == 0) {
-        Cs = std::vector<double>(m * n);
+        Cs = std::vector<Scalar>(m * n);
         std::copy(C.matrix().cbegin(), C.matrix().cend(), Cs.begin());
 
         int offsetC = sizeC;
@@ -196,7 +219,7 @@ bool run(Strategy &s,
             // Rank 0 receive data
             MPI_Recv(Cs.data() + offsetC,
                      receive_size_C,
-                     MPI_DOUBLE,
+                     mpi_type,
                      i,
                      0,
                      comm,
@@ -206,13 +229,13 @@ bool run(Strategy &s,
     }
     // Rank i send data
     if (rank > 0) {
-        MPI_Send(C.matrix_pointer(), sizeC, MPI_DOUBLE, 0, 0, comm);
+        MPI_Send(C.matrix_pointer(), sizeC, mpi_type, 0, 0, comm);
     }
 
     MPI_Barrier(comm);
 
     // Then rank 0 must reorder data locally
-    std::vector<double> globC;
+    std::vector<Scalar> globC;
     if (rank == 0) {
         globC.resize(m * n);
         int offsetC = 0;
@@ -230,19 +253,12 @@ bool run(Strategy &s,
             offsetC += local_size_C;
         }
 
-        auto max_globCcheck =
-            *(max_element(globCcheck.begin(), globCcheck.end()));
         // Now Check result
-        isOK = std::inner_product(
-            globCcheck.cbegin(),
-            globCcheck.cend(),
-            globC.cbegin(),
-            true,
-            [](bool lhs, bool rhs) { return lhs && rhs; },
-            [=](double lhs, double rhs) {
-                return std::abs(lhs - rhs) / max_globCcheck <=
-                       3 * k * std::numeric_limits<double>::epsilon();
-            });
+        isOK = globCcheck.size() == globC.size();
+        for (int i = 0; i < globC.size(); ++i) {
+            isOK = isOK && (std::abs(globC[i] - globCcheck[i]) < epsilon);
+        }
+
         if (!isOK) {
             std::cout << "Result is NOT OK" << std::endl;
             for (int i = 0; i < m * n; i++) {

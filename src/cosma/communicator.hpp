@@ -20,7 +20,7 @@ class communicator {
   public:
     communicator() = default;
     communicator(const Strategy *strategy, MPI_Comm comm = MPI_COMM_WORLD);
-    virtual ~communicator();
+    ~communicator();
 
     /* In each communication step, processors are split and the communication is
      * performed. P processors are split into d groups (d = divisor in this
@@ -78,14 +78,15 @@ class communicator {
      * invocation of this function. Only blocks belonging to the current
      * submatrix are being exchanged within a single invocation of copy.
      */
-    virtual void copy(Interval &P,
-                      double *in,
-                      double *out,
-                      double *reshuffle_buffer,
-                      std::vector<std::vector<int>> &size_before,
-                      std::vector<int> &total_before,
-                      int total_after,
-                      int step) = 0;
+    template <typename Scalar>
+    void copy(Interval &P,
+              Scalar *in,
+              Scalar *out,
+              Scalar *reshuffle_buffer,
+              std::vector<std::vector<int>> &size_before,
+              std::vector<int> &total_before,
+              int total_after,
+              int step);
 
     /* Performs reduce-scatter type of communication within each communiction
      * ring. This can be thought as the inverse of copy, because here all ranks
@@ -136,28 +137,30 @@ class communicator {
      * invocation of this function. Only blocks belonging to the current
      * submatrix are being exchanged within a single invocation of reduce.
      */
-    virtual void reduce(Interval &P,
-                        double *in,
-                        double *out,
-                        double *reshuffle_buffer,
-                        double *reduce_buffer,
-                        std::vector<std::vector<int>> &c_current,
-                        std::vector<int> &c_total_current,
-                        std::vector<std::vector<int>> &c_expanded,
-                        std::vector<int> &c_total_expanded,
-                        int beta,
-                        int step) = 0;
+    template <typename Scalar>
+    void reduce(Interval &P,
+                Scalar *in,
+                Scalar *out,
+                Scalar *reshuffle_buffer,
+                Scalar *reduce_buffer,
+                std::vector<std::vector<int>> &c_current,
+                std::vector<int> &c_total_current,
+                std::vector<std::vector<int>> &c_expanded,
+                std::vector<int> &c_total_expanded,
+                Scalar beta,
+                int step);
 
-    virtual void overlap_comm_and_comp(context &ctx,
-                                       CosmaMatrix &matrixA,
-                                       CosmaMatrix &matrixB,
-                                       CosmaMatrix &matrixC,
-                                       Interval &m,
-                                       Interval &n,
-                                       Interval &k,
-                                       Interval &P,
-                                       size_t step,
-                                       double beta) = 0;
+    template <typename Scalar>
+    void overlap_comm_and_comp(context &ctx,
+                               CosmaMatrix<Scalar> &matrixA,
+                               CosmaMatrix<Scalar> &matrixB,
+                               CosmaMatrix<Scalar> &matrixC,
+                               Interval &m,
+                               Interval &n,
+                               Interval &k,
+                               Interval &P,
+                               size_t step,
+                               Scalar beta);
 
     // creates the graph that represents the topology of mpi communicator
     // it is "aware" of all the communications that will happen throughout

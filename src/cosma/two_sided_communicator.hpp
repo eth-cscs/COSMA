@@ -4,6 +4,7 @@
 #include <cosma/interval.hpp>
 #include <cosma/math_utils.hpp>
 #include <cosma/matrix.hpp>
+#include <cosma/mpi_mapper.hpp>
 #include <cosma/strategy.hpp>
 
 #include <mpi.h>
@@ -11,6 +12,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <complex>
 #include <future>
 #include <iostream>
 #include <stdlib.h>
@@ -36,13 +38,14 @@ class two_sided_communicator {
      *        reshuffle the local data by putting first blocks from each rank
      * first, then all second blocks from each rank and so on.
      */
+    template <typename Scalar>
     static void copy(MPI_Comm comm,
                      int rank,
                      int div,
                      Interval &P,
-                     double *in,
-                     double *out,
-                     double *reshuffle_buffer,
+                     Scalar *in,
+                     Scalar *out,
+                     Scalar *reshuffle_buffer,
                      std::vector<std::vector<int>> &size_before,
                      std::vector<int> &total_before,
                      int total_after) {
@@ -73,26 +76,27 @@ class two_sided_communicator {
         }
 
         int n_blocks = size_before[relative_rank].size();
-        double *receive_pointer = n_blocks > 1 ? reshuffle_buffer : out;
+        Scalar *receive_pointer = n_blocks > 1 ? reshuffle_buffer : out;
         PL();
 
+        auto mpi_type = mpi_mapper<Scalar>::getType();
         PE(multiply_communication_copy);
         if (same_size) {
             MPI_Allgather(in,
                           local_size,
-                          MPI_DOUBLE,
+                          mpi_type,
                           receive_pointer,
                           local_size,
-                          MPI_DOUBLE,
+                          mpi_type,
                           comm);
         } else {
             MPI_Allgatherv(in,
                            local_size,
-                           MPI_DOUBLE,
+                           mpi_type,
                            receive_pointer,
                            total_size.data(),
                            dspls.data(),
-                           MPI_DOUBLE,
+                           mpi_type,
                            comm);
         }
         PL();
@@ -127,19 +131,20 @@ class two_sided_communicator {
 #endif
     }
 
+    template <typename Scalar>
     static void reduce(MPI_Comm comm,
                        int rank,
                        int div,
                        Interval &P,
-                       double *LC,
-                       double *C,
-                       double *reshuffle_buffer,
-                       double *reduce_buffer,
+                       Scalar *LC,
+                       Scalar *C,
+                       Scalar *reshuffle_buffer,
+                       Scalar *reduce_buffer,
                        std::vector<std::vector<int>> &c_current,
                        std::vector<int> &c_total_current,
                        std::vector<std::vector<int>> &c_expanded,
                        std::vector<int> &c_total_expanded,
-                       int beta) {
+                       Scalar beta) {
         PE(multiply_communication_other);
         // int div = strategy_->divisor(step);
         // MPI_Comm subcomm = active_comm(step);
@@ -156,7 +161,7 @@ class two_sided_communicator {
         // rank 1 and so on...
         int n_blocks = c_expanded[off].size();
         std::vector<int> block_offset(n_blocks);
-        double *send_pointer = n_blocks > 1 ? reshuffle_buffer : LC;
+        Scalar *send_pointer = n_blocks > 1 ? reshuffle_buffer : LC;
 
         int sum = 0;
         for (int i = 0; i < n_blocks; ++i) {
@@ -185,20 +190,21 @@ class two_sided_communicator {
             }
         }
 
-        double *receive_pointer = beta > 0 ? reduce_buffer : C;
+        Scalar *receive_pointer = beta != Scalar{0} ? reduce_buffer : C;
         PL();
 
+        auto mpi_type = mpi_mapper<Scalar>::getType();
         PE(multiply_communication_reduce);
         MPI_Reduce_scatter(send_pointer,
                            receive_pointer,
                            recvcnts.data(),
-                           MPI_DOUBLE,
+                           mpi_type,
                            MPI_SUM,
                            comm);
         PL();
 
         PE(multiply_communication_other);
-        if (beta > 0) {
+        if (beta != Scalar{0}) {
             // sum up receiving_buffer with C
             for (int el = 0; el < recvcnts[gp]; ++el) {
                 C[el] += reduce_buffer[el];

@@ -36,3 +36,11 @@ add_test(NAME test.multiply
          COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
                  ${MPIEXEC_NUMPROC_FLAG} 16 test.multiply)
 add_dependencies(tests test.multiply)
+
+add_executable(test.scalar_matmul scalar_matmul.test.cpp unit_test_mpi.cpp)
+target_link_libraries(test.scalar_matmul PRIVATE gtest_mpi cosma)
+target_include_directories(test.scalar_matmul PRIVATE .)
+add_test(NAME test.scalar_matmul
+         COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
+                 ${MPIEXEC_NUMPROC_FLAG} 8 test.scalar_matmul)
+add_dependencies(tests test.scalar_matmul)

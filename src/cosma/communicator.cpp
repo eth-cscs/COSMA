@@ -1,4 +1,7 @@
+#include <complex>
 #include <cosma/communicator.hpp>
+#include <cosma/one_sided_communicator.hpp>
+#include <cosma/two_sided_communicator.hpp>
 
 namespace cosma {
 bool communicator::use_busy_waiting = true;
@@ -310,4 +313,227 @@ void communicator::free_comms() {
         free_comm(comm_subproblem_[i]);
     }
 }
+
+template <typename Scalar>
+void communicator::copy(Interval &P,
+                        Scalar *in,
+                        Scalar *out,
+                        Scalar *reshuffle_buffer,
+                        std::vector<std::vector<int>> &size_before,
+                        std::vector<int> &total_before,
+                        int total_after,
+                        int step) {
+    MPI_Comm comm = active_comm(step);
+    two_sided_communicator::copy(comm,
+                                 rank(),
+                                 strategy_->divisor(step),
+                                 P,
+                                 in,
+                                 out,
+                                 reshuffle_buffer,
+                                 size_before,
+                                 total_before,
+                                 total_after);
+}
+
+template <typename Scalar>
+void communicator::reduce(Interval &P,
+                          Scalar *in,
+                          Scalar *out,
+                          Scalar *reshuffle_buffer,
+                          Scalar *reduce_buffer,
+                          std::vector<std::vector<int>> &c_current,
+                          std::vector<int> &c_total_current,
+                          std::vector<std::vector<int>> &c_expanded,
+                          std::vector<int> &c_total_expanded,
+                          Scalar beta,
+                          int step) {
+    MPI_Comm comm = active_comm(step);
+    two_sided_communicator::reduce(comm,
+                                   rank(),
+                                   strategy_->divisor(step),
+                                   P,
+                                   in,  // LC
+                                   out, // C
+                                   reshuffle_buffer,
+                                   reduce_buffer,
+                                   c_current,
+                                   c_total_current,
+                                   c_expanded,
+                                   c_total_expanded,
+                                   beta);
+}
+
+template <typename Scalar>
+void communicator::overlap_comm_and_comp(context &ctx,
+                                         CosmaMatrix<Scalar> &matrixA,
+                                         CosmaMatrix<Scalar> &matrixB,
+                                         CosmaMatrix<Scalar> &matrixC,
+                                         Interval &m,
+                                         Interval &n,
+                                         Interval &k,
+                                         Interval &P,
+                                         size_t step,
+                                         Scalar beta) {
+    MPI_Comm comm = active_comm(step);
+    one_sided_communicator::overlap_comm_and_comp(ctx,
+                                                  comm,
+                                                  rank(),
+                                                  strategy_,
+                                                  matrixA,
+                                                  matrixB,
+                                                  matrixC,
+                                                  m,
+                                                  n,
+                                                  k,
+                                                  P,
+                                                  step,
+                                                  beta);
+}
+
+// Explicit instantiations for `copy`
+//
+template void
+communicator::copy<double>(Interval &P,
+                           double *in,
+                           double *out,
+                           double *reshuffle_buffer,
+                           std::vector<std::vector<int>> &size_before,
+                           std::vector<int> &total_before,
+                           int total_after,
+                           int step);
+
+template void
+communicator::copy<float>(Interval &P,
+                          float *in,
+                          float *out,
+                          float *reshuffle_buffer,
+                          std::vector<std::vector<int>> &size_before,
+                          std::vector<int> &total_before,
+                          int total_after,
+                          int step);
+
+template void communicator::copy<std::complex<float>>(
+    Interval &P,
+    std::complex<float> *in,
+    std::complex<float> *out,
+    std::complex<float> *reshuffle_buffer,
+    std::vector<std::vector<int>> &size_before,
+    std::vector<int> &total_before,
+    int total_after,
+    int step);
+
+template void communicator::copy<std::complex<double>>(
+    Interval &P,
+    std::complex<double> *in,
+    std::complex<double> *out,
+    std::complex<double> *reshuffle_buffer,
+    std::vector<std::vector<int>> &size_before,
+    std::vector<int> &total_before,
+    int total_after,
+    int step);
+
+// Explicit instantiations for `reduce`
+//
+template void
+communicator::reduce<float>(Interval &P,
+                            float *in,
+                            float *out,
+                            float *reshuffle_buffer,
+                            float *reduce_buffer,
+                            std::vector<std::vector<int>> &c_current,
+                            std::vector<int> &c_total_current,
+                            std::vector<std::vector<int>> &c_expanded,
+                            std::vector<int> &c_total_expanded,
+                            float beta,
+                            int step);
+
+template void
+communicator::reduce<double>(Interval &P,
+                             double *in,
+                             double *out,
+                             double *reshuffle_buffer,
+                             double *reduce_buffer,
+                             std::vector<std::vector<int>> &c_current,
+                             std::vector<int> &c_total_current,
+                             std::vector<std::vector<int>> &c_expanded,
+                             std::vector<int> &c_total_expanded,
+                             double beta,
+                             int step);
+
+template void communicator::reduce<std::complex<float>>(
+    Interval &P,
+    std::complex<float> *in,
+    std::complex<float> *out,
+    std::complex<float> *reshuffle_buffer,
+    std::complex<float> *reduce_buffer,
+    std::vector<std::vector<int>> &c_current,
+    std::vector<int> &c_total_current,
+    std::vector<std::vector<int>> &c_expanded,
+    std::vector<int> &c_total_expanded,
+    std::complex<float> beta,
+    int step);
+
+template void communicator::reduce<std::complex<double>>(
+    Interval &P,
+    std::complex<double> *in,
+    std::complex<double> *out,
+    std::complex<double> *reshuffle_buffer,
+    std::complex<double> *reduce_buffer,
+    std::vector<std::vector<int>> &c_current,
+    std::vector<int> &c_total_current,
+    std::vector<std::vector<int>> &c_expanded,
+    std::vector<int> &c_total_expanded,
+    std::complex<double> beta,
+    int step);
+
+// Explicit instantiations for `overlap_comm_and_comp`
+//
+template void
+communicator::overlap_comm_and_comp<double>(context &ctx,
+                                            CosmaMatrix<double> &matrixA,
+                                            CosmaMatrix<double> &matrixB,
+                                            CosmaMatrix<double> &matrixC,
+                                            Interval &m,
+                                            Interval &n,
+                                            Interval &k,
+                                            Interval &P,
+                                            size_t step,
+                                            double beta);
+template void
+communicator::overlap_comm_and_comp<float>(context &ctx,
+                                           CosmaMatrix<float> &matrixA,
+                                           CosmaMatrix<float> &matrixB,
+                                           CosmaMatrix<float> &matrixC,
+                                           Interval &m,
+                                           Interval &n,
+                                           Interval &k,
+                                           Interval &P,
+                                           size_t step,
+                                           float beta);
+
+template void communicator::overlap_comm_and_comp<std::complex<float>>(
+    context &ctx,
+    CosmaMatrix<std::complex<float>> &matrixA,
+    CosmaMatrix<std::complex<float>> &matrixB,
+    CosmaMatrix<std::complex<float>> &matrixC,
+    Interval &m,
+    Interval &n,
+    Interval &k,
+    Interval &P,
+    size_t step,
+    std::complex<float> beta);
+
+template void communicator::overlap_comm_and_comp<std::complex<double>>(
+    context &ctx,
+    CosmaMatrix<std::complex<double>> &matrixA,
+    CosmaMatrix<std::complex<double>> &matrixB,
+    CosmaMatrix<std::complex<double>> &matrixC,
+    Interval &m,
+    Interval &n,
+    Interval &k,
+    Interval &P,
+    size_t step,
+    std::complex<double> beta);
+
 } // namespace cosma
