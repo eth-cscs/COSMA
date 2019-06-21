@@ -21,11 +21,10 @@ void multiply(context &ctx,
     Interval Pi = Interval(0, strategy.P - 1);
 
     PE(preprocessing_communicators);
-    std::unique_ptr<communicator> cosma_comm =
-        std::make_unique<hybrid_communicator>(&strategy, comm);
+    communicator cosma_comm = communicator(&strategy, comm);
     PL();
 
-    if (!cosma_comm->is_idle()) {
+    if (!cosma_comm.is_idle()) {
         multiply(ctx,
                  matrixA,
                  matrixB,
@@ -36,11 +35,11 @@ void multiply(context &ctx,
                  Pi,
                  0,
                  strategy,
-                 *cosma_comm,
+                 cosma_comm,
                  beta);
     }
 
-    if (cosma_comm->rank() == 0) {
+    if (cosma_comm.rank() == 0) {
         PP();
     }
 }

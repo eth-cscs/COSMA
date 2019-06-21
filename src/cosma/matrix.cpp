@@ -279,18 +279,6 @@ operator[](const typename std::vector<scalar_t>::size_type index) const {
 }
 
 template <typename T>
-std::ostream &operator<<(std::ostream &os, const CosmaMatrix<T> &mat) {
-    // TODO: generalize for all data elements
-    for (auto local = 0; local < mat.initial_size(); ++local) {
-        double value = mat[local];
-        int row, col;
-        std::tie(row, col) = mat.global_coordinates(local);
-        os << row << " " << col << " " << value << std::endl;
-    }
-    return os;
-}
-
-template <typename T>
 typename CosmaMatrix<T>::scalar_t *CosmaMatrix<T>::current_matrix() {
     return current_mat;
 }

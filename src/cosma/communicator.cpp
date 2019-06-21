@@ -1,4 +1,6 @@
 #include <cosma/communicator.hpp>
+#include <cosma/one_sided_communicator.hpp>
+#include <cosma/two_sided_communicator.hpp>
 
 namespace cosma {
 bool communicator::use_busy_waiting = true;
@@ -310,4 +312,86 @@ void communicator::free_comms() {
         free_comm(comm_subproblem_[i]);
     }
 }
+
+void communicator::copy(Interval &P,
+                        scalar_t *in,
+                        scalar_t *out,
+                        scalar_t *reshuffle_buffer,
+                        std::vector<std::vector<int>> &size_before,
+                        std::vector<int> &total_before,
+                        int total_after,
+                        int step) {
+    MPI_Comm comm = active_comm(step);
+    two_sided_communicator::copy(comm,
+                                 rank(),
+                                 strategy_->divisor(step),
+                                 P,
+                                 in,
+                                 out,
+                                 reshuffle_buffer,
+                                 size_before,
+                                 total_before,
+                                 total_after);
+}
+
+void communicator::reduce(Interval &P,
+                          scalar_t *in,
+                          scalar_t *out,
+                          scalar_t *reshuffle_buffer,
+                          scalar_t *reduce_buffer,
+                          std::vector<std::vector<int>> &c_current,
+                          std::vector<int> &c_total_current,
+                          std::vector<std::vector<int>> &c_expanded,
+                          std::vector<int> &c_total_expanded,
+                          int beta,
+                          int step) {
+    MPI_Comm comm = active_comm(step);
+    two_sided_communicator::reduce(comm,
+                                   rank(),
+                                   strategy_->divisor(step),
+                                   P,
+                                   in,  // LC
+                                   out, // C
+                                   reshuffle_buffer,
+                                   reduce_buffer,
+                                   c_current,
+                                   c_total_current,
+                                   c_expanded,
+                                   c_total_expanded,
+                                   beta);
+}
+
+void communicator::overlap_comm_and_comp(context &ctx,
+                                         CosmaMatrix<scalar_t> &matrixA,
+                                         CosmaMatrix<scalar_t> &matrixB,
+                                         CosmaMatrix<scalar_t> &matrixC,
+                                         Interval &m,
+                                         Interval &n,
+                                         Interval &k,
+                                         Interval &P,
+                                         size_t step,
+                                         scalar_t beta) {
+    MPI_Comm comm = active_comm(step);
+    one_sided_communicator::overlap_comm_and_comp(ctx,
+                                                  comm,
+                                                  rank(),
+                                                  strategy_,
+                                                  matrixA,
+                                                  matrixB,
+                                                  matrixC,
+                                                  m,
+                                                  n,
+                                                  k,
+                                                  P,
+                                                  step,
+                                                  beta);
+}
+
+// Explicit instantiations
+//
+// template class communicator<float>;
+// template class communicator<double>;
+// template class communicator<std::complex<float>>;
+// template class communicator<std::complex<double>>;
+
 } // namespace cosma

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cosma/blas.hpp>
+#include <cosma/communicator.hpp>
 #include <cosma/interval.hpp>
 #include <cosma/local_multiply.hpp>
 #include <cosma/math_utils.hpp>
