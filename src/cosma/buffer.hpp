@@ -35,7 +35,7 @@ namespace cosma {
 template <typename Scalar>
 class Buffer {
   public:
-    using scalar_t = Scalar; // TODO: Future template parameter
+    using scalar_t = Scalar;
     using mpi_buffer_t = std::vector<scalar_t, mpi_allocator<scalar_t>>;
 
     Buffer() = default;

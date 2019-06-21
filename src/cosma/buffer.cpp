@@ -441,7 +441,7 @@ std::vector<long long> Buffer<T>::compute_buffer_size(Interval &m,
             }
 
             // if C was expanded, then reduce was invoked
-            if (label_ == 'C' && beta > 0) {
+            if (label_ == 'C' && beta != scalar_t{0}) {
                 // if (label_ == 'C') {
                 int subint_index, subint_offset;
                 std::tie(subint_index, subint_offset) =
@@ -460,9 +460,9 @@ std::vector<long long> Buffer<T>::compute_buffer_size(Interval &m,
         // this is necessary since reduction happens AFTER the substeps
         // so we cannot pass beta = 1 if the data is not present there BEFORE
         // the substeps.
-        int new_beta = beta;
-        if (strategy_->split_k(step) && beta > 0) {
-            new_beta = 0;
+        scalar_t new_beta = beta;
+        if (strategy_->split_k(step) && beta != scalar_t{0}) {
+            new_beta = scalar_t{0};
         }
 
         // invoke the substeps
@@ -551,9 +551,11 @@ void Buffer<T>::compute_max_buffer_size(Interval &m,
             Interval newk = k.subinterval(divk, divk > 1 ? i : 0);
 
             // update beta value
-            double new_beta = beta;
+            scalar_t new_beta = beta;
             if (label_ == 'C' && divk > 1) {
-                new_beta = i == 0 && beta == 0 ? 0 : 1;
+                if (i != 0) {
+                    new_beta = scalar_t{1};
+                }
             }
 
             compute_max_buffer_size(
@@ -662,8 +664,8 @@ void Buffer<T>::compute_max_buffer_size(Interval &m,
         // substeps we will have to sum the result with the local data in C this
         // is necessary since reduction happens AFTER the substeps so we cannot
         // pass beta = 1 if the data is not present there BEFORE the substeps
-        int new_beta = beta;
-        if (strategy_->split_k(step) && beta > 0) {
+        scalar_t new_beta = beta;
+        if (strategy_->split_k(step) && beta != scalar_t{0}) {
             new_beta = 0;
         }
 
@@ -708,8 +710,8 @@ long long Buffer<T>::max_recv_buffer_size() const {
 // Explicit instantiations
 //
 template class Buffer<double>;
-// template class Buffer<std::complex<double>>;
+template class Buffer<std::complex<double>>;
 template class Buffer<float>;
-// template class Buffer<std::complex<float>>;
+template class Buffer<std::complex<float>>;
 
 } // namespace cosma

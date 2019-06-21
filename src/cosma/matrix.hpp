@@ -171,9 +171,8 @@ class CosmaMatrix {
 
 template <typename Scalar>
 std::ostream &operator<<(std::ostream &os, const CosmaMatrix<Scalar> &mat) {
-    // TODO: generalize for all data elements
     for (auto local = 0; local < mat.initial_size(); ++local) {
-        double value = mat[local];
+        auto value = mat[local];
         int row, col;
         std::tie(row, col) = mat.global_coordinates(local);
         os << row << " " << col << " " << value << std::endl;

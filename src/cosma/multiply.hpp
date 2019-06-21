@@ -59,16 +59,4 @@ void parallel(context &ctx,
               communicator &comm,
               double beta);
 
-void parallel_overlapped(context &ctx,
-                         CosmaMatrix<double> &A,
-                         CosmaMatrix<double> &B,
-                         CosmaMatrix<double> &C,
-                         Interval &m,
-                         Interval &n,
-                         Interval &k,
-                         Interval &P,
-                         size_t step,
-                         const Strategy &strategy,
-                         communicator &comm,
-                         double beta);
 } // namespace cosma

@@ -292,7 +292,7 @@ void CosmaMatrix<T>::set_current_matrix(scalar_t *mat) {
 //
 template class CosmaMatrix<float>;
 template class CosmaMatrix<double>;
-// template class CosmaMatrix<std::complex<float>>;
-// template class CosmaMatrix<std::complex<double>>;
+template class CosmaMatrix<std::complex<float>>;
+template class CosmaMatrix<std::complex<double>>;
 
 } // namespace cosma
