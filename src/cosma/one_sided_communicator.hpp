@@ -5,6 +5,7 @@
 #include <cosma/local_multiply.hpp>
 #include <cosma/math_utils.hpp>
 #include <cosma/matrix.hpp>
+#include <cosma/mpi_mapper.hpp>
 #include <cosma/strategy.hpp>
 
 #include <mpi.h>
@@ -24,8 +25,9 @@ namespace cosma {
 
 class one_sided_communicator {
   public:
+    template <typename Scalar>
     static MPI_Win
-    create_window(MPI_Comm comm, double *pointer, size_t size, bool no_locks) {
+    create_window(MPI_Comm comm, Scalar *pointer, size_t size, bool no_locks) {
         MPI_Info info;
         MPI_Info_create(&info);
         if (no_locks) {
@@ -38,20 +40,21 @@ class one_sided_communicator {
 
         MPI_Win win;
         MPI_Win_create(
-            pointer, size * sizeof(double), sizeof(double), info, comm, &win);
+            pointer, size * sizeof(Scalar), sizeof(Scalar), info, comm, &win);
 
         MPI_Info_free(&info);
 
         return win;
     }
 
+    template <typename Scalar>
     static void copy(MPI_Comm comm,
                      int rank,
                      int div,
                      Interval &P,
-                     double *in,
-                     double *out,
-                     double *reshuffle_buffer,
+                     Scalar *in,
+                     Scalar *out,
+                     Scalar *reshuffle_buffer,
                      std::vector<std::vector<int>> &size_before,
                      std::vector<int> &total_before,
                      int total_after) {
@@ -67,6 +70,7 @@ class one_sided_communicator {
         int n_blocks = size_before[relative_rank].size();
         std::vector<int> rank_offset(div);
 
+        auto mpi_type = mpi_mapper<Scalar>::getType();
         int displacement = 0;
         for (int block = 0; block < n_blocks; block++) {
             for (int rank = 0; rank < div; ++rank) {
@@ -75,11 +79,11 @@ class one_sided_communicator {
 
                 MPI_Get(out + displacement,
                         b_size,
-                        MPI_DOUBLE,
+                        mpi_type,
                         rank,
                         rank_offset[rank],
                         b_size,
-                        MPI_DOUBLE,
+                        mpi_type,
                         win);
 
                 rank_offset[rank] += b_size;
@@ -100,19 +104,21 @@ class one_sided_communicator {
 #endif
     }
 
+    template <typename Scalar>
     static void reduce(MPI_Comm comm,
                        int rank,
                        int div,
                        Interval &P,
-                       double *in,
-                       double *out,
-                       double *reshuffle_buffer,
-                       double *reduce_buffer,
+                       Scalar *in,
+                       Scalar *out,
+                       Scalar *reshuffle_buffer,
+                       Scalar *reduce_buffer,
                        std::vector<std::vector<int>> &c_current,
                        std::vector<int> &c_total_current,
                        std::vector<std::vector<int>> &c_expanded,
                        std::vector<int> &c_total_expanded,
                        int beta) {
+        auto mpi_type = mpi_mapper<Scalar>::getType();
         // int div = strategy_->divisor(step);
         // int gp, off;
         // std::tie(gp, off) = group_and_offset(P, div);
@@ -127,7 +133,7 @@ class one_sided_communicator {
         // initilize C to 0 if beta = 0 since accumulate will do additions over
         // this array
         if (beta == 0) {
-            memset(out, 0, local_size * sizeof(double));
+            memset(out, 0, local_size * sizeof(Scalar));
         }
 
         MPI_Win win = create_window(comm, out, local_size, true);
@@ -143,11 +149,11 @@ class one_sided_communicator {
 
                 MPI_Accumulate(in + displacement,
                                b_size,
-                               MPI_DOUBLE,
+                               mpi_type,
                                i,
                                rank_offset[i],
                                b_size,
-                               MPI_DOUBLE,
+                               mpi_type,
                                MPI_SUM,
                                win);
 
@@ -160,10 +166,11 @@ class one_sided_communicator {
         MPI_Win_free(&win);
     }
 
+    template <typename Scalar>
     static void comm_task_mn_split_polling(int divisor,
                                            int gp,
-                                           double *original_matrix,
-                                           double *expanded_matrix,
+                                           Scalar *original_matrix,
+                                           Scalar *expanded_matrix,
                                            Interval m,
                                            Interval k,
                                            std::vector<int> &displacements,
@@ -173,6 +180,7 @@ class one_sided_communicator {
         // copy the matrix that wasn't divided in this step
         int local_size = m.length() * k.subinterval(divisor, gp).length();
 
+        auto mpi_type = mpi_mapper<Scalar>::getType();
         MPI_Win win = create_window(comm, original_matrix, local_size, false);
         // MPI_Comm mpi_comm = comm.active_comm(step);
         MPI_Win_lock_all(MPI_MODE_NOCHECK, win);
@@ -187,11 +195,11 @@ class one_sided_communicator {
             MPI_Request req;
             MPI_Rget(expanded_matrix + m.length() * displacements[rank],
                      b_size,
-                     MPI_DOUBLE,
+                     mpi_type,
                      rank,
                      0,
                      b_size,
-                     MPI_DOUBLE,
+                     mpi_type,
                      win,
                      &req);
 
@@ -215,10 +223,11 @@ class one_sided_communicator {
         PL();
     }
 
+    template <typename Scalar>
     static void comm_task_mn_split_busy_waiting(int divisor,
                                                 int gp,
-                                                double *original_matrix,
-                                                double *expanded_matrix,
+                                                Scalar *original_matrix,
+                                                Scalar *expanded_matrix,
                                                 Interval m,
                                                 Interval k,
                                                 std::vector<int> &displacements,
@@ -242,6 +251,7 @@ class one_sided_communicator {
         // MPI_Win_lock_all(MPI_MODE_NOCHECK, win);
         MPI_Win_lock_all(MPI_MODE_NOCHECK, win);
 
+        auto mpi_type = mpi_mapper<Scalar>::getType();
         int dist = 1;
         while (dist < divisor) {
             int rank = (gp + dist) % divisor;
@@ -253,11 +263,11 @@ class one_sided_communicator {
             PE(multiply_communication_copy);
             MPI_Get(expanded_matrix + m.length() * displacements[rank],
                     b_size,
-                    MPI_DOUBLE,
+                    mpi_type,
                     rank,
                     0,
                     b_size,
-                    MPI_DOUBLE,
+                    mpi_type,
                     win);
 
             // flush completes the operation locally
@@ -278,9 +288,10 @@ class one_sided_communicator {
     }
 
     /* OVERLAP OF M SPLIT WITH OPENMP
+     * template<typename Scalar>
         static void overlap_m_split(context& ctx, MPI_Comm comm, int rank, int
     divisor, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
-                Interval& m, Interval& n, Interval& k, Interval& P, double beta)
+                Interval& m, Interval& n, Interval& k, Interval& P, Scalar beta)
     { PE(multiply_communication_copy);
 
             int gp, off;
@@ -290,8 +301,8 @@ class one_sided_communicator {
             int buffer_idx = expanded_mat.buffer_index();
             expanded_mat.advance_buffer();
 
-            double* original_matrix = expanded_mat.current_matrix();
-            double* expanded_matrix = expanded_mat.buffer_ptr();
+            Scalar* original_matrix = expanded_mat.current_matrix();
+            Scalar* expanded_matrix = expanded_mat.buffer_ptr();
 
             // interval of m that this rank owns from this step on
             Interval newm = m.subinterval(divisor, gp);
@@ -310,12 +321,14 @@ class one_sided_communicator {
             // b: k * disp
             // c: newm * disp
 
-            double* prev_a = matrixA.current_matrix();
-            double* prev_b = expanded_matrix;
-            double* prev_c = matrixC.current_matrix();
+            Scalar* prev_a = matrixA.current_matrix();
+            Scalar* prev_b = expanded_matrix;
+            Scalar* prev_c = matrixC.current_matrix();
 
             MPI_Win win = create_window(comm, original_matrix, local_size,
     false);
+
+            auto mpi_type = mpi_mapper<Scalar>::getType();
 
     #ifdef DEBUG
             std::cout << "window content: " << std::endl;
@@ -335,8 +348,8 @@ class one_sided_communicator {
     #pragma omp critical
             {
                 // compute the piece that is already owned
-                double* pointer_b = original_matrix;
-                double* pointer_c = prev_c + newm.length() *
+                Scalar* pointer_b = original_matrix;
+                Scalar* pointer_c = prev_c + newm.length() *
     displacements_n[gp];
 
                 matrixB.set_current_matrix(pointer_b);
@@ -355,7 +368,7 @@ class one_sided_communicator {
                 int b_size = k.length() * n.subinterval(divisor, rank).length();
 
                 MPI_Get(expanded_matrix + k.length() * displacements_n[rank],
-    b_size, MPI_DOUBLE, rank, 0, b_size, MPI_DOUBLE, win);
+    b_size, mpi_type, rank, 0, b_size, mpi_type, win);
 
                 // flush completes the operation locally
                 // but since this is a Get operation,
@@ -367,8 +380,8 @@ class one_sided_communicator {
     #pragma omp critical
                     {
                         // Compute the piece that has arrived
-                        double* pointer_b = expanded_matrix + k.length() *
-    displacements_n[rank]; double* pointer_c = prev_c + newm.length() *
+                        Scalar* pointer_b = expanded_matrix + k.length() *
+    displacements_n[rank]; Scalar* pointer_c = prev_c + newm.length() *
     displacements_n[rank];
 
                         matrixB.set_current_matrix(pointer_b);
@@ -402,29 +415,30 @@ class one_sided_communicator {
     // ***********************************
     //           DIVISION BY M
     // ***********************************
+    template <typename Scalar>
     static void overlap_m_split(bool use_busy_waiting,
                                 context &ctx,
                                 MPI_Comm comm,
                                 int rank,
                                 int divisor,
-                                CosmaMatrix<double> &matrixA,
-                                CosmaMatrix<double> &matrixB,
-                                CosmaMatrix<double> &matrixC,
+                                CosmaMatrix<Scalar> &matrixA,
+                                CosmaMatrix<Scalar> &matrixB,
+                                CosmaMatrix<Scalar> &matrixC,
                                 Interval &m,
                                 Interval &n,
                                 Interval &k,
                                 Interval &P,
-                                double beta) {
+                                Scalar beta) {
         PE(multiply_communication_other);
         int gp, off;
         std::tie(gp, off) = P.locate_in_subinterval(divisor, rank);
 
-        CosmaMatrix<double> &expanded_mat = matrixB;
+        CosmaMatrix<Scalar> &expanded_mat = matrixB;
         int buffer_idx = expanded_mat.buffer_index();
         expanded_mat.advance_buffer();
 
-        double *original_matrix = expanded_mat.current_matrix();
-        double *expanded_matrix = expanded_mat.buffer_ptr();
+        Scalar *original_matrix = expanded_mat.current_matrix();
+        Scalar *expanded_matrix = expanded_mat.buffer_ptr();
 
         // interval of m that this rank owns from this step on
         Interval newm = m.subinterval(divisor, gp);
@@ -445,8 +459,8 @@ class one_sided_communicator {
 
         std::atomic_int ready(0);
         std::thread comm_thread(use_busy_waiting
-                                    ? comm_task_mn_split_busy_waiting
-                                    : comm_task_mn_split_polling,
+                                    ? comm_task_mn_split_busy_waiting<Scalar>
+                                    : comm_task_mn_split_polling<Scalar>,
                                 divisor,
                                 gp,
                                 original_matrix,
@@ -457,13 +471,13 @@ class one_sided_communicator {
                                 std::ref(ready),
                                 comm);
 
-        double *prev_a = matrixA.current_matrix();
-        double *prev_b = expanded_matrix;
-        double *prev_c = matrixC.current_matrix();
+        Scalar *prev_a = matrixA.current_matrix();
+        Scalar *prev_b = expanded_matrix;
+        Scalar *prev_c = matrixC.current_matrix();
 
         // compute the piece that is already owned
-        double *pointer_b = original_matrix;
-        double *pointer_c = prev_c + newm.length() * displacements_n[gp];
+        Scalar *pointer_b = original_matrix;
+        Scalar *pointer_c = prev_c + newm.length() * displacements_n[gp];
 
         matrixB.set_current_matrix(pointer_b);
         matrixC.set_current_matrix(pointer_c);
@@ -485,9 +499,9 @@ class one_sided_communicator {
                 int idx = (gp + dist) % divisor;
 
                 // Compute the piece that has arrived
-                double *pointer_b =
+                Scalar *pointer_b =
                     expanded_matrix + k.length() * displacements_n[idx];
-                double *pointer_c =
+                Scalar *pointer_c =
                     prev_c + newm.length() * displacements_n[idx];
 
                 matrixB.set_current_matrix(pointer_b);
@@ -519,34 +533,35 @@ class one_sided_communicator {
     // ***********************************
     //           DIVISION BY N
     // ***********************************
+    template <typename Scalar>
     static void overlap_n_split(bool use_busy_waiting,
                                 context &ctx,
                                 MPI_Comm comm,
                                 int rank,
                                 int divisor,
-                                CosmaMatrix<double> &matrixA,
-                                CosmaMatrix<double> &matrixB,
-                                CosmaMatrix<double> &matrixC,
+                                CosmaMatrix<Scalar> &matrixA,
+                                CosmaMatrix<Scalar> &matrixB,
+                                CosmaMatrix<Scalar> &matrixC,
                                 Interval &m,
                                 Interval &n,
                                 Interval &k,
                                 Interval &P,
-                                double beta) {
+                                Scalar beta) {
         PE(multiply_communication_other);
         int gp, off;
         std::tie(gp, off) = P.locate_in_subinterval(divisor, rank);
 
-        CosmaMatrix<double> &expanded_mat = matrixA;
+        CosmaMatrix<Scalar> &expanded_mat = matrixA;
 
         int buffer_idx = expanded_mat.buffer_index();
         expanded_mat.advance_buffer();
 
-        double *original_matrix = expanded_mat.current_matrix();
-        double *expanded_matrix = expanded_mat.buffer_ptr();
+        Scalar *original_matrix = expanded_mat.current_matrix();
+        Scalar *expanded_matrix = expanded_mat.buffer_ptr();
         // expanded_mat.set_current_matrix(expanded_matrix);
 
-        double *prev_a = expanded_matrix;
-        double *prev_b = matrixB.current_matrix();
+        Scalar *prev_a = expanded_matrix;
+        Scalar *prev_b = matrixB.current_matrix();
 
         Interval newn = n.subinterval(divisor, gp);
 
@@ -563,15 +578,15 @@ class one_sided_communicator {
 
         // memory enough for the largest block
         // used to overlap communication and computation
-        std::vector<double> block_buffer(
+        std::vector<Scalar> block_buffer(
             newn.length() * math_utils::int_div_up(k.length(), divisor));
         // std::cout << "block buffer size = " << block_buffer.size() <<
         // std::endl;
 
         std::atomic_int ready(1);
         std::thread comm_thread(use_busy_waiting
-                                    ? comm_task_mn_split_busy_waiting
-                                    : comm_task_mn_split_polling,
+                                    ? comm_task_mn_split_busy_waiting<Scalar>
+                                    : comm_task_mn_split_polling<Scalar>,
                                 divisor,
                                 gp,
                                 original_matrix,
@@ -588,26 +603,26 @@ class one_sided_communicator {
                 int idx = (gp + dist) % divisor;
 
                 // Compute the piece that has arrived
-                double *pointer_a =
+                Scalar *pointer_a =
                     dist == 0
                         ? original_matrix
                         : (expanded_matrix + m.length() * displacements_k[idx]);
-                // double* pointer_b = switch_buffers ? buffer2.data() :
+                // Scalar* pointer_b = switch_buffers ? buffer2.data() :
                 // buffer1.data();
-                double *pointer_b = block_buffer.data();
+                Scalar *pointer_b = block_buffer.data();
 
                 for (int col = 0; col < newn.length(); ++col) {
                     int column_size = k.subinterval(divisor, idx).length();
                     int start = displacements_k[idx] + k.length() * col;
                     std::memcpy(pointer_b + col * column_size,
                                 prev_b + start,
-                                column_size * sizeof(double));
+                                column_size * sizeof(Scalar));
                 }
 
                 matrixA.set_current_matrix(pointer_a);
                 matrixB.set_current_matrix(pointer_b);
 
-                int new_beta = dist == 0 ? beta : 1;
+                Scalar new_beta = dist == 0 ? beta : Scalar(1);
                 PL();
                 local_multiply(ctx,
                                matrixA.current_matrix(),
@@ -633,12 +648,13 @@ class one_sided_communicator {
         PL();
     }
 
+    template <typename Scalar>
     static void comm_task_k_split(int divisor,
                                   int gp,
                                   int off,
                                   int jump_size,
-                                  double *expanded_matrix,
-                                  double *recv_buffer,
+                                  Scalar *expanded_matrix,
+                                  Scalar *recv_buffer,
                                   Interval m,
                                   Interval n,
                                   Interval P,
@@ -651,6 +667,7 @@ class one_sided_communicator {
 
         int local_size = m.length() * n.subinterval(divisor, gp).length();
         MPI_Win win = create_window(comm, recv_buffer, local_size, false);
+        auto mpi_type = mpi_mapper<Scalar>::getType();
 
         int packages = 0;
         int i = 0;
@@ -669,7 +686,7 @@ class one_sided_communicator {
             auto start = std::chrono::high_resolution_clock::now();
             while (i < packages) {
                 int idx = (gp + i) % divisor;
-                double *pointer_c =
+                Scalar *pointer_c =
                     expanded_matrix + m.length() * displacements[idx];
                 int b_size = m.length() * n.subinterval(divisor, idx).length();
 
@@ -678,11 +695,11 @@ class one_sided_communicator {
                 MPI_Win_lock(MPI_LOCK_EXCLUSIVE, idx, 0, win);
                 MPI_Accumulate(pointer_c,
                                b_size,
-                               MPI_DOUBLE,
+                               mpi_type,
                                idx,
                                0,
                                b_size,
-                               MPI_DOUBLE,
+                               mpi_type,
                                MPI_SUM,
                                win);
                 MPI_Win_unlock(idx, win);
@@ -696,17 +713,18 @@ class one_sided_communicator {
         PL();
     }
 
+    template <typename Scalar>
     static void compute(context &ctx,
-                        CosmaMatrix<double> &A,
-                        CosmaMatrix<double> &B,
-                        CosmaMatrix<double> &C,
-                        double *pointer_b,
-                        double *pointer_c,
+                        CosmaMatrix<Scalar> &A,
+                        CosmaMatrix<Scalar> &B,
+                        CosmaMatrix<Scalar> &C,
+                        Scalar *pointer_b,
+                        Scalar *pointer_c,
                         Interval &m,
                         Interval &n,
                         Interval &k,
                         std::vector<int> &displacements_n,
-                        double beta,
+                        Scalar beta,
                         int start,
                         int end) {
         if (start >= end)
@@ -721,8 +739,8 @@ class one_sided_communicator {
 
         pointer_b += k.length() * displacements_n[start];
         pointer_c += m.length() * displacements_n[start];
-        // double* b = pointer_b + k.length() * displacements_n[i];
-        // double* c = pointer_c + m.length() * displacements_n[i];
+        // Scalar* b = pointer_b + k.length() * displacements_n[i];
+        // Scalar* c = pointer_c + m.length() * displacements_n[i];
 
         B.set_current_matrix(pointer_b);
         C.set_current_matrix(pointer_c);
@@ -744,29 +762,30 @@ class one_sided_communicator {
     // ***********************************
     //           DIVISION BY K
     // ***********************************
+    template <typename Scalar>
     static void overlap_k_split(context &ctx,
                                 MPI_Comm comm,
                                 int rank,
                                 int divisor,
-                                CosmaMatrix<double> &matrixA,
-                                CosmaMatrix<double> &matrixB,
-                                CosmaMatrix<double> &matrixC,
+                                CosmaMatrix<Scalar> &matrixA,
+                                CosmaMatrix<Scalar> &matrixB,
+                                CosmaMatrix<Scalar> &matrixC,
                                 Interval &m,
                                 Interval &n,
                                 Interval &k,
                                 Interval &P,
-                                double beta) {
+                                Scalar beta) {
         PE(multiply_communication_other);
         // int divisor = strategy.divisor(step);
         int gp, off;
         std::tie(gp, off) = P.locate_in_subinterval(divisor, rank);
 
-        CosmaMatrix<double> &expanded_mat = matrixC;
+        CosmaMatrix<Scalar> &expanded_mat = matrixC;
         int buffer_idx = expanded_mat.buffer_index();
         expanded_mat.advance_buffer();
 
-        double *original_matrix = expanded_mat.current_matrix();
-        double *expanded_matrix = expanded_mat.buffer_ptr();
+        Scalar *original_matrix = expanded_mat.current_matrix();
+        Scalar *expanded_matrix = expanded_mat.buffer_ptr();
 
         expanded_mat.set_buffer_index(buffer_idx);
         expanded_mat.set_current_matrix(original_matrix);
@@ -792,7 +811,7 @@ class one_sided_communicator {
         int comp_comm_ratio = 1;
         int target_jump_size = std::min(comp_comm_ratio, divisor);
 
-        std::thread comm_task(comm_task_k_split,
+        std::thread comm_task(comm_task_k_split<Scalar>,
                               divisor,
                               gp,
                               off,
@@ -811,12 +830,12 @@ class one_sided_communicator {
         // initilize C to 0 if beta = 0 since accumulate will do additions over
         // this array
         if (beta == 0) {
-            memset(original_matrix, 0, local_size * sizeof(double));
+            memset(original_matrix, 0, local_size * sizeof(Scalar));
         }
 
-        double *prev_a = matrixA.current_matrix();
-        double *prev_b = matrixB.current_matrix();
-        double *prev_c = expanded_matrix;
+        Scalar *prev_a = matrixA.current_matrix();
+        Scalar *prev_b = matrixB.current_matrix();
+        Scalar *prev_c = expanded_matrix;
 
         int remainder_packages = 0;
 
@@ -976,19 +995,20 @@ class one_sided_communicator {
         PL();
     }
 
+    template <typename Scalar>
     static void overlap_comm_and_comp(context &ctx,
                                       MPI_Comm comm,
                                       int rank,
                                       const Strategy *strategy,
-                                      CosmaMatrix<double> &matrixA,
-                                      CosmaMatrix<double> &matrixB,
-                                      CosmaMatrix<double> &matrixC,
+                                      CosmaMatrix<Scalar> &matrixA,
+                                      CosmaMatrix<Scalar> &matrixB,
+                                      CosmaMatrix<Scalar> &matrixC,
                                       Interval &m,
                                       Interval &n,
                                       Interval &k,
                                       Interval &P,
                                       size_t step,
-                                      double beta) {
+                                      Scalar beta) {
         bool use_busy_waiting = strategy->use_busy_waiting;
         int divisor = strategy->divisor(step);
         if (strategy->split_m(step)) {

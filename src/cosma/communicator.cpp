@@ -403,15 +403,15 @@ communicator::copy<double>(Interval &P,
                            int total_after,
                            int step);
 
-// template void
-// communicator::copy<float>(Interval &P,
-//                          float *in,
-//                          float *out,
-//                          float *reshuffle_buffer,
-//                          std::vector<std::vector<int>> &size_before,
-//                          std::vector<int> &total_before,
-//                          int total_after,
-//                          int step);
+template void
+communicator::copy<float>(Interval &P,
+                          float *in,
+                          float *out,
+                          float *reshuffle_buffer,
+                          std::vector<std::vector<int>> &size_before,
+                          std::vector<int> &total_before,
+                          int total_after,
+                          int step);
 
 // template void communicator::copy<std::complex<float>>(
 //    Interval &P,
@@ -435,18 +435,18 @@ communicator::copy<double>(Interval &P,
 
 // Explicit instantiations for `reduce`
 //
-// template void
-// communicator::reduce<float>(Interval &P,
-//                            float *in,
-//                            float *out,
-//                            float *reshuffle_buffer,
-//                            float *reduce_buffer,
-//                            std::vector<std::vector<int>> &c_current,
-//                            std::vector<int> &c_total_current,
-//                            std::vector<std::vector<int>> &c_expanded,
-//                            std::vector<int> &c_total_expanded,
-//                            int beta,
-//                            int step);
+template void
+communicator::reduce<float>(Interval &P,
+                            float *in,
+                            float *out,
+                            float *reshuffle_buffer,
+                            float *reduce_buffer,
+                            std::vector<std::vector<int>> &c_current,
+                            std::vector<int> &c_total_current,
+                            std::vector<std::vector<int>> &c_expanded,
+                            std::vector<int> &c_total_expanded,
+                            int beta,
+                            int step);
 
 template void
 communicator::reduce<double>(Interval &P,
@@ -500,17 +500,17 @@ communicator::overlap_comm_and_comp<double>(context &ctx,
                                             Interval &P,
                                             size_t step,
                                             double beta);
-// template void
-// communicator::overlap_comm_and_comp<float>(context &ctx,
-//                                           CosmaMatrix<float> &matrixA,
-//                                           CosmaMatrix<float> &matrixB,
-//                                           CosmaMatrix<float> &matrixC,
-//                                           Interval &m,
-//                                           Interval &n,
-//                                           Interval &k,
-//                                           Interval &P,
-//                                           size_t step,
-//                                           float beta);
+template void
+communicator::overlap_comm_and_comp<float>(context &ctx,
+                                           CosmaMatrix<float> &matrixA,
+                                           CosmaMatrix<float> &matrixB,
+                                           CosmaMatrix<float> &matrixC,
+                                           Interval &m,
+                                           Interval &n,
+                                           Interval &k,
+                                           Interval &P,
+                                           size_t step,
+                                           float beta);
 
 // template void communicator::overlap_comm_and_comp<std::complex<float>>(
 //    context &ctx,
