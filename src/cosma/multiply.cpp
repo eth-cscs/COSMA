@@ -1,20 +1,26 @@
+#include <cosma/local_multiply.hpp>
 #include <cosma/multiply.hpp>
+
+#include <semiprof.hpp>
+
+#include <complex>
 
 namespace cosma {
 
-extern template class CosmaMatrix<double>;
+// extern template class CosmaMatrix<double>;
+
 /*
  Compute C = A * B
  Assumption: we assume that at each step only 1 dimension is split
 */
-
+template <typename Scalar>
 void multiply(context &ctx,
-              CosmaMatrix<double> &matrixA,
-              CosmaMatrix<double> &matrixB,
-              CosmaMatrix<double> &matrixC,
+              CosmaMatrix<Scalar> &matrixA,
+              CosmaMatrix<Scalar> &matrixB,
+              CosmaMatrix<Scalar> &matrixC,
               const Strategy &strategy,
               MPI_Comm comm,
-              double beta) {
+              Scalar beta) {
     Interval mi = Interval(0, strategy.m - 1);
     Interval ni = Interval(0, strategy.n - 1);
     Interval ki = Interval(0, strategy.k - 1);
@@ -44,10 +50,11 @@ void multiply(context &ctx,
     }
 }
 
+template <typename Scalar>
 void multiply(context &ctx,
-              CosmaMatrix<double> &matrixA,
-              CosmaMatrix<double> &matrixB,
-              CosmaMatrix<double> &matrixC,
+              CosmaMatrix<Scalar> &matrixA,
+              CosmaMatrix<Scalar> &matrixB,
+              CosmaMatrix<Scalar> &matrixC,
               Interval &m,
               Interval &n,
               Interval &k,
@@ -55,7 +62,7 @@ void multiply(context &ctx,
               size_t step,
               const Strategy &strategy,
               communicator &comm,
-              double beta) {
+              Scalar beta) {
     PE(multiply_other);
 #ifdef DEBUG
     std::cout << "matrix A, buffer index = " << matrixA.buffer_index()
@@ -158,10 +165,11 @@ void multiply(context &ctx,
  In each sequential step, one of the dimensions is split,
  and each of the subproblems is solved sequentially by all P processors.
 */
+template <typename Scalar>
 void sequential(context &ctx,
-                CosmaMatrix<double> &matrixA,
-                CosmaMatrix<double> &matrixB,
-                CosmaMatrix<double> &matrixC,
+                CosmaMatrix<Scalar> &matrixA,
+                CosmaMatrix<Scalar> &matrixB,
+                CosmaMatrix<Scalar> &matrixC,
                 Interval &m,
                 Interval &n,
                 Interval &k,
@@ -169,7 +177,7 @@ void sequential(context &ctx,
                 size_t step,
                 const Strategy &strategy,
                 communicator &comm,
-                double beta) {
+                Scalar beta) {
     // split the dimension but not the processors, all P processors are taking
     // part in each substep.
     if (strategy.split_m(step)) {
@@ -217,6 +225,10 @@ void sequential(context &ctx,
     if (strategy.split_k(step)) {
         for (int K = 0; K < strategy.divisor(step); ++K) {
             Interval newk = k.subinterval(strategy.divisor(step), K);
+            auto new_beta = beta;
+            if (K != 0) {
+                new_beta = 1;
+            }
             multiply(ctx,
                      matrixA,
                      matrixB,
@@ -228,7 +240,7 @@ void sequential(context &ctx,
                      step + 1,
                      strategy,
                      comm,
-                     (K == 0) && (beta == 0) ? 0 : 1);
+                     new_beta);
         }
         return;
     }
@@ -291,10 +303,11 @@ T which_is_expanded(T &&A,
  processors) here we have the opposite - P ranks should own what was previously
  owned by newP ranks - thus local matrices are shrinked.
  */
+template <typename Scalar>
 void parallel(context &ctx,
-              CosmaMatrix<double> &matrixA,
-              CosmaMatrix<double> &matrixB,
-              CosmaMatrix<double> &matrixC,
+              CosmaMatrix<Scalar> &matrixA,
+              CosmaMatrix<Scalar> &matrixB,
+              CosmaMatrix<Scalar> &matrixC,
               Interval &m,
               Interval &n,
               Interval &k,
@@ -302,7 +315,7 @@ void parallel(context &ctx,
               size_t step,
               const Strategy &strategy,
               communicator &comm,
-              double beta) {
+              Scalar beta) {
     PE(multiply_other);
 
     int divisor = strategy.divisor(step);
@@ -360,7 +373,7 @@ void parallel(context &ctx,
      if divn > 1 => matrix A is expanded
      if divk > 1 => matrix C is expanded
      */
-    CosmaMatrix<double> &expanded_mat =
+    CosmaMatrix<Scalar> &expanded_mat =
         which_is_expanded(matrixA, matrixB, matrixC, strategy, step);
     // gets the buffer sizes before and after expansion.
     // this still does not modify the buffer sizes inside layout
@@ -385,9 +398,9 @@ void parallel(context &ctx,
     int buffer_idx = expanded_mat.buffer_index();
     expanded_mat.advance_buffer();
 
-    double *original_matrix = expanded_mat.current_matrix();
-    double *expanded_matrix = expanded_mat.buffer_ptr();
-    double *reshuffle_buffer = expanded_mat.reshuffle_buffer_ptr();
+    Scalar *original_matrix = expanded_mat.current_matrix();
+    Scalar *expanded_matrix = expanded_mat.buffer_ptr();
+    Scalar *reshuffle_buffer = expanded_mat.reshuffle_buffer_ptr();
 
     // pack the data for the next substep
     expanded_mat.set_current_matrix(expanded_matrix);
@@ -414,8 +427,8 @@ void parallel(context &ctx,
     // this is necessary since reduction happens AFTER the substeps
     // so we cannot pass beta = 1 if the data is not present there BEFORE the
     // substeps.
-    int new_beta = beta;
-    if (strategy.split_k(step) && beta > 0) {
+    auto new_beta = beta;
+    if (strategy.split_k(step) && beta != Scalar{0}) {
         new_beta = 0;
     }
 
@@ -447,7 +460,7 @@ void parallel(context &ctx,
 
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
-        double *reduce_buffer = expanded_mat.reduce_buffer_ptr();
+        Scalar *reduce_buffer = expanded_mat.reduce_buffer_ptr();
         comm.reduce(P,
                     expanded_matrix,
                     original_matrix,
@@ -468,4 +481,204 @@ void parallel(context &ctx,
         newP, size_before_expansion, newP.first() - P.first());
     PL();
 }
+
+using zfloat_t = std::complex<float>;
+using zdouble_t = std::complex<double>;
+
+// Explicit instantiations for short `multiply`
+//
+template void multiply<double>(context &ctx,
+                               CosmaMatrix<double> &A,
+                               CosmaMatrix<double> &B,
+                               CosmaMatrix<double> &C,
+                               const Strategy &strategy,
+                               MPI_Comm comm,
+                               double beta);
+
+template void multiply<float>(context &ctx,
+                              CosmaMatrix<float> &A,
+                              CosmaMatrix<float> &B,
+                              CosmaMatrix<float> &C,
+                              const Strategy &strategy,
+                              MPI_Comm comm,
+                              float beta);
+
+template void multiply<zdouble_t>(context &ctx,
+                                  CosmaMatrix<zdouble_t> &A,
+                                  CosmaMatrix<zdouble_t> &B,
+                                  CosmaMatrix<zdouble_t> &C,
+                                  const Strategy &strategy,
+                                  MPI_Comm comm,
+                                  zdouble_t beta);
+
+template void multiply<zfloat_t>(context &ctx,
+                                 CosmaMatrix<zfloat_t> &A,
+                                 CosmaMatrix<zfloat_t> &B,
+                                 CosmaMatrix<zfloat_t> &C,
+                                 const Strategy &strategy,
+                                 MPI_Comm comm,
+                                 zfloat_t beta);
+
+// Explicit instantiations for `multiply`
+//
+template void multiply<double>(context &ctx,
+                               CosmaMatrix<double> &A,
+                               CosmaMatrix<double> &B,
+                               CosmaMatrix<double> &C,
+                               Interval &m,
+                               Interval &n,
+                               Interval &k,
+                               Interval &P,
+                               size_t step,
+                               const Strategy &strategy,
+                               communicator &comm,
+                               double beta);
+
+template void multiply<float>(context &ctx,
+                              CosmaMatrix<float> &A,
+                              CosmaMatrix<float> &B,
+                              CosmaMatrix<float> &C,
+                              Interval &m,
+                              Interval &n,
+                              Interval &k,
+                              Interval &P,
+                              size_t step,
+                              const Strategy &strategy,
+                              communicator &comm,
+                              float beta);
+
+template void multiply<zdouble_t>(context &ctx,
+                                  CosmaMatrix<zdouble_t> &A,
+                                  CosmaMatrix<zdouble_t> &B,
+                                  CosmaMatrix<zdouble_t> &C,
+                                  Interval &m,
+                                  Interval &n,
+                                  Interval &k,
+                                  Interval &P,
+                                  size_t step,
+                                  const Strategy &strategy,
+                                  communicator &comm,
+                                  zdouble_t beta);
+
+template void multiply<zfloat_t>(context &ctx,
+                                 CosmaMatrix<zfloat_t> &A,
+                                 CosmaMatrix<zfloat_t> &B,
+                                 CosmaMatrix<zfloat_t> &C,
+                                 Interval &m,
+                                 Interval &n,
+                                 Interval &k,
+                                 Interval &P,
+                                 size_t step,
+                                 const Strategy &strategy,
+                                 communicator &comm,
+                                 zfloat_t beta);
+
+// Explicit instantiations for `sequential`
+//
+template void sequential<double>(context &ctx,
+                                 CosmaMatrix<double> &A,
+                                 CosmaMatrix<double> &B,
+                                 CosmaMatrix<double> &C,
+                                 Interval &m,
+                                 Interval &n,
+                                 Interval &k,
+                                 Interval &P,
+                                 size_t step,
+                                 const Strategy &strategy,
+                                 communicator &comm,
+                                 double beta);
+
+template void sequential<float>(context &ctx,
+                                CosmaMatrix<float> &A,
+                                CosmaMatrix<float> &B,
+                                CosmaMatrix<float> &C,
+                                Interval &m,
+                                Interval &n,
+                                Interval &k,
+                                Interval &P,
+                                size_t step,
+                                const Strategy &strategy,
+                                communicator &comm,
+                                float beta);
+
+template void sequential<zdouble_t>(context &ctx,
+                                    CosmaMatrix<zdouble_t> &A,
+                                    CosmaMatrix<zdouble_t> &B,
+                                    CosmaMatrix<zdouble_t> &C,
+                                    Interval &m,
+                                    Interval &n,
+                                    Interval &k,
+                                    Interval &P,
+                                    size_t step,
+                                    const Strategy &strategy,
+                                    communicator &comm,
+                                    zdouble_t beta);
+
+template void sequential<zfloat_t>(context &ctx,
+                                   CosmaMatrix<zfloat_t> &A,
+                                   CosmaMatrix<zfloat_t> &B,
+                                   CosmaMatrix<zfloat_t> &C,
+                                   Interval &m,
+                                   Interval &n,
+                                   Interval &k,
+                                   Interval &P,
+                                   size_t step,
+                                   const Strategy &strategy,
+                                   communicator &comm,
+                                   zfloat_t beta);
+
+// Explicit instantiations for `parallel`
+//
+template void parallel<double>(context &ctx,
+                               CosmaMatrix<double> &A,
+                               CosmaMatrix<double> &B,
+                               CosmaMatrix<double> &C,
+                               Interval &m,
+                               Interval &n,
+                               Interval &k,
+                               Interval &P,
+                               size_t step,
+                               const Strategy &strategy,
+                               communicator &comm,
+                               double beta);
+
+template void parallel<float>(context &ctx,
+                              CosmaMatrix<float> &A,
+                              CosmaMatrix<float> &B,
+                              CosmaMatrix<float> &C,
+                              Interval &m,
+                              Interval &n,
+                              Interval &k,
+                              Interval &P,
+                              size_t step,
+                              const Strategy &strategy,
+                              communicator &comm,
+                              float beta);
+
+template void parallel<zdouble_t>(context &ctx,
+                                  CosmaMatrix<zdouble_t> &A,
+                                  CosmaMatrix<zdouble_t> &B,
+                                  CosmaMatrix<zdouble_t> &C,
+                                  Interval &m,
+                                  Interval &n,
+                                  Interval &k,
+                                  Interval &P,
+                                  size_t step,
+                                  const Strategy &strategy,
+                                  communicator &comm,
+                                  zdouble_t beta);
+
+template void parallel<zfloat_t>(context &ctx,
+                                 CosmaMatrix<zfloat_t> &A,
+                                 CosmaMatrix<zfloat_t> &B,
+                                 CosmaMatrix<zfloat_t> &C,
+                                 Interval &m,
+                                 Interval &n,
+                                 Interval &k,
+                                 Interval &P,
+                                 size_t step,
+                                 const Strategy &strategy,
+                                 communicator &comm,
+                                 zfloat_t beta);
+
 } // namespace cosma

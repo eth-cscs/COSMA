@@ -1,29 +1,29 @@
 #pragma once
 
 #include <cosma/communicator.hpp>
+#include <cosma/context.hpp>
 #include <cosma/interval.hpp>
-#include <cosma/local_multiply.hpp>
 #include <cosma/matrix.hpp>
 #include <cosma/strategy.hpp>
-#include <cosma/timer.hpp>
-
-#include <semiprof.hpp>
 
 #include <vector>
 
 namespace cosma {
-void multiply(context &ctx,
-              CosmaMatrix<double> &A,
-              CosmaMatrix<double> &B,
-              CosmaMatrix<double> &C,
-              const Strategy &strategy,
-              MPI_Comm comm = MPI_COMM_WORLD,
-              double beta = 0.0);
 
+template <typename Scalar>
 void multiply(context &ctx,
-              CosmaMatrix<double> &A,
-              CosmaMatrix<double> &B,
-              CosmaMatrix<double> &C,
+              CosmaMatrix<Scalar> &A,
+              CosmaMatrix<Scalar> &B,
+              CosmaMatrix<Scalar> &C,
+              const Strategy &strategy,
+              MPI_Comm comm,
+              Scalar beta);
+
+template <typename Scalar>
+void multiply(context &ctx,
+              CosmaMatrix<Scalar> &A,
+              CosmaMatrix<Scalar> &B,
+              CosmaMatrix<Scalar> &C,
               Interval &m,
               Interval &n,
               Interval &k,
@@ -31,12 +31,13 @@ void multiply(context &ctx,
               size_t step,
               const Strategy &strategy,
               communicator &comm,
-              double beta = 0.0);
+              Scalar beta);
 
+template <typename Scalar>
 void sequential(context &ctx,
-                CosmaMatrix<double> &A,
-                CosmaMatrix<double> &B,
-                CosmaMatrix<double> &C,
+                CosmaMatrix<Scalar> &A,
+                CosmaMatrix<Scalar> &B,
+                CosmaMatrix<Scalar> &C,
                 Interval &m,
                 Interval &n,
                 Interval &k,
@@ -44,12 +45,13 @@ void sequential(context &ctx,
                 size_t step,
                 const Strategy &strategy,
                 communicator &comm,
-                double beta);
+                Scalar beta);
 
+template <typename Scalar>
 void parallel(context &ctx,
-              CosmaMatrix<double> &A,
-              CosmaMatrix<double> &B,
-              CosmaMatrix<double> &C,
+              CosmaMatrix<Scalar> &A,
+              CosmaMatrix<Scalar> &B,
+              CosmaMatrix<Scalar> &C,
               Interval &m,
               Interval &n,
               Interval &k,
@@ -57,6 +59,6 @@ void parallel(context &ctx,
               size_t step,
               const Strategy &strategy,
               communicator &comm,
-              double beta);
+              Scalar beta);
 
 } // namespace cosma

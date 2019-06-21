@@ -7,6 +7,8 @@ void fillInt(T &in) {
     std::generate(in.begin(), in.end(), []() { return (int)(10 * drand48()); });
 }
 
+// TODO: generalize to generate complex numbers
+
 bool run(Strategy &s,
          context &ctx,
          MPI_Comm comm = MPI_COMM_WORLD,
