@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cosma/blas.hpp>
-#include <cosma/communicator.hpp>
 #include <cosma/interval.hpp>
 #include <cosma/local_multiply.hpp>
 #include <cosma/math_utils.hpp>
@@ -22,6 +21,7 @@
 #include <tuple>
 
 namespace cosma {
+
 class one_sided_communicator {
   public:
     static MPI_Win
@@ -402,7 +402,8 @@ class one_sided_communicator {
     // ***********************************
     //           DIVISION BY M
     // ***********************************
-    static void overlap_m_split(context &ctx,
+    static void overlap_m_split(bool use_busy_waiting,
+                                context &ctx,
                                 MPI_Comm comm,
                                 int rank,
                                 int divisor,
@@ -443,7 +444,7 @@ class one_sided_communicator {
         // c: newm * disp
 
         std::atomic_int ready(0);
-        std::thread comm_thread(communicator::use_busy_waiting
+        std::thread comm_thread(use_busy_waiting
                                     ? comm_task_mn_split_busy_waiting
                                     : comm_task_mn_split_polling,
                                 divisor,
@@ -518,7 +519,8 @@ class one_sided_communicator {
     // ***********************************
     //           DIVISION BY N
     // ***********************************
-    static void overlap_n_split(context &ctx,
+    static void overlap_n_split(bool use_busy_waiting,
+                                context &ctx,
                                 MPI_Comm comm,
                                 int rank,
                                 int divisor,
@@ -567,7 +569,7 @@ class one_sided_communicator {
         // std::endl;
 
         std::atomic_int ready(1);
-        std::thread comm_thread(communicator::use_busy_waiting
+        std::thread comm_thread(use_busy_waiting
                                     ? comm_task_mn_split_busy_waiting
                                     : comm_task_mn_split_polling,
                                 divisor,
@@ -987,10 +989,11 @@ class one_sided_communicator {
                                       Interval &P,
                                       size_t step,
                                       double beta) {
-
+        bool use_busy_waiting = strategy->use_busy_waiting;
         int divisor = strategy->divisor(step);
         if (strategy->split_m(step)) {
-            one_sided_communicator::overlap_m_split(ctx,
+            one_sided_communicator::overlap_m_split(use_busy_waiting,
+                                                    ctx,
                                                     comm,
                                                     rank,
                                                     divisor,
@@ -1003,7 +1006,8 @@ class one_sided_communicator {
                                                     P,
                                                     beta);
         } else if (strategy->split_n(step)) {
-            one_sided_communicator::overlap_n_split(ctx,
+            one_sided_communicator::overlap_n_split(use_busy_waiting,
+                                                    ctx,
                                                     comm,
                                                     rank,
                                                     divisor,

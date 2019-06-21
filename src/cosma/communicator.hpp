@@ -18,8 +18,6 @@
 namespace cosma {
 class communicator {
   public:
-    using scalar_t = double;
-
     communicator() = default;
     communicator(const Strategy *strategy, MPI_Comm comm = MPI_COMM_WORLD);
     ~communicator();
@@ -80,10 +78,11 @@ class communicator {
      * invocation of this function. Only blocks belonging to the current
      * submatrix are being exchanged within a single invocation of copy.
      */
+    template <typename Scalar>
     void copy(Interval &P,
-              scalar_t *in,
-              scalar_t *out,
-              scalar_t *reshuffle_buffer,
+              Scalar *in,
+              Scalar *out,
+              Scalar *reshuffle_buffer,
               std::vector<std::vector<int>> &size_before,
               std::vector<int> &total_before,
               int total_after,
@@ -138,11 +137,12 @@ class communicator {
      * invocation of this function. Only blocks belonging to the current
      * submatrix are being exchanged within a single invocation of reduce.
      */
+    template <typename Scalar>
     void reduce(Interval &P,
-                scalar_t *in,
-                scalar_t *out,
-                scalar_t *reshuffle_buffer,
-                scalar_t *reduce_buffer,
+                Scalar *in,
+                Scalar *out,
+                Scalar *reshuffle_buffer,
+                Scalar *reduce_buffer,
                 std::vector<std::vector<int>> &c_current,
                 std::vector<int> &c_total_current,
                 std::vector<std::vector<int>> &c_expanded,
@@ -150,16 +150,17 @@ class communicator {
                 int beta,
                 int step);
 
+    template <typename Scalar>
     void overlap_comm_and_comp(context &ctx,
-                               CosmaMatrix<scalar_t> &matrixA,
-                               CosmaMatrix<scalar_t> &matrixB,
-                               CosmaMatrix<scalar_t> &matrixC,
+                               CosmaMatrix<Scalar> &matrixA,
+                               CosmaMatrix<Scalar> &matrixB,
+                               CosmaMatrix<Scalar> &matrixC,
                                Interval &m,
                                Interval &n,
                                Interval &k,
                                Interval &P,
                                size_t step,
-                               scalar_t beta);
+                               Scalar beta);
 
     // creates the graph that represents the topology of mpi communicator
     // it is "aware" of all the communications that will happen throughout
