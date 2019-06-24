@@ -147,7 +147,7 @@ class communicator {
                 std::vector<int> &c_total_current,
                 std::vector<std::vector<int>> &c_expanded,
                 std::vector<int> &c_total_expanded,
-                int beta,
+                Scalar beta,
                 int step);
 
     template <typename Scalar>

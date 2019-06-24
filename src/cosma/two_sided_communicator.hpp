@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <complex>
 #include <future>
 #include <iostream>
 #include <stdlib.h>
@@ -143,7 +144,7 @@ class two_sided_communicator {
                        std::vector<int> &c_total_current,
                        std::vector<std::vector<int>> &c_expanded,
                        std::vector<int> &c_total_expanded,
-                       int beta) {
+                       Scalar beta) {
         PE(multiply_communication_other);
         // int div = strategy_->divisor(step);
         // MPI_Comm subcomm = active_comm(step);
@@ -189,7 +190,7 @@ class two_sided_communicator {
             }
         }
 
-        Scalar *receive_pointer = beta > 0 ? reduce_buffer : C;
+        Scalar *receive_pointer = beta != Scalar{0} ? reduce_buffer : C;
         PL();
 
         auto mpi_type = mpi_mapper<Scalar>::getType();
@@ -203,7 +204,7 @@ class two_sided_communicator {
         PL();
 
         PE(multiply_communication_other);
-        if (beta > 0) {
+        if (beta != Scalar{0}) {
             // sum up receiving_buffer with C
             for (int el = 0; el < recvcnts[gp]; ++el) {
                 C[el] += reduce_buffer[el];

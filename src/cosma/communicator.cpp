@@ -346,7 +346,7 @@ void communicator::reduce(Interval &P,
                           std::vector<int> &c_total_current,
                           std::vector<std::vector<int>> &c_expanded,
                           std::vector<int> &c_total_expanded,
-                          int beta,
+                          Scalar beta,
                           int step) {
     MPI_Comm comm = active_comm(step);
     two_sided_communicator::reduce(comm,
@@ -445,7 +445,7 @@ communicator::reduce<float>(Interval &P,
                             std::vector<int> &c_total_current,
                             std::vector<std::vector<int>> &c_expanded,
                             std::vector<int> &c_total_expanded,
-                            int beta,
+                            float beta,
                             int step);
 
 template void
@@ -458,7 +458,7 @@ communicator::reduce<double>(Interval &P,
                              std::vector<int> &c_total_current,
                              std::vector<std::vector<int>> &c_expanded,
                              std::vector<int> &c_total_expanded,
-                             int beta,
+                             double beta,
                              int step);
 
 template void communicator::reduce<std::complex<float>>(
@@ -471,7 +471,7 @@ template void communicator::reduce<std::complex<float>>(
     std::vector<int> &c_total_current,
     std::vector<std::vector<int>> &c_expanded,
     std::vector<int> &c_total_expanded,
-    int beta,
+    std::complex<float> beta,
     int step);
 
 template void communicator::reduce<std::complex<double>>(
@@ -484,7 +484,7 @@ template void communicator::reduce<std::complex<double>>(
     std::vector<int> &c_total_current,
     std::vector<std::vector<int>> &c_expanded,
     std::vector<int> &c_total_expanded,
-    int beta,
+    std::complex<double> beta,
     int step);
 
 // Explicit instantiations for `overlap_comm_and_comp`

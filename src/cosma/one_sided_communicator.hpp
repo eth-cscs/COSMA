@@ -117,7 +117,7 @@ class one_sided_communicator {
                        std::vector<int> &c_total_current,
                        std::vector<std::vector<int>> &c_expanded,
                        std::vector<int> &c_total_expanded,
-                       int beta) {
+                       Scalar beta) {
         auto mpi_type = mpi_mapper<Scalar>::getType();
         // int div = strategy_->divisor(step);
         // int gp, off;
