@@ -24,7 +24,7 @@ export CRAYPE_LINK_TYPE=dynamic
 # Move to `build` directory if not there already
 #
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-COSMA_DIR=$( dirname $script_dir )
+COSMA_DIR="$( dirname $SCRIPT_DIR )"
 mkdir -p ${COSMA_DIR}/build
 cd ${COSMA_DIR}/build
 
