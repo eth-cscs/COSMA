@@ -19,15 +19,11 @@ void fillInt(T &in) {
     std::generate(in.begin(), in.end(), []() { return (int)(10 * drand48()); });
 }
 
+// Reads an environment variable `n_iter`
+//
 int get_n_iter() {
-    const char *value = std::getenv("n_iter");
-    std::stringstream strValue;
-    strValue << value;
-
-    unsigned int intValue;
-    strValue >> intValue;
-
-    if (intValue < 0 || intValue > 100) {
+    int intValue = std::atoi(std::getenv("n_iter"));
+    if (intValue < 1 || intValue > 100) {
         std::cout << "Number of iteration must be in the interval [1, 100]"
                   << std::endl;
         std::cout << "Setting it to 1 iteration instead" << std::endl;
