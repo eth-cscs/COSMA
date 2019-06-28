@@ -61,11 +61,13 @@ target_link_libraries(cosma PUBLIC grid2grid semiprof options)
 #
 find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)
-find_package(BLAS REQUIRED)
-if (${BLA_VENDOR} MATCHES "Intel*")
-    target_compile_definitions(cosma PUBLIC COSMA_WITH_MKL)
-endif()
-target_link_libraries(cosma PUBLIC MPI::MPI_CXX OpenMP::OpenMP_CXX ${BLAS_LIBRARIES})
+find_package(MKL REQUIRED)
+target_link_libraries(cosma PUBLIC 
+  MPI::MPI_CXX 
+  OpenMP::OpenMP_CXX 
+  MKL::MKL
+  )
+target_compile_definitions(cosma PUBLIC COSMA_WITH_MKL)
 
 ################
 #  ScaLAPACK   #
