@@ -1,7 +1,8 @@
 .DS_Store*
 *.swp
 __pycache__
-build*
+build
 exports
 doc
 .idea*
+CMakeLists.txt.user

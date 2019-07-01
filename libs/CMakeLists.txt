@@ -7,4 +7,4 @@ if(COSMA_WITH_CUDA)
     add_subdirectory(Tiled-MM)
 endif()
 
-add_subdirectory(gtest)
+add_subdirectory(gtest_mpi)

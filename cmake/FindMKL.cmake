@@ -1,115 +1,73 @@
-# - Find Intel MKL
-# Find the MKL libraries
+# Uses MKLROOT env. variable or MKL_ROOT variable to find MKL.
 #
-# Options:
+# The MKL 32 bit int precision is assumed.
+# 
+# The TBB threading back-end is not supported.
 #
-#   MKL_STATIC        :   use static linking
-#   MKL_MULTI_THREADED:   use multi-threading
-#   MKL_SDL           :   Single Dynamic Library interface
+# The type of threading for MKL has to be specified using the variable
+#        MKL_THREADING:
+#         - Intel OpenMP
+#         - GNU OpenMP
+#         - Sequential
 #
-# This module defines the following variables:
-#
-#   MKL_FOUND         : True if MKL_INCLUDE_DIR are found
-#   MKL_INCLUDE_DIR   : where to find mkl.h, etc.
-#   MKL_INCLUDE_DIRS  : set when MKL_INCLUDE_DIR found
-#   MKL_LIBRARIES     : the library to link against.
+# Link to MKL::MKL.
 
+# Note: This file is adapted version of Raffaele's dla_lapack.cmake module
 
+include(cosma_utils)
+include(CheckFunctionExists)
 include(FindPackageHandleStandardArgs)
 
-if (INTEL_ROOT)
-  set(INTEL_ROOT ${INTEL_ROOT} CACHE PATH "Folder contains intel libs")
-else ()
-  set(INTEL_ROOT "/opt/intel" CACHE PATH "Folder contains intel libs")
-endif ()
+unset(DLA_LAPACK_LIBRARY CACHE)
+setoption(DLA_LAPACK_TYPE STRING "Compiler" "BLAS/LAPACK type setting")
+set_property(CACHE DLA_LAPACK_TYPE PROPERTY STRINGS Compiler MKL Custom)
 
-set(MKL_ROOT ${INTEL_ROOT}/mkl CACHE PATH "Folder contains MKL")
+if(CMAKE_CXX_COMPILER_ID MATCHES "Intel" OR ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  set(MKL_THREADING_OPTIONS Sequential "Intel OpenMP")
+  set(MKL_THREADING_DEFAULT "Intel OpenMP")
+else()
+  set(MKL_THREADING_OPTIONS Sequential "GNU OpenMP" "Intel OpenMP")
+  set(MKL_THREADING_DEFAULT "GNU OpenMP")
+endif()
+setoption(MKL_THREADING STRING "${MKL_THREADING_DEFAULT}" "MKL Threading support")
+set_property(CACHE MKL_THREADING PROPERTY STRINGS ${MKL_THREADING_OPTIONS})
 
-# Find include dir
-find_path(MKL_INCLUDE_DIR mkl.h PATHS ${MKL_ROOT}/include)
-
-# Find include directory
-#  There is no include folder under linux
-if (WIN32)
-  find_path(INTEL_INCLUDE_DIR omp.h PATHS ${INTEL_ROOT}/include)
-  set(MKL_INCLUDE_DIR ${MKL_INCLUDE_DIR} ${INTEL_INCLUDE_DIR})
-endif ()
-
-# Find libraries
-
-# Handle suffix
-set(_MKL_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
-
-if (WIN32)
-  if (MKL_STATIC)
-    set(CMAKE_FIND_LIBRARY_SUFFIXES .lib)
-  else ()
-    set(CMAKE_FIND_LIBRARY_SUFFIXES _dll.lib)
-  endif ()
-else ()
-  if (MKL_STATIC)
-    set (CMAKE_FIND_LIBRARY_SUFFIXES .a)
-  else ()
-    set (CMAKE_FIND_LIBRARY_SUFFIXES .so)
-  endif ()
-endif ()
-
-
-# MKL is composed by four layers: Interface, Threading, Computational and RTL
-
-if (MKL_SDL)
-  find_library(MKL_LIBRARY mkl_rt PATHS ${MKL_ROOT}/lib/intel64/)
-  set(MKL_MINIMAL_LIBRARY ${MKL_LIBRARY})
-else ()
-  ######################### Interface layer #######################
-  if (WIN32)
-    set(MKL_INTERFACE_LIBNAME mkl_intel_c)
-  else ()
-    set(MKL_INTERFACE_LIBNAME mkl_intel_lp64)
-  endif ()
-
-  find_library(MKL_INTERFACE_LIBRARY ${MKL_INTERFACE_LIBNAME}
-    PATHS ${MKL_ROOT}/lib/intel64/)
-
-  ######################## Threading layer ########################
-  if (MKL_MULTI_THREADED)
-    set(MKL_THREADING_LIBNAME mkl_intel_thread)
-  else ()
-    set(MKL_THREADING_LIBNAME mkl_sequential)
-  endif ()
-
-  find_library(MKL_THREADING_LIBRARY ${MKL_THREADING_LIBNAME}
-    PATHS ${MKL_ROOT}/lib/intel64/)
-
-  ####################### Computational layer #####################
-  find_library(MKL_CORE_LIBRARY mkl_core
-    PATHS ${MKL_ROOT}/lib/intel64/)
-  find_library(MKL_FFT_LIBRARY mkl_cdft_core
-    PATHS ${MKL_ROOT}/lib/intel64/)
-  find_library(MKL_SCALAPACK_LIBRARY mkl_scalapack_lp64
-    PATHS ${MKL_ROOT}/lib/intel64/)
-
-  ############################ RTL layer ##########################
-  if (WIN32)
-    set(MKL_RTL_LIBNAME libiomp5md)
-  else ()
-    set(MKL_RTL_LIBNAME iomp5)
-  endif ()
-  find_library(MKL_RTL_LIBRARY ${MKL_RTL_LIBNAME}
-    PATHS ${INTEL_ROOT}/lib/intel64/ ${INTEL_ROOT}/compiler/lib/intel64/)
-
-  set(MKL_LIBRARY ${MKL_INTERFACE_LIBRARY} ${MKL_CORE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_RTL_LIBRARY}) #${MKL_FFT_LIBRARY} ${MKL_SCALAPACK_LIBRARY}
-  set(MKL_MINIMAL_LIBRARY ${MKL_INTERFACE_LIBRARY} ${MKL_CORE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_RTL_LIBRARY})
+setoption(MKL_ROOT PATH $ENV{MKLROOT} "Intel MKL path")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  set(MKL_LIB_DIR "-L${MKL_ROOT}/lib -Wl,-rpath,${MKL_ROOT}/lib")
+else()
+  set(MKL_LIB_DIR "-L${MKL_ROOT}/lib/intel64")
 endif()
 
-set(CMAKE_FIND_LIBRARY_SUFFIXES ${_MKL_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
+if(MKL_THREADING MATCHES "Sequential")
+  set(MKL_THREAD_LIB "-lmkl_sequential")
+elseif(MKL_THREADING MATCHES "GNU OpenMP")
+  set(MKL_THREAD_LIB "-lmkl_gnu_thread -fopenmp")
+elseif(MKL_THREADING MATCHES "Intel OpenMP")
+  if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    setoption(INTEL_LIBS_ROOT PATH "/opt/intel/lib" "Path to Intel libraries")
+    find_library(IOMP5_LIB iomp5 HINTS "${INTEL_LIBS_ROOT}" NO_DEFAULT_PATH)
+    if (IOMP5_LIB MATCHES "IOMP5_LIB-NOTFOUND")
+      message(FATAL_ERROR "libiomp5 not found, please set INTEL_LIBS_ROOT correctly")
+    endif()
+    set(IOMP5_LIB_INTERNAL "-Wl,-rpath,${INTEL_LIBS_ROOT} ${IOMP5_LIB}")
+  else()
+    set(IOMP5_LIB_INTERNAL "-liomp5")
+  endif()
+  set(MKL_THREAD_LIB "-lmkl_intel_thread ${IOMP5_LIB_INTERNAL}")
+endif()
+set(DLA_LAPACK_INCLUDE_PATH_INTERNAL "${MKL_ROOT}/include")
+set(DLA_LAPACK_LIB_INTERNAL "${MKL_LIB_DIR} -lmkl_intel_lp64 ${MKL_THREAD_LIB} -lmkl_core -lpthread -lm -ldl")
 
-find_package_handle_standard_args(MKL DEFAULT_MSG
-  MKL_INCLUDE_DIR MKL_LIBRARY MKL_MINIMAL_LIBRARY )
+set(DLA_LAPACK_INCLUDE_PATH "${DLA_LAPACK_INCLUDE_PATH_INTERNAL}" CACHE PATH "BLAS/LAPACK include path (autogenerated)")
+separate_arguments(TMP UNIX_COMMAND "${DLA_LAPACK_LIB_INTERNAL}")
+set(DLA_LAPACK_LIBRARY "${TMP}" CACHE PATH "BLAS/LAPACK link line (autogenerated)")
 
-if (MKL_FOUND)
-  set(MKL_LIBRARY_PATH ${MKL_ROOT}/lib/intel64/)
-  set(MKL_INCLUDE_DIRS ${MKL_INCLUDE_DIR})
-  set(MKL_LIBRARIES ${MKL_LIBRARY})
-  set(MKL_MINIMAL_LIBRARIES ${MKL_LIBRARY})
-endif ()
+add_library(MKL::MKL INTERFACE IMPORTED)
+set_target_properties(MKL::MKL PROPERTIES INTERFACE_INCLUDE_DIRECTORIES 
+  "${DLA_LAPACK_INCLUDE_PATH}")
+set_target_properties(MKL::MKL PROPERTIES INTERFACE_LINK_LIBRARIES 
+  "${DLA_LAPACK_LIBRARY}")
+
+find_package_handle_standard_args(MKL DEFAULT_MSG)
+
