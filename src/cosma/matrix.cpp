@@ -288,6 +288,59 @@ void CosmaMatrix<T>::set_current_matrix(scalar_t *mat) {
     current_mat = mat;
 }
 
+template <typename T>
+grid2grid::grid_layout<T> CosmaMatrix<T>::get_grid_layout() {
+    // **************************
+    // create grid2D
+    // **************************
+    // prepare row intervals
+    // and col intervals
+    grid2grid::grid2D grid = mapper_.get_layout_grid();
+
+    int n_blocks_row = grid.n_rows;
+    int n_blocks_col = grid.n_cols;
+
+    // **************************
+    // create an assigned grid2D
+    // **************************
+    // create a matrix of ranks owning each block
+    std::vector<std::vector<int>> owners(n_blocks_row, std::vector<int>(n_blocks_col));
+    for (int i = 0; i < n_blocks_row-1; ++i) {
+        Interval row_interval = Interval(grid.row_interval(i).start, grid.row_interval(i+1).start-1);
+        for (int j = 0; j < n_blocks_col; ++j) {
+            Interval col_interval = Interval(grid.col_interval(j).start, grid.col_interval(j+1).start-1);
+            Interval2D range(row_interval, col_interval);
+            owners[i][j] = mapper_.owner(range);
+        }
+    }
+
+    // create an assigned grid2D
+    grid2grid::assigned_grid2D assigned_grid(std::move(grid), std::move(owners), P_);
+
+    // **************************
+    // create local memory view
+    // **************************
+    // get coordinates of current rank in a rank decomposition
+    std::vector<grid2grid::block<T>> loc_blocks;
+    for (auto matrix_id = 0u; matrix_id < mapper_.local_blocks().size(); ++matrix_id) {
+        Interval2D range = mapper_.local_blocks()[matrix_id];
+        int offset = mapper_.local_blocks_offsets()[matrix_id];
+
+        grid2grid::interval row_interval(range.rows.first(), range.rows.last()+1);
+        grid2grid::interval col_interval(range.cols.first(), range.cols.last()+1);
+
+        int stride = row_interval.length();
+
+        grid2grid::block<T> b(assigned_grid, row_interval, col_interval,
+                buffer_ptr()+offset, stride);
+
+        loc_blocks.push_back(b);
+    }
+    grid2grid::local_blocks<T> local_memory(std::move(loc_blocks));
+
+    return {std::move(assigned_grid), std::move(local_memory)};
+}
+
 // Explicit instantiations
 //
 template class CosmaMatrix<float>;

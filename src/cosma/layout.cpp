@@ -6,13 +6,13 @@ Layout::Layout(char label,
                int n,
                size_t P,
                int rank,
-               std::vector<std::vector<Interval2D>> rank_to_range)
-    : label_(label)
-    , m_(m)
-    , n_(n)
-    , P_(P)
-    , rank_(rank)
-    , rank_to_range_(rank_to_range) {
+               std::vector<std::vector<Interval2D>> rank_to_range):
+    label_(label),
+    m_(m),
+    n_(n),
+    P_(P),
+    rank_(rank),
+    rank_to_range_(rank_to_range) {
     initial_size_ = std::vector<int>(P);
     bucket_size_ = std::vector<std::vector<int>>(P, std::vector<int>());
     pointer_ = std::vector<int>(P);

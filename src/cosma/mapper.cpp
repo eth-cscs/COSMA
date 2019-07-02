@@ -317,5 +317,36 @@ std::pair<int, int> Mapper::global_coordinates(int local_index, int rank) {
     return {-1, -1};
 }
 
-char Mapper::which_matrix() { return label_; }
+char Mapper::which_matrix() {
+    return label_;
+}
+
+std::vector<int>& Mapper::local_blocks_offsets() {
+    return range_offset_[rank_];
+}
+
+std::vector<Interval2D> Mapper::local_blocks() {
+    return rank_to_range_[rank_];
+}
+
+int Mapper::owner(Interval2D& block) {
+    std::pair<int, int> rank_and_offset = range_to_rank_[block];
+    return rank_and_offset.first;
+}
+
+grid2grid::grid2D Mapper::get_layout_grid() {
+    // prepare row intervals
+    // and col intervals
+    std::vector<int> rows_split;
+    for (const auto& tick : row_partition_) {
+        rows_split.push_back(tick + 1);
+    }
+    std::vector<int> cols_split;
+    for (const auto& tick : col_partition_) {
+        cols_split.push_back(tick + 1);
+    }
+
+    grid2grid::grid2D grid(std::move(rows_split), std::move(cols_split));
+    return grid;
+}
 } // namespace cosma

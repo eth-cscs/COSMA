@@ -18,6 +18,7 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <transform.hpp>
 #include <unordered_map>
 #include <vector>
 
@@ -140,6 +141,8 @@ class CosmaMatrix {
     // pointer to current matrix (send buffer)
     scalar_t *current_matrix();
     void set_current_matrix(scalar_t *mat);
+
+    grid2grid::grid_layout<scalar_t> get_grid_layout();
 
   protected:
     // A, B or C
