@@ -1,11 +1,4 @@
 #include <cosma/blas.hpp>
-
-#ifdef COSMA_WITH_MKL
-#include <mkl.h>
-#else
-#include <cblas.h>
-#endif
-
 namespace cosma {
 void dgemm(const int M,
            const int N,

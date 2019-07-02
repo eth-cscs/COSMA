@@ -33,6 +33,7 @@ add_library(cosma STATIC
   "${cosma_SOURCE_DIR}/src/cosma/matrix.cpp"
   "${cosma_SOURCE_DIR}/src/cosma/multiply.cpp"
   "${cosma_SOURCE_DIR}/src/cosma/strategy.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/pdgemm_wrapper.hpp"
   )
 message(STATUS ${cosma_SOURCE_DIR})
 target_include_directories(cosma PUBLIC ${cosma_SOURCE_DIR}/src)

@@ -332,7 +332,7 @@ grid2grid::grid_layout<T> CosmaMatrix<T>::get_grid_layout() {
         int stride = row_interval.length();
 
         grid2grid::block<T> b(assigned_grid, row_interval, col_interval,
-                buffer_ptr()+offset, stride);
+                matrix_pointer()+offset, stride);
 
         loc_blocks.push_back(b);
     }
