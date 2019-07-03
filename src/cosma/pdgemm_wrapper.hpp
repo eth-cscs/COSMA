@@ -1,31 +1,28 @@
 #include <mpi.h>
-#include <cosma/blas.hpp>
+#include <cosma/blacs.hpp>
+#include <cosma/multiply.hpp>
+#include <transform.hpp>
 
 namespace cosma {
 template<typename T>
 // alpha ignored at the moment
-void pdgemm(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-           const double* alpha, const double* a, const int* ia, const int* ja, const int* desca,
-           const double* b, const int* ib, const int* jb, const int* descb, const double* beta,
-           double* c, const int* ic, const int* jc, const int* descc) {
+void pgemm(const char trans_a, const char trans_b, const int m, const int n, const int k,
+           const double alpha, const double* a, const int ia, const int ja, const int* desca,
+           const double* b, const int ib, const int jb, const int* descb, const double beta,
+           double* c, const int ic, const int jc, const int* descc) {
     int iZERO = 0;
     int ctxt, myrow, mycol;
     int rank, P;
 
+    ctxt = desca[1];
+
     Cblacs_pinfo(&rank, &P);
     // Cblacs_gridinit(&ctxt, "Row-major", procrows, proccols);
-    Cblacs_gridinfo(&ctxt, &procrows, &proccols, &myrow, &mycol);
+    int procrows, proccols;
+    Cblacs_gridinfo(ctxt, &procrows, &proccols, &myrow, &mycol);
     // Cblacs_pcoord(ctxt, myid, &myrow, &mycol);
     MPI_Comm comm = Cblacs2sys_handle(ctxt);
 
-    // Number of rows and cols owned by the current process
-    int nrows1 = numroc_(&m, &bm1, &myrow, &iZERO, &procrows);
-    int ncols1 = numroc_(&n, &bn1, &mycol, &iZERO, &proccols);
-
-    int nrows2 = numroc_(&m, &bm2, &myrow, &iZERO, &procrows);
-    int ncols2 = numroc_(&n, &bn2, &mycol, &iZERO, &proccols);
-
-    int ctxt = desca[1];
     int bm = desca[4];
     int bk = descb[4];
     int bn = descc[4];
@@ -46,55 +43,72 @@ void pdgemm(const char* trans_a, const char* transb, const int* m, const int* n,
     int csrc_c = descc[7];
     int lld_c = descc[8];
 
+    bool trans_a_flag = trans_a == 'N';
+    bool trans_b_flag = trans_b == 'N';
+    bool trans_c_flag = 'N';
+
+    // check whether rank grid is row-major or col-major
+    auto ordering = grid2grid::scalapack::ordering::column_major;
+
+    if (P > 1) {
+        int prow, pcol;
+        // check the coordinates of rank 1 to see
+        // if the rank grid is row-major or col-major
+        Cblacs_pcoord(ctxt, 1, &prow, &pcol);
+        if (prow == 0 && pcol == 1) {
+            ordering = grid2grid::scalapack::ordering::row_major;
+        }
+    }
+
     // find an optimal strategy for this problem
     Strategy strategy(m, n, k, P);
 
     // create COSMA matrices
-    CosmaMatrix<double> A('A', strategy, rank);
-    CosmaMatrix<double> B('B', strategy, rank);
-    CosmaMatrix<double> C('C', strategy, rank);
+    CosmaMatrix<T> A('A', strategy, rank);
+    CosmaMatrix<T> B('B', strategy, rank);
+    CosmaMatrix<T> C('C', strategy, rank);
 
     // get abstract layout descriptions for COSMA layout
-    grid2grid::grid_layout<T> cosma_layout_a = A.get_grid_layout();
-    grid2grid::grid_layout<T> cosma_layout_b = B.get_grid_layout();
-    grid2grid::grid_layout<T> cosma_layout_c = C.get_grid_layout();
+    auto cosma_layout_a = A.get_grid_layout();
+    auto cosma_layout_b = B.get_grid_layout();
+    auto cosma_layout_c = C.get_grid_layout();
 
     // get abstract layout descriptions for ScaLAPACK layout
-    grid2grid::grid_layout<T> scalapack_layout_a = grid2grid::get_scalapack_grid(
+    auto scalapack_layout_a = grid2grid::get_scalapack_grid<T>(
         lld_a,
         {m_global, k_global},
-        {*ia, *ja},
-        {*m, *k},
+        {ia, ja},
+        {m, k},
         {bm, bk},
         {procrows, proccols},
-        scalapack::ordering::col_major,
-        transa,
+        ordering,
+        trans_a_flag,
         {rsrc_a, csrc_a},
-        a, rank
+        const_cast<T*>(a), rank
     );
 
-    grid2grid::grid_layout<T> scalapack_layout_b = grid2grid::get_scalapack_grid(
+    auto scalapack_layout_b = grid2grid::get_scalapack_grid<T>(
         lld_b,
         {k_global, n_global},
-        {*ib, *jb},
-        {*k, *n},
+        {ib, jb},
+        {k, n},
         {bk, bn},
         {procrows, proccols},
-        scalapack::ordering::col_major,
-        transb,
+        ordering,
+        trans_b_flag,
         {rsrc_b, csrc_b},
-        b, rank
+        const_cast<T*>(b), rank
     );
 
-    grid2grid::grid_layout<T> scalapack_layout_c = grid2grid::get_scalapack_grid(
+    auto scalapack_layout_c = grid2grid::get_scalapack_grid<T>(
         lld_c,
         {m_global, n_global},
-        {*ic, *jc},
-        {*m, *n},
+        {ic, jc},
+        {m, n},
         {bm, bn},
         {procrows, proccols},
-        scalapack::ordering::col_major,
-        transc,
+        ordering,
+        trans_c_flag,
         {rsrc_c, csrc_c},
         c, rank
     );
@@ -112,7 +126,7 @@ void pdgemm(const char* trans_a, const char* transb, const int* m, const int* n,
     grid2grid::transform(cosma_layout_c, scalapack_layout_c, comm);
 
     // Release resources
-    Cblacs_gridexit(ctxt);
-    Cfree_blacs_system_handle(comm);
+    // Cblacs_gridexit(ctxt);
+    // Cfree_blacs_system_handle(comm);
 }
 }

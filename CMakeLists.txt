@@ -64,11 +64,12 @@ target_link_libraries(cosma PUBLIC grid2grid semiprof options)
 find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(MKL REQUIRED)
-target_link_libraries(cosma PUBLIC 
-  MPI::MPI_CXX 
-  OpenMP::OpenMP_CXX 
+target_link_libraries(cosma PUBLIC
+  MPI::MPI_CXX
+  OpenMP::OpenMP_CXX
   MKL::MKL
   )
+
 target_compile_definitions(cosma PUBLIC COSMA_WITH_MKL)
 
 ################

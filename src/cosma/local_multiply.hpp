@@ -1,6 +1,16 @@
 #pragma once
-
+#include <cosma/timer.hpp>
 #include <cosma/context.hpp>
+#include <cosma/blas.hpp>
+
+#include <chrono>
+#include <vector>
+#include <semiprof.hpp>
+
+#ifdef COSMA_HAVE_GPU
+#include <tiled_mm.hpp>
+#endif
+
 
 namespace cosma {
 

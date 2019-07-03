@@ -1,6 +1,6 @@
 #include <cosma/blas.hpp>
 namespace cosma {
-void dgemm(const int M,
+void gemm(const int M,
            const int N,
            const int K,
            const double alpha,
@@ -27,7 +27,7 @@ void dgemm(const int M,
                 ldc);
 }
 
-void dgemm(const int M,
+void gemm(const int M,
            const int N,
            const int K,
            const std::complex<double> alpha,
@@ -54,7 +54,7 @@ void dgemm(const int M,
                 ldc);
 }
 
-void dgemm(const int M,
+void gemm(const int M,
            const int N,
            const int K,
            const float alpha,
@@ -81,7 +81,7 @@ void dgemm(const int M,
                 ldc);
 }
 
-void dgemm(const int M,
+void gemm(const int M,
            const int N,
            const int K,
            const std::complex<float> alpha,

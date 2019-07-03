@@ -164,17 +164,17 @@ bool run(Strategy &s,
             offsetB += local_size_B;
         }
         // Now compute the result
-        cosma::dgemm(m,
-                     n,
-                     k,
-                     Scalar{1.0},
-                     globA.data(),
-                     m,
-                     globB.data(),
-                     k,
-                     Scalar{0.0},
-                     globCcheck.data(),
-                     m);
+        cosma::gemm(m,
+                    n,
+                    k,
+                    Scalar{1.0},
+                    globA.data(),
+                    m,
+                    globB.data(),
+                    k,
+                    Scalar{0.0},
+                    globCcheck.data(),
+                    m);
 #ifdef DEBUG
         std::cout << "Complete matrix A: " << std::endl;
         for (int i = 0; i < m; i++) {
