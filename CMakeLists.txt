@@ -35,8 +35,10 @@ add_library(cosma STATIC
   "${cosma_SOURCE_DIR}/src/cosma/strategy.cpp"
   )
 message(STATUS ${cosma_SOURCE_DIR})
-target_include_directories(cosma PUBLIC ${cosma_SOURCE_DIR}/src)
-#target_link_libraries(cosma ${cosma_deps} /opt/cray/dmapp/7.1.1-6.0.7.0_34.3__g5a674e0.ari/lib64/libdmapp.so)
+target_include_directories(cosma PUBLIC 
+  $<BUILD_INTERFACE:${cosma_SOURCE_DIR}/src>
+  $<INSTALL_INTERFACE:include>
+  )
 
 # Submodules dependencies:
 #   grid2grid, options, semiprof, TiledMM
@@ -69,9 +71,8 @@ target_link_libraries(cosma PUBLIC
   )
 target_compile_definitions(cosma PUBLIC COSMA_WITH_MKL)
 
-################
-#  ScaLAPACK   #
-################
+# ScaLAPACK
+#
 if(NOT "${COSMA_SCALAPACK_LIBRARY}" STREQUAL "")
     message("scalapack library = ${COSMA_SCALAPACK_LIBRARY}")
     include(cosma_scalapack)
@@ -79,9 +80,8 @@ if(NOT "${COSMA_SCALAPACK_LIBRARY}" STREQUAL "")
     target_link_libraries(cosma ${COSMA_SCALAPACK_LIBRARY})
 endif()
 
-################
-# CUDA support #
-################
+# CUDA support
+#
 option(COSMA_WITH_CUDA "use CUDA GPU backend for base case" OFF)
 if(COSMA_WITH_CUDA)
     enable_language(CUDA)
@@ -90,26 +90,62 @@ if(COSMA_WITH_CUDA)
     target_compile_options(cosma PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:"-arch=sm_60">) 
 endif()
 
-#################################
-#          PROFILER             #
-#################################
+# PROFILER
+#
 option(COSMA_WITH_PROFILING "use the semiprof profiler" OFF)
 if(COSMA_WITH_PROFILING)
     add_definitions(-DSEMIPROF)
 endif()
 
-#############
-#  Testing  #
-#############
+# Installation
+#
+if (COSMA_NOT_SUBPROJECT)
+  include(CMakePackageConfigHelpers)
+
+  configure_package_config_file(
+    ${cosma_SOURCE_DIR}/cmake/cosmaConfig.cmake.in
+    ${cosma_BINARY_DIR}/cosmaConfig.cmake
+    INSTALL_DESTINATION lib/cmake/cosma)
+
+  write_basic_package_version_file(
+    "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
+    VERSION ${cosma_VERSION}
+    COMPATIBILITY SameMajorVersion)
+
+  configure_file("${cosma_SOURCE_DIR}/cmake/cosma.pc.in"
+                 "${cosma_BINARY_DIR}/cosma.pc"
+                 @ONLY)
+
+  install(TARGETS cosma 
+          EXPORT cosmaTargets 
+          LIBRARY DESTINATION lib)
+          #INCLUDES DESTINATION include/cosma)
+  
+  install(EXPORT cosmaTargets
+          FILE cosmaTargets.cmake
+          NAMESPACE cosma::
+          DESTINATION lib/cmake/cosma)
+
+  install(DIRECTORY src/cosma 
+          DESTINATION include
+          FILES_MATCHING PATTERN "*.hpp")
+
+  install(FILES ${cosma_BINARY_DIR}/cosmaConfig.cmake
+                ${cosma_BINARY_DIR}/cosmaConfigVersion.cmake
+          DESTINATION lib/cmake/cosma)
+  
+  install(FILES ${cosma_BINARY_DIR}/cosma.pc
+          DESTINATION lib/pkgconfig/cosma.pc)
+endif()
+
+# Testing
+#
 if(COSMA_NOT_SUBPROJECT)
   enable_testing()
   include(CTest)
   add_subdirectory(tests)
 endif()
 
-#####################################
-#  Adding various code directories  #
-#####################################
 add_subdirectory(libs)
 add_subdirectory(miniapp)
 add_subdirectory(benchmarks)
