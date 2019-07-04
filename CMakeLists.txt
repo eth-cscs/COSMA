@@ -9,9 +9,10 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 project(cosma VERSION 0.1 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+# COSMA options
+#
+option(COSMA_WITH_CUDA "use CUDA GPU backend for base case" OFF)
+option(COSMA_WITH_PROFILING "use the semiprof profiler" OFF)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING
@@ -36,7 +37,7 @@ add_library(cosma STATIC
   )
 message(STATUS ${cosma_SOURCE_DIR})
 target_include_directories(cosma PUBLIC ${cosma_SOURCE_DIR}/src)
-#target_link_libraries(cosma ${cosma_deps} /opt/cray/dmapp/7.1.1-6.0.7.0_34.3__g5a674e0.ari/lib64/libdmapp.so)
+target_compile_features(cosma PUBLIC cxx_std_14)
 
 # Submodules dependencies:
 #   grid2grid, options, semiprof, TiledMM
@@ -82,7 +83,6 @@ endif()
 ################
 # CUDA support #
 ################
-option(COSMA_WITH_CUDA "use CUDA GPU backend for base case" OFF)
 if(COSMA_WITH_CUDA)
     enable_language(CUDA)
     target_compile_definitions(cosma PRIVATE -DCOSMA_HAVE_GPU)
@@ -93,7 +93,6 @@ endif()
 #################################
 #          PROFILER             #
 #################################
-option(COSMA_WITH_PROFILING "use the semiprof profiler" OFF)
 if(COSMA_WITH_PROFILING)
     add_definitions(-DSEMIPROF)
 endif()
