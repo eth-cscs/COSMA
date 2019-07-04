@@ -87,6 +87,7 @@ if(NOT "${COSMA_SCALAPACK_LIBRARY}" STREQUAL "")
     message("scalapack library = ${COSMA_SCALAPACK_LIBRARY}")
     include(cosma_scalapack)
     cosma_find_scalapack()
+    message("SCALAPACK library = ${COSMA_SCALAPACK_LIBRARY}")
     target_link_libraries(cosma PUBLIC ${COSMA_SCALAPACK_LIBRARY})
 endif()
 

@@ -81,9 +81,9 @@ long run(MPI_Comm comm = MPI_COMM_WORLD) {
     std::array<int, 9> desc_b;
     std::array<int, 9> desc_c;
     int info;
-    Cblacs_descinit(&desc_a[0], &m, &k, &bm, &bk, &rsrc, &csrc, &ctxt, &nrows_a, &info);
-    Cblacs_descinit(&desc_b[0], &k, &n, &bk, &bn, &rsrc, &csrc, &ctxt, &nrows_b, &info);
-    Cblacs_descinit(&desc_c[0], &m, &n, &bm, &bn, &rsrc, &csrc, &ctxt, &nrows_c, &info);
+    descinit(&desc_a[0], &m, &k, &bm, &bk, &rsrc, &csrc, &ctxt, &nrows_a, &info);
+    descinit(&desc_b[0], &k, &n, &bk, &bn, &rsrc, &csrc, &ctxt, &nrows_b, &info);
+    descinit(&desc_c[0], &m, &n, &bm, &bn, &rsrc, &csrc, &ctxt, &nrows_c, &info);
 
     // fill the matrices with random data
     srand48(rank);

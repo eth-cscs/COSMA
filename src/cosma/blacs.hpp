@@ -9,7 +9,7 @@
 
 namespace cosma {
 extern "C" {
-    void Cblacs_descinit(int* desc, const int* m, const int* n, const int* mb, const int* nb,
+    void descinit(int* desc, const int* m, const int* n, const int* mb, const int* nb,
            const int* irsrc, const int* icsrc, const int* ictxt, const int* lld, int* info);
     int numroc(int n, int nb, int iproc, int isrcproc, int nprocs);
     // Initialization
