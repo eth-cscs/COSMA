@@ -7,14 +7,18 @@
 #include <semiprof.hpp>
 
 #include <algorithm>
+#include <atomic>
+#include <condition_variable>
 #include <chrono>
 #include <complex>
 #include <cstring>
 #include <future>
 #include <iostream>
+#include <mutex>
 #include <stdlib.h>
 #include <thread>
 #include <tuple>
+#include <vector>
 
 namespace cosma {
 

@@ -6,11 +6,6 @@
 
 #include <mpi.h>
 
-#include <atomic>
-#include <condition_variable>
-#include <mutex>
-#include <vector>
-
 namespace cosma {
 
 namespace one_sided_communicator {
