@@ -66,8 +66,8 @@ find_package(MKL REQUIRED)
 target_link_libraries(cosma 
   PUBLIC 
     MPI::MPI_CXX 
-    MKL::MKL
   PRIVATE
+    MKL::MKL
     OpenMP::OpenMP_CXX 
   )
 target_compile_definitions(cosma PUBLIC COSMA_WITH_MKL)
