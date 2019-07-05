@@ -102,9 +102,23 @@ endif()
 if (COSMA_NOT_SUBPROJECT)
   include(CMakePackageConfigHelpers)
 
+  install(TARGETS cosma
+          EXPORT cosma_targets 
+          LIBRARY DESTINATION lib)
+          #INCLUDES DESTINATION include/cosma)
+
+  install(EXPORT cosma_targets
+          FILE cosmaTargets.cmake
+          NAMESPACE cosma::
+          DESTINATION lib/cmake/cosma)
+
+  install(DIRECTORY src/cosma 
+          DESTINATION include
+          FILES_MATCHING PATTERN "*.hpp")
+
   configure_package_config_file(
-    ${cosma_SOURCE_DIR}/cmake/cosmaConfig.cmake.in
-    ${cosma_BINARY_DIR}/cosmaConfig.cmake
+    "${cosma_SOURCE_DIR}/cmake/cosmaConfig.cmake.in"
+    "${cosma_BINARY_DIR}/cosmaConfig.cmake"
     INSTALL_DESTINATION lib/cmake/cosma)
 
   write_basic_package_version_file(
@@ -116,26 +130,13 @@ if (COSMA_NOT_SUBPROJECT)
                  "${cosma_BINARY_DIR}/cosma.pc"
                  @ONLY)
 
-  install(TARGETS cosma 
-          EXPORT cosmaTargets 
-          LIBRARY DESTINATION lib)
-          #INCLUDES DESTINATION include/cosma)
-  
-  install(EXPORT cosmaTargets
-          FILE cosmaTargets.cmake
-          NAMESPACE cosma::
-          DESTINATION lib/cmake/cosma)
-
-  install(DIRECTORY src/cosma 
-          DESTINATION include
-          FILES_MATCHING PATTERN "*.hpp")
-
-  install(FILES ${cosma_BINARY_DIR}/cosmaConfig.cmake
-                ${cosma_BINARY_DIR}/cosmaConfigVersion.cmake
+  install(FILES "${cosma_BINARY_DIR}/cosmaConfig.cmake"
+                "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
           DESTINATION lib/cmake/cosma)
   
   install(FILES ${cosma_BINARY_DIR}/cosma.pc
           DESTINATION lib/pkgconfig/cosma.pc)
+  
 endif()
 
 # Testing
