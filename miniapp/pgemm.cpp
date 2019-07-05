@@ -87,13 +87,13 @@ long run(MPI_Comm comm = MPI_COMM_WORLD) {
     std::cout << "My pcoord = " << myrow << ", " << mycol << std::endl;
 
     // describe a problem size
-    int m = 1000;
-    int n = 1000;
-    int k = 1000;
+    int m = 10;
+    int n = 10;
+    int k = 10;
 
-    int bm = 128;
-    int bn = 128;
-    int bk = 128;
+    int bm = 2;
+    int bn = 2;
+    int bk = 2;
 
     char trans_a = 'N';
     char trans_b = 'N';
