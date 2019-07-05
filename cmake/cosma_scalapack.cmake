@@ -56,10 +56,10 @@ function(cosma_find_scalapack)
 
     unset(COSMA_CHECK_LAPACK_INTERNAL CACHE)
     set(CMAKE_REQUIRED_LIBRARIES "${COSMA_LAPACK_LIBRARY}")
-    # Check if LAPACK works (i.e. if dla_find_lapack has been called before).
+    # Check if LAPACK works (i.e. if cosma_find_lapack has been called before).
     CHECK_FUNCTION_EXISTS(dgetrf_ COSMA_CHECK_LAPACK_INTERNAL)
     if (NOT COSMA_CHECK_LAPACK_INTERNAL)
-        message(FATAL_ERROR "LAPACK/BLAS not found. dla_find_lapack has to be called before dla_find_scalapack.")
+        message(FATAL_ERROR "LAPACK/BLAS not found. FindMKL has to be called before cosma_find_scalapack.")
     endif()
     unset(COSMA_CHECK_LAPACK_INTERNAL CACHE)
     unset(CMAKE_REQUIRED_LIBRARIES)

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 # Check if COSMA is bundled, disable test suit if it is.
 #
 if(NOT DEFINED PROJECT_NAME)
-  set(COSMA_NOT_SUBPROJECT ON)
+    set(COSMA_NOT_SUBPROJECT ON)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -16,27 +16,27 @@ option(COSMA_WITH_PROFILING "use the semiprof profiler" OFF)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING
-    "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release." FORCE)
+        "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release." FORCE)
 endif()
 
 # COSMA library
 #
 add_library(cosma STATIC
-  "${cosma_SOURCE_DIR}/src/cosma/blas.cpp"
-  "${cosma_SOURCE_DIR}/src/cosma/buffer.cpp"
-  "${cosma_SOURCE_DIR}/src/cosma/communicator.cpp"
-  "${cosma_SOURCE_DIR}/src/cosma/context.cpp"
-  "${cosma_SOURCE_DIR}/src/cosma/interval.cpp"
-  "${cosma_SOURCE_DIR}/src/cosma/layout.cpp"
-  "${cosma_SOURCE_DIR}/src/cosma/local_multiply.cpp"
-  "${cosma_SOURCE_DIR}/src/cosma/mapper.cpp"
-  "${cosma_SOURCE_DIR}/src/cosma/math_utils.cpp"
-  "${cosma_SOURCE_DIR}/src/cosma/matrix.cpp"
-  "${cosma_SOURCE_DIR}/src/cosma/multiply.cpp"
-  "${cosma_SOURCE_DIR}/src/cosma/one_sided_communicator.cpp"
-  "${cosma_SOURCE_DIR}/src/cosma/strategy.cpp"
-  "${cosma_SOURCE_DIR}/src/cosma/two_sided_communicator.cpp"
-  )
+    "${cosma_SOURCE_DIR}/src/cosma/blas.cpp"
+    "${cosma_SOURCE_DIR}/src/cosma/buffer.cpp"
+    "${cosma_SOURCE_DIR}/src/cosma/communicator.cpp"
+    "${cosma_SOURCE_DIR}/src/cosma/context.cpp"
+    "${cosma_SOURCE_DIR}/src/cosma/interval.cpp"
+    "${cosma_SOURCE_DIR}/src/cosma/layout.cpp"
+    "${cosma_SOURCE_DIR}/src/cosma/local_multiply.cpp"
+    "${cosma_SOURCE_DIR}/src/cosma/mapper.cpp"
+    "${cosma_SOURCE_DIR}/src/cosma/math_utils.cpp"
+    "${cosma_SOURCE_DIR}/src/cosma/matrix.cpp"
+    "${cosma_SOURCE_DIR}/src/cosma/multiply.cpp"
+    "${cosma_SOURCE_DIR}/src/cosma/one_sided_communicator.cpp"
+    "${cosma_SOURCE_DIR}/src/cosma/strategy.cpp"
+    "${cosma_SOURCE_DIR}/src/cosma/two_sided_communicator.cpp"
+    )
 message(STATUS ${cosma_SOURCE_DIR})
 target_include_directories(cosma PUBLIC ${cosma_SOURCE_DIR}/src)
 target_compile_features(cosma PUBLIC cxx_std_14)
@@ -46,17 +46,25 @@ target_compile_features(cosma PUBLIC cxx_std_14)
 #
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${cosma_SOURCE_DIR}/.git")
-  # Update submodules as needed
-  option(GIT_SUBMODULE_CHECK "Check submodules during build" ON)
-  if(GIT_SUBMODULE_CHECK)
-    message(STATUS "Submodule update")
-    execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                    RESULT_VARIABLE GIT_SUBMOD_RESULT)
-    if(NOT GIT_SUBMOD_RESULT EQUAL "0")
-      message(FATAL_ERROR "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+    # Update submodules as needed
+    option(GIT_SUBMODULE_CHECK "Check submodules during build" ON)
+    if(GIT_SUBMODULE_CHECK)
+        message(STATUS "Submodule update")
+        execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            RESULT_VARIABLE GIT_SUBMOD_RESULT)
+        if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+            message(FATAL_ERROR "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+        endif()
+        message(STATUS "Updating submodules to the latest commits")
+        execute_process(COMMAND ${GIT_EXECUTABLE} submodule foreach git pull origin master
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            RESULT_VARIABLE GIT_SUBMOD_RESULT)
+        if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+            message(FATAL_ERROR "git submodule foreach git pull origin master failed with ${GIT_SUBMOD_RESULT}, \
+                please git pull all submodules, to get the latest commits")
+        endif()
     endif()
-  endif()
 endif()
 target_link_libraries(cosma PRIVATE grid2grid semiprof options)
 
@@ -105,9 +113,9 @@ endif()
 #  Testing  #
 #############
 if(COSMA_NOT_SUBPROJECT)
-  enable_testing()
-  include(CTest)
-  add_subdirectory(tests)
+    enable_testing()
+    include(CTest)
+    add_subdirectory(tests)
 endif()
 
 #####################################
