@@ -6,8 +6,6 @@
 #include <cosma/mapper.hpp>
 #include <cosma/strategy.hpp>
 
-#include <semiprof.hpp>
-
 #include <algorithm>
 #include <cassert>
 #include <fstream>

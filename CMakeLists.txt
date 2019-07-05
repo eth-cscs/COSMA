@@ -33,7 +33,9 @@ add_library(cosma STATIC
   "${cosma_SOURCE_DIR}/src/cosma/math_utils.cpp"
   "${cosma_SOURCE_DIR}/src/cosma/matrix.cpp"
   "${cosma_SOURCE_DIR}/src/cosma/multiply.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/one_sided_communicator.cpp"
   "${cosma_SOURCE_DIR}/src/cosma/strategy.cpp"
+  "${cosma_SOURCE_DIR}/src/cosma/two_sided_communicator.cpp"
   )
 message(STATUS ${cosma_SOURCE_DIR})
 target_include_directories(cosma PUBLIC ${cosma_SOURCE_DIR}/src)
@@ -56,7 +58,7 @@ if(GIT_FOUND AND EXISTS "${cosma_SOURCE_DIR}/.git")
     endif()
   endif()
 endif()
-target_link_libraries(cosma PUBLIC grid2grid semiprof options)
+target_link_libraries(cosma PRIVATE grid2grid semiprof options)
 
 # Non-cmake dependencies
 #

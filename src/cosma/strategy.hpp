@@ -2,8 +2,6 @@
 
 #include <cosma/math_utils.hpp>
 
-#include <options.hpp>
-
 #include <iostream>
 #include <limits>
 #include <math.h>
