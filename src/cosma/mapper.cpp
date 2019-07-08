@@ -331,6 +331,7 @@ std::vector<Interval2D> Mapper::local_blocks() {
 
 int Mapper::owner(Interval2D& block) {
     std::pair<int, int> rank_and_offset = range_to_rank_[block];
+    assert(rank_and_offset != range_to_rank_.end());
     return rank_and_offset.first;
 }
 

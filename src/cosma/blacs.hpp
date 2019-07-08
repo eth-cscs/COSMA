@@ -12,6 +12,12 @@ extern "C" {
     void descinit(int* desc, const int* m, const int* n, const int* mb, const int* nb,
            const int* irsrc, const int* icsrc, const int* ictxt, const int* lld, int* info);
     int numroc(int* n, int* nb, int* iproc, int* isrcproc, int* nprocs);
+
+    // void pdgemm(const char trans_a, const char trans_b, const int m, const int n, const int k,
+    //            const double alpha, const double* a, const int ia, const int ja, const int* desca,
+    //            const double* b, const int ib, const int jb, const int* descb, const double beta,
+    //            double* c, const int ic, const int jc, const int* descc) {
+
     // Initialization
     void Cblacs_pinfo(int* mypnum, int* nprocs);
     void Cblacs_setup(int* mypnum, int* nprocs);
