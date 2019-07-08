@@ -305,12 +305,16 @@ grid2grid::grid_layout<T> CosmaMatrix<T>::get_grid_layout() {
     // **************************
     // create a matrix of ranks owning each block
     std::vector<std::vector<int>> owners(n_blocks_row, std::vector<int>(n_blocks_col));
-    for (int i = 0; i < n_blocks_row-1; ++i) {
-        Interval row_interval = Interval(grid.row_interval(i).start, grid.row_interval(i+1).start-1);
+    for (int i = 0; i < n_blocks_row; ++i) {
+        auto r_inter = grid.row_interval(i);
+        Interval row_interval(r_inter.start, r_inter.end-1);
         for (int j = 0; j < n_blocks_col; ++j) {
-            Interval col_interval = Interval(grid.col_interval(j).start, grid.col_interval(j+1).start-1);
+            auto c_inter = grid.col_interval(j);
+            Interval col_interval(c_inter.start, c_inter.end-1);
+
             Interval2D range(row_interval, col_interval);
-            owners[i][j] = mapper_.owner(range);
+            int owner = mapper_.owner(range);
+            owners[i][j] = owner;
         }
     }
 
@@ -333,6 +337,8 @@ grid2grid::grid_layout<T> CosmaMatrix<T>::get_grid_layout() {
 
         grid2grid::block<T> b(assigned_grid, row_interval, col_interval,
                 matrix_pointer()+offset, stride);
+
+        assert(b.non_empty());
 
         loc_blocks.push_back(b);
     }
