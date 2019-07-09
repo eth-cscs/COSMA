@@ -1,7 +1,8 @@
-#include <complex>
 #include <cosma/communicator.hpp>
 #include <cosma/one_sided_communicator.hpp>
 #include <cosma/two_sided_communicator.hpp>
+
+#include <complex>
 
 namespace cosma {
 bool communicator::use_busy_waiting = true;

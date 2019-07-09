@@ -1,4 +1,5 @@
 #include <cosma/strategy.hpp>
+#include <options.hpp>
 
 namespace cosma {
 // constructors
