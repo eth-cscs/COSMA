@@ -1,5 +1,7 @@
 #include <cosma/matrix.hpp>
 
+#include <semiprof.hpp>
+
 #include <complex>
 
 namespace cosma {

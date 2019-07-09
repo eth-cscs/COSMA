@@ -23,7 +23,6 @@ endif()
 #
 add_library(cosma STATIC
     "${cosma_SOURCE_DIR}/src/cosma/blas.cpp"
-    "${cosma_SOURCE_DIR}/src/cosma/blacs.hpp"
     "${cosma_SOURCE_DIR}/src/cosma/scalapack.cpp"
     "${cosma_SOURCE_DIR}/src/cosma/pgemm.cpp"
     "${cosma_SOURCE_DIR}/src/cosma/buffer.cpp"
@@ -36,7 +35,9 @@ add_library(cosma STATIC
     "${cosma_SOURCE_DIR}/src/cosma/math_utils.cpp"
     "${cosma_SOURCE_DIR}/src/cosma/matrix.cpp"
     "${cosma_SOURCE_DIR}/src/cosma/multiply.cpp"
+    "${cosma_SOURCE_DIR}/src/cosma/one_sided_communicator.cpp"
     "${cosma_SOURCE_DIR}/src/cosma/strategy.cpp"
+    "${cosma_SOURCE_DIR}/src/cosma/two_sided_communicator.cpp"
     )
 message(STATUS ${cosma_SOURCE_DIR})
 target_include_directories(cosma PUBLIC ${cosma_SOURCE_DIR}/src)
@@ -67,35 +68,22 @@ if(GIT_FOUND AND EXISTS "${cosma_SOURCE_DIR}/.git")
         endif()
     endif()
 endif()
-target_link_libraries(cosma PUBLIC grid2grid semiprof options)
+target_link_libraries(cosma PRIVATE grid2grid semiprof options)
 
 # Non-cmake dependencies
 #
 find_package(MPI REQUIRED)
-find_package(OpenMP REQUIRED)
 find_package(MKL REQUIRED)
-target_link_libraries(cosma PUBLIC 
+target_link_libraries(cosma 
+  PUBLIC 
     MPI::MPI_CXX 
-    OpenMP::OpenMP_CXX 
+  PRIVATE
     MKL::MKL
-    )
+  )
 target_compile_definitions(cosma PUBLIC COSMA_WITH_MKL)
 
-################
-#  ScaLAPACK   #
-################
-if(NOT "${COSMA_SCALAPACK_LIBRARY}" STREQUAL "")
-    message("scalapack library = ${COSMA_SCALAPACK_LIBRARY}")
-    include(cosma_scalapack)
-    cosma_find_scalapack()
-    message("SCALAPACK library = ${COSMA_SCALAPACK_LIBRARY}")
-    target_link_libraries(cosma PUBLIC ${COSMA_SCALAPACK_LIBRARY})
-    add_definitions(-DCOSMA_WITH_SCALAPACK)
-endif()
-
-################
-# CUDA support #
-################
+# CUDA suppor
+#
 if(COSMA_WITH_CUDA)
     enable_language(CUDA)
     target_compile_definitions(cosma PRIVATE -DCOSMA_HAVE_GPU)

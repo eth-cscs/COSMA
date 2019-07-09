@@ -13,8 +13,6 @@
 #include <stdlib.h>
 #include <tuple>
 
-// #include <omp.h>
-
 namespace cosma {
 class communicator {
   public:
