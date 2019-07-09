@@ -64,23 +64,27 @@ if(GIT_FOUND AND EXISTS "${cosma_SOURCE_DIR}/.git")
             RESULT_VARIABLE GIT_SUBMOD_RESULT)
         if(NOT GIT_SUBMOD_RESULT EQUAL "0")
             message(FATAL_ERROR "git submodule foreach git pull origin master failed with ${GIT_SUBMOD_RESULT}, \
-                please git pull all submodules, to get the latest commits")
+            please git pull all submodules, to get the latest commits")
         endif()
     endif()
 endif()
-target_link_libraries(cosma PRIVATE grid2grid semiprof options)
+target_link_libraries(cosma PUBLIC grid2grid semiprof options)
 
 # Non-cmake dependencies
 #
 find_package(MPI REQUIRED)
 find_package(MKL REQUIRED)
 target_link_libraries(cosma 
-  PUBLIC 
+    PUBLIC 
     MPI::MPI_CXX 
-  PRIVATE
+    PRIVATE
     MKL::MKL
-  )
-target_compile_definitions(cosma PUBLIC COSMA_WITH_MKL)
+    )
+target_compile_definitions(cosma PUBLIC -DCOSMA_WITH_MKL)
+
+if(MKL_MPI_TYPE) 
+    target_compile_definitions(cosma PUBLIC -DCOSMA_WITH_SCALAPACK)
+endif()
 
 # CUDA suppor
 #

@@ -69,9 +69,9 @@ std::tuple<long, long> run_pdgemm(MPI_Comm comm = MPI_COMM_WORLD) {
     int n = 10000;
     int k = 10000;
 
-    int bm = 2;
-    int bn = 2;
-    int bk = 2;
+    int bm = 128;
+    int bn = 128;
+    int bk = 128;
 
     char trans_a = 'N';
     char trans_b = 'N';
@@ -89,8 +89,6 @@ std::tuple<long, long> run_pdgemm(MPI_Comm comm = MPI_COMM_WORLD) {
 
     int rsrc = 0;
     int csrc = 0;
-
-    int iZERO = 0;
 
     int m_global = m + ia - 1;
     int n_global = n + jb - 1;
