@@ -2,12 +2,7 @@
 #pragma once
 #include <mpi.h>
 
-#ifdef COSMA_WITH_MKL
-#include <mkl_blacs.h>
-#else
-#include <cblacs.h>
-#endif
-
+namespace cosma {
 namespace blacs {
 extern "C" {
     // Initialization
@@ -39,6 +34,6 @@ extern "C" {
     int Csys2blacs_handle(MPI_Comm mpi_comm);
     void Cfree_blacs_system_handle(int i_sys_ctxt);
 }
-}
+}}
 #endif
 

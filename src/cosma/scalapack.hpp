@@ -1,43 +1,72 @@
 #ifdef COSMA_WITH_SCALAPACK
 #pragma once
-#include <mpi.h>
-#include "blacs.hpp"
-#include <complex>
+// from std
+#include <cassert>
+// from cosma
+#include <cosma/blacs.hpp>
+// from grid2grid
+#include <scalapack_layout.hpp>
 
-#ifdef COSMA_WITH_MKL
-#include <mkl_scalapack.h>
-#else
-#include <scalapack.h>
-#endif
-
+namespace cosma {
 namespace scalapack {
-extern "C" {
-    void descinit_(int* desc, const int* m, const int* n, const int* mb, const int* nb,
-           const int* irsrc, const int* icsrc, const int* ictxt, const int* lld, int* info);
-    int numroc_(int* n, int* nb, int* iproc, int* isrcproc, int* nprocs);
+struct block_sizes {
+    int m = 0;
+    int n = 0;
+    int k = 0;
 
-    void psgemm_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-            const float* alpha, const float* a, const int* ia, const int* ja, const int* desca,
-            const float* b, const int* ib, const int* jb, const int* descb, const float* beta,
-            float* c, const int* ic, const int* jc, const int* descc);
+    block_sizes() = default;
+    block_sizes(int m, int n, int k): m(m), n(n), k(k) {}
+    block_sizes(const int* desca, const int* descb, const int* descc) {
+        m = desca[4];
+        k = desca[5];
+        n = descb[5];
 
-    void pdgemm_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-            const double* alpha, const double* a, const int* ia, const int* ja, const int* desca,
-            const double* b, const int* ib, const int* jb, const int* descb, const double* beta,
-            double* c, const int* ic, const int* jc, const int* descc);
+        // bk should be equal for A and B
+        assert(desca[5] == descb[4]);
+        // bm should be equal for A and C
+        assert(desca[4] == descc[4]);
+        // bn should be equal to B and C
+        assert(descb[5] == descc[5]);
+    }
+};
 
-    void pcgemm_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-            const std::complex<float>* alpha, const std::complex<float>* a, const int* ia,
-            const int* ja, const int* desca, const std::complex<float>* b, const int* ib,
-            const int* jb, const int* descb, const std::complex<float>* beta,
-            std::complex<float>* c, const int* ic, const int* jc, const int* descc);
+struct global_matrix_sizes {
+    int m = 0;
+    int n = 0;
+    int k = 0;
 
-    void pzgemm_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-            const std::complex<double>* alpha, const std::complex<double>* a, const int* ia,
-            const int* ja, const int* desca, const std::complex<double>* b, const int* ib,
-            const int* jb, const int* descb, const std::complex<double>* beta,
-            std::complex<double>* c, const int* ic, const int* jc, const int* descc);
-}
-}
+    global_matrix_sizes() = default;
+    global_matrix_sizes(int m, int n, int k): m(m), n(n), k(k) {}
+    global_matrix_sizes(const int* desca, const int* descb, const int* descc) {
+        m = desca[2];
+        k = desca[3];
+        n = descb[3];
+
+        // m_global should be equal for A and C
+        assert(desca[2] == descc[2]);
+        // k_global should be equal for A and B
+        assert(desca[3] == descb[2]);
+        // n_global should be equal to B and C
+        assert(descb[3] == descc[3]);
+    }
+};
+
+struct rank_src {
+    int row_src = 0;
+    int col_src = 0;
+
+    rank_src() = default;
+    rank_src(int rsrc, int csrc): row_src(rsrc), col_src(csrc) {}
+    rank_src(const int* desc) {
+        row_src = desc[6];
+        col_src = desc[7];
+    }
+};
+
+grid2grid::scalapack::ordering rank_ordering(int ctxt, int P);
+
+int get_context(const int* desca, const int* descb, const int* descc);
+
+int leading_dimension(const int* desc);
+}}
 #endif
-

@@ -24,8 +24,8 @@ endif()
 add_library(cosma STATIC
     "${cosma_SOURCE_DIR}/src/cosma/blas.cpp"
     "${cosma_SOURCE_DIR}/src/cosma/blacs.hpp"
-    "${cosma_SOURCE_DIR}/src/cosma/scalapack.hpp"
-    "${cosma_SOURCE_DIR}/src/cosma/pdgemm_wrapper.hpp"
+    "${cosma_SOURCE_DIR}/src/cosma/scalapack.cpp"
+    "${cosma_SOURCE_DIR}/src/cosma/pgemm.cpp"
     "${cosma_SOURCE_DIR}/src/cosma/buffer.cpp"
     "${cosma_SOURCE_DIR}/src/cosma/communicator.cpp"
     "${cosma_SOURCE_DIR}/src/cosma/context.cpp"
