@@ -84,7 +84,7 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
         ordering,
         trans_a_flag,
         {rank_src_a.row_src, rank_src_a.col_src},
-        const_cast<T*>(a), rank
+        a, rank
     );
 
     auto scalapack_layout_b = grid2grid::get_scalapack_grid<T>(
@@ -97,7 +97,7 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
         ordering,
         trans_b_flag,
         {rank_src_b.row_src, rank_src_b.col_src},
-        const_cast<T*>(b), rank
+        b, rank
     );
 
     auto scalapack_layout_c = grid2grid::get_scalapack_grid<T>(

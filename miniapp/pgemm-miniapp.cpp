@@ -1,3 +1,4 @@
+#ifdef COSMA_WITH_SCALAPACK
 // from std
 #include <array>
 #include <algorithm>
@@ -305,3 +306,4 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+#endif
