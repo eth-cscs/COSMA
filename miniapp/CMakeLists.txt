@@ -1,7 +1,11 @@
 ################
 #  Build test  #
 ################
-set(executables "cosma-miniapp" "blocking_vs_non_blocking" "cosma-statistics" "scalars_miniapp" "pgemm-miniapp")
+set(executables "cosma-miniapp" "blocking_vs_non_blocking" "cosma-statistics" "scalars_miniapp")
+
+if (MKL_MPI_TYPE)
+    list(APPEND executables "pgemm-miniapp")
+endif()
 
 foreach(exec ${executables})
     add_executable(${exec} "${exec}.cpp")
