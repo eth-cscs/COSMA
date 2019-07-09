@@ -24,6 +24,7 @@ endif()
 add_library(cosma STATIC
     "${cosma_SOURCE_DIR}/src/cosma/blas.cpp"
     "${cosma_SOURCE_DIR}/src/cosma/blacs.hpp"
+    "${cosma_SOURCE_DIR}/src/cosma/scalapack.hpp"
     "${cosma_SOURCE_DIR}/src/cosma/pdgemm_wrapper.hpp"
     "${cosma_SOURCE_DIR}/src/cosma/buffer.cpp"
     "${cosma_SOURCE_DIR}/src/cosma/communicator.cpp"
@@ -89,6 +90,7 @@ if(NOT "${COSMA_SCALAPACK_LIBRARY}" STREQUAL "")
     cosma_find_scalapack()
     message("SCALAPACK library = ${COSMA_SCALAPACK_LIBRARY}")
     target_link_libraries(cosma PUBLIC ${COSMA_SCALAPACK_LIBRARY})
+    add_definitions(-DCOSMA_WITH_SCALAPACK)
 endif()
 
 ################

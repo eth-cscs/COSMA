@@ -1,3 +1,5 @@
+#include <cosma/blacs.hpp>
+#include <cosma/scalapack.hpp>
 #include <cosma/pdgemm_wrapper.hpp>
 
 using namespace cosma;
@@ -181,14 +183,14 @@ long run_cosma_with_scalapack(MPI_Comm comm = MPI_COMM_WORLD) {
     // assume we have 2x2 processor grid
     int procrows = 2, proccols = 2;
     std::cout << "Cblacs_pinfo" << std::endl;
-    Cblacs_pinfo(&myid, &numproc);
+    blacs::Cblacs_pinfo(&myid, &numproc);
     std::cout << "Cblacs_get" << std::endl;
-    Cblacs_get(0, 0, &ctxt);
+    blacs::Cblacs_get(0, 0, &ctxt);
     char order = 'R';
     std::cout << "Cblacs_gridinit" << std::endl;
-    Cblacs_gridinit(&ctxt, &order, procrows, proccols);
+    blacs::Cblacs_gridinit(&ctxt, &order, procrows, proccols);
     std::cout << "Cblacs_pcoord" << std::endl;
-    Cblacs_pcoord(ctxt, myid, &myrow, &mycol);
+    blacs::Cblacs_pcoord(ctxt, myid, &myrow, &mycol);
 
     std::cout << "Rank = " << rank << ", myid = " << myid << std::endl;
     std::cout << "My pcoord = " << myrow << ", " << mycol << std::endl;
@@ -246,11 +248,11 @@ long run_cosma_with_scalapack(MPI_Comm comm = MPI_COMM_WORLD) {
     std::array<int, 9> desc_c;
     int info;
     std::cout << "descinit A" << std::endl;
-    descinit(&desc_a[0], &m, &k, &bm, &bk, &rsrc, &csrc, &ctxt, &nrows_a, &info);
+    scalapack::descinit_(&desc_a[0], &m, &k, &bm, &bk, &rsrc, &csrc, &ctxt, &nrows_a, &info);
     std::cout << "descinit B" << std::endl;
-    descinit(&desc_b[0], &k, &n, &bk, &bn, &rsrc, &csrc, &ctxt, &nrows_b, &info);
+    scalapack::descinit_(&desc_b[0], &k, &n, &bk, &bn, &rsrc, &csrc, &ctxt, &nrows_b, &info);
     std::cout << "descinit C" << std::endl;
-    descinit(&desc_c[0], &m, &n, &bm, &bn, &rsrc, &csrc, &ctxt, &nrows_c, &info);
+    scalapack::descinit_(&desc_c[0], &m, &n, &bm, &bn, &rsrc, &csrc, &ctxt, &nrows_c, &info);
 
     // fill the matrices with random data
     std::cout << "Filling up ScaLAPACK matrices with random data." << std::endl;
@@ -271,7 +273,7 @@ long run_cosma_with_scalapack(MPI_Comm comm = MPI_COMM_WORLD) {
     std::cout << "Finished pdgemm_wrapper" << std::endl;
 
     std::cout << "Cblacs_gridexit" << std::endl;
-    Cblacs_gridexit(ctxt);
+    blacs::Cblacs_gridexit(ctxt);
     std::cout << "Cblacs_exit" << std::endl;
 
     return std::chrono::duration_cast<std::chrono::milliseconds>(end - start)

@@ -1,3 +1,4 @@
+#ifdef COSMA_WITH_SCALAPACK
 #include <mpi.h>
 #include <cosma/blacs.hpp>
 #include <cosma/multiply.hpp>
@@ -16,13 +17,13 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
 
     ctxt = desca[1];
 
-    Cblacs_pinfo(&rank, &P);
+    blacs::Cblacs_pinfo(&rank, &P);
     // Cblacs_gridinit(&ctxt, "Row-major", procrows, proccols);
     int procrows, proccols;
-    Cblacs_gridinfo(ctxt, &procrows, &proccols, &myrow, &mycol);
+    blacs::Cblacs_gridinfo(ctxt, &procrows, &proccols, &myrow, &mycol);
     // Cblacs_pcoord(ctxt, myid, &myrow, &mycol);
-    MPI_Comm comm = Cblacs2sys_handle(ctxt);
-    std::cout << "MPI comm = " << comm << std::endl;
+    MPI_Comm comm = blacs::Cblacs2sys_handle(ctxt);
+    // std::cout << "MPI comm = " << comm << std::endl;
 
     int bm = desca[4];
     int bk = descb[4];
@@ -55,7 +56,7 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
         int prow, pcol;
         // check the coordinates of rank 1 to see
         // if the rank grid is row-major or col-major
-        Cblacs_pcoord(ctxt, 1, &prow, &pcol);
+        blacs::Cblacs_pcoord(ctxt, 1, &prow, &pcol);
         if (prow == 0 && pcol == 1) {
             ordering = grid2grid::scalapack::ordering::row_major;
         }
@@ -71,14 +72,14 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
     CosmaMatrix<T> C('C', strategy, rank);
 
     // get abstract layout descriptions for COSMA layout
-    std::cout << "Getting COSMA grid for matrix A." << std::endl;
+    // std::cout << "Getting COSMA grid for matrix A." << std::endl;
     auto cosma_layout_a = A.get_grid_layout();
-    std::cout << "Getting COSMA grid for matrix B." << std::endl;
+    // std::cout << "Getting COSMA grid for matrix B." << std::endl;
     auto cosma_layout_b = B.get_grid_layout();
-    std::cout << "Getting COSMA grid for matrix C." << std::endl;
+    // std::cout << "Getting COSMA grid for matrix C." << std::endl;
     auto cosma_layout_c = C.get_grid_layout();
 
-    std::cout << "Getting scalapack grid for matrix A." << std::endl;
+    // std::cout << "Getting scalapack grid for matrix A." << std::endl;
     // get abstract layout descriptions for ScaLAPACK layout
     auto scalapack_layout_a = grid2grid::get_scalapack_grid<T>(
         lld_a,
@@ -93,7 +94,7 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
         const_cast<T*>(a), rank
     );
 
-    std::cout << "Getting scalapack grid for matrix B." << std::endl;
+    // std::cout << "Getting scalapack grid for matrix B." << std::endl;
     auto scalapack_layout_b = grid2grid::get_scalapack_grid<T>(
         lld_b,
         {k_global, n_global},
@@ -107,7 +108,7 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
         const_cast<T*>(b), rank
     );
 
-    std::cout << "Getting scalapack grid for matrix C." << std::endl;
+    // std::cout << "Getting scalapack grid for matrix C." << std::endl;
     auto scalapack_layout_c = grid2grid::get_scalapack_grid<T>(
         lld_c,
         {m_global, n_global},
@@ -121,28 +122,25 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
         c, rank
     );
 
-    std::cout << "Matrices ready for transformation." << std::endl;
+    // std::cout << "Matrices ready for transformation." << std::endl;
 
     // transform A and B from scalapack to cosma layout
     grid2grid::transform(scalapack_layout_a, cosma_layout_a, comm);
-    std::cout << "A: scalapack->cosma finished" << std::endl;
+    // std::cout << "A: scalapack->cosma finished" << std::endl;
     grid2grid::transform(scalapack_layout_b, cosma_layout_b, comm);
-    std::cout << "B: scalapack->cosma finished" << std::endl;
+    // std::cout << "B: scalapack->cosma finished" << std::endl;
     // grid2grid::transform(scalapack_layout_c, cosma_layout_c, comm);
 
-    std::cout << "Starting COSMA algorithm." << std::endl;
+    // std::cout << "Starting COSMA algorithm." << std::endl;
     auto ctx = cosma::make_context();
     // perform cosma multiplication
     multiply(ctx, A, B, C, strategy, comm, beta);
 
-    std::cout << "Finished COSMA algorithm." << std::endl;
+    // std::cout << "Finished COSMA algorithm." << std::endl;
 
     // transform the result from cosma back to scalapack
     grid2grid::transform(cosma_layout_c, scalapack_layout_c, comm);
-    std::cout << "C: cosma->scalapack finished" << std::endl;
-
-    // Release resources
-    // Cblacs_gridexit(ctxt);
-    // Cfree_blacs_system_handle(comm);
+    // std::cout << "C: cosma->scalapack finished" << std::endl;
 }
 }
+#endif
