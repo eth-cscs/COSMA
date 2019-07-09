@@ -74,27 +74,16 @@ target_link_libraries(cosma PRIVATE grid2grid semiprof options)
 # Non-cmake dependencies
 #
 find_package(MPI REQUIRED)
-find_package(OpenMP REQUIRED)
 find_package(MKL REQUIRED)
 target_link_libraries(cosma 
   PUBLIC 
     MPI::MPI_CXX 
   PRIVATE
     MKL::MKL
-    OpenMP::OpenMP_CXX 
   )
 target_compile_definitions(cosma PUBLIC COSMA_WITH_MKL)
 
-# ScaLAPACK
-#
-if(NOT "${COSMA_SCALAPACK_LIBRARY}" STREQUAL "")
-    message("scalapack library = ${COSMA_SCALAPACK_LIBRARY}")
-    include(cosma_scalapack)
-    cosma_find_scalapack()
-    target_link_libraries(cosma ${COSMA_SCALAPACK_LIBRARY})
-endif()
-
-# CUDA support
+# CUDA suppor
 #
 if(COSMA_WITH_CUDA)
     enable_language(CUDA)

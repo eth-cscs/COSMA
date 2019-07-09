@@ -1,73 +1,141 @@
-# Uses MKLROOT env. variable or MKL_ROOT variable to find MKL.
+# Uses MKLROOT environment variable or CMake's MKL_ROOT to find MKL.
 #
-# The MKL 32 bit int precision is assumed.
-# 
-# The TBB threading back-end is not supported.
+# Imported Targets: 
+#   MKL::MKL
 #
 # The type of threading for MKL has to be specified using the variable
-#        MKL_THREADING:
-#         - Intel OpenMP
-#         - GNU OpenMP
-#         - Sequential
+#        MKL_THREADING            := IOMP|GOMP           (default: serial)
+#        MKL_USE_64BIT_INTEGERS   := True|False          (default: False)
+#        MKL_MPI_TYPE             := OMPI|MPICH          (default: no ScaLAPACK)
 #
-# Link to MKL::MKL.
-
-# Note: This file is adapted version of Raffaele's dla_lapack.cmake module
-
-include(cosma_utils)
-include(CheckFunctionExists)
+# NOT SUPPORTED
+#   - TBB threading back-end
+#   - F95 interfaces
+#
+# Note: Do not mix GCC and Intel OpenMP.
+#       Do not mix MPI implementations.
+#       The module depends on FindThreads, FindOpenMP and FindMPI (if ScaLAPACK found)
+#
 include(FindPackageHandleStandardArgs)
 
-unset(COSMA_LAPACK_LIBRARY CACHE)
-setoption(COSMA_LAPACK_TYPE STRING "Compiler" "BLAS/LAPACK type setting")
-set_property(CACHE COSMA_LAPACK_TYPE PROPERTY STRINGS Compiler MKL Custom)
+find_path(MKL_INCLUDE_DIR mkl.h
+    HINTS
+        $ENV{MKLROOT}/include
+        ${MKL_ROOT}/include
+)
+mark_as_advanced(MKL_INCLUDE_DIR)
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "Intel" OR ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set(MKL_THREADING_OPTIONS Sequential "Intel OpenMP")
-    set(MKL_THREADING_DEFAULT "Intel OpenMP")
-else()
-    set(MKL_THREADING_OPTIONS Sequential "GNU OpenMP" "Intel OpenMP")
-    set(MKL_THREADING_DEFAULT "GNU OpenMP")
-endif()
-setoption(MKL_THREADING STRING "${MKL_THREADING_DEFAULT}" "MKL Threading support")
-set_property(CACHE MKL_THREADING PROPERTY STRINGS ${MKL_THREADING_OPTIONS})
-
-setoption(MKL_ROOT PATH $ENV{MKLROOT} "Intel MKL path")
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set(MKL_LIB_DIR "-L${MKL_ROOT}/lib -Wl,-rpath,${MKL_ROOT}/lib")
-else()
-    set(MKL_LIB_DIR "-L${MKL_ROOT}/lib/intel64")
+set(_mkl_libpath_suffix "lib/intel64")
+if(CMAKE_SIZEOF_VOID_P EQUAL 4) # 32 bit
+    set(_mkl_libpath_suffix "lib/ia32")
 endif()
 
-if(MKL_THREADING MATCHES "Sequential")
-    set(MKL_THREAD_LIB "-lmkl_sequential")
-elseif(MKL_THREADING MATCHES "GNU OpenMP")
-    set(MKL_THREAD_LIB "-lmkl_gnu_thread -fopenmp")
-elseif(MKL_THREADING MATCHES "Intel OpenMP")
-    if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-        setoption(INTEL_LIBS_ROOT PATH "/opt/intel/lib" "Path to Intel libraries")
-        find_library(IOMP5_LIB iomp5 HINTS "${INTEL_LIBS_ROOT}" NO_DEFAULT_PATH)
-        if (IOMP5_LIB MATCHES "IOMP5_LIB-NOTFOUND")
-            message(FATAL_ERROR "libiomp5 not found, please set INTEL_LIBS_ROOT correctly")
-        endif()
-        set(IOMP5_LIB_INTERNAL "-Wl,-rpath,${INTEL_LIBS_ROOT} ${IOMP5_LIB}")
-    else()
-        set(IOMP5_LIB_INTERNAL "-liomp5")
+if (WIN32)
+    string(APPEND _mkl_libpath_suffix "_win")
+elseif (APPLE)
+    string(APPEND _mkl_libpath_suffix "_mac")
+else ()
+    string(APPEND _mkl_libpath_suffix "_lin")
+endif ()
+
+function(__mkl_find_library _name)
+    find_library(${_name}
+        NAMES ${ARGN}
+        HINTS ENV MKLROOT
+              ${MKL_ROOT}
+        PATH_SUFFIXES ${_mkl_libpath_suffix}
+    )
+    mark_as_advanced(${_name})
+endfunction()
+
+__mkl_find_library(MKL_CORE_LIB mkl_core)
+
+if(NOT MKL_THREADING)
+  __mkl_find_library(MKL_THREADING_LIB mkl_sequential)
+elseif(MKL_THREADING MATCHES "GOMP")
+  __mkl_find_library(MKL_THREADING_LIB mkl_gnu_thread)
+elseif(MKL_THREADING MATCHES "IOMP")
+  __mkl_find_library(MKL_THREADING_LIB mkl_intel_thread)
+endif()
+
+if(NOT MKL_USE_64BIT_INTEGERS)
+  __mkl_find_library(MKL_INTERFACE_LIB mkl_intel_lp64)
+else()
+  __mkl_find_library(MKL_INTERFACE_LIB mkl_intel_ilp64)
+endif()
+
+find_package_handle_standard_args(MKL 
+  DEFAULT_MSG  MKL_CORE_LIB
+               MKL_THREADING_LIB
+               MKL_INTERFACE_LIB
+               MKL_INCLUDE_DIR
+  )
+
+# ScaLAPACK
+# 
+if(MKL_MPI_TYPE)
+  __mkl_find_library(MKL_SCALAPACK_LIB mkl_scalapack_lp64)
+  if (MKL_MPI_TYPE MATCHES "MPICH")
+    __mkl_find_library(MKL_BLACS_LIB mkl_blacs_intelmpi_lp64)
+  elseif(MKL_MPI_TYPE MATCHES "OMPI")
+    __mkl_find_library(MKL_BLACS_LIB mkl_blacs_openmpi_lp64)
+  endif()
+
+  find_package_handle_standard_args(MKL_SCALAPACK 
+    DEFAULT_MSG MKL_BLACS_LIB
+                MKL_SCALAPACK_LIB
+  )
+endif()
+
+if (MKL_FOUND AND NOT TARGET MKL::MKL)
+    find_package(Threads REQUIRED)
+    add_library(MKL::CORE UNKNOWN IMPORTED)
+    set_target_properties(MKL::CORE PROPERTIES 
+      IMPORTED_LOCATION ${MKL_CORE_LIB}
+      INTERFACE_LINK_LIBRARIES Threads::Threads)
+
+    if(MKL_THREADING)
+      find_package(OpenMP REQUIRED)
+      set_target_properties(MKL::CORE PROPERTIES 
+        INTERFACE_LINK_LIBRARIES OpenMP::OpenMP_CXX)
     endif()
-    set(MKL_THREAD_LIB "-lmkl_intel_thread ${IOMP5_LIB_INTERNAL}")
+
+    if(MKL_MPI_TYPE)
+      add_library(MKL::BLACS UNKNOWN IMPORTED)
+      set_target_properties(MKL::BLACS PROPERTIES 
+        IMPORTED_LOCATION ${MKL_BLACS_LIB})
+      set_target_properties(MKL::CORE PROPERTIES 
+        INTERFACE_LINK_LIBRARIES MKL::BLACS)
+    endif()
+
+    add_library(MKL::THREADING UNKNOWN IMPORTED)
+    set_target_properties(MKL::THREADING PROPERTIES 
+        IMPORTED_LOCATION ${MKL_THREADING_LIB}
+        INTERFACE_LINK_LIBRARIES MKL::CORE)
+
+    add_library(MKL::BLAS_INTERFACE UNKNOWN IMPORTED)
+    set_target_properties(MKL::BLAS_INTERFACE PROPERTIES 
+      IMPORTED_LOCATION ${MKL_INTERFACE_LIB}
+      INTERFACE_LINK_LIBRARIES MKL::THREADING)
+
+    # The MKL::MKL target
+    #
+    add_library(MKL::MKL INTERFACE IMPORTED)
+    set_target_properties(MKL::MKL PROPERTIES 
+      INTERFACE_INCLUDE_DIRECTORIES "${MKL_INCLUDE_DIR}"
+      INTERFACE_LINK_LIBRARIES MKL::BLAS_INTERFACE)
+
+    if(MKL_MPI_TYPE)
+      add_library(MKL::SCALAPACK UNKNOWN IMPORTED)
+      set_target_properties(MKL::SCALAPACK PROPERTIES 
+        IMPORTED_LOCATION ${MKL_SCALAPACK_LIB}
+        INTERFACE_LINK_LIBRARIES MKL::BLAS_INTERFACE)
+
+      set_target_properties(MKL::MKL PROPERTIES 
+        INTERFACE_LINK_LIBRARIES MKL::SCALAPACK)
+    else()
+      set_target_properties(MKL::MKL PROPERTIES 
+        INTERFACE_LINK_LIBRARIES MKL::BLAS_INTERFACE)
+    endif()
 endif()
-set(COSMA_LAPACK_INCLUDE_PATH_INTERNAL "${MKL_ROOT}/include")
-set(COSMA_LAPACK_LIB_INTERNAL "${MKL_LIB_DIR} -lmkl_intel_lp64 ${MKL_THREAD_LIB} -lmkl_core -lpthread -lm -ldl")
-
-set(COSMA_LAPACK_INCLUDE_PATH "${COSMA_LAPACK_INCLUDE_PATH_INTERNAL}" CACHE PATH "BLAS/LAPACK include path (autogenerated)")
-separate_arguments(TMP UNIX_COMMAND "${COSMA_LAPACK_LIB_INTERNAL}")
-set(COSMA_LAPACK_LIBRARY "${TMP}" CACHE PATH "BLAS/LAPACK link line (autogenerated)")
-
-add_library(MKL::MKL INTERFACE IMPORTED)
-set_target_properties(MKL::MKL PROPERTIES INTERFACE_INCLUDE_DIRECTORIES 
-    "${COSMA_LAPACK_INCLUDE_PATH}")
-set_target_properties(MKL::MKL PROPERTIES INTERFACE_LINK_LIBRARIES 
-    "${COSMA_LAPACK_LIBRARY}")
-
-find_package_handle_standard_args(MKL DEFAULT_MSG)
 
