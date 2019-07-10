@@ -1,15 +1,7 @@
-@PACKAGE_INIT@
-
-# Avoid repeatedly including the targets
-#
 if(NOT TARGET cosma::cosma)
   include(CMakeFindDependencyMacro)
   find_dependency(MPI)
-  find_dependency(OpenMP)
   find_dependency(MKL)
 
   include("${CMAKE_CURRENT_LIST_DIR}/cosmaTargets.cmake")
-  check_required_components(cosma)
 endif()
-
-

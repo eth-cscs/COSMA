@@ -37,10 +37,8 @@ add_library(cosma STATIC
     "${cosma_SOURCE_DIR}/src/cosma/strategy.cpp"
     "${cosma_SOURCE_DIR}/src/cosma/two_sided_communicator.cpp"
     )
-message(STATUS ${cosma_SOURCE_DIR})
 target_include_directories(cosma PUBLIC 
   $<BUILD_INTERFACE:${cosma_SOURCE_DIR}/src>
-  $<INSTALL_INTERFACE:include>
   )
 target_compile_features(cosma PUBLIC cxx_std_14)
 
@@ -105,8 +103,8 @@ if (COSMA_NOT_SUBPROJECT)
 
   install(TARGETS cosma
           EXPORT cosma_targets 
-          LIBRARY DESTINATION lib)
-          #INCLUDES DESTINATION include/cosma)
+          LIBRARY DESTINATION lib
+          INCLUDES DESTINATION include/cosma)
 
   install(EXPORT cosma_targets
           FILE cosmaTargets.cmake
@@ -117,11 +115,6 @@ if (COSMA_NOT_SUBPROJECT)
           DESTINATION include
           FILES_MATCHING PATTERN "*.hpp")
 
-  configure_package_config_file(
-    "${cosma_SOURCE_DIR}/cmake/cosmaConfig.cmake.in"
-    "${cosma_BINARY_DIR}/cosmaConfig.cmake"
-    INSTALL_DESTINATION lib/cmake/cosma)
-
   write_basic_package_version_file(
     "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
     VERSION ${cosma_VERSION}
@@ -131,13 +124,12 @@ if (COSMA_NOT_SUBPROJECT)
                  "${cosma_BINARY_DIR}/cosma.pc"
                  @ONLY)
 
-  install(FILES "${cosma_BINARY_DIR}/cosmaConfig.cmake"
+  install(FILES "${cosma_SOURCE_DIR}/cmake/cosmaConfig.cmake"
                 "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
           DESTINATION lib/cmake/cosma)
   
   install(FILES ${cosma_BINARY_DIR}/cosma.pc
           DESTINATION lib/pkgconfig/cosma.pc)
-  
 endif()
 
 # Testing
