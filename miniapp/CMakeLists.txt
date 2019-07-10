@@ -4,7 +4,7 @@
 set(executables "cosma-miniapp" "blocking_vs_non_blocking" "cosma-statistics" "scalars_miniapp")
 
 if (MKL_MPI_TYPE)
-    list(APPEND executables "pgemm-miniapp")
+    list(APPEND executables "pdgemm-miniapp")
 endif()
 
 foreach(exec ${executables})

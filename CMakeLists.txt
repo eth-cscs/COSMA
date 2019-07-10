@@ -86,7 +86,7 @@ if(MKL_MPI_TYPE)
     target_compile_definitions(cosma PUBLIC -DCOSMA_WITH_SCALAPACK)
 endif()
 
-# CUDA suppor
+# CUDA support
 #
 if(COSMA_WITH_CUDA)
     enable_language(CUDA)

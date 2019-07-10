@@ -38,15 +38,21 @@ extern "C" {
             const double* alpha, const double* a, const int* ia, const int* ja, const int* desca,
             const double* b, const int* ib, const int* jb, const int* descb, const double* beta,
             double* c, const int* ic, const int* jc, const int* descc);
+
+    void pdgemm(const char trans_a, const char transb, const int m, const int n, const int k,
+            const double alpha, const double* a, const int ia, const int ja, const int* desca,
+            const double* b, const int ib, const int jb, const int* descb, const double beta,
+            double* c, const int ic, const int jc, const int* descc);
 }
 }
 
-// runs cosma pdgemm wrapper for n_iter times and returns
-// a vector of timings (in milliseconds) of size n_iter
+// runs cosma or scalapack pdgemm wrapper for n_rep times and returns
+// a vector of timings (in milliseconds) of size n_rep
 std::vector<long> run_pdgemm(int m, int n, int k,
         int bm, int bn, int bk,
         int p, int q, 
-        int rank, int n_iter,
+        int rank, int n_rep,
+        std::string algorithm,
         MPI_Comm comm = MPI_COMM_WORLD) {
 
     // ***********************************
@@ -128,39 +134,63 @@ std::vector<long> run_pdgemm(int m, int n, int k,
     fillInt(c);
 
     // vectors to store timings
-    std::vector<long> cosma_times(n_iter);
+    std::vector<long> times(n_rep);
 
     // ***********************************
     //   performing the multiplication
     // ***********************************
-    // run COSMA pdgemm wrapper n_iter times
-    for (int i = 0; i < n_iter; ++i) {
+    // run COSMA or ScaLAPACK pdgemm n_rep times
+    for (int i = 0; i < n_rep; ++i) {
         // refill matrices with random data to avoid
         // reusing the cache in subsequent iterations
         fillInt(a);
         fillInt(b);
 
-        // running COSMA wrapper
-        MPI_Barrier(comm);
-        auto start = std::chrono::steady_clock::now();
-        cosma::pdgemm(trans_a, trans_b, m, n, k,
-               alpha, a.data(), ia, ja, &desc_a[0],
-               b.data(), ib, jb, &desc_b[0], beta,
-               c.data(), ic, jc, &desc_c[0]);
-        MPI_Barrier(comm);
-        auto end = std::chrono::steady_clock::now();
+        long time = 0;
 
-        long cosma_time = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
-        cosma_times[i] = cosma_time;
+        if (algorithm == "cosma") {
+            // ***********************************
+            //          run COSMA PDGEMM
+            // ***********************************
+            // running COSMA wrapper
+            MPI_Barrier(comm);
+            auto start = std::chrono::steady_clock::now();
+            cosma::pdgemm(trans_a, trans_b, m, n, k,
+                   alpha, a.data(), ia, ja, &desc_a[0],
+                   b.data(), ib, jb, &desc_b[0], beta,
+                   c.data(), ic, jc, &desc_c[0]);
+            MPI_Barrier(comm);
+            auto end = std::chrono::steady_clock::now();
+            time = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+        } else {
+            // ***********************************
+            //       run ScaLAPACK PDGEMM
+            // ***********************************
+            // running ScaLAPACK
+            MPI_Barrier(comm);
+            auto start = std::chrono::steady_clock::now();
+            // scalapack::pdgemm_(&trans_a, &trans_b, &m, &n, &k,
+            //        &alpha, a.data(), &ia, &ja, &desc_a[0],
+            //        b.data(), &ib, &jb, &desc_b[0], &beta,
+            //        c.data(), &ic, &jc, &desc_c[0]);
+            scalapack::pdgemm(trans_a, trans_b, m, n, k,
+                   alpha, a.data(), ia, ja, &desc_a[0],
+                   b.data(), ib, jb, &desc_b[0], beta,
+                   c.data(), ic, jc, &desc_c[0]);
+            MPI_Barrier(comm);
+            auto end = std::chrono::steady_clock::now();
+            time = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+        }
+        times[i] = time;
     }
 
     // exit blacs context
     blacs::Cblacs_gridexit(ctxt);
 
     // sort cosma timings in increasing order
-    std::sort(cosma_times.begin(), cosma_times.end());
+    std::sort(times.begin(), times.end());
 
-    return cosma_times;
+    return times;
 }
 
 int main(int argc, char **argv) {
@@ -178,35 +208,75 @@ int main(int argc, char **argv) {
     // **************************************
     //   readout the command line arguments
     // **************************************
+    // matrix dimensions
+    // dim(A) = mxk, dim(B) = kxn, dim(C) = mxn
     auto m = options::next_int("-m", "--m_dim", "number of rows of A and C.", 1000);
     auto n = options::next_int("-n", "--n_dim", "number of columns of B and C.", 1000);
     auto k = options::next_int("-k", "--k_dim", "number of columns of A and rows of B.", 1000);
 
+    // block sizes
     auto bm = options::next_int("-bm", "--m_block", "block size for the number of rows of A and C.", 128);
     auto bn = options::next_int("-bn", "--n_block", "block size for the number of columns of B and C.", 128);
     auto bk = options::next_int("-bk", "--k_block", "block size for the number of columns of A and rows of B.", 128);
 
+    // processor grid decomposition
     auto p = options::next_int("-p", "--p_row", "number of rows in a processor grid.", 1);
     auto q = options::next_int("-q", "--q_row", "number of columns in a processor grid.", P);
+
+    // number of repetitions
+    auto n_rep = options::next_int("-r", "--n_rep", "number of repetitions", 2);
+
+    // choose the algorithm
+    bool scalapack = options::flag_exists("-s", "--scalapack");
+    bool cosma = options::flag_exists("-c", "--cosma");
+
+    std::string algorithm = "cosma";
+    if (scalapack == cosma) {
+        scalapack = false;
+        cosma = true;
+    }
+    if (scalapack) {
+        algorithm = "scalapack";
+        cosma = false;
+    }
+    if (cosma) {
+        scalapack = false;
+        cosma = true;
+        algorithm = "cosma";
+    }
 
     if (p * q != P) {
         std::runtime_error("Number of processors in a grid has to match the number of available ranks.");
     }
 
-    int n_iter = 3;
+    // **************************************
+    //    output the problem description
+    // **************************************
+    if (rank == 0) {
+        std::cout << "Running PDGEMM on the following problem size:" << std::endl;
+        std::cout << "Matrix sizes: (m, n, k) = (" << m << ", " << n << ", " << k << ")" << std::endl;;
+        std::cout << "Block sizes: (bm, bn, bk) = (" << bm << ", " << bn << ", " << bk << ")" << std::endl;;
+        std::cout << "Processor grid: (prows, pcols) = (" << p << ", " << q << ")" << std::endl;;
+        std::cout << "Number of repetitions: " << n_rep << std::endl;
+
+        if (scalapack)
+            std::cout << "PDGEMM algorithm: ScaLAPACK" << std::endl;
+        else
+            std::cout << "PDGEMM algorithm: COSMA" << std::endl;
+    }
 
     // *******************************
     //   perform the multiplication
     // ******************************
-    std::vector<long> cosma_times = 
-        run_pdgemm(m, n, k, bm, bn, bk, p, q, rank, n_iter);
+    std::vector<long> times = 
+        run_pdgemm(m, n, k, bm, bn, bk, p, q, rank, n_rep, algorithm);
 
     // *****************
     //   output times
     // *****************
     if (rank == 0) {
-        std::cout << "COSMA_PDGEMM TIMES [ms] = ";
-        for (auto &time : cosma_times) {
+        std::cout << "PDGEMM TIMES [ms] = ";
+        for (auto &time : times) {
             std::cout << time << " ";
         }
         std::cout << std::endl;
