@@ -45,7 +45,8 @@ extern "C" {
 // a vector of timings (in milliseconds) of size n_rep
 std::vector<long> run_pdgemm(int m, int n, int k,
         int bm, int bn, int bk,
-        int p, int q, 
+        bool ta, bool tb,
+        int p, int q,
         int rank, int n_rep,
         std::string algorithm,
         MPI_Comm comm) {
@@ -63,9 +64,8 @@ std::vector<long> run_pdgemm(int m, int n, int k,
     //   describe the problem parameters
     // ***********************************
     // transpose flags
-    char trans_a = 'N';
-    char trans_b = 'N';
-    char trans_c = 'N';
+    char trans_a = ta ? 'T' : 'N';
+    char trans_b = tb ? 'T' : 'N';
 
     double alpha = 1.0;
     double beta = 0.0;
@@ -217,6 +217,10 @@ int main(int argc, char **argv) {
     // number of repetitions
     auto n_rep = options::next_int("-r", "--n_rep", "number of repetitions", 2);
 
+    // transpose flags
+    bool trans_a = options::flag_exists("-ta", "--trans_a");
+    bool trans_b = options::flag_exists("-tb", "--trans_b");
+
     // choose the algorithm
     bool scalapack = options::flag_exists("-s", "--scalapack");
     bool cosma = options::flag_exists("-c", "--cosma");
@@ -247,6 +251,7 @@ int main(int argc, char **argv) {
         std::cout << "Running PDGEMM on the following problem size:" << std::endl;
         std::cout << "Matrix sizes: (m, n, k) = (" << m << ", " << n << ", " << k << ")" << std::endl;;
         std::cout << "Block sizes: (bm, bn, bk) = (" << bm << ", " << bn << ", " << bk << ")" << std::endl;;
+        std::cout << "Transpose flags (TA, TB) = (" << (trans_a ? "T" : "N") << ", " << (trans_b ? "T" : "N") << ")" << std::endl;
         std::cout << "Processor grid: (prows, pcols) = (" << p << ", " << q << ")" << std::endl;;
         std::cout << "Number of repetitions: " << n_rep << std::endl;
 
@@ -260,7 +265,10 @@ int main(int argc, char **argv) {
     //   perform the multiplication
     // ******************************
     std::vector<long> times = 
-        run_pdgemm(m, n, k, bm, bn, bk, p, q, rank, n_rep, algorithm, MPI_COMM_WORLD);
+        run_pdgemm(m, n, k,
+                   bm, bn, bk,
+                   trans_a, trans_b,
+                   p, q, rank, n_rep, algorithm, MPI_COMM_WORLD);
 
     // *****************
     //   output times
