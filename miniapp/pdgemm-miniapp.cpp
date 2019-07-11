@@ -38,11 +38,6 @@ extern "C" {
             const double* alpha, const double* a, const int* ia, const int* ja, const int* desca,
             const double* b, const int* ib, const int* jb, const int* descb, const double* beta,
             double* c, const int* ic, const int* jc, const int* descc);
-
-    void pdgemm(const char trans_a, const char transb, const int m, const int n, const int k,
-            const double alpha, const double* a, const int ia, const int ja, const int* desca,
-            const double* b, const int ib, const int jb, const int* descb, const double beta,
-            double* c, const int ic, const int jc, const int* descc);
 }
 }
 
@@ -52,17 +47,19 @@ std::vector<long> run_pdgemm(int m, int n, int k,
         int bm, int bn, int bk,
         int p, int q, 
         int rank, int n_rep,
-        std::string algorithm,
-        MPI_Comm comm = MPI_COMM_WORLD) {
+        std::string algorithm) {
 
     // ***********************************
     //   Cblacs context initialization
     // ***********************************
-    int ctxt, myrow, mycol;
-    blacs::Cblacs_get(0, 0, &ctxt);
+    int myrow, mycol, ctxt;
     char order = 'R';
+    blacs::Cblacs_get(0, 0, &ctxt);
     blacs::Cblacs_gridinit(&ctxt, &order, p, q);
+    // blacs::Cblacs_gridinfo(ctxt, &p, &q, &myrow, &mycol);
     blacs::Cblacs_pcoord(ctxt, rank, &myrow, &mycol);
+
+    MPI_Comm comm = blacs::Cblacs2sys_handle(ctxt);
 
     // ***********************************
     //   describe the problem parameters
@@ -169,14 +166,10 @@ std::vector<long> run_pdgemm(int m, int n, int k,
             // running ScaLAPACK
             MPI_Barrier(comm);
             auto start = std::chrono::steady_clock::now();
-            // scalapack::pdgemm_(&trans_a, &trans_b, &m, &n, &k,
-            //        &alpha, a.data(), &ia, &ja, &desc_a[0],
-            //        b.data(), &ib, &jb, &desc_b[0], &beta,
-            //        c.data(), &ic, &jc, &desc_c[0]);
-            scalapack::pdgemm(trans_a, trans_b, m, n, k,
-                   alpha, a.data(), ia, ja, &desc_a[0],
-                   b.data(), ib, jb, &desc_b[0], beta,
-                   c.data(), ic, jc, &desc_c[0]);
+            scalapack::pdgemm_(&trans_a, &trans_b, &m, &n, &k,
+                   &alpha, a.data(), &ia, &ja, &desc_a[0],
+                   b.data(), &ib, &jb, &desc_b[0], &beta,
+                   c.data(), &ic, &jc, &desc_c[0]);
             MPI_Barrier(comm);
             auto end = std::chrono::steady_clock::now();
             time = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();

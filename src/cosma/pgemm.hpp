@@ -1,5 +1,5 @@
 #ifdef COSMA_WITH_SCALAPACK
-
+#pragma once
 /*
  * This is a COSMA backend for matrices given in ScaLAPACK format.
  * It is less efficient than using cosma::multiply directly with COSMA data layout.
