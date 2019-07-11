@@ -1,7 +1,7 @@
 ################
 #  Build test  #
 ################
-set(executables "cosma-miniapp" "blocking_vs_non_blocking" "cosma-statistics" "scalars_miniapp")
+set(executables "cosma-miniapp" "blocking_vs_non_blocking" "cosma-statistics" "scalars_miniapp" "blacs_test")
 
 if (MKL_MPI_TYPE)
     list(APPEND executables "pdgemm-miniapp")
