@@ -65,7 +65,9 @@ struct rank_src {
 
 grid2grid::scalapack::ordering rank_ordering(int ctxt, int P);
 
-int get_context(const int* desca, const int* descb, const int* descc);
+int get_grid_context(const int* desca, const int* descb, const int* descc);
+int get_comm_context(const int grid_context);
+MPI_Comm get_communicator(const int comm_context);
 
 int leading_dimension(const int* desc);
 }}

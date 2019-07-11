@@ -16,7 +16,7 @@ grid2grid::scalapack::ordering cosma::scalapack::rank_ordering(int ctxt, int P) 
     return ordering;
 }
 
-int cosma::scalapack::get_context(const int* desca, const int* descb, const int* descc) {
+int cosma::scalapack::get_grid_context(const int* desca, const int* descb, const int* descc) {
     int ctxt = desca[1];
     // all matrices should belong to the same context
     assert(desca[1] == descb[1]);
@@ -26,5 +26,17 @@ int cosma::scalapack::get_context(const int* desca, const int* descb, const int*
 
 int cosma::scalapack::leading_dimension(const int* desc) {
     return desc[8];
+}
+
+int cosma::scalapack::get_comm_context(const int grid_context) {
+    int comm_context;
+    blacs::Cblacs_get(grid_context, 10, &comm_context);
+    return comm_context;
+}
+
+MPI_Comm cosma::scalapack::get_communicator(const int grid_context) {
+    int comm_context = get_comm_context(grid_context);
+    MPI_Comm comm = blacs::Cblacs2sys_handle(comm_context);
+    return comm;
 }
 #endif

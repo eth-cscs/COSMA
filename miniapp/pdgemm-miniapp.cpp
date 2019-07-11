@@ -47,19 +47,17 @@ std::vector<long> run_pdgemm(int m, int n, int k,
         int bm, int bn, int bk,
         int p, int q, 
         int rank, int n_rep,
-        std::string algorithm) {
+        std::string algorithm,
+        MPI_Comm comm) {
 
     // ***********************************
     //   Cblacs context initialization
     // ***********************************
     int myrow, mycol, ctxt;
     char order = 'R';
-    blacs::Cblacs_get(0, 0, &ctxt);
+    ctxt = blacs::Csys2blacs_handle(comm);
     blacs::Cblacs_gridinit(&ctxt, &order, p, q);
-    // blacs::Cblacs_gridinfo(ctxt, &p, &q, &myrow, &mycol);
     blacs::Cblacs_pcoord(ctxt, rank, &myrow, &mycol);
-
-    MPI_Comm comm = blacs::Cblacs2sys_handle(ctxt);
 
     // ***********************************
     //   describe the problem parameters
@@ -262,7 +260,7 @@ int main(int argc, char **argv) {
     //   perform the multiplication
     // ******************************
     std::vector<long> times = 
-        run_pdgemm(m, n, k, bm, bn, bk, p, q, rank, n_rep, algorithm);
+        run_pdgemm(m, n, k, bm, bn, bk, p, q, rank, n_rep, algorithm, MPI_COMM_WORLD);
 
     // *****************
     //   output times

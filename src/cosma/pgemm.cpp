@@ -19,7 +19,7 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
            const T* b, const int ib, const int jb, const int* descb, const T beta,
            T* c, const int ic, const int jc, const int* descc) {
     // blas context
-    int ctxt = scalapack::get_context(desca, descb, descc);
+    int ctxt = scalapack::get_grid_context(desca, descb, descc);
 
     // communicator size and rank
     int rank, P;
@@ -31,7 +31,7 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
     blacs::Cblacs_gridinfo(ctxt, &procrows, &proccols, &myrow, &mycol);
 
     // get MPI communicator
-    MPI_Comm comm = blacs::Cblacs2sys_handle(ctxt);
+    MPI_Comm comm = scalapack::get_communicator(ctxt);
 
     // block sizes
     scalapack::block_sizes b_dims(desca, descb, descc);
