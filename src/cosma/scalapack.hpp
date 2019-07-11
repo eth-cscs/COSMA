@@ -65,9 +65,13 @@ struct rank_src {
 
 grid2grid::scalapack::ordering rank_ordering(int ctxt, int P);
 
+// gets the grid context from descriptors of A, B and C and compares
+// if all three matrices belong to the same context
 int get_grid_context(const int* desca, const int* descb, const int* descc);
+// gets the communication blacs context from the grid blacs context
 int get_comm_context(const int grid_context);
-MPI_Comm get_communicator(const int comm_context);
+// gets the MPI communicator from the grid blacs context
+MPI_Comm get_communicator(const int grid_context);
 
 int leading_dimension(const int* desc);
 }}

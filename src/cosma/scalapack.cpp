@@ -28,12 +28,14 @@ int cosma::scalapack::leading_dimension(const int* desc) {
     return desc[8];
 }
 
+// queries the grid blacs context to get the communication blacs context
 int cosma::scalapack::get_comm_context(const int grid_context) {
     int comm_context;
     blacs::Cblacs_get(grid_context, 10, &comm_context);
     return comm_context;
 }
 
+// gets MPI_Comm from the grid blacs context
 MPI_Comm cosma::scalapack::get_communicator(const int grid_context) {
     int comm_context = get_comm_context(grid_context);
     MPI_Comm comm = blacs::Cblacs2sys_handle(comm_context);
