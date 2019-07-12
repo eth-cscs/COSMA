@@ -9,17 +9,17 @@ add_custom_target(tests COMMENT "Builds all tests if any.")
 ################
 #  Build test  #
 ################
-add_executable(test.cosma cosma-test.cpp)
+add_executable(test.cosma cosma_test.cpp)
 target_link_libraries(test.cosma PRIVATE cosma)
 target_include_directories(test.cosma PRIVATE .)
 
 if (MKL_MPI_TYPE)
-    add_executable(test.cosma_pdgemm cosma-pdgemm-test.cpp)
+    add_executable(test.cosma_pdgemm cosma_pdgemm_test.cpp)
     target_link_libraries(test.cosma_pdgemm PRIVATE cosma)
     target_include_directories(test.cosma_pdgemm PRIVATE .)
 endif()
 
-add_executable(test.strategy test-strategy.cpp)
+add_executable(test.strategy test_strategy.cpp)
 target_link_libraries(test.strategy PRIVATE cosma)
 add_test(NAME test.strategy COMMAND test.strategy)
 add_dependencies(tests test.strategy)

@@ -34,7 +34,7 @@ extern "C" {
            const int* irsrc, const int* icsrc, const int* ictxt, const int* lld, int* info);
     int numroc_(int* n, int* nb, int* iproc, int* isrcproc, int* nprocs);
 
-    void pdgemm_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+    void pdgemm_(const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
             const double* alpha, const double* a, const int* ia, const int* ja, const int* desca,
             const double* b, const int* ib, const int* jb, const int* descb, const double* beta,
             double* c, const int* ic, const int* jc, const int* descc);
@@ -43,12 +43,12 @@ extern "C" {
 
 // runs cosma or scalapack pdgemm wrapper for n_rep times and returns
 // a vector of timings (in milliseconds) of size n_rep
-std::vector<long> run_pdgemm(int m, int n, int k,
-        int bm, int bn, int bk,
-        bool ta, bool tb,
-        int p, int q,
+std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
+        int bm, int bn, int bk, // blocks sizes
+        char trans_a, char trans_b, // transpose flags
+        int p, int q, // processor grid
         int rank, int n_rep,
-        std::string algorithm,
+        std::string algorithm, // cosma or scalapack
         MPI_Comm comm) {
 
     // ***********************************
@@ -56,17 +56,14 @@ std::vector<long> run_pdgemm(int m, int n, int k,
     // ***********************************
     int myrow, mycol, ctxt;
     char order = 'R';
-    ctxt = blacs::Csys2blacs_handle(comm);
+    blacs::Cblacs_get(0, 0, &ctxt);
+    // ctxt = blacs::Csys2blacs_handle(comm);
     blacs::Cblacs_gridinit(&ctxt, &order, p, q);
     blacs::Cblacs_pcoord(ctxt, rank, &myrow, &mycol);
 
     // ***********************************
     //   describe the problem parameters
     // ***********************************
-    // transpose flags
-    char trans_a = ta ? 'T' : 'N';
-    char trans_b = tb ? 'T' : 'N';
-
     double alpha = 1.0;
     double beta = 0.0;
 
@@ -221,6 +218,9 @@ int main(int argc, char **argv) {
     bool trans_a = options::flag_exists("-ta", "--trans_a");
     bool trans_b = options::flag_exists("-tb", "--trans_b");
 
+    char ta = trans_a ? 'T' : 'N';
+    char tb = trans_b ? 'T' : 'N';
+
     // choose the algorithm
     bool scalapack = options::flag_exists("-s", "--scalapack");
     bool cosma = options::flag_exists("-c", "--cosma");
@@ -251,7 +251,7 @@ int main(int argc, char **argv) {
         std::cout << "Running PDGEMM on the following problem size:" << std::endl;
         std::cout << "Matrix sizes: (m, n, k) = (" << m << ", " << n << ", " << k << ")" << std::endl;;
         std::cout << "Block sizes: (bm, bn, bk) = (" << bm << ", " << bn << ", " << bk << ")" << std::endl;;
-        std::cout << "Transpose flags (TA, TB) = (" << (trans_a ? "T" : "N") << ", " << (trans_b ? "T" : "N") << ")" << std::endl;
+        std::cout << "Transpose flags (TA, TB) = (" << ta << ", " << tb << ")" << std::endl;
         std::cout << "Processor grid: (prows, pcols) = (" << p << ", " << q << ")" << std::endl;;
         std::cout << "Number of repetitions: " << n_rep << std::endl;
 
@@ -267,7 +267,7 @@ int main(int argc, char **argv) {
     std::vector<long> times = 
         run_pdgemm(m, n, k,
                    bm, bn, bk,
-                   trans_a, trans_b,
+                   ta, tb,
                    p, q, rank, n_rep, algorithm, MPI_COMM_WORLD);
 
     // *****************

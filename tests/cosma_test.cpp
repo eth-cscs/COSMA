@@ -1,6 +1,6 @@
 #include <cosma/blas.hpp>
 
-#include <cosma-run.hpp>
+#include <cosma_run.hpp>
 
 #include <algorithm>
 #include <cctype>
