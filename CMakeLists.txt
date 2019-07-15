@@ -42,35 +42,11 @@ target_include_directories(cosma PUBLIC
   )
 target_compile_features(cosma PUBLIC cxx_std_14)
 
-# Submodules dependencies:
-#   grid2grid, options, semiprof, TiledMM
-#
-find_package(Git QUIET)
-if(GIT_FOUND AND EXISTS "${cosma_SOURCE_DIR}/.git")
-    # Update submodules as needed
-    option(GIT_SUBMODULE_CHECK "Check submodules during build" ON)
-    if(GIT_SUBMODULE_CHECK)
-        message(STATUS "Submodule update")
-        execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            RESULT_VARIABLE GIT_SUBMOD_RESULT)
-        if(NOT GIT_SUBMOD_RESULT EQUAL "0")
-            message(FATAL_ERROR "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
-        endif()
-        message(STATUS "Updating submodules to the latest commits")
-        execute_process(COMMAND ${GIT_EXECUTABLE} submodule foreach git pull origin master
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            RESULT_VARIABLE GIT_SUBMOD_RESULT)
-        if(NOT GIT_SUBMOD_RESULT EQUAL "0")
-            message(FATAL_ERROR "git submodule foreach git pull origin master failed with ${GIT_SUBMOD_RESULT}, \
-                please git pull all submodules, to get the latest commits")
-        endif()
-    endif()
-endif()
-target_link_libraries(cosma PRIVATE grid2grid semiprof options)
-
 # Non-cmake dependencies
 #
+find_package(grid2grid REQUIRED)
+find_package(semiprof REQUIRED)
+find_package(options REQUIRED)
 find_package(MPI REQUIRED)
 find_package(MKL REQUIRED)
 target_link_libraries(cosma 
@@ -78,6 +54,9 @@ target_link_libraries(cosma
     MPI::MPI_CXX 
   PRIVATE
     MKL::MKL
+    grid2grid::grid2grid 
+    semiprof::semiprof 
+    options::options
   )
 target_compile_definitions(cosma PUBLIC COSMA_WITH_MKL)
 
