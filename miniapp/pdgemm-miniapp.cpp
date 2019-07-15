@@ -89,22 +89,32 @@ std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
     // m, n, k are just sizes that we want to multiply
     // starting from (ia-1, ja-1), (ib-1, jb-1) and (ic-1, jc-1)
     // this makes the global problem size m+ia-1, n+jb-1, k+ja-1
-    int m_global = m + ia - 1;
-    int n_global = n + jb - 1;
-    int k_global = k + ja - 1;
+    int am = (trans_a == 'N' ? m : k) + ia - 1;
+    int an = (trans_a == 'N' ? k : m) + ja - 1;
+    int bm = (trans_b == 'N' ? k : n) + ib - 1;
+    int bn = (trans_b == 'N' ? n : k) + jb - 1;
+    int cm = m + ic - 1;
+    int cn = n + jc - 1;
 
+    // This is for compatible blocks
+    // in general p*gemm works for any combination of them
+    int bam = trans_a == 'N' ? bm : bk;
+    int ban = trans_a == 'N' ? bk : bm;
+    int bbm = trans_b == 'N' ? bk : bn;
+    int bbn = trans_b == 'N' ? bn : bk;
+    
     // ********************************************
     //   allocate scalapack buffers for matrices
     // ********************************************
     // get the local number of rows that this rank owns
-    int nrows_a = scalapack::numroc_(&m_global, &bm, &myrow, &rsrc, &p);
-    int nrows_b = scalapack::numroc_(&k_global, &bk, &myrow, &rsrc, &p);
-    int nrows_c = scalapack::numroc_(&m_global, &bm, &myrow, &rsrc, &p);
+    int nrows_a = scalapack::numroc_(&bam, &bm, &myrow, &rsrc, &p);
+    int nrows_b = scalapack::numroc_(&bbm, &bk, &myrow, &rsrc, &p);
+    int nrows_c = scalapack::numroc_(&cm, &bm, &myrow, &rsrc, &p);
 
     // get the local number of cols that this rank owns
-    int ncols_a = scalapack::numroc_(&k_global, &bk, &mycol, &csrc, &q);
-    int ncols_b = scalapack::numroc_(&n_global, &bn, &mycol, &csrc, &q);
-    int ncols_c = scalapack::numroc_(&n_global, &bn, &mycol, &csrc, &q);
+    int ncols_a = scalapack::numroc_(&ban, &bk, &mycol, &csrc, &q);
+    int ncols_b = scalapack::numroc_(&bbn, &bn, &mycol, &csrc, &q);
+    int ncols_c = scalapack::numroc_(&cn, &bn, &mycol, &csrc, &q);
 
     // allocate size for the local buffers
     std::vector<double> a(nrows_a * ncols_a);
@@ -117,9 +127,9 @@ std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
     std::array<int, 9> desc_b;
     std::array<int, 9> desc_c;
     int info;
-    scalapack::descinit_(&desc_a[0], &m_global, &k_global, &bm, &bk, &rsrc, &csrc, &ctxt, &nrows_a, &info);
-    scalapack::descinit_(&desc_b[0], &k_global, &n_global, &bk, &bn, &rsrc, &csrc, &ctxt, &nrows_b, &info);
-    scalapack::descinit_(&desc_c[0], &m_global, &n_global, &bm, &bn, &rsrc, &csrc, &ctxt, &nrows_c, &info);
+    scalapack::descinit_(&desc_a[0], &am, &an, &bam, &ban, &rsrc, &csrc, &ctxt, &nrows_a, &info);
+    scalapack::descinit_(&desc_b[0], &bm, &bn, &bbm, &bbn, &rsrc, &csrc, &ctxt, &nrows_b, &info);
+    scalapack::descinit_(&desc_c[0], &cm, &cn, &bm, &bn, &rsrc, &csrc, &ctxt, &nrows_c, &info);
 
     // fill the matrices with random data
     srand48(rank);
