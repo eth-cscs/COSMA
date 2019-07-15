@@ -34,10 +34,14 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
     MPI_Comm comm = scalapack::get_communicator(ctxt);
 
     // block sizes
-    scalapack::block_sizes b_dims(desca, descb, descc);
+    scalapack::block_size b_dim_a(desca);
+    scalapack::block_size b_dim_b(descb);
+    scalapack::block_size b_dim_c(descc);
 
     // global matrix sizes
-    scalapack::global_matrix_sizes m_dims(desca, descb, descc);
+    scalapack::global_matrix_size mat_dim_a(desca);
+    scalapack::global_matrix_size mat_dim_b(descb);
+    scalapack::global_matrix_size mat_dim_c(descc);
 
     // rank sources (rank coordinates that own first row and column of a matrix)
     scalapack::rank_src rank_src_a(desca);
@@ -73,10 +77,10 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
     // get abstract layout descriptions for ScaLAPACK layout
     auto scalapack_layout_a = grid2grid::get_scalapack_grid<T>(
         lld_a,
-        {m_dims.m, m_dims.k},
+        {mat_dim_a.rows, mat_dim_a.cols},
         {ia, ja},
         {m, k},
-        {b_dims.m, b_dims.k},
+        {b_dim_a.rows, b_dim_a.cols},
         {procrows, proccols},
         ordering,
         trans_a_flag,
@@ -86,10 +90,10 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
 
     auto scalapack_layout_b = grid2grid::get_scalapack_grid<T>(
         lld_b,
-        {m_dims.k, m_dims.n},
+        {mat_dim_b.rows, mat_dim_b.cols},
         {ib, jb},
         {k, n},
-        {b_dims.k, b_dims.n},
+        {b_dim_b.rows, b_dim_b.cols},
         {procrows, proccols},
         ordering,
         trans_b_flag,
@@ -99,10 +103,10 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
 
     auto scalapack_layout_c = grid2grid::get_scalapack_grid<T>(
         lld_c,
-        {m_dims.m, m_dims.n},
+        {mat_dim_c.rows, mat_dim_c.cols},
         {ic, jc},
         {m, n},
-        {b_dims.m, b_dims.n},
+        {b_dim_c.rows, b_dim_c.cols},
         {procrows, proccols},
         ordering,
         trans_c_flag,

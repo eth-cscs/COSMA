@@ -9,45 +9,27 @@
 
 namespace cosma {
 namespace scalapack {
-struct block_sizes {
-    int m = 0;
-    int n = 0;
-    int k = 0;
+struct block_size {
+    int rows = 0;
+    int cols = 0;
 
-    block_sizes() = default;
-    block_sizes(int m, int n, int k): m(m), n(n), k(k) {}
-    block_sizes(const int* desca, const int* descb, const int* descc) {
-        m = desca[4];
-        k = desca[5];
-        n = descb[5];
-
-        // bk should be equal for A and B
-        assert(desca[5] == descb[4]);
-        // bm should be equal for A and C
-        assert(desca[4] == descc[4]);
-        // bn should be equal to B and C
-        assert(descb[5] == descc[5]);
+    block_size() = default;
+    block_size(int rows, int cols): rows(rows), cols(cols) {}
+    block_size(const int* desc) {
+        rows = desca[4];
+        cols = desca[5];
     }
 };
 
-struct global_matrix_sizes {
-    int m = 0;
-    int n = 0;
-    int k = 0;
+struct global_matrix_size {
+    int rows = 0;
+    int cols = 0;
 
-    global_matrix_sizes() = default;
-    global_matrix_sizes(int m, int n, int k): m(m), n(n), k(k) {}
-    global_matrix_sizes(const int* desca, const int* descb, const int* descc) {
-        m = desca[2];
-        k = desca[3];
-        n = descb[3];
-
-        // m_global should be equal for A and C
-        assert(desca[2] == descc[2]);
-        // k_global should be equal for A and B
-        assert(desca[3] == descb[2]);
-        // n_global should be equal to B and C
-        assert(descb[3] == descc[3]);
+    global_matrix_size() = default;
+    global_matrix_size(int rows, int cols): rows(rows), cols(cols) {}
+    global_matrix_size(const int* desc) {
+        rows = desca[2];
+        cols = desca[3];
     }
 };
 
