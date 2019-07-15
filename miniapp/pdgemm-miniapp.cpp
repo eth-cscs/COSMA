@@ -41,10 +41,15 @@ extern "C" {
 }
 }
 
+int transpose_if(char transpose_flag, int row, int col) {
+    return transpose_flag == 'N' ? row : col;
+}
+
 // runs cosma or scalapack pdgemm wrapper for n_rep times and returns
 // a vector of timings (in milliseconds) of size n_rep
 std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
-        int bm, int bn, int bk, // blocks sizes
+        int block_m, int block_n, int block_k, // blocks sizes
+        int sub_m, int sub_n, int sub_k, // defines submatrices
         char trans_a, char trans_b, // transpose flags
         int p, int q, // processor grid
         int rank, int n_rep,
@@ -56,8 +61,8 @@ std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
     // ***********************************
     int myrow, mycol, ctxt;
     char order = 'R';
-    blacs::Cblacs_get(0, 0, &ctxt);
-    // ctxt = blacs::Csys2blacs_handle(comm);
+    // blacs::Cblacs_get(0, 0, &ctxt);
+    ctxt = blacs::Csys2blacs_handle(comm);
     blacs::Cblacs_gridinit(&ctxt, &order, p, q);
     blacs::Cblacs_pcoord(ctxt, rank, &myrow, &mycol);
 
@@ -69,16 +74,16 @@ std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
 
     // start indices of submatrices for multiplication
     // matrix A
-    int ia = 1;
-    int ja = 1;
+    int ia = transpose_if(trans_a, sub_m, sub_k);
+    int ja = transpose_if(trans_a, sub_k, sub_m);
 
     // matrix B
-    int ib = 1;
-    int jb = 1;
+    int ib = transpose_if(trans_b, sub_k, sub_n);
+    int jb = transpose_if(trans_b, sub_n, sub_k);
 
     // matrix C
-    int ic = 1;
-    int jc = 1;
+    int ic = sub_m;
+    int jc = sub_n;
 
     // rank source parameters (row and column of a rank
     // in a rank grid that owns the first row of matrices
@@ -89,32 +94,34 @@ std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
     // m, n, k are just sizes that we want to multiply
     // starting from (ia-1, ja-1), (ib-1, jb-1) and (ic-1, jc-1)
     // this makes the global problem size m+ia-1, n+jb-1, k+ja-1
-    int am = (trans_a == 'N' ? m : k) + ia - 1;
-    int an = (trans_a == 'N' ? k : m) + ja - 1;
-    int bm = (trans_b == 'N' ? k : n) + ib - 1;
-    int bn = (trans_b == 'N' ? n : k) + jb - 1;
+    int am = transpose_if(trans_a, m, k) + ia - 1;
+    int an = transpose_if(trans_a, k, m) + ja - 1;
+    int bm = transpose_if(trans_b, k, n) + ib - 1;
+    int bn = transpose_if(trans_b, n, k) + jb - 1;
     int cm = m + ic - 1;
     int cn = n + jc - 1;
 
     // This is for compatible blocks
     // in general p*gemm works for any combination of them
-    int bam = trans_a == 'N' ? bm : bk;
-    int ban = trans_a == 'N' ? bk : bm;
-    int bbm = trans_b == 'N' ? bk : bn;
-    int bbn = trans_b == 'N' ? bn : bk;
-    
+    int bam = transpose_if(trans_a, block_m, block_k);
+    int ban = transpose_if(trans_a, block_k, block_m);
+    int bbm = transpose_if(trans_b, block_k, block_n);
+    int bbn = transpose_if(trans_b, block_n, block_k);
+    int bcm = block_m;
+    int bcn = block_n;
+
     // ********************************************
     //   allocate scalapack buffers for matrices
     // ********************************************
     // get the local number of rows that this rank owns
-    int nrows_a = scalapack::numroc_(&bam, &bm, &myrow, &rsrc, &p);
-    int nrows_b = scalapack::numroc_(&bbm, &bk, &myrow, &rsrc, &p);
-    int nrows_c = scalapack::numroc_(&cm, &bm, &myrow, &rsrc, &p);
+    int nrows_a = scalapack::numroc_(&am, &bam, &myrow, &rsrc, &p);
+    int nrows_b = scalapack::numroc_(&bm, &bbm, &myrow, &rsrc, &p);
+    int nrows_c = scalapack::numroc_(&cm, &bcm, &myrow, &rsrc, &p);
 
     // get the local number of cols that this rank owns
-    int ncols_a = scalapack::numroc_(&ban, &bk, &mycol, &csrc, &q);
-    int ncols_b = scalapack::numroc_(&bbn, &bn, &mycol, &csrc, &q);
-    int ncols_c = scalapack::numroc_(&cn, &bn, &mycol, &csrc, &q);
+    int ncols_a = scalapack::numroc_(&an, &ban, &mycol, &csrc, &q);
+    int ncols_b = scalapack::numroc_(&bn, &bbn, &mycol, &csrc, &q);
+    int ncols_c = scalapack::numroc_(&cn, &bcn, &mycol, &csrc, &q);
 
     // allocate size for the local buffers
     std::vector<double> a(nrows_a * ncols_a);
@@ -129,7 +136,7 @@ std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
     int info;
     scalapack::descinit_(&desc_a[0], &am, &an, &bam, &ban, &rsrc, &csrc, &ctxt, &nrows_a, &info);
     scalapack::descinit_(&desc_b[0], &bm, &bn, &bbm, &bbn, &rsrc, &csrc, &ctxt, &nrows_b, &info);
-    scalapack::descinit_(&desc_c[0], &cm, &cn, &bm, &bn, &rsrc, &csrc, &ctxt, &nrows_c, &info);
+    scalapack::descinit_(&desc_c[0], &cm, &cn, &bcm, &bcn, &rsrc, &csrc, &ctxt, &nrows_c, &info);
 
     // fill the matrices with random data
     srand48(rank);
@@ -217,6 +224,12 @@ int main(int argc, char **argv) {
     auto bn = options::next_int("-bn", "--n_block", "block size for the number of columns of B and C.", 128);
     auto bk = options::next_int("-bk", "--k_block", "block size for the number of columns of A and rows of B.", 128);
 
+    // indices of submatrices of A, B and C to be multiplied
+    // if 1 then full matrices A and B are multiplied
+    int submatrix_m = 1;
+    int submatrix_n = 1;
+    int submatrix_k = 1;
+
     // processor grid decomposition
     auto p = options::next_int("-p", "--p_row", "number of rows in a processor grid.", 1);
     auto q = options::next_int("-q", "--q_row", "number of columns in a processor grid.", P);
@@ -277,6 +290,7 @@ int main(int argc, char **argv) {
     std::vector<long> times = 
         run_pdgemm(m, n, k,
                    bm, bn, bk,
+                   submatrix_m, submatrix_n, submatrix_k,
                    ta, tb,
                    p, q, rank, n_rep, algorithm, MPI_COMM_WORLD);
 
