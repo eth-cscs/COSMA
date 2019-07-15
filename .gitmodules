@@ -1,15 +1,6 @@
-[submodule "libs/grid2grid"]
-	path = libs/grid2grid
-	url = https://github.com/kabicm/grid2grid
 [submodule "libs/Tiled-MM"]
 	path = libs/Tiled-MM
 	url = https://github.com/kabicm/Tiled-MM.git
-[submodule "libs/options"]
-	path = libs/options
-	url = https://github.com/kabicm/options
-[submodule "libs/semiprof"]
-	path = libs/semiprof
-	url = https://github.com/kabicm/semiprof
 [submodule "libs/gtest_mpi"]
 	path = libs/gtest_mpi
 	url = https://github.com/teonnik/gtest_mpi.git
