@@ -79,19 +79,20 @@ endif()
 #
 if (COSMA_NOT_SUBPROJECT)
   include(CMakePackageConfigHelpers)
+  include(GNUInstallDirs)
 
   install(TARGETS cosma
           EXPORT cosma_targets 
-          LIBRARY DESTINATION lib
-          INCLUDES DESTINATION include/cosma)
+          LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+          INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
   install(EXPORT cosma_targets
           FILE cosmaTargets.cmake
           NAMESPACE cosma::
-          DESTINATION lib/cmake/cosma)
+          DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
 
-  install(DIRECTORY src/cosma 
-          DESTINATION include
+  install(DIRECTORY "${cosma_SOURCE_DIR}/src/cosma" 
+          DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
           FILES_MATCHING PATTERN "*.hpp")
 
   write_basic_package_version_file(
@@ -103,12 +104,17 @@ if (COSMA_NOT_SUBPROJECT)
                  "${cosma_BINARY_DIR}/cosma.pc"
                  @ONLY)
 
-  install(FILES "${cosma_SOURCE_DIR}/cmake/cosmaConfig.cmake"
+  configure_file("${cosma_SOURCE_DIR}/cmake/cosmaConfig.cmake.in"
+                 "${cosma_BINARY_DIR}/cosmaConfig.cmake"
+                 @ONLY)
+
+  install(FILES "${cosma_BINARY_DIR}/cosmaConfig.cmake"
                 "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
-          DESTINATION lib/cmake/cosma)
+                "${cosma_SOURCE_DIR}/cmake/FindMKL.cmake"
+          DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
   
-  install(FILES ${cosma_BINARY_DIR}/cosma.pc
-          DESTINATION lib/pkgconfig/cosma.pc)
+  install(FILES "${cosma_BINARY_DIR}/cosma.pc"
+          DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 endif()
 
 # Testing
