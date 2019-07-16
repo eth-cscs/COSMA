@@ -43,6 +43,16 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
     scalapack::global_matrix_size mat_dim_b(descb);
     scalapack::global_matrix_size mat_dim_c(descc);
 
+    // sumatrix size to multiply
+    int a_subm = trans_a == 'N' ? m : k;
+    int a_subn = trans_a == 'N' ? k : m;
+
+    int b_subm = trans_b == 'N' ? k : n;
+    int b_subn = trans_b == 'N' ? n : k;
+
+    int c_subm = m;
+    int c_subn = n;
+
     // rank sources (rank coordinates that own first row and column of a matrix)
     scalapack::rank_src rank_src_a(desca);
     scalapack::rank_src rank_src_b(descb);
@@ -52,11 +62,6 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
     int lld_a = scalapack::leading_dimension(desca);
     int lld_b = scalapack::leading_dimension(descb);
     int lld_c = scalapack::leading_dimension(descc);
-
-    // transpose flags
-    bool trans_a_flag = trans_a == 'N';
-    bool trans_b_flag = trans_b == 'N';
-    bool trans_c_flag = 'N';
 
     // check whether rank grid is row-major or col-major
     auto ordering = scalapack::rank_ordering(ctxt, P);
@@ -79,11 +84,11 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
         lld_a,
         {mat_dim_a.rows, mat_dim_a.cols},
         {ia, ja},
-        {m, k},
+        {a_subm, a_subn},
         {b_dim_a.rows, b_dim_a.cols},
         {procrows, proccols},
         ordering,
-        trans_a_flag,
+        trans_a,
         {rank_src_a.row_src, rank_src_a.col_src},
         a, rank
     );
@@ -92,11 +97,11 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
         lld_b,
         {mat_dim_b.rows, mat_dim_b.cols},
         {ib, jb},
-        {k, n},
+        {b_subm, b_subn},
         {b_dim_b.rows, b_dim_b.cols},
         {procrows, proccols},
         ordering,
-        trans_b_flag,
+        trans_b,
         {rank_src_b.row_src, rank_src_b.col_src},
         b, rank
     );
@@ -105,11 +110,11 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
         lld_c,
         {mat_dim_c.rows, mat_dim_c.cols},
         {ic, jc},
-        {m, n},
+        {c_subm, c_subn},
         {b_dim_c.rows, b_dim_c.cols},
         {procrows, proccols},
         ordering,
-        trans_c_flag,
+        'N',
         {rank_src_c.row_src, rank_src_c.col_src},
         c, rank
     );

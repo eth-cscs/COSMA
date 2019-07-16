@@ -16,8 +16,8 @@ struct block_size {
     block_size() = default;
     block_size(int rows, int cols): rows(rows), cols(cols) {}
     block_size(const int* desc) {
-        rows = desca[4];
-        cols = desca[5];
+        rows = desc[4];
+        cols = desc[5];
     }
 };
 
@@ -28,8 +28,8 @@ struct global_matrix_size {
     global_matrix_size() = default;
     global_matrix_size(int rows, int cols): rows(rows), cols(cols) {}
     global_matrix_size(const int* desc) {
-        rows = desca[2];
-        cols = desca[3];
+        rows = desc[2];
+        cols = desc[3];
     }
 };
 
