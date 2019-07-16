@@ -4,11 +4,6 @@ import os
 import sys
 import tempfile
 import subprocess
-from git import Repo
-
-#
-# Note: install `gitpython` if not installed
-#
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
