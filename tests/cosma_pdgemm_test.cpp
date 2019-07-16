@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
     // *******************************
     //   multiply and validate
     // *******************************
-    bool ok = test_pdgemm(m, n, k, bm, bn, bk, ta, tb, p, q, rank, MPI_COMM_WORLD);
+    bool ok = test_pdgemm(m, n, k, bm, bn, bk, 1, 1, 1, ta, tb, p, q, rank, MPI_COMM_WORLD);
     int result = ok ? 0 : 1;
     int global_result = 0;
 
