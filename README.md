@@ -1,123 +1,73 @@
 # COSMA: Communication-Optimal, S-partition based, Matrix-Multiplication Algorithm
 
 ## Overview
-COSMA is a parallel, high-performance, GPU-accelerated, matrix-matrix mutliplication algorithm that is communication-optimal for all combinations of matrix dimensions, number of processes and memory sizes, without the need of any parameter tuning. The key idea behind COSMA is to first derive a tight optimal sequential schedule and only then parallelize it, preserving I/O optimality between processes. This stands in contrast with the 2D and 3D algorithms, which fix process domain decomposition upfront and then map it to the matrix dimensions, which may result in asymptotically more communication. The final design of COSMA facilitates the overlap of computation and communication, ensuring speedups and applicability of modern mechanisms such as RDMA. COSMA allows to not utilize some processors in order to optimize the processor grid, which reduces the communication volume even further and increases the computation volume per processor.
 
-COSMA alleviates the issues of current state-of-the-art algorithms, which can be summarized as follows:
-- `2D (SUMMA)`: Requires manual tuning and not communication-optimal in the presence of extra memory.
-- `2.5D`: Optimal for `m=n`, but inefficient for `m << n` or `n << m` and for some numbers of processes `p`.
-- `Recursive (CARMA)`: Asymptotically communication-optimal for all `m, n, k, p`, but splitting always the largest dimension might lead up to `√3` increase in communication volume. 
-- `COSMA (this work)`: Strictly communication-optimal (not just asymptotically) for all `m, n, k, p` and memory sizes that yields the speedups by factor of up to 8.3x over the second-fastest algorithm.
+COSMA is a parallel, high-performance, GPU-accelerated, matrix-matrix
+mutliplication algorithm that is communication-optimal for all combinations of
+matrix dimensions, number of processes and memory sizes, without the need of any
+parameter tuning. The key idea behind COSMA is to first derive a tight optimal
+sequential schedule and only then parallelize it, preserving I/O optimality
+between processes. This stands in contrast with the 2D and 3D algorithms, which
+fix process domain decomposition upfront and then map it to the matrix
+dimensions, which may result in asymptotically more communication. The final
+design of COSMA facilitates the overlap of computation and communication,
+ensuring speedups and applicability of modern mechanisms such as RDMA. COSMA
+allows to not utilize some processors in order to optimize the processor grid,
+which reduces the communication volume even further and increases the
+computation volume per processor.
 
-In addition to being communication-optimal, this implementation is higly-optimized to reduce the memory footprint in the following sense:
-- `Buffer Reuse`: all the buffers are pre-allocated and carefully reused during execution, including the buffers necessary for the communication, which reduces the total memory usage.
-- `Reduced Local Data Movement`: the assignment of data blocks to processes is fully adapted to communication pattern, which minimizes the need of local data reshuffling that arise after each communication step.
+COSMA alleviates the issues of current state-of-the-art algorithms, which can be
+summarized as follows:
 
-The library supports both one-sided and two-sided MPI communication backends. It uses `dgemm` for the local computations, but also has a support for the `GPU` acceleration through our `Tiled-MM` library using `cublas` 
+- `2D (SUMMA)`: Requires manual tuning and not communication-optimal in the
+  presence of extra memory.
+- `2.5D`: Optimal for `m=n`, but inefficient for `m << n` or `n << m` and for
+  some numbers of processes `p`.
+- `Recursive (CARMA)`: Asymptotically communication-optimal for all `m, n, k,
+  p`, but splitting always the largest dimension might lead up to `√3` increase
+  in communication volume. 
+- `COSMA (this work)`: Strictly communication-optimal (not just asymptotically)
+  for all `m, n, k, p` and memory sizes that yields the speedups by factor of up
+    to 8.3x over the second-fastest algorithm.
 
-## Building and Installing COSMA
-The library can be built with CMake. The following links can be specified for building:
-- `-DCOSMA_LAPACK_TYPE`: determines which `dgemm` is used. It can have values: `MKL` or `openblas`. If equal to `MKL`, the environment variable `MKLROOT` will be used to find `MKL`. If equal to openblas, the environment variable `BLASROOT` will be used to find `openblas`.
-- `MKL_THREADING`: if MKL is used, then the type of threading can be specified with possible values being `Intel OpenMP`, `GNU OpenMP` or `Sequential`.
+In addition to being communication-optimal, this implementation is
+higly-optimized to reduce the memory footprint in the following sense:
 
-### Example: building on a local computer
+- `Buffer Reuse`: all the buffers are pre-allocated and carefully reused during
+  execution, including the buffers necessary for the communication, which
+  reduces the total memory usage.
+- `Reduced Local Data Movement`: the assignment of data blocks to processes is
+  fully adapted to communication pattern, which minimizes the need of local data
+  reshuffling that arise after each communication step.
+
+The library supports both one-sided and two-sided MPI communication backends. It
+uses `dgemm` for the local computations, but also has a support for the `GPU`
+acceleration through our `Tiled-MM` library using `cublas` 
+
+
+## Building
+
+The project uses submodules, to clone do :
+
 ```bash
-# clone the repository
 git clone --recursive https://github.com/eth-cscs/COSMA.git
-cd COSMA
-
-# specify a path to MKL
-export MKLROOT=/opt/intel/mkl
-
-# build the main project
-mkdir build
-cd build
-
-CC=gcc-8 CXX=g++-8 cmake -DCOSMA_LAPACK_TYPE=MKL -DCMAKE_BUILD_TYPE=Release ..
-
-# compile
-make -j 4
 ```
 
-### Example: building on Cray XC40 systems (CPU-only)
-```bash
-# clone the repository
-git clone --recursive https://github.com/eth-cscs/COSMA.git
-cd COSMA
+CMake is used to build the project. Required dependencies  are `MPI`, `MKL`,
+`grid2grid`, `options` and `semiprof`. The last three dependencies can be
+installed using `scripts/install_dependencies.py`. 
 
-# setup the environment in order to use GNU compilers
-# this is usually required at the cluster
-# but not on a desktop system
-module swap PrgEnv-cray PrgEnv-gnu
+If the GPU backend is used, then `TiledMM` is required. 
 
-# load multicore partition
-module load daint-mc
-# load MKL from intel
-module load intel
-module load CMake
+For unit tests, a required dependency is `gtest_mpi` (a git submodule).
 
-# enable the dynamic linking
-export CRAYPE_LINK_TYPE=dynamic
+The following script provide information on important build variables and
+options: `scripts/build.sh`. The script can be used as a template to build COSMA
+for your system.
 
-# setup the right compilers
-export CC=`which cc`
-export CXX=`which CC`
 
-# build the main project
-mkdir build
-cd build
+## Testing
 
-cmake
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCOSMA_LAPACK_TYPE=MKL \
-  -DMKL_THREADING="GNU OpenMP" \
-  ..
-
-# compile
-make -j 4
-```
-
-### Example: building on Cray XC50 systems (hybrid: CPU + GPU)
-```bash
-# clone the repository
-git clone --recursive https://github.com/eth-cscs/COSMA.git
-cd COSMA
-
-# setup the environment in order to use GNU compilers
-# this is usually required at the cluster
-# but not on a desktop system
-module swap PrgEnv-cray PrgEnv-gnu
-
-# load GPU partition
-module load daint-gpu
-# load MKL from intel
-module load intel
-module load CMake
-# load CUDA
-module load cudatoolkit
-
-# enable the dynamic linking
-export CRAYPE_LINK_TYPE=dynamic
-
-# setup the right compilers
-export CC=`which cc`
-export CXX=`which CC`
-
-# build the main project
-mkdir build
-cd build
-
-cmake
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCOSMA_LAPACK_TYPE=MKL \
-  -DMKL_THREADING="GNU OpenMP" \
-  ..
-
-# compile
-make -j 4
-```
-
-## How to test
 In the build directory, do:
 ```bash
 make test
@@ -126,13 +76,18 @@ make test
 ## Miniapps
 
 ### Matrix Multiplication
-The project contains a miniapp that produces two random matrices `A` and `B`, computes their product `C` with the COSMA algorithm and outputs the time of the multiplication.
 
-The miniapp consists of an executable `./build/miniapp/cosma-miniapp` which can be run with the following command line (assuming we are in the root folder of the project):
+The project contains a miniapp that produces two random matrices `A` and `B`,
+computes their product `C` with the COSMA algorithm and outputs the time of the
+multiplication.
+
+The miniapp consists of an executable `./build/miniapp/cosma-miniapp` which can
+be run with the following command line (assuming we are in the root folder of
+the project):
 
 >### Example:
 >```
->mpirun --oversubscribe -np 4 ./build/miniapp/cosma-miniapp -m 1000 -n 1000 -k 1000 -P 4 -s pm2,sm2,pk2
+>n_iter=1 mpirun --oversubscribe -np 4 ./build/miniapp/cosma-miniapp -m 1000 -n 1000 -k 1000 -P 4 -s pm2,sm2,pk2
 >```
 >The flags have the following meaning:
 >
@@ -151,7 +106,12 @@ The miniapp consists of an executable `./build/miniapp/cosma-miniapp` which can 
 >- `-t (--topology, optional)`: if this flag is present, then ranks might be relabelled such that the ranks which communicate are physically closer to each other. This flag therefore determines whether the topology is communication-aware.
 
 ### Dry-run for statistics
-If interested in the communication or computation volume, maximum buffer size or a maximum local matrix-multiplication size, you can use the dry-run, which simulates the algorithm without actually performing any communication or computation. This dry-run mode is not distributed, even though it simulates a distributed version of COSMA.
+
+If interested in the communication or computation volume, maximum buffer size or
+a maximum local matrix-multiplication size, you can use the dry-run, which
+simulates the algorithm without actually performing any communication or
+computation. This dry-run mode is not distributed, even though it simulates a
+distributed version of COSMA.
 
 >### Example:
 >The meaning of flags is the same as in previous examples. It can be run from the project directory with:
@@ -175,14 +135,20 @@ If interested in the communication or computation volume, maximum buffer size or
 >Local n = 1000
 >Local k = 500
 >```
-All the measurements are given in the units representing the number of elements of the matrix (not in bytes).
+
+All the measurements are given in the units representing the number of elements
+of the matrix (not in bytes).
 
 
-## Profiling the code
-Use `-DCOSMA_WITH_PROFILING=ON` to instrument the code. We use the profiler called `semiprof`, written by Benjamin Cumming (https://github.com/bcumming).
+## Profiling
+
+Use `-DCOSMA_WITH_PROFILING=ON` to instrument the code. We use the profiler
+called `semiprof`, written by Benjamin Cumming (https://github.com/bcumming).
 
 ### Example
-Running the miniapp locally (from the project root folder) with the following command:
+
+Running the miniapp locally (from the project root folder) with the following
+command:
 
 ```bash
 mpirun --oversubscribe -np 4 ./build/miniapp/cosma-miniapp -m 1000 -n 1000 -k 1000 -P 4 -s pm2,sm2,pk2
@@ -208,21 +174,23 @@ _p_       reduce                   3       0.009       0.009     8.3
 _p_     layout                    18       0.000       0.000     0.0
 _p_   preprocessing                3       0.012       0.012    11.3
 ```
-The precentage is always relative to the first level above. All time measurements are in seconds.
-
-### Requirements
-COSMA algorithm uses:
-  - `MPI`
-  - `OpenMP`: only used for changing a distributed matrix layout. COSMA itself does not use OpenMP, but we implement our own threading backend synchronized with atomics.
-  - `dgemm` that is provided either through `MKL` (Intel Parallel Studio XE), `openblas` or `cublas` (GPU).
+The precentage is always relative to the first level above. All time
+measurements are in seconds.
 
 ### Authors
-- Grzegorz Kwasniewski, Marko Kabic, Maciej Besta, Raffaele Solca, Joost VandeVondele, Torsten Hoefler
+
+- Grzegorz Kwasniewski, Marko Kabic, Maciej Besta, Raffaele Solca, Joost
+  VandeVondele, Torsten Hoefler
 
 ### Questions?
+
 For questions, feel free to contact us!
 - For questions regarding theory, contact Grzegorz Kwasniewski (gkwasnie@inf.ethz.ch).
 - For questions regarding the implementation, contact Marko Kabic (marko.kabic@cscs.ch).
 
 ### Ackowledgements
-We thank Thibault Notargiacomo, Sam Yates, Benjamin Cumming and Simon Pintarelli for their generous contribution to the project: great ideas, useful advices and fruitful discussions.
+
+We thank Thibault Notargiacomo, Sam Yates, Benjamin Cumming and Simon Pintarelli
+for their generous contribution to the project: great ideas, useful advices and 
+fruitful discussions.
+

@@ -39,7 +39,9 @@ cd ${COSMA_DIR}/build
 #
 cmake .. \
   -DCMAKE_BUILD_TYPE=Release \
-  -DMKL_THREADING="GNU OpenMP"
+  -DMKL_THREADING="GOMP"
+
+  # DCMAKE_PREFIX_PATH= ???
   #-DBLA_VENDOR="Intel10_64lp" 
 
 # Build all targets.
