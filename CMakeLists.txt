@@ -60,6 +60,11 @@ target_link_libraries(cosma
   )
 target_compile_definitions(cosma PUBLIC COSMA_WITH_MKL)
 
+find_package(ScaLAPACK)
+if(ScaLAPACK_FOUND)
+  # TODO
+endif()
+
 # CUDA suppor
 #
 if(COSMA_WITH_CUDA)
