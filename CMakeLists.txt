@@ -89,6 +89,7 @@ if (COSMA_NOT_SUBPROJECT)
   install(TARGETS cosma
           EXPORT cosma_targets 
           LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+          ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
           INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
   install(EXPORT cosma_targets

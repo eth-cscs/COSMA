@@ -13,21 +13,21 @@ rm -rf CMakeCache.txt CMakeFiles
 #
 # See available options for MKL versions in `cmake/FindMKL.cmake`
 #
-export MKLROOT=/usr
+export MKLROOT="TODO"
 
 # Set the root directories of remaining dependencies.
 #
-GRID2GRID_ROOT="/home/teonnik/software/grid2grid-master"
-OPTIONS_ROOT="/home/teonnik/software/options-master"
-SEMIPROF_ROOT="/home/teonnik/software/semiprof-master"
+GRID2GRID_ROOT="TODO"
+OPTIONS_ROOT="TODO"
+SEMIPROF_ROOT="TODO"
 
 # Set the desired installation directory.
 #
-INSTALL_ROOT="~/software/cosma-0.1"
+INSTALL_ROOT="TODO"
 
 # Set the path to the COSMA source directory.
 #
-SRC_ROOT=".."
+SRC_ROOT="TODO"
 
 # Options:
 # 

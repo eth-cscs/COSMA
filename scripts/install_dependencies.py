@@ -30,14 +30,14 @@ def install_lib(tmppath, prefix, libname):
     build_and_install_cmd = 'cmake --build . --target install'
     os.system('git clone --recursive {url} {clone_dir}'.format(**locals()))
     os.makedirs(build_dir, exist_ok=True)
-    subprocess.run(config_cmd, cwd=build_dir, shell=True)
-    subprocess.run(build_and_install_cmd, cwd=build_dir, shell=True)
+    subprocess.call(config_cmd, cwd=build_dir, shell=True)
+    subprocess.call(build_and_install_cmd, cwd=build_dir, shell=True)
 
     return install_dir
 
 with tempfile.TemporaryDirectory() as tmppath:
     install_dirs = ''
-    for libname in ['grid2grid', 'options', 'semiprof']:
+    for libname in ['options', 'semiprof', 'grid2grid']:
         install_dirs += '{};'.format(install_lib(tmppath, args.prefix, libname)) 
 
     print('\nUse the following CMake parameter: -DCMAKE_PREFIX_PATH="{}"'.format(install_dirs))
