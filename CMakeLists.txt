@@ -69,44 +69,21 @@ if(ScaLAPACK_FOUND)
         ${cosma_src_prefix}/scalapack.cpp
         ${cosma_src_prefix}/pgemm.cpp
         )
-
     target_link_libraries(cosma_with_scalapack PUBLIC cosma MKL::ScaLAPACK)
-
-    check_git_submodule(grid2grid "${cosma_submodules_prefix}/grid2grid")
-    if(NOT grid2grid_avail)
-        find_package(grid2grid REQUIRED)
-        target_link_libraries(cosma PUBLIC grid2grid::grid2grid)
-    else()
-        add_subdirectory("${cosma_submodules_prefix}/grid2grid")
-        target_link_libraries(cosma PUBLIC grid2grid)
-    endif()
 endif()
 
-# options dependency
-check_git_submodule(options "${cosma_submodules_prefix}/options")
-if(NOT options_avail)
-    find_package(options REQUIRED)
-    target_link_libraries(cosma PRIVATE options::options)
-else()
-    add_subdirectory("${cosma_submodules_prefix}/options")
-    target_link_libraries(cosma PRIVATE options)
-    # target_include_directories(cosma PUBLIC 
-    #     $<BUILD_INTERFACE:${cosma_submodules_prefix}/options/src>
-    # )
-endif()
+# mapper.hpp includes grid2grid.... we need it as a hard dependency otherwise 
+# the code fails to compile
+#
+add_subdirectory("${cosma_submodules_prefix}/grid2grid")
+target_link_libraries(cosma PUBLIC grid2grid)
 
-# semiprof dependency
-check_git_submodule(semiprof "${cosma_submodules_prefix}/semiprof")
-if(NOT semiprof_avail)
-    find_package(semiprof REQUIRED)
-    target_link_libraries(cosma PRIVATE semiprof::semiprof)
-else()
-    add_subdirectory("${cosma_submodules_prefix}/semiprof")
-    target_link_libraries(cosma PRIVATE semiprof)
-    # target_include_directories(cosma PUBLIC 
-    #     $<BUILD_INTERFACE:${cosma_submodules_prefix}/semiprof/include/semiprof>
-    # )
-endif()
+add_subdirectory("${cosma_submodules_prefix}/options")
+target_link_libraries(cosma PRIVATE options)
+
+add_subdirectory("${cosma_submodules_prefix}/semiprof")
+target_link_libraries(cosma PRIVATE semiprof)
+
 
 # CUDA support
 #
@@ -115,9 +92,6 @@ if(COSMA_WITH_CUDA)
     target_compile_definitions(cosma PRIVATE -DCOSMA_HAVE_GPU)
     target_link_libraries(cosma PUBLIC cublas Tiled-MM)
     target_compile_options(cosma PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:"-arch=sm_60">) 
-    # target_include_directories(cosma PUBLIC 
-    #     $<BUILD_INTERFACE:${cosma_submodules_prefix}/Tiled-MM>
-    # )
 endif()
 
 # PROFILER
@@ -128,46 +102,44 @@ endif()
 
 # Installation
 #
-if (COSMA_NOT_SUBPROJECT AND NOT grid2grid_avail)
-    include(CMakePackageConfigHelpers)
-    include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
 
-    install(TARGETS cosma
-        EXPORT cosma_targets
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+install(TARGETS cosma
+    EXPORT cosma_targets
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
-    install(EXPORT cosma_targets
-        FILE cosmaTargets.cmake
-        NAMESPACE cosma::
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
+install(EXPORT cosma_targets
+    FILE cosmaTargets.cmake
+    NAMESPACE cosma::
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
 
-    install(DIRECTORY "${cosma_SOURCE_DIR}/src/cosma" 
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-        FILES_MATCHING PATTERN "*.hpp")
+install(DIRECTORY "${cosma_SOURCE_DIR}/src/cosma" 
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    FILES_MATCHING PATTERN "*.hpp")
 
-    write_basic_package_version_file(
-        "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
-        VERSION ${cosma_VERSION}
-        COMPATIBILITY SameMajorVersion)
+write_basic_package_version_file(
+    "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
+    VERSION ${cosma_VERSION}
+    COMPATIBILITY SameMajorVersion)
 
-    configure_file("${cosma_SOURCE_DIR}/cmake/cosma.pc.in"
-        "${cosma_BINARY_DIR}/cosma.pc"
-        @ONLY)
+configure_file("${cosma_SOURCE_DIR}/cmake/cosma.pc.in"
+    "${cosma_BINARY_DIR}/cosma.pc"
+    @ONLY)
 
-    configure_file("${cosma_SOURCE_DIR}/cmake/cosmaConfig.cmake.in"
-        "${cosma_BINARY_DIR}/cosmaConfig.cmake"
-        @ONLY)
+configure_file("${cosma_SOURCE_DIR}/cmake/cosmaConfig.cmake.in"
+    "${cosma_BINARY_DIR}/cosmaConfig.cmake"
+    @ONLY)
 
-    install(FILES "${cosma_BINARY_DIR}/cosmaConfig.cmake"
-        "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
-        "${cosma_SOURCE_DIR}/cmake/FindMKL.cmake"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
+install(FILES "${cosma_BINARY_DIR}/cosmaConfig.cmake"
+    "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
+    "${cosma_SOURCE_DIR}/cmake/FindMKL.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
 
-    install(FILES "${cosma_BINARY_DIR}/cosma.pc"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
-endif()
+install(FILES "${cosma_BINARY_DIR}/cosma.pc"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 
 # Testing
 #
