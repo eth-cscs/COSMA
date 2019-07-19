@@ -45,28 +45,53 @@ uses `dgemm` for the local computations, but also has a support for the `GPU`
 acceleration through our `Tiled-MM` library using `cublas` 
 
 
-## Building
+## Building and Compiling the Library
 
-The project uses submodules, to clone do :
+The project uses submodules, to clone do (don't forget the recursive flag!):
 
 ```bash
 git clone --recursive https://github.com/eth-cscs/COSMA.git
 ```
 
-CMake is used to build the project. Required dependencies  are `MPI`, `MKL`,
-`grid2grid`, `options` and `semiprof`. The last three dependencies can be
-installed using `scripts/install_dependencies.py`. 
+The easiest way to build the project is to do the following within the project folder:
+```bash
+# make a folder for building
+mkdir build
+cd build
 
-If the GPU backend is used, then `TiledMM` is required. 
+# building the library
+# specify MKL threading and MPI library to be used
+# MKL threading to be used:
+#   - "GOMP": for GNU OpenMP or 
+#   - "IOMP": for Intel OpenMP
+# MPI to be used:
+#   - "MPICH": for MPICH
+#   - "OMPI": for OpenMPI
+# specify which MPI library is used:
+cmake -DMKL_THREADING="GOMP" -DMKL_MPI_TYPE="MPICH" ..
 
-For unit tests, a required dependency is `gtest_mpi` (a git submodule).
+# compiling the library
+make -j 4
+```
+This will automatically download the required dependencies as submodules.
+
+Once the library is installed, you can try running some examples with the provided script:
+```bash
+sbatch schedule_miniapp_on_daint.sh
+```
+The script will use SLURM to submit a job on 64 nodes. The job will run 2 matrix multiplications and output the time COSMA algorithm took.
+
+## Advanced Users
+
+Required dependencies  are `MPI`, `OpenMP`, `MKL`, `grid2grid`, `options` and `semiprof`. If GPU backend is used, then one more dependency is `Tiled-MM` for the local multiplication of matrices. For unit tests, a required dependency is `gtest_mpi` (a git submodule).
+
+For advanced users, who do not want to use submodules, but would rather like to install the library and its dependencies independently, the following python script can be used: `scripts/install_dependencies.py`.
 
 The following script provide information on important build variables and
 options: `scripts/build.sh`. The script can be used as a template to build COSMA
 for your system.
 
-
-## Testing
+### Testing
 
 To build all test targets:
 
@@ -83,7 +108,7 @@ ctest
 Note: `COSMA_IS_OPENMPI=ON` has to be set if OpenMPI is used.
 
 
-## Installing
+### Installing
 
 To install do `make install`. 
 
@@ -140,6 +165,29 @@ The flags have the following meaning:
   relabelled such that the ranks which communicate are physically closer to each
   other. This flag therefore determines whether the topology is
   communication-aware.
+
+### COSMA PDGEMM Wrapper
+
+COSMA also contains a wrapper for ScaLAPACK `pxgemm` calls which offers scalapack interface (pxgemm functions with exactly the same signatures as ScaLAPACK). Running these functions will take care of transforming the matrices between ScaLAPACK and COSMA data layout, perform the multiplication using COSMA algorithm and transform the result back to the specified ScaLAPACK data layout.
+
+The miniapp consists of an executable `./build/miniapp/pdgemm-miniapp` which can
+be run with the following command line on Piz Daint (assuming we are in the root folder of
+the project):
+
+```
+OMP_NUM_THREADS=18 MKL_NUM_THREADS=18 srun -C mc -N 8 -n 16 ./miniapp/pdgemm-miniapp -m 1000 -n 1000 -k 1000 -p 4 -q 4 -bm 128 -bn 128 -bk 128 --trans_a
+```
+
+The flags have the following meaning:
+
+- `-m (--m_dim)`: number of rows of matrices `A` and `C`
+- `-n (--n_dim)`: number of columns of matrices `B` and `C`
+- `-k (--k_dim)`: number of columns of matrix `A` and rows of matrix `B`
+- `-bm (--m_block)` (optional, default 128): block size for dimension m
+- `-bn (--n_block)` (optional, default 128): block size for dimension n
+- `-bk (--k_block)` (optional, default 128): block size for dimension k
+- `-ta (--trans_a)` (optional, default: no transpose): transpose A before mutliplication
+- `-tb (--trans_b)` (optional, default: no transpose): transpose B before mutliplication
 
 ### Dry-run for statistics
 

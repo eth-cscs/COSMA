@@ -24,10 +24,9 @@ include(git_utils)
 # COSMA library
 #
 set(cosma_src_prefix "${cosma_SOURCE_DIR}/src/cosma")
-add_library(cosma STATIC
+
+set(cosma_src_files 
     "${cosma_src_prefix}/blas.cpp"
-    "${cosma_src_prefix}/scalapack.cpp"
-    "${cosma_src_prefix}/pgemm.cpp"
     "${cosma_src_prefix}/buffer.cpp"
     "${cosma_src_prefix}/communicator.cpp"
     "${cosma_src_prefix}/context.cpp"
@@ -42,6 +41,8 @@ add_library(cosma STATIC
     "${cosma_src_prefix}/strategy.cpp"
     "${cosma_src_prefix}/two_sided_communicator.cpp"
     )
+add_library(cosma STATIC ${cosma_src_files})
+
 target_include_directories(cosma PUBLIC 
     $<BUILD_INTERFACE:${cosma_SOURCE_DIR}/src>
     )
@@ -64,6 +65,13 @@ set(cosma_submodules_prefix "${PROJECT_SOURCE_DIR}/libs")
 # grid2grid dependency
 find_package(ScaLAPACK)
 if(ScaLAPACK_FOUND)
+    add_library(cosma_with_scalapack STATIC
+        ${cosma_src_prefix}/scalapack.cpp
+        ${cosma_src_prefix}/pgemm.cpp
+        )
+
+    target_link_libraries(cosma_with_scalapack PUBLIC cosma MKL::ScaLAPACK)
+
     check_git_submodule(grid2grid "${cosma_submodules_prefix}/grid2grid")
     if(NOT grid2grid_avail)
         find_package(grid2grid REQUIRED)
