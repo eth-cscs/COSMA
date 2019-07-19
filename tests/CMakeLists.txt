@@ -41,6 +41,16 @@ add_test(NAME test.multiply
                  ${MPIEXEC_NUMPROC_FLAG} 16 test.multiply)
 add_dependencies(tests test.multiply)
 
+if(MKL_MPI_TYPE)
+    add_executable(test.pdgemm test_pdgemm.cpp unit_test_mpi.cpp)
+    target_link_libraries(test.pdgemm PRIVATE gtest_mpi cosma)
+    target_include_directories(test.pdgemm PRIVATE .)
+    add_test(NAME test.pdgemm
+             COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
+                     ${MPIEXEC_NUMPROC_FLAG} 6 test.pdgemm)
+    add_dependencies(tests test.pdgemm)
+endif()
+
 add_executable(test.scalar_matmul scalar_matmul.test.cpp unit_test_mpi.cpp)
 target_link_libraries(test.scalar_matmul PRIVATE gtest_mpi cosma)
 target_include_directories(test.scalar_matmul PRIVATE .)

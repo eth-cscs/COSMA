@@ -34,54 +34,54 @@ MPI_Comm subcommunicator(int new_P, MPI_Comm comm = MPI_COMM_WORLD) {
     return newcomm;
 }
 
-struct multiply_state {
+struct pdgemm_state {
     int m = 10;
     int n = 10;
     int k = 10;
+    int bm = 2;
+    int bn = 2;
+    int bk = 2;
+    int p_rows = 2;
+    int p_cols = 1;
     int P = 2;
-    std::string steps = "";
+    char trans_a = 'N';
+    char trans_b = 'N';
 
-    multiply_state() = default;
+    pdgemm_state() = default;
 
-    multiply_state(int mm, int nn, int kk, int PP, std::string ssteps)
-        : m(mm)
-        , n(nn)
-        , k(kk)
-        , P(PP)
-        , steps(ssteps) {}
-
-    multiply_state(int mm, int nn, int kk, int PP)
-        : m(mm)
-        , n(nn)
-        , k(kk)
-        , P(PP)
-        , steps("") {}
+    pdgemm_state(int m, int n, int k,
+                   int bm, int bn, int bk,
+                   int p_rows, int p_cols,
+                   char trans_a, char trans_b):
+        m(m), n(n), k(k), bm(bm), bn(bn), bk(bk),
+        p_rows(p_rows), p_cols(p_cols), P(p_rows*p_cols),
+        trans_a(trans_a), trans_b(trans_b) {}
 
     friend std::ostream &operator<<(std::ostream &os,
-                                    const multiply_state &obj) {
+                                    const pdgemm_state &obj) {
         return os << "(m, n, k) = (" << obj.m << ", " << obj.n << ", " << obj.k
                   << ")\n"
                   << "Number of ranks: " << obj.P << "\n"
-                  << "Strategy: " << obj.steps << "\n";
+                  << "Process grid: (" << obj.p_rows << ", " << obj.p_cols << ")" << "\n"
+                  << "Block sizes = (" << obj.bm << ", " << obj.bn << ", " << obj.bk << ")" << "\n"
+                  << "Transpose flags = (" << obj.trans_a << ", " << obj.trans_b << "\n";
     }
 };
 
-struct MultiplyTest : testing::Test {
-    cosma::context ctx;
-    std::unique_ptr<multiply_state> state;
+struct PdgemmTest : testing::Test {
+    std::unique_ptr<pdgemm_state> state;
 
-    MultiplyTest() {
-        ctx = cosma::make_context();
-        state = std::make_unique<multiply_state>();
+    PdgemmTest() {
+        state = std::make_unique<pdgemm_state>();
     }
 };
 
-struct MultiplyTestWithParams : MultiplyTest,
-                                testing::WithParamInterface<multiply_state> {
-    MultiplyTestWithParams() = default;
+struct PdgemmTestWithParams : PdgemmTest,
+                                testing::WithParamInterface<pdgemm_state> {
+    PdgemmTestWithParams() = default;
 };
 
-TEST_P(MultiplyTestWithParams, multiply) {
+TEST_P(PdgemmTestWithParams, pdgemm) {
     auto state = GetParam();
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -94,79 +94,35 @@ TEST_P(MultiplyTestWithParams, multiply) {
     int n = state.n;
     int k = state.k;
     int P = state.P;
+    int p = state.p_rows;
+    int q = state.p_cols;
+    int bm = state.bm;
+    int bn = state.bn;
+    int bk = state.bk;
+
     MPI_Comm comm = subcommunicator(P);
 
     if (rank < P) {
-        std::string steps = state.steps;
-        Strategy strategy(m, n, k, P, steps);
-
         if (rank == 0) {
-            std::cout << "Strategy = " << strategy << std::endl;
+            std::cout << state << std::endl;
         }
 
-        // first run without overlapping communication and computation
-        bool no_overlap = run<double>(strategy, ctx, comm, false);
-        EXPECT_TRUE(no_overlap);
-
-        // wait for no-overlap to finish
-        MPI_Barrier(comm);
-
-        // then run with the overlap of communication and computation
-        bool with_overlap = run<double>(strategy, ctx, comm, true);
-        EXPECT_TRUE(with_overlap);
+        bool correct = test_pdgemm(m, n, k, bm, bn, bk,
+            1, 1, 1, state.trans_a, state.trans_b, p, q, rank, comm);
+        EXPECT_TRUE(correct);
 
         MPI_Comm_free(&comm);
     }
-}
+};
 
 INSTANTIATE_TEST_CASE_P(
     Default,
-    MultiplyTestWithParams,
+    PdgemmTestWithParams,
     testing::Values(
-        multiply_state{4, 4, 4, 4, "-s sm2,pn2,pn2"},
+        pdgemm_state{10, 10, 10, 2, 2, 2, 2, 2, 'N', 'N'},
+        pdgemm_state{5, 5, 5, 2, 2, 2, 2, 2, 'N', 'N'},
+        pdgemm_state{5, 5, 5, 2, 2, 2, 2, 2, 'T', 'N'},
+        pdgemm_state{8, 4, 8, 2, 2, 2, 3, 2, 'N', 'N'},
+        pdgemm_state{8, 4, 8, 2, 2, 2, 3, 2, 'T', 'N'}
+    ));
 
-        multiply_state{30, 35, 40, 4},
-
-        multiply_state{8, 4, 2, 4, "-s pm2,sm2,pn2"},
-        multiply_state{8, 4, 2, 4},
-
-        multiply_state{8, 8, 2, 2, "-s sm2,sm2,pn2"},
-        multiply_state{8, 8, 2, 2},
-
-        multiply_state{16, 4, 4, 4, "-s pm2,pm2"},
-        multiply_state{16, 4, 4, 4},
-
-        multiply_state{20, 20, 20, 3, "-s sk2,pm3"},
-        multiply_state{20, 20, 20, 3},
-
-        multiply_state{16, 16, 16, 16, "-s pm2,pn2,pk2,pm2"},
-        multiply_state{16, 16, 16, 16},
-
-        multiply_state{20, 30, 25, 4, "-s sm2,sn2,pk2,pm2"},
-        multiply_state{20, 30, 25, 4},
-
-        multiply_state{100, 100, 100, 10, "-s sm2,pn2,sk2,pm5"},
-        multiply_state{100, 100, 100, 10},
-
-        multiply_state{4, 4, 5, 4, "-s sm2,pn2,sk2,pm2"},
-        multiply_state{4, 4, 5, 4},
-
-        multiply_state{100, 100, 100, 12, "-s pm2,pn2,pk3"},
-        multiply_state{100, 100, 100, 12},
-
-        multiply_state{100, 100, 100, 4},
-
-        multiply_state{100, 100, 100, 7, "-s pm7"},
-        multiply_state{100, 100, 100, 7},
-
-        multiply_state{100, 100, 100, 8, "-s sm2,pn2,sk2,pm2,sn2,pk2"},
-        multiply_state{100, 100, 100, 8},
-
-        multiply_state{100, 100, 100, 8, "-s sm2,sk2,sn2,pn2,pm2,pk2"},
-
-        multiply_state{100, 100, 100, 8, "-s sk2,pm2,sn2,pk2,sm2,pn2"},
-
-        multiply_state{200, 200, 200, 8, "-s sk3,sm3,sn3,pk2,pn2,pm2"},
-        multiply_state{200, 200, 200, 8},
-
-        multiply_state{200, 200, 200, 8, "-s sm3,pn2,sk3,pm2,sn3,pk2"}));
