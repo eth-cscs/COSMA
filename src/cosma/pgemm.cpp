@@ -1,4 +1,3 @@
-#ifdef COSMA_WITH_SCALAPACK
 // from std
 #include <cassert>
 #include <complex>
@@ -213,4 +212,3 @@ void pzgemm(const char trans_a, const char trans_b,
             beta, c, ic, jc, descc);
 }
 }
-#endif

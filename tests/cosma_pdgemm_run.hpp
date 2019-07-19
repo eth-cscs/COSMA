@@ -9,6 +9,7 @@
 #include <stdexcept>
 
 // from cosma
+#include <cosma/multiply.hpp>
 #include <cosma/blacs.hpp>
 #include <cosma/pgemm.hpp>
 

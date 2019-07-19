@@ -1,4 +1,3 @@
-#ifdef COSMA_WITH_SCALAPACK
 #pragma once
 /*
  * This is a COSMA backend for matrices given in ScaLAPACK format.
@@ -41,4 +40,3 @@ void pzgemm(const char trans_a, const char trans_b,
     const zdouble_t* b, const int ib, const int jb, const int* descb, const zdouble_t beta,
     zdouble_t* c, const int ic, const int jc, const int* descc);
 }
-#endif

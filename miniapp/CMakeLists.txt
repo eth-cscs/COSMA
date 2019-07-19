@@ -3,13 +3,13 @@
 ################
 set(executables "cosma-miniapp" "blocking_vs_non_blocking" "cosma-statistics" "scalars_miniapp")
 
-if (MKL_MPI_TYPE)
+if (ScaLAPACK_FOUND)
     list(APPEND executables "pdgemm-miniapp")
 endif()
 
 foreach(exec ${executables})
     add_executable(${exec} "${exec}.cpp")
-    target_link_libraries(${exec} PRIVATE cosma)
+    target_link_libraries(${exec} PRIVATE cosma options MKL::ScaLAPACK)
 endforeach()
 
 #add_executable(cosma-temp "cosma-temp.cpp")

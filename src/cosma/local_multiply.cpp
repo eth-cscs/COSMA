@@ -1,5 +1,14 @@
+#include <cosma/blas.hpp>
 #include <cosma/local_multiply.hpp>
+#include <cosma/timer.hpp>
 
+#ifdef COSMA_HAVE_GPU
+#include <tiled_mm.hpp>
+#endif
+#include <semiprof.hpp>
+
+#include <chrono>
+#include <vector>
 
 namespace cosma {
 

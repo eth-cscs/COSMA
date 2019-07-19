@@ -1,4 +1,3 @@
-#ifdef COSMA_WITH_SCALAPACK
 #pragma once
 // from std
 #include <cassert>
@@ -57,4 +56,3 @@ MPI_Comm get_communicator(const int grid_context);
 
 int leading_dimension(const int* desc);
 }}
-#endif

@@ -1,4 +1,3 @@
-#ifdef COSMA_WITH_SCALAPACK
 #include <cosma/scalapack.hpp>
 
 grid2grid::scalapack::ordering cosma::scalapack::rank_ordering(int ctxt, int P) {
@@ -41,4 +40,3 @@ MPI_Comm cosma::scalapack::get_communicator(const int grid_context) {
     MPI_Comm comm = blacs::Cblacs2sys_handle(comm_context);
     return comm;
 }
-#endif

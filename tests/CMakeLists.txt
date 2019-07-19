@@ -13,9 +13,9 @@ add_executable(test.cosma cosma_test.cpp)
 target_link_libraries(test.cosma PRIVATE cosma)
 target_include_directories(test.cosma PRIVATE .)
 
-if (MKL_MPI_TYPE)
+if(ScaLAPACK_FOUND)
     add_executable(test.cosma_pdgemm cosma_pdgemm_test.cpp)
-    target_link_libraries(test.cosma_pdgemm PRIVATE cosma)
+    target_link_libraries(test.cosma_pdgemm PRIVATE cosma options grid2grid MKL::ScaLAPACK)
     target_include_directories(test.cosma_pdgemm PRIVATE .)
 endif()
 
@@ -41,9 +41,9 @@ add_test(NAME test.multiply
                  ${MPIEXEC_NUMPROC_FLAG} 16 test.multiply)
 add_dependencies(tests test.multiply)
 
-if(MKL_MPI_TYPE)
+if(ScaLAPACK_FOUND)
     add_executable(test.pdgemm test_pdgemm.cpp unit_test_mpi.cpp)
-    target_link_libraries(test.pdgemm PRIVATE gtest_mpi cosma)
+    target_link_libraries(test.pdgemm PRIVATE gtest_mpi cosma MKL::ScaLAPACK grid2grid options)
     target_include_directories(test.pdgemm PRIVATE .)
     add_test(NAME test.pdgemm
              COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}

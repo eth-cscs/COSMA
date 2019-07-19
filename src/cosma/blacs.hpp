@@ -1,4 +1,3 @@
-#ifdef COSMA_WITH_SCALAPACK
 #pragma once
 #include <mpi.h>
 
@@ -35,5 +34,3 @@ extern "C" {
     void Cfree_blacs_system_handle(int i_sys_ctxt);
 }
 }}
-#endif
-
