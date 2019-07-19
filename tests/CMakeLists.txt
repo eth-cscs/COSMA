@@ -9,13 +9,17 @@ add_custom_target(tests COMMENT "Builds all tests if any.")
 ################
 #  Build test  #
 ################
-add_executable(test.cosma cosma-test.cpp)
+add_executable(test.cosma cosma_test.cpp)
 target_link_libraries(test.cosma PRIVATE cosma)
 target_include_directories(test.cosma PRIVATE .)
-#add_test(NAME test.cosma COMMAND test.cosma)
-#add_dependencies(tests test.strategy)
 
-add_executable(test.strategy test-strategy.cpp)
+if(ScaLAPACK_FOUND)
+    add_executable(test.cosma_pdgemm cosma_pdgemm_test.cpp)
+    target_link_libraries(test.cosma_pdgemm PRIVATE cosma_with_scalapack options)
+    target_include_directories(test.cosma_pdgemm PRIVATE .)
+endif()
+
+add_executable(test.strategy test_strategy.cpp)
 target_link_libraries(test.strategy PRIVATE cosma)
 add_test(NAME test.strategy COMMAND test.strategy)
 add_dependencies(tests test.strategy)
@@ -36,6 +40,16 @@ add_test(NAME test.multiply
          COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
                  ${MPIEXEC_NUMPROC_FLAG} 16 test.multiply)
 add_dependencies(tests test.multiply)
+
+if(ScaLAPACK_FOUND)
+    add_executable(test.pdgemm test_pdgemm.cpp unit_test_mpi.cpp)
+    target_link_libraries(test.pdgemm PRIVATE gtest_mpi cosma_with_scalapack options)
+    target_include_directories(test.pdgemm PRIVATE .)
+    add_test(NAME test.pdgemm
+             COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
+                     ${MPIEXEC_NUMPROC_FLAG} 6 test.pdgemm)
+    add_dependencies(tests test.pdgemm)
+endif()
 
 add_executable(test.scalar_matmul scalar_matmul.test.cpp unit_test_mpi.cpp)
 target_link_libraries(test.scalar_matmul PRIVATE gtest_mpi cosma)

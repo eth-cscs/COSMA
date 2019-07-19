@@ -62,7 +62,7 @@ std::pair<int, int> group_and_offset(int P, int divisor, int rank) {
 
 void solve(double *A, double *B, double *C, int m, int n, int k) {
     // multiply square matrices with dimensions sqrt(local_size)
-    cosma::dgemm(m, n, k, 1.0, A, m, B, k, 0.0, C, m);
+    cosma::gemm(m, n, k, 1.0, A, m, B, k, 0.0, C, m);
 }
 
 int main(int argc, char **argv) {

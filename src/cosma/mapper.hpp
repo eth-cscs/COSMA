@@ -11,6 +11,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <transform.hpp>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
@@ -47,7 +48,19 @@ class Mapper {
     // runtime: constant (pre-computed)
     const std::pair<int, int> global_coordinates(int local_index) const;
 
+    // returns the label of the matrix (A, B or C)
     char which_matrix();
+
+    // get a vector of offsets of each local block
+    std::vector<int>& local_blocks_offsets();
+
+    // get a vector of local blocks
+    std::vector<Interval2D> local_blocks();
+
+    // returns a rank owning given block
+    int owner(Interval2D& block);
+
+    grid2grid::grid2D get_layout_grid();
 
   protected:
     // A, B or C

@@ -18,9 +18,9 @@ include(FindPackageHandleStandardArgs)
 
 find_path(MKL_INCLUDE_DIR mkl.h
     HINTS
-        $ENV{MKLROOT}/include
-        ${MKL_ROOT}/include
-)
+    $ENV{MKLROOT}/include
+    ${MKL_ROOT}/include
+    )
 mark_as_advanced(MKL_INCLUDE_DIR)
 
 set(_mkl_libpath_suffix "lib/intel64")
@@ -40,43 +40,42 @@ function(__mkl_find_library _name)
     find_library(${_name}
         NAMES ${ARGN}
         HINTS ENV MKLROOT
-              ${MKL_ROOT}
+        ${MKL_ROOT}
         PATH_SUFFIXES ${_mkl_libpath_suffix}
-    )
+        )
     mark_as_advanced(${_name})
 endfunction()
 
 __mkl_find_library(MKL_CORE_LIB mkl_core)
 
 if(NOT MKL_THREADING)
-  __mkl_find_library(MKL_THREADING_LIB mkl_sequential)
+    __mkl_find_library(MKL_THREADING_LIB mkl_sequential)
 elseif(MKL_THREADING MATCHES "GOMP")
-  __mkl_find_library(MKL_THREADING_LIB mkl_gnu_thread)
+    __mkl_find_library(MKL_THREADING_LIB mkl_gnu_thread)
 elseif(MKL_THREADING MATCHES "IOMP")
-  __mkl_find_library(MKL_THREADING_LIB mkl_intel_thread)
+    __mkl_find_library(MKL_THREADING_LIB mkl_intel_thread)
 endif()
 
 if(NOT MKL_USE_64BIT_INTEGERS)
-  __mkl_find_library(MKL_INTERFACE_LIB mkl_intel_lp64)
+    __mkl_find_library(MKL_INTERFACE_LIB mkl_intel_lp64)
 else()
-  __mkl_find_library(MKL_INTERFACE_LIB mkl_intel_ilp64)
+    __mkl_find_library(MKL_INTERFACE_LIB mkl_intel_ilp64)
 endif()
 
 find_package_handle_standard_args(MKL 
-  DEFAULT_MSG  MKL_CORE_LIB
-               MKL_THREADING_LIB
-               MKL_INTERFACE_LIB
-               MKL_INCLUDE_DIR
-  )
-
+    DEFAULT_MSG  MKL_CORE_LIB
+    MKL_THREADING_LIB
+    MKL_INTERFACE_LIB
+    MKL_INCLUDE_DIR
+    )
 
 if (MKL_FOUND AND NOT TARGET MKL::MKL)
     find_package(Threads REQUIRED)
 
     set(__mkl_threading_backend "")
     if(MKL_THREADING)
-      find_package(OpenMP REQUIRED)
-      set(__threading_lib "OpenMP::OpenMP_CXX")
+        find_package(OpenMP REQUIRED)
+        set(__threading_lib "OpenMP::OpenMP_CXX")
     endif()
 
     add_library(MKL::CORE UNKNOWN IMPORTED)
@@ -90,7 +89,7 @@ if (MKL_FOUND AND NOT TARGET MKL::MKL)
 
     add_library(MKL::MKL INTERFACE IMPORTED)
     set_target_properties(MKL::MKL PROPERTIES 
-      INTERFACE_INCLUDE_DIRECTORIES "${MKL_INCLUDE_DIR}"
-      INTERFACE_LINK_LIBRARIES "MKL::BLAS_INTERFACE;MKL::THREADING;MKL::CORE;${__mkl_threading_backend};Threads::Threads")
+        INTERFACE_INCLUDE_DIRECTORIES "${MKL_INCLUDE_DIR}"
+        INTERFACE_LINK_LIBRARIES "MKL::BLAS_INTERFACE;MKL::THREADING;MKL::CORE;${__mkl_threading_backend};Threads::Threads")
 endif()
 

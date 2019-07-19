@@ -4,3 +4,12 @@
 [submodule "libs/gtest_mpi"]
 	path = libs/gtest_mpi
 	url = https://github.com/teonnik/gtest_mpi.git
+[submodule "libs/grid2grid"]
+	path = libs/grid2grid
+	url = https://github.com/kabicm/grid2grid
+[submodule "libs/semiprof"]
+	path = libs/semiprof
+	url = https://github.com/kabicm/semiprof
+[submodule "libs/options"]
+	path = libs/options
+	url = https://github.com/kabicm/options

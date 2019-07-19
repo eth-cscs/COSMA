@@ -1,4 +1,4 @@
-#include <cosma-run.hpp>
+#include <cosma_run.hpp>
 
 #include <gtest/gtest.h>
 #include <gtest_mpi/gtest_mpi.hpp>
