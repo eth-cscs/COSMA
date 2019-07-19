@@ -47,9 +47,6 @@ target_compile_features(cosma PUBLIC cxx_std_14)
 
 # Non-cmake dependencies
 #
-find_package(grid2grid REQUIRED)
-find_package(semiprof REQUIRED)
-find_package(options REQUIRED)
 find_package(MPI REQUIRED)
 find_package(MKL REQUIRED)
 target_link_libraries(cosma 
