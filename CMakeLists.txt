@@ -39,39 +39,16 @@ add_library(cosma STATIC
     "${cosma_SOURCE_DIR}/src/cosma/strategy.cpp"
     "${cosma_SOURCE_DIR}/src/cosma/two_sided_communicator.cpp"
     )
-message(STATUS ${cosma_SOURCE_DIR})
-target_include_directories(cosma PUBLIC ${cosma_SOURCE_DIR}/src)
+target_include_directories(cosma PUBLIC 
+  $<BUILD_INTERFACE:${cosma_SOURCE_DIR}/src>
+  )
 target_compile_features(cosma PUBLIC cxx_std_14)
-
-# Submodules dependencies:
-#   grid2grid, options, semiprof, TiledMM
-#
-find_package(Git QUIET)
-if(GIT_FOUND AND EXISTS "${cosma_SOURCE_DIR}/.git")
-    # Update submodules as needed
-    option(GIT_SUBMODULE_CHECK "Check submodules during build" ON)
-    if(GIT_SUBMODULE_CHECK)
-        message(STATUS "Submodule update")
-        execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            RESULT_VARIABLE GIT_SUBMOD_RESULT)
-        if(NOT GIT_SUBMOD_RESULT EQUAL "0")
-            message(FATAL_ERROR "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
-        endif()
-        message(STATUS "Updating submodules to the latest commits")
-        execute_process(COMMAND ${GIT_EXECUTABLE} submodule foreach git pull origin master
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            RESULT_VARIABLE GIT_SUBMOD_RESULT)
-        if(NOT GIT_SUBMOD_RESULT EQUAL "0")
-            message(FATAL_ERROR "git submodule foreach git pull origin master failed with ${GIT_SUBMOD_RESULT}, \
-            please git pull all submodules, to get the latest commits")
-        endif()
-    endif()
-endif()
-target_link_libraries(cosma PUBLIC grid2grid semiprof options)
 
 # Non-cmake dependencies
 #
+find_package(grid2grid REQUIRED)
+find_package(semiprof REQUIRED)
+find_package(options REQUIRED)
 find_package(MPI REQUIRED)
 find_package(MKL REQUIRED)
 target_link_libraries(cosma 
@@ -79,11 +56,15 @@ target_link_libraries(cosma
     MPI::MPI_CXX 
     PRIVATE
     MKL::MKL
-    )
-target_compile_definitions(cosma PUBLIC -DCOSMA_WITH_MKL)
+    grid2grid::grid2grid 
+    semiprof::semiprof 
+    options::options
+  )
+target_compile_definitions(cosma PUBLIC COSMA_WITH_MKL)
 
-if(MKL_MPI_TYPE) 
-    target_compile_definitions(cosma PUBLIC -DCOSMA_WITH_SCALAPACK)
+find_package(ScaLAPACK)
+if(ScaLAPACK_FOUND)
+  # TODO
 endif()
 
 # CUDA support
@@ -95,25 +76,63 @@ if(COSMA_WITH_CUDA)
     target_compile_options(cosma PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:"-arch=sm_60">) 
 endif()
 
-#################################
-#          PROFILER             #
-#################################
+# PROFILER
+#
 if(COSMA_WITH_PROFILING)
     add_definitions(-DSEMIPROF)
 endif()
 
-#############
-#  Testing  #
-#############
+# Installation
+#
+if (COSMA_NOT_SUBPROJECT)
+  include(CMakePackageConfigHelpers)
+  include(GNUInstallDirs)
+
+  install(TARGETS cosma
+          EXPORT cosma_targets 
+          LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+          ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+          INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+
+  install(EXPORT cosma_targets
+          FILE cosmaTargets.cmake
+          NAMESPACE cosma::
+          DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
+
+  install(DIRECTORY "${cosma_SOURCE_DIR}/src/cosma" 
+          DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+          FILES_MATCHING PATTERN "*.hpp")
+
+  write_basic_package_version_file(
+    "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
+    VERSION ${cosma_VERSION}
+    COMPATIBILITY SameMajorVersion)
+
+  configure_file("${cosma_SOURCE_DIR}/cmake/cosma.pc.in"
+                 "${cosma_BINARY_DIR}/cosma.pc"
+                 @ONLY)
+
+  configure_file("${cosma_SOURCE_DIR}/cmake/cosmaConfig.cmake.in"
+                 "${cosma_BINARY_DIR}/cosmaConfig.cmake"
+                 @ONLY)
+
+  install(FILES "${cosma_BINARY_DIR}/cosmaConfig.cmake"
+                "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
+                "${cosma_SOURCE_DIR}/cmake/FindMKL.cmake"
+          DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
+  
+  install(FILES "${cosma_BINARY_DIR}/cosma.pc"
+          DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+endif()
+
+# Testing
+#
 if(COSMA_NOT_SUBPROJECT)
     enable_testing()
     include(CTest)
     add_subdirectory(tests)
 endif()
 
-#####################################
-#  Adding various code directories  #
-#####################################
 add_subdirectory(libs)
 add_subdirectory(miniapp)
 add_subdirectory(benchmarks)

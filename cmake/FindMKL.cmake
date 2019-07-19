@@ -6,15 +6,13 @@
 # The type of threading for MKL has to be specified using the variable
 #        MKL_THREADING            := IOMP|GOMP           (default: serial)
 #        MKL_USE_64BIT_INTEGERS   := True|False          (default: False)
-#        MKL_MPI_TYPE             := OMPI|MPICH          (default: no ScaLAPACK)
 #
 # NOT SUPPORTED
 #   - TBB threading back-end
 #   - F95 interfaces
 #
 # Note: Do not mix GCC and Intel OpenMP.
-#       Do not mix MPI implementations.
-#       The module depends on FindThreads, FindOpenMP and FindMPI (if ScaLAPACK found)
+#       The module depends on FindThreads and FindOpenMP.
 #
 include(FindPackageHandleStandardArgs)
 
@@ -71,71 +69,27 @@ find_package_handle_standard_args(MKL
     MKL_INCLUDE_DIR
     )
 
-# ScaLAPACK
-# 
-if(MKL_MPI_TYPE)
-    __mkl_find_library(MKL_SCALAPACK_LIB mkl_scalapack_lp64)
-    if (MKL_MPI_TYPE MATCHES "MPICH")
-        __mkl_find_library(MKL_BLACS_LIB mkl_blacs_intelmpi_lp64)
-    elseif(MKL_MPI_TYPE MATCHES "OMPI")
-        __mkl_find_library(MKL_BLACS_LIB mkl_blacs_openmpi_lp64)
-    endif()
-
-    find_package_handle_standard_args(MKL_SCALAPACK 
-        DEFAULT_MSG MKL_BLACS_LIB
-        MKL_SCALAPACK_LIB
-        )
-endif()
-
 if (MKL_FOUND AND NOT TARGET MKL::MKL)
     find_package(Threads REQUIRED)
-    add_library(MKL::CORE UNKNOWN IMPORTED)
-    set_target_properties(MKL::CORE PROPERTIES 
-        IMPORTED_LOCATION ${MKL_CORE_LIB}
-        INTERFACE_LINK_LIBRARIES Threads::Threads)
 
+    set(__mkl_threading_backend "")
     if(MKL_THREADING)
         find_package(OpenMP REQUIRED)
-        set_target_properties(MKL::CORE PROPERTIES 
-            INTERFACE_LINK_LIBRARIES OpenMP::OpenMP_CXX)
+        set(__threading_lib "OpenMP::OpenMP_CXX")
     endif()
 
-    if(MKL_MPI_TYPE)
-        add_library(MKL::BLACS UNKNOWN IMPORTED)
-        set_target_properties(MKL::BLACS PROPERTIES 
-            IMPORTED_LOCATION ${MKL_BLACS_LIB})
-        set_target_properties(MKL::CORE PROPERTIES 
-            INTERFACE_LINK_LIBRARIES MKL::BLACS)
-    endif()
+    add_library(MKL::CORE UNKNOWN IMPORTED)
+    set_target_properties(MKL::CORE PROPERTIES IMPORTED_LOCATION ${MKL_CORE_LIB})
 
     add_library(MKL::THREADING UNKNOWN IMPORTED)
-    set_target_properties(MKL::THREADING PROPERTIES 
-        IMPORTED_LOCATION ${MKL_THREADING_LIB}
-        INTERFACE_LINK_LIBRARIES MKL::CORE)
+    set_target_properties(MKL::THREADING PROPERTIES IMPORTED_LOCATION ${MKL_THREADING_LIB})
 
     add_library(MKL::BLAS_INTERFACE UNKNOWN IMPORTED)
-    set_target_properties(MKL::BLAS_INTERFACE PROPERTIES 
-        IMPORTED_LOCATION ${MKL_INTERFACE_LIB}
-        INTERFACE_LINK_LIBRARIES MKL::THREADING)
+    set_target_properties(MKL::BLAS_INTERFACE PROPERTIES IMPORTED_LOCATION ${MKL_INTERFACE_LIB})
 
-    # The MKL::MKL target
-    #
     add_library(MKL::MKL INTERFACE IMPORTED)
     set_target_properties(MKL::MKL PROPERTIES 
         INTERFACE_INCLUDE_DIRECTORIES "${MKL_INCLUDE_DIR}"
-        INTERFACE_LINK_LIBRARIES MKL::BLAS_INTERFACE)
-
-    if(MKL_MPI_TYPE)
-        add_library(MKL::SCALAPACK UNKNOWN IMPORTED)
-        set_target_properties(MKL::SCALAPACK PROPERTIES 
-            IMPORTED_LOCATION ${MKL_SCALAPACK_LIB}
-            INTERFACE_LINK_LIBRARIES MKL::BLAS_INTERFACE)
-
-        set_target_properties(MKL::MKL PROPERTIES 
-            INTERFACE_LINK_LIBRARIES MKL::SCALAPACK)
-    else()
-        set_target_properties(MKL::MKL PROPERTIES 
-            INTERFACE_LINK_LIBRARIES MKL::BLAS_INTERFACE)
-    endif()
+        INTERFACE_LINK_LIBRARIES "MKL::BLAS_INTERFACE;MKL::THREADING;MKL::CORE;${__mkl_threading_backend};Threads::Threads")
 endif()
 
