@@ -21,23 +21,24 @@ endif()
 
 # COSMA library
 #
+set(cosma_src_prefix "${cosma_SOURCE_DIR}/src/cosma")
 add_library(cosma STATIC
-    "${cosma_SOURCE_DIR}/src/cosma/blas.cpp"
-    "${cosma_SOURCE_DIR}/src/cosma/scalapack.cpp"
-    "${cosma_SOURCE_DIR}/src/cosma/pgemm.cpp"
-    "${cosma_SOURCE_DIR}/src/cosma/buffer.cpp"
-    "${cosma_SOURCE_DIR}/src/cosma/communicator.cpp"
-    "${cosma_SOURCE_DIR}/src/cosma/context.cpp"
-    "${cosma_SOURCE_DIR}/src/cosma/interval.cpp"
-    "${cosma_SOURCE_DIR}/src/cosma/layout.cpp"
-    "${cosma_SOURCE_DIR}/src/cosma/local_multiply.cpp"
-    "${cosma_SOURCE_DIR}/src/cosma/mapper.cpp"
-    "${cosma_SOURCE_DIR}/src/cosma/math_utils.cpp"
-    "${cosma_SOURCE_DIR}/src/cosma/matrix.cpp"
-    "${cosma_SOURCE_DIR}/src/cosma/multiply.cpp"
-    "${cosma_SOURCE_DIR}/src/cosma/one_sided_communicator.cpp"
-    "${cosma_SOURCE_DIR}/src/cosma/strategy.cpp"
-    "${cosma_SOURCE_DIR}/src/cosma/two_sided_communicator.cpp"
+    "${cosma_src_prefix}/blas.cpp"
+    "${cosma_src_prefix}/scalapack.cpp"
+    "${cosma_src_prefix}/pgemm.cpp"
+    "${cosma_src_prefix}/buffer.cpp"
+    "${cosma_src_prefix}/communicator.cpp"
+    "${cosma_src_prefix}/context.cpp"
+    "${cosma_src_prefix}/interval.cpp"
+    "${cosma_src_prefix}/layout.cpp"
+    "${cosma_src_prefix}/local_multiply.cpp"
+    "${cosma_src_prefix}/mapper.cpp"
+    "${cosma_src_prefix}/math_utils.cpp"
+    "${cosma_src_prefix}/matrix.cpp"
+    "${cosma_src_prefix}/multiply.cpp"
+    "${cosma_src_prefix}/one_sided_communicator.cpp"
+    "${cosma_src_prefix}/strategy.cpp"
+    "${cosma_src_prefix}/two_sided_communicator.cpp"
     )
 target_include_directories(cosma PUBLIC 
   $<BUILD_INTERFACE:${cosma_SOURCE_DIR}/src>
@@ -56,15 +57,42 @@ target_link_libraries(cosma
     MPI::MPI_CXX 
     PRIVATE
     MKL::MKL
-    grid2grid::grid2grid 
-    semiprof::semiprof 
-    options::options
   )
 target_compile_definitions(cosma PUBLIC COSMA_WITH_MKL)
 
+set(cosma_submodules_prefix "${PROJECT_SOURCE_DIR}/libs")
+
+# grid2grid dependency
 find_package(ScaLAPACK)
 if(ScaLAPACK_FOUND)
-  # TODO
+    check_git_submodule(grid2grid "${cosma_submodules_prefix}/grid2grid")
+    if(NOT grid2grid_avail)
+        find_package(grid2grid REQUIRED)
+        target_link_libraries(cosma grid2grid::grid2grid)
+    else()
+        add_subdirectory("${cosma_submodules_prefix}/grid2grid")
+        target_link_libraries(cosma grid2grid)
+    endif()
+endif()
+
+# options dependency
+check_git_submodule(options "${cosma_submodules_prefix}/options")
+if(NOT options_avail)
+    find_package(options REQUIRED)
+    target_link_libraries(cosma options::options)
+else()
+    add_subdirectory("${cosma_submodules_prefix}/options")
+    target_link_libraries(cosma options)
+endif()
+
+# semiprof dependency
+check_git_submodule(semiprof "${cosma_submodules_prefix}/semiprof")
+if(NOT semiprof_avail)
+    find_package(semiprof REQUIRED)
+    target_link_libraries(cosma semiprof::semiprof)
+else()
+    add_subdirectory("${cosma_submodules_prefix}/semiprof")
+    target_link_libraries(cosma semiprof)
 endif()
 
 # CUDA support
