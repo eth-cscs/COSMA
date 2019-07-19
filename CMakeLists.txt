@@ -19,6 +19,8 @@ if(NOT CMAKE_BUILD_TYPE)
         "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release." FORCE)
 endif()
 
+include(git_utils)
+
 # COSMA library
 #
 set(cosma_src_prefix "${cosma_SOURCE_DIR}/src/cosma")
@@ -65,10 +67,10 @@ if(ScaLAPACK_FOUND)
     check_git_submodule(grid2grid "${cosma_submodules_prefix}/grid2grid")
     if(NOT grid2grid_avail)
         find_package(grid2grid REQUIRED)
-        target_link_libraries(cosma grid2grid::grid2grid)
+        target_link_libraries(cosma PRIVATE grid2grid::grid2grid)
     else()
         add_subdirectory("${cosma_submodules_prefix}/grid2grid")
-        target_link_libraries(cosma grid2grid)
+        target_link_libraries(cosma PRIVATE grid2grid)
     endif()
 endif()
 
@@ -76,20 +78,20 @@ endif()
 check_git_submodule(options "${cosma_submodules_prefix}/options")
 if(NOT options_avail)
     find_package(options REQUIRED)
-    target_link_libraries(cosma options::options)
+    target_link_libraries(cosma PRIVATE options::options)
 else()
     add_subdirectory("${cosma_submodules_prefix}/options")
-    target_link_libraries(cosma options)
+    target_link_libraries(cosma PRIVATE options)
 endif()
 
 # semiprof dependency
 check_git_submodule(semiprof "${cosma_submodules_prefix}/semiprof")
 if(NOT semiprof_avail)
     find_package(semiprof REQUIRED)
-    target_link_libraries(cosma semiprof::semiprof)
+    target_link_libraries(cosma PRIVATE semiprof::semiprof)
 else()
     add_subdirectory("${cosma_submodules_prefix}/semiprof")
-    target_link_libraries(cosma semiprof)
+    target_link_libraries(cosma PRIVATE semiprof)
 endif()
 
 # CUDA support
