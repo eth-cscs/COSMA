@@ -1,9 +1,14 @@
 if(NOT TARGET cosma::cosma)
   list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
-  list(APPEND CMAKE_PREFIX_PATH "@CMAKE_PREFIX_PATH@")
   include(CMakeFindDependencyMacro)
   find_dependency(MPI)
+
+  set(MKL_THREADING "@MKL_THREADING@")
+  set(MKL_USE_64BIT_INTEGERS "@MKL_USE_64BIT_INTEGERS@")
   find_dependency(MKL)
+
+  # These are bundled with cosma
+  #
   find_dependency(grid2grid)
   find_dependency(semiprof)
   find_dependency(options)
