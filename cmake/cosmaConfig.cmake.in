@@ -3,8 +3,8 @@ if(NOT TARGET cosma::cosma)
   include(CMakeFindDependencyMacro)
   find_dependency(MPI)
 
-  set(MKL_THREADING "@MKL_THREADING@")
-  set(MKL_USE_64BIT_INTEGERS "@MKL_USE_64BIT_INTEGERS@")
+  set(MKL_PARALLEL "@MKL_PARALLEL@")
+  set(MKL_64BIT "@MKL_64BIT@")
   find_dependency(MKL)
 
   # These are bundled with cosma
