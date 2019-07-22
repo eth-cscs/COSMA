@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-# Check if COSMA is bundled, disable test suit if it is.
+# Check if COSMA is a subproject.
 #
+set(MASTER_PROJECT OFF)
 if(NOT DEFINED PROJECT_NAME)
-    set(COSMA_NOT_SUBPROJECT ON)
+  set(MASTER_PROJECT ON)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -13,18 +14,18 @@ project(cosma VERSION 0.1 LANGUAGES CXX)
 #
 option(COSMA_WITH_CUDA "use CUDA GPU backend for base case" OFF)
 option(COSMA_WITH_PROFILING "use the semiprof profiler" OFF)
+option(COSMA_WITH_TESTS "Generate the test target." ${MASTER_PROJECT})
+option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
+option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT})
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING
         "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release." FORCE)
 endif()
 
-include(git_utils)
-
 # COSMA library
 #
 set(cosma_src_prefix "${cosma_SOURCE_DIR}/src/cosma")
-
 set(cosma_src_files 
     "${cosma_src_prefix}/blas.cpp"
     "${cosma_src_prefix}/buffer.cpp"
@@ -85,19 +86,14 @@ add_subdirectory("${cosma_submodules_prefix}/semiprof")
 target_link_libraries(cosma PRIVATE semiprof)
 
 
-# CUDA support
+# CUDA gemm back-end
 #
 if(COSMA_WITH_CUDA)
+    add_subdirectory("${cosma_submodules_prefix}/Tiled-MM")
     enable_language(CUDA)
     target_compile_definitions(cosma PRIVATE -DCOSMA_HAVE_GPU)
     target_link_libraries(cosma PUBLIC cublas Tiled-MM)
     target_compile_options(cosma PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:"-arch=sm_60">) 
-endif()
-
-# PROFILER
-#
-if(COSMA_WITH_PROFILING)
-    add_definitions(-DSEMIPROF)
 endif()
 
 # Installation
@@ -141,14 +137,21 @@ install(FILES "${cosma_BINARY_DIR}/cosmaConfig.cmake"
 install(FILES "${cosma_BINARY_DIR}/cosma.pc"
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 
-# Testing
-#
-if(COSMA_NOT_SUBPROJECT)
+
+if(COSMA_WITH_PROFILING)
+    add_definitions(-DSEMIPROF)
+endif()
+
+if(COSMA_WITH_TESTS)
+    add_subdirectory("${cosma_submodules_prefix}/gtest_mpi")
     enable_testing()
-    include(CTest)
     add_subdirectory(tests)
 endif()
 
-add_subdirectory(libs)
-add_subdirectory(miniapp)
-add_subdirectory(benchmarks)
+if(COSMA_WITH_APPS)
+    add_subdirectory(miniapp)
+endif()
+
+if(COSMA_WITH_BENCHMARKS)
+    add_subdirectory(benchmarks)
+endif()

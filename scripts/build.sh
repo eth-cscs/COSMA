@@ -1,61 +1,49 @@
 #!/bin/bash
 
-###############################################################################
-# Note: Adjust the script to your system or use it as a template for a new 
-#       script.
-###############################################################################
+# !!! NOTE: Adjust the script to your system. !!!
 
 # Clean the build directory.
 #
 rm -rf CMakeCache.txt CMakeFiles
 
-# Set MKL's root directory.
-#
-# See available options for MKL versions in `cmake/FindMKL.cmake`
-#
-export MKLROOT="TODO"
-
-# Set the root directories of remaining dependencies.
-#
-GRID2GRID_ROOT="TODO"
-OPTIONS_ROOT="TODO"
-SEMIPROF_ROOT="TODO"
-
-# Set the desired installation directory.
-#
-INSTALL_ROOT="TODO"
-
-# Set the path to the COSMA source directory.
-#
-SRC_ROOT="TODO"
+export MKLROOT=<TODO:mkl_root_dir>
 
 # Options:
 # 
 # `CMAKE_BUILD_TYPE` := Debug|Release
 #
-# `COSMA_WITH_PROFILING`: = ON|OFF (default:OFF)
+# `COSMA_WITH_PROFILING`: = ON|OFF (default: OFF)
 #    Enables profiling of COSMA with `semiprof`.
 #
-# `COSMA_IS_OPENMPI` := ON|OFF (default:OFF)
+# `COSMA_WITH_TESTS`: = ON|OFF (default: ON if COSMA is not a subproject)
+#    Enables tests.
+#
+# `COSMA_WITH_APPS`: = ON|OFF (default: ON if COSMA is not a subproject)
+#    Enables miniapps.
+#
+# `COSMA_WITH_BENCHMARKS`: = ON|OFF (default: ON if COSMA is not a subproject)
+#    Enables benchmarks.
+#
+# `COSMA_WITH_OPENMPI` := ON|OFF (default:OFF)
+#    Only relevant for unit tests. Makes sure correct flags are pasts to tests.
 # 
-# `MKL_THREADING` := IOMP|GOMP|serial (default:serial)
+# `MKL_THREADING` := Serial|IOMP|GOMP (default: Serial)
 #    IOMP is the Intel OpenMP back-end, GOMP is the GNU OpenMP back-end. When 
 #    compiling with gcc, use GOMP. Mixing OpenMP runtimes results in performance 
 #    issues.
 #
-# `MKL_USE_64BIT_INTEGERS := True|False (default:false)
-#    Select the 32 bit or 64 bit MKL integer interface.
+# `MKL_USE_64BIT_INTEGERS := ON|OFF (default: OFF)
+#    Select the 64 bit MKL integer interface.
 #    
-# `MKL_MPI_TYPE` := OMPI|MPICH (default:no ScaLAPACK)
+# `MKL_MPI_TYPE` := OMPI|MPICH (default: MPICH)
 #    Enables MKL ScaLAPACK and selects the MPI backend to use. OMPI stands for 
 #    OpenMPI. MPICH is also used for derivative implementations: Intel MPI, 
 #    Cray MPI, etc.
 #
-cmake ${SRC_ROOT} \
-  -D CMAKE_PREFIX_PATH="${GRID2GRID_ROOT};${OPTIONS_ROOT};${SEMIPROF_ROOT};" \
-  -D CMAKE_INSTALL_PREFIX="${INSTALL_ROOT}" \
-  -D CMAKE_BUILD_TYPE=Release \
+cmake <TODO:cosma_source_dir> \
+  -D CMAKE_INSTALL_PREFIX=<TODO:cosma_install_dir>\
+  -D CMAKE_BUILD_TYPE="Release" \
   -D MKL_THREADING="GOMP" \
-  -D COSMA_WITH_PROFILING=ON \
-  -D COSMA_IS_OPENMPI=ON
+  -D COSMA_WITH_BENCHMARKS=OFF \
+  -D COSMA_WITH_OPENMPI=ON
 

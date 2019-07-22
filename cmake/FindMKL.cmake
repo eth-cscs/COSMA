@@ -48,12 +48,12 @@ endfunction()
 
 __mkl_find_library(MKL_CORE_LIB mkl_core)
 
-if(NOT MKL_THREADING)
-    __mkl_find_library(MKL_THREADING_LIB mkl_sequential)
-elseif(MKL_THREADING MATCHES "GOMP")
+if(MKL_THREADING MATCHES "GOMP")
     __mkl_find_library(MKL_THREADING_LIB mkl_gnu_thread)
 elseif(MKL_THREADING MATCHES "IOMP")
     __mkl_find_library(MKL_THREADING_LIB mkl_intel_thread)
+else() # Serial
+    __mkl_find_library(MKL_THREADING_LIB mkl_sequential)
 endif()
 
 if(NOT MKL_USE_64BIT_INTEGERS)

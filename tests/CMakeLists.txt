@@ -1,5 +1,6 @@
-option(COSMA_IS_OPENMPI "Is MPI vendor OpenMPI?" OFF)
-if (COSMA_IS_OPENMPI)
+option(COSMA_WITH_OPENMPI "Is MPI vendor OpenMPI?" OFF)
+set(OVERSUBSCRIBE "")
+if (COSMA_WITH_OPENMPI)
     set(OVERSUBSCRIBE "--oversubscribe")
 endif()
 
