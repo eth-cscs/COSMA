@@ -27,18 +27,19 @@ export MKLROOT=<TODO:mkl_root_dir>
 # `COSMA_WITH_OPENMPI` := ON|OFF (default:OFF)
 #    Only relevant for unit tests. Makes sure correct flags are pasts to tests.
 # 
-# `MKL_THREADING` := Serial|IOMP|GOMP (default: Serial)
+# `MKL_PARALLEL` := ON|OFF (default: ON)
 #    IOMP is the Intel OpenMP back-end, GOMP is the GNU OpenMP back-end. When 
 #    compiling with gcc, use GOMP. Mixing OpenMP runtimes results in performance 
 #    issues.
 #
-# `MKL_USE_64BIT_INTEGERS := ON|OFF (default: OFF)
-#    Select the 64 bit MKL integer interface.
+# `MKL_64BIT := ON|OFF (default: OFF)
+#    `ON` selects the 64 bit MKL integer interface.
 #    
 # `MKL_MPI_TYPE` := OMPI|MPICH (default: MPICH)
 #    Enables MKL ScaLAPACK and selects the MPI backend to use. OMPI stands for 
 #    OpenMPI. MPICH is also used for derivative implementations: Intel MPI, 
-#    Cray MPI, etc.
+#    Cray MPI, etc. 
+#    ON Apple only MPICH us supported.
 #
 cmake <TODO:cosma_source_dir> \
   -D CMAKE_INSTALL_PREFIX=<TODO:cosma_install_dir>\

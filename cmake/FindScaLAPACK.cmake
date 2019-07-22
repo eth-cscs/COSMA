@@ -1,10 +1,10 @@
 # Uses MKLROOT environment variable or CMake's MKL_ROOT to find MKL ScaLAPACK.
 #
 # Variables:
-#   ScaLAPACK_FOUND
+#     ScaLAPACK_FOUND
 #
 # Imported Targets: 
-#   MKL::ScaLAPACK
+#     MKL::ScaLAPACK
 #
 # The MPI backend has to be specified
 #        MKL_MPI_TYPE             := OMPI|MPICH          (default: MPICH)
@@ -23,15 +23,24 @@ function(__mkl_find_library _name)
         HINTS ENV MKLROOT
               ${MKL_ROOT}
         PATH_SUFFIXES ${_mkl_libpath_suffix}
+                      lib
     )
     mark_as_advanced(${_name})
 endfunction()
 
-__mkl_find_library(MKL_SCALAPACK_LIB mkl_scalapack_lp64)
+__mkl_find_library(MKL_SCALAPACK_LIB mkl_scalapack_${_mkl_lp})
+
 if(MKL_MPI_TYPE MATCHES "OMPI")
-     __mkl_find_library(MKL_BLACS_LIB mkl_blacs_openmpi_lp64)
+    if(APPLE)
+        message(FATAL_ERROR "Only MPICH is supported on Apple.")
+    endif()
+     __mkl_find_library(MKL_BLACS_LIB mkl_blacs_openmpi_${_mkl_lp})
 else() # MPICH
-    __mkl_find_library(MKL_BLACS_LIB mkl_blacs_intelmpi_lp64)
+    if(APPLE)
+        __mkl_find_library(MKL_BLACS_LIB mkl_blacs_mpich_${_mkl_lp})
+    else()
+        __mkl_find_library(MKL_BLACS_LIB mkl_blacs_intelmpi_${_mkl_lp})
+    endif()
 endif()
 
 find_package_handle_standard_args(ScaLAPACK
@@ -46,7 +55,7 @@ if (ScaLAPACK_FOUND AND NOT TARGET MKL::ScaLAPACK)
     add_library(MKL::ScaLAPACK UNKNOWN IMPORTED)
     set_target_properties(MKL::ScaLAPACK PROPERTIES 
       IMPORTED_LOCATION "${MKL_SCALAPACK_LIB}"
-      INTERFACE_LINK_LIBRARIES "MKL::BLAS_INTERFACE;MKL::THREADING;MKL::CORE;MKL::BLACS;${__mkl_threading_backend};Threads::Threads"
+      INTERFACE_LINK_LIBRARIES "MKL::BLAS_INTERFACE;MKL::THREADING;MKL::CORE;MKL::BLACS;${_mkl_threading_backend};Threads::Threads"
       )
 endif()
 

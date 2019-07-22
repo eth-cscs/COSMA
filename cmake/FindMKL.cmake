@@ -4,17 +4,21 @@
 #   MKL::MKL
 #
 # The type of threading for MKL has to be specified using the variable
-#        MKL_THREADING            := IOMP|GOMP           (default: serial)
-#        MKL_USE_64BIT_INTEGERS   := True|False          (default: False)
+#        MKL_PARALLEL            := ON|OFF   (default: ON / parallel)
+#        MKL_64BIT               := ON|OFF   (default: OFF / 32bit interface)
 #
 # NOT SUPPORTED
 #   - TBB threading back-end
 #   - F95 interfaces
 #
-# Note: Do not mix GCC and Intel OpenMP.
+# Note: Mixing GCC and Intel OpenMP backends is a bad idea.
 #       The module depends on FindThreads and FindOpenMP.
 #
 include(FindPackageHandleStandardArgs)
+
+
+option(MKL_PARALLEL "Parallel version of MKL" ON)
+option(MKL_64BIT "Parallel version of MKL" OFF)
 
 find_path(MKL_INCLUDE_DIR mkl.h
     HINTS
@@ -49,18 +53,21 @@ endfunction()
 
 __mkl_find_library(MKL_CORE_LIB mkl_core)
 
-if(MKL_THREADING MATCHES "GOMP")
-    __mkl_find_library(MKL_THREADING_LIB mkl_gnu_thread)
-elseif(MKL_THREADING MATCHES "IOMP")
-    __mkl_find_library(MKL_THREADING_LIB mkl_intel_thread)
-else() # Serial
-    __mkl_find_library(MKL_THREADING_LIB mkl_sequential)
+set(_mkl_lp "lp64")
+mark_as_advanced(${_mkl_lp})
+if(MKL_64BIT)
+  set(_mkl_lp "ilp64")
 endif()
+__mkl_find_library(MKL_INTERFACE_LIB mkl_intel_${_mkl_lp})
 
-if(NOT MKL_USE_64BIT_INTEGERS)
-    __mkl_find_library(MKL_INTERFACE_LIB mkl_intel_lp64)
+if(MKL_PARALLEL)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT APPLE)
+        __mkl_find_library(MKL_THREADING_LIB mkl_gnu_thread)
+    else()
+        __mkl_find_library(MKL_THREADING_LIB mkl_intel_thread)
+    endif()
 else()
-    __mkl_find_library(MKL_INTERFACE_LIB mkl_intel_ilp64)
+    __mkl_find_library(MKL_THREADING_LIB mkl_sequential)
 endif()
 
 find_package_handle_standard_args(MKL 
@@ -73,10 +80,10 @@ find_package_handle_standard_args(MKL
 if (MKL_FOUND AND NOT TARGET MKL::MKL)
     find_package(Threads REQUIRED)
 
-    set(__mkl_threading_backend "")
+    set(_mkl_threading_backend "")
     if(MKL_THREADING)
         find_package(OpenMP REQUIRED)
-        set(__threading_lib "OpenMP::OpenMP_CXX")
+        set(_mkl_threading_backend "OpenMP::OpenMP_CXX")
     endif()
 
     add_library(MKL::CORE UNKNOWN IMPORTED)
@@ -91,6 +98,6 @@ if (MKL_FOUND AND NOT TARGET MKL::MKL)
     add_library(MKL::MKL INTERFACE IMPORTED)
     set_target_properties(MKL::MKL PROPERTIES 
         INTERFACE_INCLUDE_DIRECTORIES "${MKL_INCLUDE_DIR}"
-        INTERFACE_LINK_LIBRARIES "MKL::BLAS_INTERFACE;MKL::THREADING;MKL::CORE;${__mkl_threading_backend};Threads::Threads")
+        INTERFACE_LINK_LIBRARIES "MKL::BLAS_INTERFACE;MKL::THREADING;MKL::CORE;${_mkl_threading_backend};Threads::Threads")
 endif()
 
