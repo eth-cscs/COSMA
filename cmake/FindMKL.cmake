@@ -42,6 +42,7 @@ function(__mkl_find_library _name)
         HINTS ENV MKLROOT
         ${MKL_ROOT}
         PATH_SUFFIXES ${_mkl_libpath_suffix}
+                      lib
         )
     mark_as_advanced(${_name})
 endfunction()
