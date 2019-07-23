@@ -39,8 +39,16 @@ target_link_libraries(test.multiply PRIVATE gtest_mpi cosma)
 target_include_directories(test.multiply PRIVATE .)
 add_test(NAME test.multiply
          COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-                 ${MPIEXEC_NUMPROC_FLAG} 16 test.multiply)
+         ${MPIEXEC_NUMPROC_FLAG} 16 ./test.multiply)
 add_dependencies(tests test.multiply)
+
+add_executable(test.scalar_matmul scalar_matmul.test.cpp unit_test_mpi.cpp)
+target_link_libraries(test.scalar_matmul PRIVATE gtest_mpi cosma)
+target_include_directories(test.scalar_matmul PRIVATE .)
+add_test(NAME test.scalar_matmul
+         COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
+                 ${MPIEXEC_NUMPROC_FLAG} 8 ./test.scalar_matmul)
+add_dependencies(tests test.scalar_matmul)
 
 if(ScaLAPACK_FOUND)
     add_executable(test.pdgemm test_pdgemm.cpp unit_test_mpi.cpp)
@@ -48,14 +56,7 @@ if(ScaLAPACK_FOUND)
     target_include_directories(test.pdgemm PRIVATE .)
     add_test(NAME test.pdgemm
              COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-                     ${MPIEXEC_NUMPROC_FLAG} 6 test.pdgemm)
+             ${MPIEXEC_NUMPROC_FLAG} 6 ./test.pdgemm)
     add_dependencies(tests test.pdgemm)
 endif()
 
-add_executable(test.scalar_matmul scalar_matmul.test.cpp unit_test_mpi.cpp)
-target_link_libraries(test.scalar_matmul PRIVATE gtest_mpi cosma)
-target_include_directories(test.scalar_matmul PRIVATE .)
-add_test(NAME test.scalar_matmul
-         COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-                 ${MPIEXEC_NUMPROC_FLAG} 8 test.scalar_matmul)
-add_dependencies(tests test.scalar_matmul)

@@ -21,10 +21,8 @@ MPI_Comm subcommunicator(int new_P, MPI_Comm comm = MPI_COMM_WORLD) {
     for (int i = new_P; i < P; ++i) {
         exclude_ranks.push_back(i);
     }
-
     // create reduced group
-    MPI_Group_excl(
-        group, exclude_ranks.size(), exclude_ranks.data(), &newcomm_group);
+    MPI_Group_excl(group, exclude_ranks.size(), exclude_ranks.data(), &newcomm_group);
     // create reduced communicator
     MPI_Comm_create_group(comm, newcomm_group, 0, &newcomm);
 
@@ -77,7 +75,7 @@ struct pdgemm_state {
                   << "Number of ranks: " << obj.P << "\n"
                   << "Process grid: (" << obj.p_rows << ", " << obj.p_cols << ")" << "\n"
                   << "Block sizes = (" << obj.bm << ", " << obj.bn << ", " << obj.bk << ")" << "\n"
-                  << "Transpose flags = (" << obj.trans_a << ", " << obj.trans_b << "\n";
+                  << "Transpose flags = (" << obj.trans_a << ", " << obj.trans_b << ")\n";
     }
 };
 
@@ -106,17 +104,16 @@ TEST_P(PdgemmTestWithParams, pdgemm) {
     int m = state.m;
     int n = state.n;
     int k = state.k;
-    int P = state.P;
     int p = state.p_rows;
     int q = state.p_cols;
+    int P = p * q;
     int bm = state.bm;
     int bn = state.bn;
     int bk = state.bk;
     double alpha = state.alpha;
     double beta = state.beta;
 
-    MPI_Comm comm = subcommunicator(P);
-
+    MPI_Comm comm = subcommunicator(P, MPI_COMM_WORLD);
     if (rank < P) {
         if (rank == 0) {
             std::cout << state << std::endl;
@@ -126,8 +123,8 @@ TEST_P(PdgemmTestWithParams, pdgemm) {
             1, 1, 1, state.trans_a, state.trans_b, p, q,
             alpha, beta,
             rank, comm);
-        EXPECT_TRUE(correct);
 
+        EXPECT_TRUE(correct);
         MPI_Comm_free(&comm);
     }
 };
@@ -137,11 +134,11 @@ INSTANTIATE_TEST_CASE_P(
     PdgemmTestWithParams,
     testing::Values(
         // alpha = 1.0, beta = 0.0
-        pdgemm_state{10, 10, 10, 2, 2, 2, 2, 2, 'N', 'N'},
-        pdgemm_state{5, 5, 5, 2, 2, 2, 2, 2, 'N', 'N'},
-        pdgemm_state{5, 5, 5, 2, 2, 2, 2, 2, 'T', 'N'},
-        pdgemm_state{8, 4, 8, 2, 2, 2, 3, 2, 'N', 'N'},
-        pdgemm_state{8, 4, 8, 2, 2, 2, 3, 2, 'T', 'N'},
+        pdgemm_state{10, 10, 10, 2, 2, 2, 2, 2, 'N', 'N', 1.0, 0.0},
+        pdgemm_state{5, 5, 5, 2, 2, 2, 2, 2, 'N', 'N', 1.0, 0.0},
+        pdgemm_state{5, 5, 5, 2, 2, 2, 2, 2, 'T', 'N', 1.0, 0.0},
+        pdgemm_state{8, 4, 8, 2, 2, 2, 3, 2, 'N', 'N', 1.0, 0.0},
+        pdgemm_state{8, 4, 8, 2, 2, 2, 3, 2, 'T', 'N', 1.0, 0.0},
 
         // alpha = 0.5, beta = 0.0
         pdgemm_state{10, 10, 10, 2, 2, 2, 2, 2, 'N', 'N', 0.5, 0.0},

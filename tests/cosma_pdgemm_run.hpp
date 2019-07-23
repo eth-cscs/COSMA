@@ -66,7 +66,6 @@ bool test_pdgemm(int m, int n, int k, // matrix sizes
         int p, int q, // processor grid
         double alpha, double beta, // processor grid
         int rank, MPI_Comm comm) {
-
     // ***********************************
     //   Cblacs context initialization
     // ***********************************
