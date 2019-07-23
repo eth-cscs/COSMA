@@ -9,7 +9,6 @@
 #include <cosma/interval.hpp>
 #include <cosma/matrix.hpp>
 #include <cosma/strategy.hpp>
-#include <cosma/multiply_using_layout.hpp>
 
 // grid2grid
 #include <transform.cpp>
