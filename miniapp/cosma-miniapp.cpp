@@ -50,6 +50,7 @@ long run(Strategy &s, context &ctx, MPI_Comm comm = MPI_COMM_WORLD) {
     CosmaMatrix<double> B('B', s, rank);
     CosmaMatrix<double> C('C', s, rank);
     double beta = 0;
+    double alpha = 1;
 
     // fill the matrices with random data
     srand48(rank);
@@ -58,7 +59,7 @@ long run(Strategy &s, context &ctx, MPI_Comm comm = MPI_COMM_WORLD) {
 
     MPI_Barrier(comm);
     auto start = std::chrono::steady_clock::now();
-    multiply(ctx, A, B, C, s, comm, beta);
+    multiply(ctx, A, B, C, s, comm, alpha, beta);
     MPI_Barrier(comm);
     auto end = std::chrono::steady_clock::now();
 

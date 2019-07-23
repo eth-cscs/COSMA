@@ -54,13 +54,14 @@ void run(cosma::Strategy &strategy,
         cosma::CosmaMatrix<Scalar> A('A', strategy, rank);
         cosma::CosmaMatrix<Scalar> B('B', strategy, rank);
         cosma::CosmaMatrix<Scalar> C('C', strategy, rank);
+        constexpr auto alpha = Scalar{1};
         constexpr auto beta = Scalar{0};
 
         fill_matrix(A.matrix());
         fill_matrix(B.matrix());
 
         auto start = clock_t::now();
-        multiply(ctx, A, B, C, strategy, comm, beta);
+        multiply(ctx, A, B, C, strategy, comm, alpha, beta);
         auto end = clock_t::now();
         times_str << seconds_t(end - start).count() << "s ";
     }

@@ -17,6 +17,7 @@ void multiply(context &ctx,
               CosmaMatrix<Scalar> &C,
               const Strategy &strategy,
               MPI_Comm comm,
+              Scalar alpha,
               Scalar beta);
 
 template <typename Scalar>
@@ -31,6 +32,7 @@ void multiply(context &ctx,
               size_t step,
               const Strategy &strategy,
               communicator &comm,
+              Scalar alpha,
               Scalar beta);
 
 template <typename Scalar>
@@ -45,6 +47,7 @@ void sequential(context &ctx,
                 size_t step,
                 const Strategy &strategy,
                 communicator &comm,
+                Scalar alpha,
                 Scalar beta);
 
 template <typename Scalar>
@@ -59,6 +62,7 @@ void parallel(context &ctx,
               size_t step,
               const Strategy &strategy,
               communicator &comm,
+              Scalar alpha,
               Scalar beta);
 
 } // namespace cosma

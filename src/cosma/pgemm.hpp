@@ -8,7 +8,6 @@ namespace cosma {
 using zdouble_t = std::complex<double>;
 using zfloat_t = std::complex<float>;
 
-// TODO: alpha ignored at the moment
 template <typename T>
 void pgemm(const char trans_a, const char trans_b, const int m, const int n, const int k,
            const T alpha, const T* a, const int ia, const int ja, const int* desca,

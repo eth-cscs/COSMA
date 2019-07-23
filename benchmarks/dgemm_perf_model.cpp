@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
         c = std::vector<double>(min_m * min_m);
 
         local_multiply_cpu(
-            a.data(), b.data(), c.data(), min_m, min_m, min_m, 0.0);
+            a.data(), b.data(), c.data(), min_m, min_m, min_m, 1.0, 0.0);
     }
 
     std::vector<problem> timings;
@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
                     c = std::vector<double>(m * n);
 
                     local_multiply_cpu(
-                        a.data(), b.data(), c.data(), m, n, k, 0.0);
+                        a.data(), b.data(), c.data(), m, n, k, 1.0, 0.0);
                 }
                 auto finish = std::chrono::high_resolution_clock::now();
                 auto time =

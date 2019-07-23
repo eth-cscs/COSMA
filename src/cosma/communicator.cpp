@@ -347,6 +347,7 @@ void communicator::reduce(Interval &P,
                           std::vector<int> &c_total_current,
                           std::vector<std::vector<int>> &c_expanded,
                           std::vector<int> &c_total_expanded,
+                          Scalar alpha,
                           Scalar beta,
                           int step) {
     MPI_Comm comm = active_comm(step);
@@ -375,6 +376,7 @@ void communicator::overlap_comm_and_comp(context &ctx,
                                          Interval &k,
                                          Interval &P,
                                          size_t step,
+                                         Scalar alpha,
                                          Scalar beta) {
     MPI_Comm comm = active_comm(step);
     one_sided_communicator::overlap_comm_and_comp(ctx,
@@ -389,6 +391,7 @@ void communicator::overlap_comm_and_comp(context &ctx,
                                                   k,
                                                   P,
                                                   step,
+                                                  alpha,
                                                   beta);
 }
 
@@ -446,6 +449,7 @@ communicator::reduce<float>(Interval &P,
                             std::vector<int> &c_total_current,
                             std::vector<std::vector<int>> &c_expanded,
                             std::vector<int> &c_total_expanded,
+                            float alpha,
                             float beta,
                             int step);
 
@@ -459,6 +463,7 @@ communicator::reduce<double>(Interval &P,
                              std::vector<int> &c_total_current,
                              std::vector<std::vector<int>> &c_expanded,
                              std::vector<int> &c_total_expanded,
+                             double alpha,
                              double beta,
                              int step);
 
@@ -472,6 +477,7 @@ template void communicator::reduce<std::complex<float>>(
     std::vector<int> &c_total_current,
     std::vector<std::vector<int>> &c_expanded,
     std::vector<int> &c_total_expanded,
+    std::complex<float> alpha,
     std::complex<float> beta,
     int step);
 
@@ -485,6 +491,7 @@ template void communicator::reduce<std::complex<double>>(
     std::vector<int> &c_total_current,
     std::vector<std::vector<int>> &c_expanded,
     std::vector<int> &c_total_expanded,
+    std::complex<double> alpha,
     std::complex<double> beta,
     int step);
 
@@ -500,6 +507,7 @@ communicator::overlap_comm_and_comp<double>(context &ctx,
                                             Interval &k,
                                             Interval &P,
                                             size_t step,
+                                            double alpha,
                                             double beta);
 template void
 communicator::overlap_comm_and_comp<float>(context &ctx,
@@ -511,6 +519,7 @@ communicator::overlap_comm_and_comp<float>(context &ctx,
                                            Interval &k,
                                            Interval &P,
                                            size_t step,
+                                           float alpha,
                                            float beta);
 
 template void communicator::overlap_comm_and_comp<std::complex<float>>(
@@ -523,6 +532,7 @@ template void communicator::overlap_comm_and_comp<std::complex<float>>(
     Interval &k,
     Interval &P,
     size_t step,
+    std::complex<float> alpha,
     std::complex<float> beta);
 
 template void communicator::overlap_comm_and_comp<std::complex<double>>(
@@ -535,6 +545,7 @@ template void communicator::overlap_comm_and_comp<std::complex<double>>(
     Interval &k,
     Interval &P,
     size_t step,
+    std::complex<double> alpha,
     std::complex<double> beta);
 
 } // namespace cosma

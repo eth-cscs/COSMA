@@ -20,6 +20,7 @@ void multiply(context &ctx,
               CosmaMatrix<Scalar> &matrixC,
               const Strategy &strategy,
               MPI_Comm comm,
+              Scalar alpha,
               Scalar beta) {
     Interval mi = Interval(0, strategy.m - 1);
     Interval ni = Interval(0, strategy.n - 1);
@@ -42,6 +43,7 @@ void multiply(context &ctx,
                  0,
                  strategy,
                  cosma_comm,
+                 alpha,
                  beta);
     }
 
@@ -62,6 +64,7 @@ void multiply(context &ctx,
               size_t step,
               const Strategy &strategy,
               communicator &comm,
+              Scalar alpha,
               Scalar beta) {
     PE(multiply_other);
 #ifdef DEBUG
@@ -110,12 +113,13 @@ void multiply(context &ctx,
                        m.length(),
                        n.length(),
                        k.length(),
+                       alpha,
                        beta);
     else {
         if (strategy.parallel_step(step)) {
             if (strategy.should_overlap_comm_and_comp(step)) {
                 comm.overlap_comm_and_comp(
-                    ctx, matrixA, matrixB, matrixC, m, n, k, P, step, beta);
+                    ctx, matrixA, matrixB, matrixC, m, n, k, P, step, alpha, beta);
                 // parallel(matrixA, matrixB, matrixC, m, n, k, P, step,
                 // strategy, comm, beta);
             } else {
@@ -130,6 +134,7 @@ void multiply(context &ctx,
                          step,
                          strategy,
                          comm,
+                         alpha,
                          beta);
             }
         } else {
@@ -144,6 +149,7 @@ void multiply(context &ctx,
                        step,
                        strategy,
                        comm,
+                       alpha,
                        beta);
         }
     }
@@ -177,6 +183,7 @@ void sequential(context &ctx,
                 size_t step,
                 const Strategy &strategy,
                 communicator &comm,
+                Scalar alpha,
                 Scalar beta) {
     // split the dimension but not the processors, all P processors are taking
     // part in each substep.
@@ -194,6 +201,7 @@ void sequential(context &ctx,
                      step + 1,
                      strategy,
                      comm,
+                     alpha,
                      beta);
         }
         return;
@@ -213,6 +221,7 @@ void sequential(context &ctx,
                      step + 1,
                      strategy,
                      comm,
+                     alpha,
                      beta);
         }
         return;
@@ -240,6 +249,7 @@ void sequential(context &ctx,
                      step + 1,
                      strategy,
                      comm,
+                     alpha,
                      new_beta);
         }
         return;
@@ -315,6 +325,7 @@ void parallel(context &ctx,
               size_t step,
               const Strategy &strategy,
               communicator &comm,
+              Scalar alpha,
               Scalar beta) {
     PE(multiply_other);
 
@@ -443,6 +454,7 @@ void parallel(context &ctx,
              step + 1,
              strategy,
              comm,
+             alpha,
              new_beta);
     // revert the current matrix
     expanded_mat.set_buffer_index(buffer_idx);
@@ -470,6 +482,7 @@ void parallel(context &ctx,
                     total_before_expansion,
                     size_after_expansion,
                     total_after_expansion,
+                    alpha,
                     beta,
                     step);
     }
@@ -493,6 +506,7 @@ template void multiply<double>(context &ctx,
                                CosmaMatrix<double> &C,
                                const Strategy &strategy,
                                MPI_Comm comm,
+                               double alpha,
                                double beta);
 
 template void multiply<float>(context &ctx,
@@ -501,6 +515,7 @@ template void multiply<float>(context &ctx,
                               CosmaMatrix<float> &C,
                               const Strategy &strategy,
                               MPI_Comm comm,
+                              float alpha,
                               float beta);
 
 template void multiply<zdouble_t>(context &ctx,
@@ -509,6 +524,7 @@ template void multiply<zdouble_t>(context &ctx,
                                   CosmaMatrix<zdouble_t> &C,
                                   const Strategy &strategy,
                                   MPI_Comm comm,
+                                  zdouble_t alpha,
                                   zdouble_t beta);
 
 template void multiply<zfloat_t>(context &ctx,
@@ -517,6 +533,7 @@ template void multiply<zfloat_t>(context &ctx,
                                  CosmaMatrix<zfloat_t> &C,
                                  const Strategy &strategy,
                                  MPI_Comm comm,
+                                 zfloat_t alpha,
                                  zfloat_t beta);
 
 // Explicit instantiations for `multiply`
@@ -532,6 +549,7 @@ template void multiply<double>(context &ctx,
                                size_t step,
                                const Strategy &strategy,
                                communicator &comm,
+                               double alpha,
                                double beta);
 
 template void multiply<float>(context &ctx,
@@ -545,6 +563,7 @@ template void multiply<float>(context &ctx,
                               size_t step,
                               const Strategy &strategy,
                               communicator &comm,
+                              float alpha,
                               float beta);
 
 template void multiply<zdouble_t>(context &ctx,
@@ -558,6 +577,7 @@ template void multiply<zdouble_t>(context &ctx,
                                   size_t step,
                                   const Strategy &strategy,
                                   communicator &comm,
+                                  zdouble_t alpha,
                                   zdouble_t beta);
 
 template void multiply<zfloat_t>(context &ctx,
@@ -571,6 +591,7 @@ template void multiply<zfloat_t>(context &ctx,
                                  size_t step,
                                  const Strategy &strategy,
                                  communicator &comm,
+                                 zfloat_t alpha,
                                  zfloat_t beta);
 
 // Explicit instantiations for `sequential`
@@ -586,6 +607,7 @@ template void sequential<double>(context &ctx,
                                  size_t step,
                                  const Strategy &strategy,
                                  communicator &comm,
+                                 double alpha,
                                  double beta);
 
 template void sequential<float>(context &ctx,
@@ -599,6 +621,7 @@ template void sequential<float>(context &ctx,
                                 size_t step,
                                 const Strategy &strategy,
                                 communicator &comm,
+                                float alpha,
                                 float beta);
 
 template void sequential<zdouble_t>(context &ctx,
@@ -612,6 +635,7 @@ template void sequential<zdouble_t>(context &ctx,
                                     size_t step,
                                     const Strategy &strategy,
                                     communicator &comm,
+                                    zdouble_t alpha,
                                     zdouble_t beta);
 
 template void sequential<zfloat_t>(context &ctx,
@@ -625,6 +649,7 @@ template void sequential<zfloat_t>(context &ctx,
                                    size_t step,
                                    const Strategy &strategy,
                                    communicator &comm,
+                                   zfloat_t alpha,
                                    zfloat_t beta);
 
 // Explicit instantiations for `parallel`
@@ -640,6 +665,7 @@ template void parallel<double>(context &ctx,
                                size_t step,
                                const Strategy &strategy,
                                communicator &comm,
+                               double alpha,
                                double beta);
 
 template void parallel<float>(context &ctx,
@@ -653,6 +679,7 @@ template void parallel<float>(context &ctx,
                               size_t step,
                               const Strategy &strategy,
                               communicator &comm,
+                              float alpha,
                               float beta);
 
 template void parallel<zdouble_t>(context &ctx,
@@ -666,6 +693,7 @@ template void parallel<zdouble_t>(context &ctx,
                                   size_t step,
                                   const Strategy &strategy,
                                   communicator &comm,
+                                  zdouble_t alpha,
                                   zdouble_t beta);
 
 template void parallel<zfloat_t>(context &ctx,
@@ -679,6 +707,7 @@ template void parallel<zfloat_t>(context &ctx,
                                  size_t step,
                                  const Strategy &strategy,
                                  communicator &comm,
+                                 zfloat_t alpha,
                                  zfloat_t beta);
 
 } // namespace cosma

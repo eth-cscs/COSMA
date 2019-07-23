@@ -145,6 +145,7 @@ class communicator {
                 std::vector<int> &c_total_current,
                 std::vector<std::vector<int>> &c_expanded,
                 std::vector<int> &c_total_expanded,
+                Scalar alpha,
                 Scalar beta,
                 int step);
 
@@ -158,6 +159,7 @@ class communicator {
                                Interval &k,
                                Interval &P,
                                size_t step,
+                               Scalar alpha,
                                Scalar beta);
 
     // creates the graph that represents the topology of mpi communicator

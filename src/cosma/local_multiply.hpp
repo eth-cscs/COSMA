@@ -11,6 +11,7 @@ void local_multiply(context &ctx,
                     int m,
                     int n,
                     int k,
+                    Scalar alpha,
                     Scalar beta);
 
 template <typename Scalar>
@@ -20,5 +21,6 @@ void local_multiply_cpu(Scalar *a,
                         int m,
                         int n,
                         int k,
+                        Scalar alpha,
                         Scalar beta);
 } // namespace cosma

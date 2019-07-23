@@ -23,6 +23,7 @@ void overlap_comm_and_comp(context &ctx,
                            Interval &k,
                            Interval &P,
                            size_t step,
+                           Scalar alpha,
                            Scalar beta);
 
 }; // namespace one_sided_communicator

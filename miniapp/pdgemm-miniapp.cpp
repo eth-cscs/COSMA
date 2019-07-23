@@ -52,7 +52,8 @@ std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
         int sub_m, int sub_n, int sub_k, // defines submatrices
         char trans_a, char trans_b, // transpose flags
         int p, int q, // processor grid
-        int rank, int n_rep,
+        double alpha, double beta, // alpha and beta of multiplication
+        int rank, int n_rep, // current rank and number of repetitions
         std::string algorithm, // cosma or scalapack
         MPI_Comm comm) {
 
@@ -69,9 +70,6 @@ std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
     // ***********************************
     //   describe the problem parameters
     // ***********************************
-    double alpha = 1.0;
-    double beta = 0.0;
-
     // start indices of submatrices for multiplication
     // matrix A
     int ia = transpose_if(trans_a, sub_m, sub_k);
@@ -234,6 +232,10 @@ int main(int argc, char **argv) {
     auto p = options::next_int("-p", "--p_row", "number of rows in a processor grid.", 1);
     auto q = options::next_int("-q", "--q_row", "number of columns in a processor grid.", P);
 
+    // alpha and beta of multiplication
+    auto alpha = options::next_double("-a", "--alpha", "Alpha parameter in C = alpha*A*B + beta*C", 1.0);
+    auto beta = options::next_double("-b", "--beta", "Beta parameter in C = alpha*A*B + beta*C", 0.0);
+
     // number of repetitions
     auto n_rep = options::next_int("-r", "--n_rep", "number of repetitions", 2);
 
@@ -273,9 +275,10 @@ int main(int argc, char **argv) {
     if (rank == 0) {
         std::cout << "Running PDGEMM on the following problem size:" << std::endl;
         std::cout << "Matrix sizes: (m, n, k) = (" << m << ", " << n << ", " << k << ")" << std::endl;;
-        std::cout << "Block sizes: (bm, bn, bk) = (" << bm << ", " << bn << ", " << bk << ")" << std::endl;;
+        std::cout << "(alpha, beta) = (" << alpha << ", " << beta << ")" << std::endl;
+        std::cout << "Block sizes: (bm, bn, bk) = (" << bm << ", " << bn << ", " << bk << ")" << std::endl;
         std::cout << "Transpose flags (TA, TB) = (" << ta << ", " << tb << ")" << std::endl;
-        std::cout << "Processor grid: (prows, pcols) = (" << p << ", " << q << ")" << std::endl;;
+        std::cout << "Processor grid: (prows, pcols) = (" << p << ", " << q << ")" << std::endl;
         std::cout << "Number of repetitions: " << n_rep << std::endl;
 
         if (scalapack)
@@ -287,12 +290,17 @@ int main(int argc, char **argv) {
     // *******************************
     //   perform the multiplication
     // ******************************
-    std::vector<long> times = 
+    std::vector<long> times =
         run_pdgemm(m, n, k,
                    bm, bn, bk,
                    submatrix_m, submatrix_n, submatrix_k,
                    ta, tb,
-                   p, q, rank, n_rep, algorithm, MPI_COMM_WORLD);
+                   p, q,
+                   alpha, beta,
+                   rank,
+                   n_rep,
+                   algorithm,
+                   MPI_COMM_WORLD);
 
     // *****************
     //   output times

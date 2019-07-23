@@ -34,13 +34,14 @@ clock_t::time_point debug_gemm_start(Scalar *matrixA,
                                       int m,
                                       int n,
                                       int k,
+                                      Scalar alpha,
                                       Scalar beta) {
     auto start = clock_t::now();
-    if (beta > 0) {
+    if (std::abs(beta) > 0) {
         std::cout << "C (before) = " << std::endl;
         print_matrix(m, n, matrixC, 'C');
         auto C_partial = std::unique_ptr<Scalar[]>(new Scalar[m * n]);
-        gemm(m, n, k, 1.0, matrixA, m, matrixB, k, 0.0, C_partial.get(), m);
+        gemm(m, n, k, alpha, matrixA, m, matrixB, k, 0.0, C_partial.get(), m);
         std::cout << "C (partial) = " << std::endl;
         print_matrix(m, n, C_partial.get(), 'C');
     }
@@ -54,6 +55,7 @@ clock_t::time_point debug_gemm_end(Scalar *matrixA,
                                     int m,
                                     int n,
                                     int k,
+                                    Scalar alpha,
                                     Scalar beta) {
     std::cout << "After multiplication: " << std::endl;
     std::cout << "beta = " << beta << std::endl;
@@ -72,24 +74,25 @@ void local_multiply(context &ctx,
                     int m,
                     int n,
                     int k,
+                    Scalar alpha,
                     Scalar beta) {
     PE(multiply_computation);
 #ifdef DEBUG
-    auto t_start = debug_gemm_start(matrixA, matrixB, matrixC, m, n, k, beta);
+    auto t_start = debug_gemm_start(matrixA, matrixB, matrixC, m, n, k, alpha, beta);
 #endif
 
 #ifdef COSMA_HAVE_GPU
-    gpu::dgemm(ctx.gpu_ctx, matrixA, matrixB, matrixC, m, n, k, 1.0, beta);
+    gpu::dgemm(ctx.gpu_ctx, matrixA, matrixB, matrixC, m, n, k, alpha, beta);
 #else
     (void)ctx;
-    gemm(m, n, k, Scalar{1}, matrixA, m, matrixB, k, beta, matrixC, m);
+    gemm(m, n, k, alpha, matrixA, m, matrixB, k, beta, matrixC, m);
 #endif
     // blas::dgemm(&N, &N, &m, &n, &k, &one, matrixA, &m, matrixB, &k, &beta,
     // matrixC, &m);
     PL();
 
 #ifdef DEBUG
-    auto t_end = debug_gemm_end(matrixA, matrixB, matrixC, m, n, k, beta);
+    auto t_end = debug_gemm_end(matrixA, matrixB, matrixC, m, n, k, alpha, beta);
     std::cout << "time(" << m << ", " << n << ", " << k
               << ") = " << ms_t(t_end - t_start).count() << std::endl;
 #endif
@@ -102,15 +105,16 @@ void local_multiply_cpu(Scalar *matrixA,
                         int m,
                         int n,
                         int k,
+                        Scalar alpha,
                         Scalar beta) {
 #ifdef DEBUG
-    auto t_start = debug_gemm_start(matrixA, matrixB, matrixC, m, n, k, beta);
+    auto t_start = debug_gemm_start(matrixA, matrixB, matrixC, m, n, k, alpha, beta);
 #endif
     PE(multiply_computation);
-    gemm(m, n, k, Scalar{1}, matrixA, m, matrixB, k, beta, matrixC, m);
+    gemm(m, n, k, alpha, matrixA, m, matrixB, k, beta, matrixC, m);
     PL();
 #ifdef DEBUG
-    auto t_end = debug_gemm_end(matrixA, matrixB, matrixC, m, n, k, beta);
+    auto t_end = debug_gemm_end(matrixA, matrixB, matrixC, m, n, k, alpha, beta);
     std::cout << "time(" << m << ", " << n << ", " << k
               << ") = " << ms_t(t_end - t_start).count() << std::endl;
 #endif
@@ -122,6 +126,7 @@ template void local_multiply_cpu<double>(double *matrixA,
                                          int m,
                                          int n,
                                          int k,
+                                         double alpha,
                                          double beta);
 
 template void local_multiply_cpu<float>(float *matrixA,
@@ -130,6 +135,7 @@ template void local_multiply_cpu<float>(float *matrixA,
                                         int m,
                                         int n,
                                         int k,
+                                        float alpha,
                                         float beta);
 
 template void
@@ -139,6 +145,7 @@ local_multiply_cpu<std::complex<double>>(std::complex<double> *matrixA,
                                          int m,
                                          int n,
                                          int k,
+                                         std::complex<double> alpha,
                                          std::complex<double> beta);
 
 template void
@@ -148,6 +155,7 @@ local_multiply_cpu<std::complex<float>>(std::complex<float> *matrixA,
                                         int m,
                                         int n,
                                         int k,
+                                        std::complex<float> alpha,
                                         std::complex<float> beta);
 
 template void local_multiply<double>(context &ctx,
@@ -157,6 +165,7 @@ template void local_multiply<double>(context &ctx,
                                      int m,
                                      int n,
                                      int k,
+                                     double alpha,
                                      double beta);
 
 template void local_multiply<float>(context &ctx,
@@ -166,6 +175,7 @@ template void local_multiply<float>(context &ctx,
                                     int m,
                                     int n,
                                     int k,
+                                    float alpha,
                                     float beta);
 
 template void
@@ -176,6 +186,7 @@ local_multiply<std::complex<double>>(context &ctx,
                                      int m,
                                      int n,
                                      int k,
+                                     std::complex<double> alpha,
                                      std::complex<double> beta);
 
 template void local_multiply<std::complex<float>>(context &ctx,
@@ -185,6 +196,7 @@ template void local_multiply<std::complex<float>>(context &ctx,
                                                   int m,
                                                   int n,
                                                   int k,
+                                                  std::complex<float> alpha,
                                                   std::complex<float> beta);
 
 } // namespace cosma

@@ -427,6 +427,7 @@ void overlap_m_split(bool use_busy_waiting,
                      Interval &n,
                      Interval &k,
                      Interval &P,
+                     Scalar alpha,
                      Scalar beta) {
     PE(multiply_communication_other);
     int gp, off;
@@ -489,6 +490,7 @@ void overlap_m_split(bool use_busy_waiting,
                    newm.length(),
                    n.subinterval(divisor, gp).length(),
                    k.length(),
+                   alpha,
                    beta);
     PE(multiply_communication_other);
 
@@ -513,6 +515,7 @@ void overlap_m_split(bool use_busy_waiting,
                            newm.length(),
                            n.subinterval(divisor, idx).length(),
                            k.length(),
+                           alpha,
                            beta);
             PE(multiply_communication_copy);
             ready--;
@@ -544,6 +547,7 @@ void overlap_n_split(bool use_busy_waiting,
                      Interval &n,
                      Interval &k,
                      Interval &P,
+                     Scalar alpha,
                      Scalar beta) {
     PE(multiply_communication_other);
     int gp, off;
@@ -629,6 +633,7 @@ void overlap_n_split(bool use_busy_waiting,
                            m.length(),
                            newn.length(),
                            k.subinterval(divisor, idx).length(),
+                           alpha,
                            new_beta);
             PE(multiply_communication_other);
 
@@ -722,6 +727,7 @@ void compute(context &ctx,
              Interval &n,
              Interval &k,
              std::vector<int> &displacements_n,
+             Scalar alpha,
              Scalar beta,
              int start,
              int end) {
@@ -753,6 +759,7 @@ void compute(context &ctx,
                    m.length(),
                    n_length,
                    k.length(),
+                   alpha,
                    beta);
     PE(multiply_communication_other);
 }
@@ -772,6 +779,7 @@ void overlap_k_split(context &ctx,
                      Interval &n,
                      Interval &k,
                      Interval &P,
+                     Scalar alpha,
                      Scalar beta) {
     PE(multiply_communication_other);
     // int divisor = strategy.divisor(step);
@@ -848,6 +856,7 @@ void overlap_k_split(context &ctx,
                 n,
                 newk,
                 std::ref(displacements_n),
+                alpha,
                 beta,
                 0,
                 divisor);
@@ -880,6 +889,7 @@ void overlap_k_split(context &ctx,
                         n,
                         newk,
                         std::ref(displacements_n),
+                        alpha,
                         beta,
                         start,
                         end);
@@ -903,6 +913,7 @@ void overlap_k_split(context &ctx,
                                 n,
                                 newk,
                                 std::ref(displacements_n),
+                                alpha,
                                 beta,
                                 end,
                                 next_end);
@@ -930,6 +941,7 @@ void overlap_k_split(context &ctx,
                         n,
                         newk,
                         std::ref(displacements_n),
+                        alpha,
                         beta,
                         start,
                         divisor);
@@ -943,6 +955,7 @@ void overlap_k_split(context &ctx,
                         n,
                         newk,
                         std::ref(displacements_n),
+                        alpha,
                         beta,
                         0,
                         end);
@@ -968,6 +981,7 @@ void overlap_k_split(context &ctx,
                                 n,
                                 newk,
                                 std::ref(displacements_n),
+                                alpha,
                                 beta,
                                 end,
                                 next_end);
@@ -1006,6 +1020,7 @@ void overlap_comm_and_comp(context &ctx,
                            Interval &k,
                            Interval &P,
                            size_t step,
+                           Scalar alpha,
                            Scalar beta) {
     bool use_busy_waiting = strategy->use_busy_waiting;
     int divisor = strategy->divisor(step);
@@ -1022,6 +1037,7 @@ void overlap_comm_and_comp(context &ctx,
                         n,
                         k,
                         P,
+                        alpha,
                         beta);
     } else if (strategy->split_n(step)) {
         overlap_n_split(use_busy_waiting,
@@ -1036,6 +1052,7 @@ void overlap_comm_and_comp(context &ctx,
                         n,
                         k,
                         P,
+                        alpha,
                         beta);
     } else {
         overlap_k_split(ctx,
@@ -1049,6 +1066,7 @@ void overlap_comm_and_comp(context &ctx,
                         n,
                         k,
                         P,
+                        alpha,
                         beta);
     }
 }
@@ -1065,6 +1083,7 @@ template void overlap_comm_and_comp<float>(context &ctx,
                                            Interval &k,
                                            Interval &P,
                                            size_t step,
+                                           float alpha,
                                            float beta);
 
 template void overlap_comm_and_comp<double>(context &ctx,
@@ -1079,6 +1098,7 @@ template void overlap_comm_and_comp<double>(context &ctx,
                                             Interval &k,
                                             Interval &P,
                                             size_t step,
+                                            double alpha,
                                             double beta);
 
 template void overlap_comm_and_comp<std::complex<float>>(
@@ -1094,6 +1114,7 @@ template void overlap_comm_and_comp<std::complex<float>>(
     Interval &k,
     Interval &P,
     size_t step,
+    std::complex<float> alpha,
     std::complex<float> beta);
 
 template void overlap_comm_and_comp<std::complex<double>>(
@@ -1109,6 +1130,7 @@ template void overlap_comm_and_comp<std::complex<double>>(
     Interval &k,
     Interval &P,
     size_t step,
+    std::complex<double> alpha,
     std::complex<double> beta);
 
 } // end namespace one_sided_communicator

@@ -2,12 +2,6 @@
 #include <complex>
 #include <mpi.h>
 
-#ifdef COSMA_WITH_MKL
-#include <mkl.h>
-#else
-#include <cblas.h>
-#endif
-
 namespace cosma {
 void gemm(const int M,
           const int N,

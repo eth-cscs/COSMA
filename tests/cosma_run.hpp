@@ -204,7 +204,7 @@ bool run(Strategy &s,
 #endif
     }
 
-    multiply(ctx, A, B, C, s, comm, Scalar{0});
+    multiply(ctx, A, B, C, s, comm, Scalar{1}, Scalar{0});
 
     // Then rank0 ask for other ranks data
     std::vector<Scalar> Cs;

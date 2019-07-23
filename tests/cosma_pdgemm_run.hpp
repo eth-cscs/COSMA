@@ -64,6 +64,7 @@ bool test_pdgemm(int m, int n, int k, // matrix sizes
         int sub_m, int sub_n, int sub_k, // defines submatrices
         char trans_a, char trans_b, // transpose flags
         int p, int q, // processor grid
+        double alpha, double beta, // processor grid
         int rank, MPI_Comm comm) {
 
     // ***********************************
@@ -78,9 +79,6 @@ bool test_pdgemm(int m, int n, int k, // matrix sizes
     // ***********************************
     //   describe the problem parameters
     // ***********************************
-    double alpha = 1.0;
-    double beta = 0.0;
-
     // start indices of submatrices for multiplication
     // matrix A
     int ia = transpose_if(trans_a, sub_m, sub_k);

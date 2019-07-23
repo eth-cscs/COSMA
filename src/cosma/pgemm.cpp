@@ -129,7 +129,7 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
 
     // perform cosma multiplication
     auto ctx = cosma::make_context();
-    multiply<T>(ctx, A, B, C, strategy, comm, beta);
+    multiply<T>(ctx, A, B, C, strategy, comm, alpha, beta);
 
     // transform the result from cosma back to scalapack
     grid2grid::transform<T>(cosma_layout_c, scalapack_layout_c, comm);
