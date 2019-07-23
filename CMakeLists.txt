@@ -9,6 +9,13 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+        "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release." FORCE)
+endif()
+
+# Options
+#
 option(COSMA_WITH_TILEDMM "Use CUDA GPU backend." OFF)
 option(COSMA_WITH_PROFILING "Use the semiprof profiler" OFF)
 option(COSMA_WITH_TESTS "Generate the test target." ${MASTER_PROJECT})
@@ -16,23 +23,29 @@ option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
 option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT})
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
 
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING
-        "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release." FORCE)
-endif()
-
 
 project(cosma VERSION 0.1 LANGUAGES CXX)
 
 
 # Dependencies
 #
+option(GRID2GRID_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
+option(OPTIONS_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
+option(SEMIPROF_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
+if(COSMA_WITH_TILEDMM)
+    option(TILEDMM_WITH_INSTALL "" ${COSMA_WITH_INSTALL}) 
+endif()
+
 find_package(MPI REQUIRED)
 add_subdirectory(libs/options)
 add_subdirectory(libs/semiprof)
 add_subdirectory(libs/grid2grid)
 
-set(COSMA_WITH_MKL "<NOT:${COSMA_WITH_TILEDMM}>")
+set(COSMA_WITH_MKL ON)
+if(COSMA_WITH_TILEDMM)
+    set(COSMA_WITH_MKL OFF)
+endif()
+
 if(COSMA_WITH_MKL)
     find_package(MKL REQUIRED)
     find_package(ScaLAPACK)  # optional
@@ -42,16 +55,13 @@ if(COSMA_WITH_TILEDMM)
     add_subdirectory(libs/Tiled-MM)
 endif()
 
+
 # COSMA
 #
 add_subdirectory(src/cosma)
 
-if(COSMA_WITH_INSTALL)
-    set(GRID2GRID_WITH_INSTALL ON)
-    set(OPTIONS_WITH_INSTALL ON)
-    set(SEMIPROF_WITH_INSTALL ON)
-    set(TILEDMM_WITH_INSTALL "$<BOOL:${COSMA_WITH_TILEDMM}>")
 
+if(COSMA_WITH_INSTALL)
     include(CMakePackageConfigHelpers)
     include(GNUInstallDirs)
 
