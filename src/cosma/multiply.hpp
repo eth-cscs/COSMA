@@ -16,8 +16,9 @@
 namespace cosma {
 
 /*
- * Performs matrix multiplication: C = alpha*A*B + beta*C,
- * where alpha and beta are scalars.
+ * Performs matrix multiplication: C = alpha*op(A)*op(B) + beta*C,
+ * where alpha and beta are scalars and op can be:
+ * no-transpose ('N'), transpose ('T') or transpose and conjugate ('C')
  */
 
 /*
@@ -32,12 +33,13 @@ namespace cosma {
  */
 template <typename Scalar>
 void multiply_using_layout(
-              grid2grid::grid_layout<Scalar> A_layout,
-              grid2grid::grid_layout<Scalar> B_layout,
-              grid2grid::grid_layout<Scalar> C_layout,
+              grid2grid::grid_layout<Scalar>& A_layout,
+              grid2grid::grid_layout<Scalar>& B_layout,
+              grid2grid::grid_layout<Scalar>& C_layout,
               int m, int n, int k,
-              Scalar alpha, Scalar beta,
-              MPI_Comm comm);
+              Scalar alpha = Scalar{1}, Scalar beta = Scalar{0},
+              char trans_A = 'N', char trans_B = 'N',
+              MPI_Comm comm = MPI_COMM_WORLD);
 
 /*
  * Takes matrices in the optimal COSMA layout and the division strategy 

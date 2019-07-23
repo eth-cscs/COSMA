@@ -14,7 +14,15 @@ void multiply_using_layout(
               grid2grid::grid_layout<T> C,
               int m, int n, int k,
               T alpha, T beta,
+              char trans_A, char trans_B,
               MPI_Comm comm) {
+
+    // apply the transpose flags
+    // this will not change the layout of the matrix
+    // but will transpose the data (if flag is 'T' or 'C')
+    // during the layout transformation
+    A.transpose_or_conjugate(trans_A);
+    B.transpose_or_conjugate(trans_B);
 
     int rank, P;
     MPI_Comm_rank(comm, &rank);
@@ -546,6 +554,7 @@ template void multiply_using_layout<double>(
                   grid2grid::grid_layout<double> C,
                   int m, int n, int k,
                   double alpha, double beta,
+                  char trans_A, char trans_B,
                   MPI_Comm comm);
 
 template void multiply_using_layout<float>(
@@ -554,6 +563,7 @@ template void multiply_using_layout<float>(
                   grid2grid::grid_layout<float> C,
                   int m, int n, int k,
                   float alpha, float beta,
+                  char trans_A, char trans_B,
                   MPI_Comm comm);
 
 template void multiply_using_layout<zdouble_t>(
@@ -562,6 +572,7 @@ template void multiply_using_layout<zdouble_t>(
                   grid2grid::grid_layout<zdouble_t> C,
                   int m, int n, int k,
                   zdouble_t alpha, zdouble_t beta,
+                  char trans_A, char trans_B,
                   MPI_Comm comm);
 
 template void multiply_using_layout<zfloat_t>(
@@ -570,6 +581,7 @@ template void multiply_using_layout<zfloat_t>(
                   grid2grid::grid_layout<zfloat_t> C,
                   int m, int n, int k,
                   zfloat_t alpha, zfloat_t beta,
+                  char trans_A, char trans_B,
                   MPI_Comm comm);
 
 // Explicit instantiations for short `multiply`
