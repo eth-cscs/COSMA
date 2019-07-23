@@ -175,7 +175,7 @@ be run with the following command line on Piz Daint (assuming we are in the root
 the project):
 
 ```
-OMP_NUM_THREADS=18 MKL_NUM_THREADS=18 srun -C mc -N 8 -n 16 ./miniapp/pdgemm-miniapp -m 1000 -n 1000 -k 1000 -p 4 -q 4 -bm 128 -bn 128 -bk 128 --trans_a
+OMP_NUM_THREADS=18 MKL_NUM_THREADS=18 srun -C mc -N 8 -n 16 ./build/miniapp/pdgemm-miniapp -m 1000 -n 1000 -k 1000 -p 4 -q 4 -bm 128 -bn 128 -bk 128 --trans_a
 ```
 
 The flags have the following meaning:
