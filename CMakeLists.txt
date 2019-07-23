@@ -38,6 +38,7 @@ set(cosma_src_files
     "${cosma_src_prefix}/math_utils.cpp"
     "${cosma_src_prefix}/matrix.cpp"
     "${cosma_src_prefix}/multiply.cpp"
+    "${cosma_src_prefix}/multiply_using_layout.cpp"
     "${cosma_src_prefix}/one_sided_communicator.cpp"
     "${cosma_src_prefix}/strategy.cpp"
     "${cosma_src_prefix}/two_sided_communicator.cpp"

@@ -5,8 +5,7 @@
 #include <cosma/interval.hpp>
 #include <cosma/matrix.hpp>
 #include <cosma/strategy.hpp>
-
-#include <vector>
+#include <cosma/multiply_using_layout.hpp>
 
 namespace cosma {
 
