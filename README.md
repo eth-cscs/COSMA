@@ -45,72 +45,39 @@ uses `dgemm` for the local computations, but also has a support for the `GPU`
 acceleration through our `Tiled-MM` library using `cublas` 
 
 
-## Building and Compiling the Library
+## Building
 
-The project uses submodules, to clone do (don't forget the recursive flag!):
+The project uses submodules, to clone do:
 
 ```bash
 git clone --recursive https://github.com/eth-cscs/COSMA.git
 ```
 
-The easiest way to build the project is to do the following within the project folder:
-```bash
-# make a folder for building
-mkdir build
-cd build
+> !! Note the *--recursive* flag !! 
 
-# building the library
-# specify MKL threading and MPI library to be used
-# MKL threading to be used:
-#   - "GOMP": for GNU OpenMP or 
-#   - "IOMP": for Intel OpenMP
-# MPI to be used:
-#   - "MPICH": for MPICH
-#   - "OMPI": for OpenMPI
-# specify which MPI library is used:
-cmake -DMKL_THREADING="GOMP" -DMKL_MPI_TYPE="MPICH" ..
+COSMA is a CMake project, a recent CMake(>=3.12) is needed. From a build
+directory, adjust and run `build.sh` found under the `scripts` directory.
 
-# compiling the library
-make -j 4
-```
-This will automatically download the required dependencies as submodules.
+External dependencies: 
 
-Once the library is installed, you can try running some examples with the provided script:
-```bash
-sbatch schedule_miniapp_on_daint.sh
-```
-The script will use SLURM to submit a job on 64 nodes. The job will run 2 matrix multiplications and output the time COSMA algorithm took.
+- `MPI 3` (required)
+- `Intel MKL` (default) or `CUDA` depending on whether CPU or GPU back end is
+  used.
 
-## Advanced Users
+> Some dependencies are bundled as submodules and need not be installed
+> explicitly:
+>
+> - `TiledMM` - cublasxt GEMM replacement
+> - `grid2grid` - distributed matrix grid converter
+> - `options` - command line utlility
+> - `semiprof` - profiling utlility
+> - `gtest_mpi` - MPI utlility wrapper over GoogleTest(unit testing library)
 
-Required dependencies  are `MPI`, `OpenMP`, `MKL`, `grid2grid`, `options` and `semiprof`. If GPU backend is used, then one more dependency is `Tiled-MM` for the local multiplication of matrices. For unit tests, a required dependency is `gtest_mpi` (a git submodule).
-
-For advanced users, who do not want to use submodules, but would rather like to install the library and its dependencies independently, the following python script can be used: `scripts/install_dependencies.py`.
-
-The following script provide information on important build variables and
-options: `scripts/build.sh`. The script can be used as a template to build COSMA
-for your system.
-
-### Testing
-
-To build all test targets:
-
-```bash
-make tests
-```
-
-To run all tests:
-
-```bash
-ctest
-```
-
-Note: `COSMA_IS_OPENMPI=ON` has to be set if OpenMPI is used.
-
-
-### Installing
+## Installing
 
 To install do `make install`. 
+
+> !! Note: To set custom installation directory use `CMAKE_INSTALL_PREFIX` when building. 
 
 COSMA is CMake friendly and provides a cosmaConfig.cmake module for easy
 integration into 3rd-party CMake projects with
@@ -127,10 +94,29 @@ when building.
 There is a rudimentary pkgconfig support; dependencies are handles explicitly by
 consumers.
 
-Note: set `CMAKE_INSTALL_PREFIX` to desired installation directory.
+## Testing
 
+To build all test targets:
+
+```bash
+make tests
+```
+
+To run all tests:
+
+```bash
+ctest
+```
+
+> !! Note: `COSMA_WITH_OPENMPI=ON` has to be set if OpenMPI is used.
 
 ## Miniapps
+
+```bash
+sbatch schedule_miniapp_on_daint.sh
+```
+The script will use SLURM to submit a job on 64 nodes. The job will run 2 matrix
+multiplications and output the time COSMA algorithm took.
 
 ### Matrix Multiplication
 

@@ -13,26 +13,25 @@ class Cosma(CMakePackage, CudaPackage):
         description='CMake build type',
         values=('Debug', 'Release', 'RelWithDebInfo', 'MinSizeRel'))
 
-    variant('scalapack', default=False,
-            description='Support for conversion from/to ScaLAPACK P?GEMM.')
+    variant('tiledmm', default=False,
+            description='Use Tiled-MM GPU back end.')
 
     depends_on('cmake@3.12:', type='build')
     depends_on('mpi@3:')
-    depends_on('intel-mkl threads=openmp')
-    depends_on('scalapack', when='scalapack=True')
+    depends_on('intel-mkl threads=openmp', when='tiledmm=False')
+    depends_on('scalapack', when='tiledmm=False')
+    depends_on('cuda', when='tiledmm=True')
 
-    def cmake_args(self): 
+    def cmake_args(self):
         spec = self.spec
-        args = []
+        args = ['-DCOSMA_WITH_TESTS=OFF',
+                '-DCOSMA_WITH_APPS=OFF',
+                '-DCOSMA_WITH_BENCHMARKS=OFF']
 
-        if spec.satisfies('%gcc'):
-            args.append('-DMKL_THREADING=GOMP')
-        else:
-            args.append('-DMKL_THREADING=IOMP')
+        if '+tiledmm' in spec:
+            args.append('-DCOSMA_WITH_TILEDMM=ON')
 
         if spec['mpi'].name == 'openmpi':
             args.append('-DMKL_MPI_TYPE=OMPI')
-        else:
-            args.append('-DMKL_MPI_TYPE=MPICH')
-
+        
         return args
