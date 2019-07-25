@@ -11,7 +11,7 @@
 #include <cosma/strategy.hpp>
 
 // grid2grid
-#include <transform.cpp>
+#include <transform.hpp>
 
 namespace cosma {
 
