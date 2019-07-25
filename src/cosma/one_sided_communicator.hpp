@@ -11,7 +11,7 @@ namespace cosma {
 namespace one_sided_communicator {
 
 template <typename Scalar>
-void overlap_comm_and_comp(context &ctx,
+void overlap_comm_and_comp(context<Scalar> &ctx,
                            MPI_Comm comm,
                            int rank,
                            const Strategy *strategy,

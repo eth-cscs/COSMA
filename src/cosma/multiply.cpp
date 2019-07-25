@@ -8,14 +8,17 @@
 namespace cosma {
 
 template <typename T>
-void multiply_using_layout(
-              grid2grid::grid_layout<T> A,
-              grid2grid::grid_layout<T> B,
-              grid2grid::grid_layout<T> C,
-              int m, int n, int k,
-              T alpha, T beta,
-              char trans_A, char trans_B,
-              MPI_Comm comm) {
+void multiply_using_layout(grid2grid::grid_layout<T> A,
+                           grid2grid::grid_layout<T> B,
+                           grid2grid::grid_layout<T> C,
+                           int m,
+                           int n,
+                           int k,
+                           T alpha,
+                           T beta,
+                           char trans_A,
+                           char trans_B,
+                           MPI_Comm comm) {
 
     // apply the transpose flags
     // this will not change the layout of the matrix
@@ -51,7 +54,7 @@ void multiply_using_layout(
     }
 
     // perform cosma multiplication
-    auto ctx = cosma::make_context();
+    auto ctx = cosma::make_context<T>();
     multiply<T>(ctx, A_cosma, B_cosma, C_cosma, strategy, comm, alpha, beta);
 
     // transform the result from cosma back to the given layout
@@ -63,7 +66,7 @@ void multiply_using_layout(
  Assumption: we assume that at each step only 1 dimension is split
 */
 template <typename Scalar>
-void multiply(context &ctx,
+void multiply(context<Scalar> &ctx,
               CosmaMatrix<Scalar> &matrixA,
               CosmaMatrix<Scalar> &matrixB,
               CosmaMatrix<Scalar> &matrixC,
@@ -102,7 +105,7 @@ void multiply(context &ctx,
 }
 
 template <typename Scalar>
-void multiply(context &ctx,
+void multiply(context<Scalar> &ctx,
               CosmaMatrix<Scalar> &matrixA,
               CosmaMatrix<Scalar> &matrixB,
               CosmaMatrix<Scalar> &matrixC,
@@ -167,8 +170,17 @@ void multiply(context &ctx,
     else {
         if (strategy.parallel_step(step)) {
             if (strategy.should_overlap_comm_and_comp(step)) {
-                comm.overlap_comm_and_comp(
-                    ctx, matrixA, matrixB, matrixC, m, n, k, P, step, alpha, beta);
+                comm.overlap_comm_and_comp(ctx,
+                                           matrixA,
+                                           matrixB,
+                                           matrixC,
+                                           m,
+                                           n,
+                                           k,
+                                           P,
+                                           step,
+                                           alpha,
+                                           beta);
                 // parallel(matrixA, matrixB, matrixC, m, n, k, P, step,
                 // strategy, comm, beta);
             } else {
@@ -221,7 +233,7 @@ void multiply(context &ctx,
  and each of the subproblems is solved sequentially by all P processors.
 */
 template <typename Scalar>
-void sequential(context &ctx,
+void sequential(context<Scalar> &ctx,
                 CosmaMatrix<Scalar> &matrixA,
                 CosmaMatrix<Scalar> &matrixB,
                 CosmaMatrix<Scalar> &matrixC,
@@ -363,7 +375,7 @@ T which_is_expanded(T &&A,
  owned by newP ranks - thus local matrices are shrinked.
  */
 template <typename Scalar>
-void parallel(context &ctx,
+void parallel(context<Scalar> &ctx,
               CosmaMatrix<Scalar> &matrixA,
               CosmaMatrix<Scalar> &matrixB,
               CosmaMatrix<Scalar> &matrixC,
@@ -548,45 +560,59 @@ using zfloat_t = std::complex<float>;
 using zdouble_t = std::complex<double>;
 
 // explicit instantiation for multiply_using_layout
-template void multiply_using_layout<double>(
-                  grid2grid::grid_layout<double> A,
-                  grid2grid::grid_layout<double> B,
-                  grid2grid::grid_layout<double> C,
-                  int m, int n, int k,
-                  double alpha, double beta,
-                  char trans_A, char trans_B,
-                  MPI_Comm comm);
+template void multiply_using_layout<double>(grid2grid::grid_layout<double> A,
+                                            grid2grid::grid_layout<double> B,
+                                            grid2grid::grid_layout<double> C,
+                                            int m,
+                                            int n,
+                                            int k,
+                                            double alpha,
+                                            double beta,
+                                            char trans_A,
+                                            char trans_B,
+                                            MPI_Comm comm);
 
-template void multiply_using_layout<float>(
-                  grid2grid::grid_layout<float> A,
-                  grid2grid::grid_layout<float> B,
-                  grid2grid::grid_layout<float> C,
-                  int m, int n, int k,
-                  float alpha, float beta,
-                  char trans_A, char trans_B,
-                  MPI_Comm comm);
+template void multiply_using_layout<float>(grid2grid::grid_layout<float> A,
+                                           grid2grid::grid_layout<float> B,
+                                           grid2grid::grid_layout<float> C,
+                                           int m,
+                                           int n,
+                                           int k,
+                                           float alpha,
+                                           float beta,
+                                           char trans_A,
+                                           char trans_B,
+                                           MPI_Comm comm);
 
-template void multiply_using_layout<zdouble_t>(
-                  grid2grid::grid_layout<zdouble_t> A,
-                  grid2grid::grid_layout<zdouble_t> B,
-                  grid2grid::grid_layout<zdouble_t> C,
-                  int m, int n, int k,
-                  zdouble_t alpha, zdouble_t beta,
-                  char trans_A, char trans_B,
-                  MPI_Comm comm);
+template void
+multiply_using_layout<zdouble_t>(grid2grid::grid_layout<zdouble_t> A,
+                                 grid2grid::grid_layout<zdouble_t> B,
+                                 grid2grid::grid_layout<zdouble_t> C,
+                                 int m,
+                                 int n,
+                                 int k,
+                                 zdouble_t alpha,
+                                 zdouble_t beta,
+                                 char trans_A,
+                                 char trans_B,
+                                 MPI_Comm comm);
 
-template void multiply_using_layout<zfloat_t>(
-                  grid2grid::grid_layout<zfloat_t> A,
-                  grid2grid::grid_layout<zfloat_t> B,
-                  grid2grid::grid_layout<zfloat_t> C,
-                  int m, int n, int k,
-                  zfloat_t alpha, zfloat_t beta,
-                  char trans_A, char trans_B,
-                  MPI_Comm comm);
+template void
+multiply_using_layout<zfloat_t>(grid2grid::grid_layout<zfloat_t> A,
+                                grid2grid::grid_layout<zfloat_t> B,
+                                grid2grid::grid_layout<zfloat_t> C,
+                                int m,
+                                int n,
+                                int k,
+                                zfloat_t alpha,
+                                zfloat_t beta,
+                                char trans_A,
+                                char trans_B,
+                                MPI_Comm comm);
 
 // Explicit instantiations for short `multiply`
 
-template void multiply<double>(context &ctx,
+template void multiply<double>(context<double> &ctx,
                                CosmaMatrix<double> &A,
                                CosmaMatrix<double> &B,
                                CosmaMatrix<double> &C,
@@ -595,7 +621,7 @@ template void multiply<double>(context &ctx,
                                double alpha,
                                double beta);
 
-template void multiply<float>(context &ctx,
+template void multiply<float>(context<float> &ctx,
                               CosmaMatrix<float> &A,
                               CosmaMatrix<float> &B,
                               CosmaMatrix<float> &C,
@@ -604,7 +630,7 @@ template void multiply<float>(context &ctx,
                               float alpha,
                               float beta);
 
-template void multiply<zdouble_t>(context &ctx,
+template void multiply<zdouble_t>(context<zdouble_t> &ctx,
                                   CosmaMatrix<zdouble_t> &A,
                                   CosmaMatrix<zdouble_t> &B,
                                   CosmaMatrix<zdouble_t> &C,
@@ -613,7 +639,7 @@ template void multiply<zdouble_t>(context &ctx,
                                   zdouble_t alpha,
                                   zdouble_t beta);
 
-template void multiply<zfloat_t>(context &ctx,
+template void multiply<zfloat_t>(context<zfloat_t> &ctx,
                                  CosmaMatrix<zfloat_t> &A,
                                  CosmaMatrix<zfloat_t> &B,
                                  CosmaMatrix<zfloat_t> &C,
@@ -624,7 +650,7 @@ template void multiply<zfloat_t>(context &ctx,
 
 // Explicit instantiations for `multiply`
 //
-template void multiply<double>(context &ctx,
+template void multiply<double>(context<double> &ctx,
                                CosmaMatrix<double> &A,
                                CosmaMatrix<double> &B,
                                CosmaMatrix<double> &C,
@@ -638,7 +664,7 @@ template void multiply<double>(context &ctx,
                                double alpha,
                                double beta);
 
-template void multiply<float>(context &ctx,
+template void multiply<float>(context<float> &ctx,
                               CosmaMatrix<float> &A,
                               CosmaMatrix<float> &B,
                               CosmaMatrix<float> &C,
@@ -652,7 +678,7 @@ template void multiply<float>(context &ctx,
                               float alpha,
                               float beta);
 
-template void multiply<zdouble_t>(context &ctx,
+template void multiply<zdouble_t>(context<zdouble_t> &ctx,
                                   CosmaMatrix<zdouble_t> &A,
                                   CosmaMatrix<zdouble_t> &B,
                                   CosmaMatrix<zdouble_t> &C,
@@ -666,7 +692,7 @@ template void multiply<zdouble_t>(context &ctx,
                                   zdouble_t alpha,
                                   zdouble_t beta);
 
-template void multiply<zfloat_t>(context &ctx,
+template void multiply<zfloat_t>(context<zfloat_t> &ctx,
                                  CosmaMatrix<zfloat_t> &A,
                                  CosmaMatrix<zfloat_t> &B,
                                  CosmaMatrix<zfloat_t> &C,
@@ -682,7 +708,7 @@ template void multiply<zfloat_t>(context &ctx,
 
 // Explicit instantiations for `sequential`
 //
-template void sequential<double>(context &ctx,
+template void sequential<double>(context<double> &ctx,
                                  CosmaMatrix<double> &A,
                                  CosmaMatrix<double> &B,
                                  CosmaMatrix<double> &C,
@@ -696,7 +722,7 @@ template void sequential<double>(context &ctx,
                                  double alpha,
                                  double beta);
 
-template void sequential<float>(context &ctx,
+template void sequential<float>(context<float> &ctx,
                                 CosmaMatrix<float> &A,
                                 CosmaMatrix<float> &B,
                                 CosmaMatrix<float> &C,
@@ -710,7 +736,7 @@ template void sequential<float>(context &ctx,
                                 float alpha,
                                 float beta);
 
-template void sequential<zdouble_t>(context &ctx,
+template void sequential<zdouble_t>(context<zdouble_t> &ctx,
                                     CosmaMatrix<zdouble_t> &A,
                                     CosmaMatrix<zdouble_t> &B,
                                     CosmaMatrix<zdouble_t> &C,
@@ -724,7 +750,7 @@ template void sequential<zdouble_t>(context &ctx,
                                     zdouble_t alpha,
                                     zdouble_t beta);
 
-template void sequential<zfloat_t>(context &ctx,
+template void sequential<zfloat_t>(context<zfloat_t> &ctx,
                                    CosmaMatrix<zfloat_t> &A,
                                    CosmaMatrix<zfloat_t> &B,
                                    CosmaMatrix<zfloat_t> &C,
@@ -740,7 +766,7 @@ template void sequential<zfloat_t>(context &ctx,
 
 // Explicit instantiations for `parallel`
 //
-template void parallel<double>(context &ctx,
+template void parallel<double>(context<double> &ctx,
                                CosmaMatrix<double> &A,
                                CosmaMatrix<double> &B,
                                CosmaMatrix<double> &C,
@@ -754,7 +780,7 @@ template void parallel<double>(context &ctx,
                                double alpha,
                                double beta);
 
-template void parallel<float>(context &ctx,
+template void parallel<float>(context<float> &ctx,
                               CosmaMatrix<float> &A,
                               CosmaMatrix<float> &B,
                               CosmaMatrix<float> &C,
@@ -768,7 +794,7 @@ template void parallel<float>(context &ctx,
                               float alpha,
                               float beta);
 
-template void parallel<zdouble_t>(context &ctx,
+template void parallel<zdouble_t>(context<zdouble_t> &ctx,
                                   CosmaMatrix<zdouble_t> &A,
                                   CosmaMatrix<zdouble_t> &B,
                                   CosmaMatrix<zdouble_t> &C,
@@ -782,7 +808,7 @@ template void parallel<zdouble_t>(context &ctx,
                                   zdouble_t alpha,
                                   zdouble_t beta);
 
-template void parallel<zfloat_t>(context &ctx,
+template void parallel<zfloat_t>(context<zfloat_t> &ctx,
                                  CosmaMatrix<zfloat_t> &A,
                                  CosmaMatrix<zfloat_t> &B,
                                  CosmaMatrix<zfloat_t> &C,

@@ -367,7 +367,7 @@ void communicator::reduce(Interval &P,
 }
 
 template <typename Scalar>
-void communicator::overlap_comm_and_comp(context &ctx,
+void communicator::overlap_comm_and_comp(context<Scalar> &ctx,
                                          CosmaMatrix<Scalar> &matrixA,
                                          CosmaMatrix<Scalar> &matrixB,
                                          CosmaMatrix<Scalar> &matrixC,
@@ -498,7 +498,7 @@ template void communicator::reduce<std::complex<double>>(
 // Explicit instantiations for `overlap_comm_and_comp`
 //
 template void
-communicator::overlap_comm_and_comp<double>(context &ctx,
+communicator::overlap_comm_and_comp<double>(context<double> &ctx,
                                             CosmaMatrix<double> &matrixA,
                                             CosmaMatrix<double> &matrixB,
                                             CosmaMatrix<double> &matrixC,
@@ -510,7 +510,7 @@ communicator::overlap_comm_and_comp<double>(context &ctx,
                                             double alpha,
                                             double beta);
 template void
-communicator::overlap_comm_and_comp<float>(context &ctx,
+communicator::overlap_comm_and_comp<float>(context<float> &ctx,
                                            CosmaMatrix<float> &matrixA,
                                            CosmaMatrix<float> &matrixB,
                                            CosmaMatrix<float> &matrixC,
@@ -523,7 +523,7 @@ communicator::overlap_comm_and_comp<float>(context &ctx,
                                            float beta);
 
 template void communicator::overlap_comm_and_comp<std::complex<float>>(
-    context &ctx,
+    context<std::complex<float>> &ctx,
     CosmaMatrix<std::complex<float>> &matrixA,
     CosmaMatrix<std::complex<float>> &matrixB,
     CosmaMatrix<std::complex<float>> &matrixC,
@@ -536,7 +536,7 @@ template void communicator::overlap_comm_and_comp<std::complex<float>>(
     std::complex<float> beta);
 
 template void communicator::overlap_comm_and_comp<std::complex<double>>(
-    context &ctx,
+    context<std::complex<double>> &ctx,
     CosmaMatrix<std::complex<double>> &matrixA,
     CosmaMatrix<std::complex<double>> &matrixB,
     CosmaMatrix<std::complex<double>> &matrixC,

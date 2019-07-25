@@ -1,3 +1,4 @@
+#include <cosma/local_multiply.hpp>
 #include <cosma/mpi_mapper.hpp>
 #include <cosma/multiply.hpp>
 
@@ -32,7 +33,7 @@ void fill_matrix(std::vector<std::complex<Real>, Allocator> &data) {
 
 template <typename Scalar>
 bool run(Strategy &s,
-         context &ctx,
+         context<Scalar> &ctx,
          MPI_Comm comm = MPI_COMM_WORLD,
          bool overlap = false) {
     constexpr auto epsilon = std::numeric_limits<float>::epsilon();
@@ -164,17 +165,15 @@ bool run(Strategy &s,
             offsetB += local_size_B;
         }
         // Now compute the result
-        cosma::gemm(m,
-                    n,
-                    k,
-                    Scalar{1.0},
-                    globA.data(),
-                    m,
-                    globB.data(),
-                    k,
-                    Scalar{0.0},
-                    globCcheck.data(),
-                    m);
+        cosma::local_multiply(ctx,
+                              globA.data(),
+                              globB.data(),
+                              globCcheck.data(),
+                              m,
+                              n,
+                              k,
+                              Scalar{1.0},
+                              Scalar{0.0});
 #ifdef DEBUG
         std::cout << "Complete matrix A: " << std::endl;
         for (int i = 0; i < m; i++) {

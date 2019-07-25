@@ -1,17 +1,22 @@
 #include <cosma/context.hpp>
 
+#include <complex>
+
 namespace cosma {
+
 // constructor
-context::context() {
+template <typename Scalar>
+context<Scalar>::context() {
 #ifdef COSMA_HAVE_GPU
-    gpu_ctx = gpu::make_context();
+    gpu_ctx = gpu::make_context<Scalar>();
 #endif
 }
 
 // constructor
-context::context(int streams, int tile_m, int tile_n, int tile_k) {
+template <typename Scalar>
+context<Scalar>::context(int streams, int tile_m, int tile_n, int tile_k) {
 #ifdef COSMA_HAVE_GPU
-    gpu_ctx = gpu::make_context(streams, tile_m, tile_n, tile_k);
+    gpu_ctx = gpu::make_context<Scalar>(streams, tile_m, tile_n, tile_k);
 #else
     std::cout << "Ignoring parameters in make_context. These parameters only "
                  "used in the CPU version."
@@ -19,9 +24,12 @@ context::context(int streams, int tile_m, int tile_n, int tile_k) {
 #endif
 }
 
-context make_context() { return context(); }
+using zfloat = std::complex<float>;
+using zdouble = std::complex<double>;
 
-context make_context(int streams, int tile_m, int tile_n, int tile_k) {
-    return context(streams, tile_m, tile_n, tile_k);
-}
+template class context<float>;
+template class context<double>;
+template class context<zfloat>;
+template class context<zdouble>;
+
 } // namespace cosma

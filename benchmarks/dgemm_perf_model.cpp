@@ -67,14 +67,16 @@ int main(int argc, char **argv) {
 
     int n_rep = 2;
 
+    auto ctx = cosma::make_context();
+
     // run random dgemm in order to initialize it
     for (int i = 0; i < n_rep; ++i) {
         a = std::vector<double>(min_m * min_m);
         b = std::vector<double>(min_m * min_m);
         c = std::vector<double>(min_m * min_m);
 
-        local_multiply_cpu(
-            a.data(), b.data(), c.data(), min_m, min_m, min_m, 1.0, 0.0);
+        local_multiply(
+            ctx, a.data(), b.data(), c.data(), min_m, min_m, min_m, 1.0, 0.0);
     }
 
     std::vector<problem> timings;
@@ -88,8 +90,8 @@ int main(int argc, char **argv) {
                     b = std::vector<double>(k * n);
                     c = std::vector<double>(m * n);
 
-                    local_multiply_cpu(
-                        a.data(), b.data(), c.data(), m, n, k, 1.0, 0.0);
+                    local_multiply(
+                        ctx, a.data(), b.data(), c.data(), m, n, k, 1.0, 0.0);
                 }
                 auto finish = std::chrono::high_resolution_clock::now();
                 auto time =

@@ -30,12 +30,14 @@ endif()
 
 if(COSMA_WITH_MKL)
     target_link_libraries(cosma PRIVATE MKL::MKL)
-    target_compile_definitions(cosma PUBLIC COSMA_WITH_MKL)
+    target_compile_definitions(cosma PRIVATE COSMA_WITH_MKL)
 endif()
 
-if(COMSA_WITH_TILEDMM)
-    target_link_libraries(cosma PRIVATE Tiled-MM)
-    target_compile_definitions(cosma PRIVATE -DCOSMA_HAVE_GPU)
+if(COSMA_WITH_TILEDMM)
+    # These need to be public because of context hpp|cpp
+    #
+    target_link_libraries(cosma PUBLIC Tiled-MM)
+    target_compile_definitions(cosma PUBLIC COSMA_HAVE_GPU)
 endif()
 
 if(ScaLAPACK_FOUND)

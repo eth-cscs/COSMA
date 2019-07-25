@@ -67,11 +67,11 @@ struct multiply_state {
 };
 
 struct MultiplyTest : testing::Test {
-    cosma::context ctx;
+    cosma::context<double> ctx;
     std::unique_ptr<multiply_state> state;
 
     MultiplyTest() {
-        ctx = cosma::make_context();
+        ctx = cosma::make_context<double>();
         state = std::make_unique<multiply_state>();
     }
 };

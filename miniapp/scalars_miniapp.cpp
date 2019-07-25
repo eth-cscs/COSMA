@@ -38,7 +38,7 @@ void fill_matrix(std::vector<std::complex<Real>, Allocator> &data) {
 
 template <typename Scalar>
 void run(cosma::Strategy &strategy,
-         cosma::context &ctx,
+         cosma::context<Scalar> &ctx,
          std::string scalar_str) {
     using seconds_t = std::chrono::duration<double>;
     using clock_t = std::chrono::high_resolution_clock;
@@ -72,15 +72,24 @@ void run(cosma::Strategy &strategy,
 }
 
 int main(int argc, char **argv) {
+    using zfloat = std::complex<float>;
+    using zdouble = std::complex<double>;
+
     MPI_Init(&argc, &argv);
 
     cosma::Strategy strategy(argc, argv);
-    auto ctx = cosma::make_context();
 
-    run<float>(strategy, ctx, "Float");
-    run<double>(strategy, ctx, "Double");
-    run<std::complex<float>>(strategy, ctx, "Complex Float");
-    run<std::complex<double>>(strategy, ctx, "Complex Double");
+    auto cxt_f = cosma::make_context<float>();
+    run<float>(strategy, cxt_f, "Float");
+
+    auto cxt_d = cosma::make_context<double>();
+    run<double>(strategy, cxt_d, "Double");
+
+    auto cxt_zf = cosma::make_context<zfloat>();
+    run<zfloat>(strategy, cxt_zf, "Complex Float");
+
+    auto cxt_zd = cosma::make_context<zdouble>();
+    run<zdouble>(strategy, cxt_zd, "Complex Double");
 
     MPI_Finalize();
 }

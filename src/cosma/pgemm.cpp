@@ -1,3 +1,5 @@
+#include <cosma/pgemm.hpp>
+
 // from std
 #include <cassert>
 #include <complex>
@@ -5,17 +7,32 @@
 // from cosma
 #include <cosma/blacs.hpp>
 #include <cosma/multiply.hpp>
-#include <cosma/pgemm.hpp>
+
 #include <cosma/scalapack.hpp>
 // from grid2grid
 #include <transform.hpp>
 
 namespace cosma {
 template <typename T>
-void pgemm(const char trans_a, const char trans_b, const int m, const int n, const int k,
-           const T alpha, const T* a, const int ia, const int ja, const int* desca,
-           const T* b, const int ib, const int jb, const int* descb, const T beta,
-           T* c, const int ic, const int jc, const int* descc) {
+void pgemm(const char trans_a,
+           const char trans_b,
+           const int m,
+           const int n,
+           const int k,
+           const T alpha,
+           const T *a,
+           const int ia,
+           const int ja,
+           const int *desca,
+           const T *b,
+           const int ib,
+           const int jb,
+           const int *descb,
+           const T beta,
+           T *c,
+           const int ic,
+           const int jc,
+           const int *descc) {
     // blas context
     int ctxt = scalapack::get_grid_context(desca, descb, descc);
 
@@ -89,8 +106,8 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
         ordering,
         trans_a,
         {rank_src_a.row_src, rank_src_a.col_src},
-        a, rank
-    );
+        a,
+        rank);
 
     auto scalapack_layout_b = grid2grid::get_scalapack_grid<T>(
         lld_b,
@@ -102,8 +119,8 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
         ordering,
         trans_b,
         {rank_src_b.row_src, rank_src_b.col_src},
-        b, rank
-    );
+        b,
+        rank);
 
     auto scalapack_layout_c = grid2grid::get_scalapack_grid<T>(
         lld_c,
@@ -115,8 +132,8 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
         ordering,
         'N',
         {rank_src_c.row_src, rank_src_c.col_src},
-        c, rank
-    );
+        c,
+        rank);
 
     // transform A and B from scalapack to cosma layout
     grid2grid::transform<T>(scalapack_layout_a, cosma_layout_a, comm);
@@ -128,7 +145,7 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
     }
 
     // perform cosma multiplication
-    auto ctx = cosma::make_context();
+    auto ctx = cosma::make_context<T>();
     multiply<T>(ctx, A, B, C, strategy, comm, alpha, beta);
 
     // transform the result from cosma back to scalapack
@@ -136,79 +153,247 @@ void pgemm(const char trans_a, const char trans_b, const int m, const int n, con
 }
 
 // explicit instantiation for pgemm
-template void pgemm<double>(const char trans_a, const char trans_b, 
-    const int m, const int n, const int k,
-    const double alpha, const double* a, const int ia, const int ja, const int* desca,
-    const double* b, const int ib, const int jb, const int* descb, const double beta,
-    double* c, const int ic, const int jc, const int* descc);
+template void pgemm<double>(const char trans_a,
+                            const char trans_b,
+                            const int m,
+                            const int n,
+                            const int k,
+                            const double alpha,
+                            const double *a,
+                            const int ia,
+                            const int ja,
+                            const int *desca,
+                            const double *b,
+                            const int ib,
+                            const int jb,
+                            const int *descb,
+                            const double beta,
+                            double *c,
+                            const int ic,
+                            const int jc,
+                            const int *descc);
 
-template void pgemm<float>(const char trans_a, const char trans_b, 
-    const int m, const int n, const int k,
-    const float alpha, const float* a, const int ia, const int ja, const int* desca,
-    const float* b, const int ib, const int jb, const int* descb, const float beta,
-    float* c, const int ic, const int jc, const int* descc);
+template void pgemm<float>(const char trans_a,
+                           const char trans_b,
+                           const int m,
+                           const int n,
+                           const int k,
+                           const float alpha,
+                           const float *a,
+                           const int ia,
+                           const int ja,
+                           const int *desca,
+                           const float *b,
+                           const int ib,
+                           const int jb,
+                           const int *descb,
+                           const float beta,
+                           float *c,
+                           const int ic,
+                           const int jc,
+                           const int *descc);
 
-template void pgemm<zdouble_t>(const char trans_a, const char trans_b, 
-    const int m, const int n, const int k,
-    const zdouble_t alpha, const zdouble_t* a, const int ia, const int ja, const int* desca,
-    const zdouble_t* b, const int ib, const int jb, const int* descb, const zdouble_t beta,
-    zdouble_t* c, const int ic, const int jc, const int* descc);
+template void pgemm<zdouble_t>(const char trans_a,
+                               const char trans_b,
+                               const int m,
+                               const int n,
+                               const int k,
+                               const zdouble_t alpha,
+                               const zdouble_t *a,
+                               const int ia,
+                               const int ja,
+                               const int *desca,
+                               const zdouble_t *b,
+                               const int ib,
+                               const int jb,
+                               const int *descb,
+                               const zdouble_t beta,
+                               zdouble_t *c,
+                               const int ic,
+                               const int jc,
+                               const int *descc);
 
-template void pgemm<zfloat_t>(const char trans_a, const char trans_b, 
-    const int m, const int n, const int k,
-    const zfloat_t alpha, const zfloat_t* a, const int ia, const int ja, const int* desca,
-    const zfloat_t* b, const int ib, const int jb, const int* descb, const zfloat_t beta,
-    zfloat_t* c, const int ic, const int jc, const int* descc);
+template void pgemm<zfloat_t>(const char trans_a,
+                              const char trans_b,
+                              const int m,
+                              const int n,
+                              const int k,
+                              const zfloat_t alpha,
+                              const zfloat_t *a,
+                              const int ia,
+                              const int ja,
+                              const int *desca,
+                              const zfloat_t *b,
+                              const int ib,
+                              const int jb,
+                              const int *descb,
+                              const zfloat_t beta,
+                              zfloat_t *c,
+                              const int ic,
+                              const int jc,
+                              const int *descc);
 
 // Reimplement ScaLAPACK signatures functions
-void pdgemm(const char trans_a, const char trans_b, 
-        const int m, const int n, const int k,
-        const double alpha, const double* a, const int ia, const int ja, const int* desca,
-        const double* b, const int ib, const int jb, const int* descb, const double beta,
-        double* c, const int ic, const int jc, const int* descc) {
+void pdgemm(const char trans_a,
+            const char trans_b,
+            const int m,
+            const int n,
+            const int k,
+            const double alpha,
+            const double *a,
+            const int ia,
+            const int ja,
+            const int *desca,
+            const double *b,
+            const int ib,
+            const int jb,
+            const int *descb,
+            const double beta,
+            double *c,
+            const int ic,
+            const int jc,
+            const int *descc) {
 
-    pgemm<double>(trans_a, trans_b,
-            m, n, k, alpha,
-            a, ia, ja, desca,
-            b, ib, jb, descb,
-            beta, c, ic, jc, descc);
+    pgemm<double>(trans_a,
+                  trans_b,
+                  m,
+                  n,
+                  k,
+                  alpha,
+                  a,
+                  ia,
+                  ja,
+                  desca,
+                  b,
+                  ib,
+                  jb,
+                  descb,
+                  beta,
+                  c,
+                  ic,
+                  jc,
+                  descc);
 }
 
-void psgemm(const char trans_a, const char trans_b, 
-        const int m, const int n, const int k,
-        const float alpha, const float* a, const int ia, const int ja, const int* desca,
-        const float* b, const int ib, const int jb, const int* descb, const float beta,
-        float* c, const int ic, const int jc, const int* descc) {
-    pgemm<float>(trans_a, trans_b,
-            m, n, k, alpha,
-            a, ia, ja, desca,
-            b, ib, jb, descb,
-            beta, c, ic, jc, descc);
+void psgemm(const char trans_a,
+            const char trans_b,
+            const int m,
+            const int n,
+            const int k,
+            const float alpha,
+            const float *a,
+            const int ia,
+            const int ja,
+            const int *desca,
+            const float *b,
+            const int ib,
+            const int jb,
+            const int *descb,
+            const float beta,
+            float *c,
+            const int ic,
+            const int jc,
+            const int *descc) {
+    pgemm<float>(trans_a,
+                 trans_b,
+                 m,
+                 n,
+                 k,
+                 alpha,
+                 a,
+                 ia,
+                 ja,
+                 desca,
+                 b,
+                 ib,
+                 jb,
+                 descb,
+                 beta,
+                 c,
+                 ic,
+                 jc,
+                 descc);
 }
 
-void pcgemm(const char trans_a, const char trans_b, 
-        const int m, const int n, const int k,
-        const zfloat_t alpha, const zfloat_t* a, const int ia, const int ja, const int* desca,
-        const zfloat_t* b, const int ib, const int jb, const int* descb, const zfloat_t beta,
-        zfloat_t* c, const int ic, const int jc, const int* descc) {
+void pcgemm(const char trans_a,
+            const char trans_b,
+            const int m,
+            const int n,
+            const int k,
+            const zfloat_t alpha,
+            const zfloat_t *a,
+            const int ia,
+            const int ja,
+            const int *desca,
+            const zfloat_t *b,
+            const int ib,
+            const int jb,
+            const int *descb,
+            const zfloat_t beta,
+            zfloat_t *c,
+            const int ic,
+            const int jc,
+            const int *descc) {
 
-    pgemm<zfloat_t>(trans_a, trans_b,
-            m, n, k, alpha,
-            a, ia, ja, desca,
-            b, ib, jb, descb,
-            beta, c, ic, jc, descc);
+    pgemm<zfloat_t>(trans_a,
+                    trans_b,
+                    m,
+                    n,
+                    k,
+                    alpha,
+                    a,
+                    ia,
+                    ja,
+                    desca,
+                    b,
+                    ib,
+                    jb,
+                    descb,
+                    beta,
+                    c,
+                    ic,
+                    jc,
+                    descc);
 }
 
-void pzgemm(const char trans_a, const char trans_b,
-        const int m, const int n, const int k,
-        const zdouble_t alpha, const zdouble_t* a, const int ia, const int ja, const int* desca,
-        const zdouble_t* b, const int ib, const int jb, const int* descb, const zdouble_t beta,
-        zdouble_t* c, const int ic, const int jc, const int* descc) {
+void pzgemm(const char trans_a,
+            const char trans_b,
+            const int m,
+            const int n,
+            const int k,
+            const zdouble_t alpha,
+            const zdouble_t *a,
+            const int ia,
+            const int ja,
+            const int *desca,
+            const zdouble_t *b,
+            const int ib,
+            const int jb,
+            const int *descb,
+            const zdouble_t beta,
+            zdouble_t *c,
+            const int ic,
+            const int jc,
+            const int *descc) {
 
-    pgemm<zdouble_t>(trans_a, trans_b,
-            m, n, k, alpha,
-            a, ia, ja, desca,
-            b, ib, jb, descb,
-            beta, c, ic, jc, descc);
+    pgemm<zdouble_t>(trans_a,
+                     trans_b,
+                     m,
+                     n,
+                     k,
+                     alpha,
+                     a,
+                     ia,
+                     ja,
+                     desca,
+                     b,
+                     ib,
+                     jb,
+                     descb,
+                     beta,
+                     c,
+                     ic,
+                     jc,
+                     descc);
 }
-}
+} // namespace cosma

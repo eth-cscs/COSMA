@@ -1,4 +1,4 @@
-#include <cosma/blas.hpp>
+#include <cosma/local_multiply.hpp>
 
 #include <mpi.h>
 
@@ -62,7 +62,8 @@ std::pair<int, int> group_and_offset(int P, int divisor, int rank) {
 
 void solve(double *A, double *B, double *C, int m, int n, int k) {
     // multiply square matrices with dimensions sqrt(local_size)
-    cosma::gemm(m, n, k, 1.0, A, m, B, k, 0.0, C, m);
+    auto ctx = cosma::make_context<double>();
+    cosma::local_multiply(ctx, A, B, C, m, n, k, 1.0, 0.0);
 }
 
 int main(int argc, char **argv) {

@@ -17,7 +17,7 @@ void test_matmul() {
     int rank;
     MPI_Comm_rank(comm, &rank);
 
-    auto ctx = cosma::make_context();
+    auto ctx = cosma::make_context<Scalar>();
 
     Strategy strategy(m, n, k, P, steps);
 

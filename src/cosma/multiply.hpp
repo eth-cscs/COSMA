@@ -26,28 +26,31 @@ namespace cosma {
  * grid2grid represents the abstract representation of the target layout
  * where target layout is the initial data layout for matrices A and B
  * and the final data layout for matrix C.
- * this function will perform the transformations between the target 
+ * this function will perform the transformations between the target
  * layouts and the optimal COSMA layout and perform the multiplication.
  * it is not as efficient as using the native COSMA layout,
  * but is very general as it can work with any grid-like data layout.
  */
 template <typename Scalar>
-void multiply_using_layout(
-              grid2grid::grid_layout<Scalar>& A_layout,
-              grid2grid::grid_layout<Scalar>& B_layout,
-              grid2grid::grid_layout<Scalar>& C_layout,
-              int m, int n, int k,
-              Scalar alpha = Scalar{1}, Scalar beta = Scalar{0},
-              char trans_A = 'N', char trans_B = 'N',
-              MPI_Comm comm = MPI_COMM_WORLD);
+void multiply_using_layout(grid2grid::grid_layout<Scalar> &A_layout,
+                           grid2grid::grid_layout<Scalar> &B_layout,
+                           grid2grid::grid_layout<Scalar> &C_layout,
+                           int m,
+                           int n,
+                           int k,
+                           Scalar alpha = Scalar{1},
+                           Scalar beta = Scalar{0},
+                           char trans_A = 'N',
+                           char trans_B = 'N',
+                           MPI_Comm comm = MPI_COMM_WORLD);
 
 /*
- * Takes matrices in the optimal COSMA layout and the division strategy 
- * and performs the multiplication. It is very efficient as it uses the 
+ * Takes matrices in the optimal COSMA layout and the division strategy
+ * and performs the multiplication. It is very efficient as it uses the
  * optimal COSMA layout.
  */
 template <typename Scalar>
-void multiply(context &ctx,
+void multiply(context<Scalar> &ctx,
               CosmaMatrix<Scalar> &A,
               CosmaMatrix<Scalar> &B,
               CosmaMatrix<Scalar> &C,
@@ -60,7 +63,7 @@ void multiply(context &ctx,
  * Functions below are more interesting to the developer than the user.
  */
 template <typename Scalar>
-void multiply(context &ctx,
+void multiply(context<Scalar> &ctx,
               CosmaMatrix<Scalar> &A,
               CosmaMatrix<Scalar> &B,
               CosmaMatrix<Scalar> &C,
@@ -75,7 +78,7 @@ void multiply(context &ctx,
               Scalar beta);
 
 template <typename Scalar>
-void sequential(context &ctx,
+void sequential(context<Scalar> &ctx,
                 CosmaMatrix<Scalar> &A,
                 CosmaMatrix<Scalar> &B,
                 CosmaMatrix<Scalar> &C,
@@ -90,7 +93,7 @@ void sequential(context &ctx,
                 Scalar beta);
 
 template <typename Scalar>
-void parallel(context &ctx,
+void parallel(context<Scalar> &ctx,
               CosmaMatrix<Scalar> &A,
               CosmaMatrix<Scalar> &B,
               CosmaMatrix<Scalar> &C,

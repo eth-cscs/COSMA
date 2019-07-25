@@ -1,5 +1,4 @@
 #pragma once
-#include <cosma/blas.hpp>
 #include <cosma/context.hpp>
 #include <cosma/interval.hpp>
 #include <cosma/local_multiply.hpp>
@@ -150,7 +149,7 @@ class communicator {
                 int step);
 
     template <typename Scalar>
-    void overlap_comm_and_comp(context &ctx,
+    void overlap_comm_and_comp(context<Scalar> &ctx,
                                CosmaMatrix<Scalar> &matrixA,
                                CosmaMatrix<Scalar> &matrixB,
                                CosmaMatrix<Scalar> &matrixC,
