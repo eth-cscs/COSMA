@@ -18,7 +18,7 @@ if(NOT TARGET cosma::cosma)
             find_dependency(ScaLAPACK)
         endif()
     endif()
-    
+
     # These are bundled with cosma
     #
     find_dependency(grid2grid)

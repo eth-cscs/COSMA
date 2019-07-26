@@ -44,7 +44,11 @@ if(ScaLAPACK_FOUND)
     add_library(cosma_with_scalapack STATIC scalapack.cpp
                                             pgemm.cpp
     )
-    target_link_libraries(cosma_with_scalapack PUBLIC cosma MKL::ScaLAPACK)
+    target_link_libraries(cosma_with_scalapack PUBLIC cosma MKL::ScaLAPACK
+                                               PRIVATE semiprof)
+    if(COSMA_WITH_PROFILING)
+        target_compile_definitions(cosma_with_scalapack PRIVATE SEMIPROF)
+    endif()
 endif()
 
 if(COSMA_WITH_INSTALL)
