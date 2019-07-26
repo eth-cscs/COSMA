@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
 
     int n_rep = 2;
 
-    auto ctx = cosma::make_context();
+    auto ctx = cosma::make_context<double>();
 
     // run random dgemm in order to initialize it
     for (int i = 0; i < n_rep; ++i) {
