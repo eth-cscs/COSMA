@@ -12,6 +12,9 @@
 // from grid2grid
 #include <transform.hpp>
 
+// from semiprof
+#include <semiprof.hpp>
+
 namespace cosma {
 template <typename T>
 void pgemm(const char trans_a,
@@ -82,14 +85,17 @@ void pgemm(const char trans_a,
     // check whether rank grid is row-major or col-major
     auto ordering = scalapack::rank_ordering(ctxt, P);
 
+    PE(strategy);
     // find an optimal strategy for this problem
     Strategy strategy(m, n, k, P);
+    PL();
 
     // create COSMA matrices
     CosmaMatrix<T> A('A', strategy, rank);
     CosmaMatrix<T> B('B', strategy, rank);
     CosmaMatrix<T> C('C', strategy, rank);
 
+    PE(transformation_initialization);
     // get abstract layout descriptions for COSMA layout
     auto cosma_layout_a = A.get_grid_layout();
     auto cosma_layout_b = B.get_grid_layout();
@@ -134,7 +140,12 @@ void pgemm(const char trans_a,
         {rank_src_c.row_src, rank_src_c.col_src},
         c,
         rank);
+    PL();
 
+#ifdef DEBUG
+    std::cout << "Transforming the input matrices A and B from Scalapack -> COSMA" << std::endl;
+#endif
+    PE(transformation_cosma2scalapack);
     // transform A and B from scalapack to cosma layout
     grid2grid::transform<T>(scalapack_layout_a, cosma_layout_a, comm);
     grid2grid::transform<T>(scalapack_layout_b, cosma_layout_b, comm);
@@ -143,13 +154,24 @@ void pgemm(const char trans_a,
     if (std::abs(beta) > 0) {
         grid2grid::transform<T>(scalapack_layout_c, cosma_layout_c, comm);
     }
+    PL();
 
+    PE(ContextCreation);
     // perform cosma multiplication
     auto ctx = cosma::make_context<T>();
+    PL();
+#ifdef DEBUG
+    std::cout << "COSMA multiply" << std::endl;
+#endif
     multiply<T>(ctx, A, B, C, strategy, comm, alpha, beta);
 
+#ifdef DEBUG
+    std::cout << "Transforming the result C back from COSMA to ScaLAPACK" << std::endl;
+#endif
+    PE(transformation_scalapack2cosma);
     // transform the result from cosma back to scalapack
     grid2grid::transform<T>(cosma_layout_c, scalapack_layout_c, comm);
+    PL();
 }
 
 // explicit instantiation for pgemm

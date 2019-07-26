@@ -69,30 +69,30 @@ if(COSMA_WITH_INSTALL)
             FILE cosmaTargets.cmake
             NAMESPACE cosma::
             DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
-    
+
     install(DIRECTORY "${cosma_SOURCE_DIR}/src/cosma" 
             DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
             FILES_MATCHING PATTERN "*.hpp")
-    
+
     write_basic_package_version_file(
         "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
         VERSION ${cosma_VERSION}
         COMPATIBILITY SameMajorVersion)
-    
+
     configure_file("${cosma_SOURCE_DIR}/cmake/cosma.pc.in"
                    "${cosma_BINARY_DIR}/cosma.pc"
                    @ONLY)
-    
+
     configure_file("${cosma_SOURCE_DIR}/cmake/cosmaConfig.cmake.in"
                    "${cosma_BINARY_DIR}/cosmaConfig.cmake"
                    @ONLY)
-    
+
     install(FILES "${cosma_BINARY_DIR}/cosmaConfig.cmake"
                   "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
                   "${cosma_SOURCE_DIR}/cmake/FindMKL.cmake"
                   "${cosma_SOURCE_DIR}/cmake/FindScaLAPACK.cmake"
             DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
-    
+
     install(FILES "${cosma_BINARY_DIR}/cosma.pc"
             DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 endif()
