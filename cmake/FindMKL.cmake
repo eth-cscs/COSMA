@@ -16,14 +16,13 @@
 #
 include(FindPackageHandleStandardArgs)
 
+set(MKL_ROOT "$ENV{MKLROOT}" CACHE FILEPATH "MKL's ROOT directory.")
 
 option(MKL_PARALLEL "Parallel version of MKL" ON)
 option(MKL_64BIT "Parallel version of MKL" OFF)
 
 find_path(MKL_INCLUDE_DIR mkl.h
-    HINTS
-    $ENV{MKLROOT}/include
-    ${MKL_ROOT}/include
+    HINTS ${MKL_ROOT}/include
     )
 mark_as_advanced(MKL_INCLUDE_DIR)
 
@@ -43,8 +42,7 @@ endif ()
 function(__mkl_find_library _name)
     find_library(${_name}
         NAMES ${ARGN}
-        HINTS ENV MKLROOT
-        ${MKL_ROOT}
+        HINTS ${MKL_ROOT}
         PATH_SUFFIXES ${_mkl_libpath_suffix}
                       lib
         )
