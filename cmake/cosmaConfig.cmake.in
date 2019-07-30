@@ -13,8 +13,8 @@ if(NOT TARGET cosma::cosma)
         find_dependency(Tiled-MM) # bundled
     else()
         set(MKL_ROOT "@MKL_ROOT@")
-        option(MKL_PARALLEL "" "@MKL_PARALLEL@")
-        option(MKL_64BIT "" "@MKL_64BIT@")
+        set(MKL_PARALLEL "@MKL_PARALLEL@")
+        set(MKL_64BIT "@MKL_64BIT@")
         find_dependency(MKL)
 
         if("@ScaLAPACK_FOUND@")

@@ -16,10 +16,17 @@
 #
 include(FindPackageHandleStandardArgs)
 
-set(MKL_ROOT "$ENV{MKLROOT}" CACHE FILEPATH "MKL's ROOT directory.")
+if(NOT MKL_ROOT)
+    set(MKL_ROOT $ENV{MKLROOT})
+endif()
 
-option(MKL_PARALLEL "Parallel version of MKL" ON)
-option(MKL_64BIT "Parallel version of MKL" OFF)
+if(NOT MKL_PARALLEL)
+    set(MKL_PARALLEL ON)
+endif()
+
+if(NOT MKL_64BIT)
+    set(MKL_64BIT OFF)
+endif()
 
 find_path(MKL_INCLUDE_DIR mkl.h
     HINTS ${MKL_ROOT}/include
