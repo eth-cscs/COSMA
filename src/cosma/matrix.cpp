@@ -1,6 +1,5 @@
 #include <cosma/matrix.hpp>
-
-#include <semiprof.hpp>
+#include <cosma/profiler.hpp>
 
 #include <complex>
 
@@ -306,13 +305,14 @@ grid2grid::grid_layout<T> CosmaMatrix<T>::get_grid_layout() {
     // create an assigned grid2D
     // **************************
     // create a matrix of ranks owning each block
-    std::vector<std::vector<int>> owners(n_blocks_row, std::vector<int>(n_blocks_col));
+    std::vector<std::vector<int>> owners(n_blocks_row,
+                                         std::vector<int>(n_blocks_col));
     for (int i = 0; i < n_blocks_row; ++i) {
         auto r_inter = grid.row_interval(i);
-        Interval row_interval(r_inter.start, r_inter.end-1);
+        Interval row_interval(r_inter.start, r_inter.end - 1);
         for (int j = 0; j < n_blocks_col; ++j) {
             auto c_inter = grid.col_interval(j);
-            Interval col_interval(c_inter.start, c_inter.end-1);
+            Interval col_interval(c_inter.start, c_inter.end - 1);
 
             Interval2D range(row_interval, col_interval);
             int owner = mapper_.owner(range);
@@ -321,24 +321,31 @@ grid2grid::grid_layout<T> CosmaMatrix<T>::get_grid_layout() {
     }
 
     // create an assigned grid2D
-    grid2grid::assigned_grid2D assigned_grid(std::move(grid), std::move(owners), P_);
+    grid2grid::assigned_grid2D assigned_grid(
+        std::move(grid), std::move(owners), P_);
 
     // **************************
     // create local memory view
     // **************************
     // get coordinates of current rank in a rank decomposition
     std::vector<grid2grid::block<T>> loc_blocks;
-    for (auto matrix_id = 0u; matrix_id < mapper_.local_blocks().size(); ++matrix_id) {
+    for (auto matrix_id = 0u; matrix_id < mapper_.local_blocks().size();
+         ++matrix_id) {
         Interval2D range = mapper_.local_blocks()[matrix_id];
         int offset = mapper_.local_blocks_offsets()[matrix_id];
 
-        grid2grid::interval row_interval(range.rows.first(), range.rows.last()+1);
-        grid2grid::interval col_interval(range.cols.first(), range.cols.last()+1);
+        grid2grid::interval row_interval(range.rows.first(),
+                                         range.rows.last() + 1);
+        grid2grid::interval col_interval(range.cols.first(),
+                                         range.cols.last() + 1);
 
         int stride = row_interval.length();
 
-        grid2grid::block<T> b(assigned_grid, row_interval, col_interval,
-                matrix_pointer()+offset, stride);
+        grid2grid::block<T> b(assigned_grid,
+                              row_interval,
+                              col_interval,
+                              matrix_pointer() + offset,
+                              stride);
 
         assert(b.non_empty());
 

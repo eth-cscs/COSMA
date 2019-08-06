@@ -22,10 +22,16 @@ target_compile_features(cosma PUBLIC cxx_std_14)
 
 target_link_libraries(cosma PUBLIC MPI::MPI_CXX
                                    grid2grid
-                            PRIVATE options
-                                    semiprof)
+                            PRIVATE options)
+
 if(COSMA_WITH_PROFILING)
-    target_compile_definitions(cosma PRIVATE SEMIPROF)
+    target_compile_definitions(semiprof PUBLIC SEMIPROF)
+    target_link_libraries(cosma PRIVATE 
+        $<BUILD_INTERFACE:semiprof>
+    )
+    target_compile_definitions(cosma PRIVATE 
+        $<BUILD_INTERFACE:COSMA_WITH_PROFILING>
+    )
 endif()
 
 if(COSMA_WITH_MKL)
@@ -44,10 +50,14 @@ if(ScaLAPACK_FOUND)
     add_library(cosma_with_scalapack STATIC scalapack.cpp
                                             pgemm.cpp
     )
-    target_link_libraries(cosma_with_scalapack PUBLIC cosma MKL::ScaLAPACK
-                                               PRIVATE semiprof)
+    target_link_libraries(cosma_with_scalapack PUBLIC cosma MKL::ScaLAPACK)
     if(COSMA_WITH_PROFILING)
-        target_compile_definitions(cosma_with_scalapack PRIVATE SEMIPROF)
+        target_link_libraries(cosma_with_scalapack PRIVATE 
+          $<BUILD_INTERFACE:semiprof> 
+        )
+        target_compile_definitions(cosma_with_scalapack PRIVATE 
+          $<BUILD_INTERFACE:COSMA_WITH_PROFILING>
+        )
     endif()
 endif()
 

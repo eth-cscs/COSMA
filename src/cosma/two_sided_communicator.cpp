@@ -2,11 +2,11 @@
 #include <cosma/math_utils.hpp>
 #include <cosma/matrix.hpp>
 #include <cosma/mpi_mapper.hpp>
+#include <cosma/profiler.hpp>
 #include <cosma/strategy.hpp>
 #include <cosma/two_sided_communicator.hpp>
 
 #include <mpi.h>
-#include <semiprof.hpp>
 
 #include <algorithm>
 #include <atomic>

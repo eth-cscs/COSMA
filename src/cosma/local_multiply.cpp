@@ -8,7 +8,7 @@
 #include <cosma/blas.hpp>
 #endif
 
-#include <semiprof.hpp>
+#include <cosma/profiler.hpp>
 
 #include <chrono>
 #include <complex>

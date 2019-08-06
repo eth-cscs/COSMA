@@ -1,19 +1,15 @@
-#include <cosma/pgemm.hpp>
-
-// from std
-#include <cassert>
-#include <complex>
-#include <mpi.h>
-// from cosma
 #include <cosma/blacs.hpp>
 #include <cosma/multiply.hpp>
-
+#include <cosma/pgemm.hpp>
+#include <cosma/profiler.hpp>
 #include <cosma/scalapack.hpp>
+
 // from grid2grid
 #include <transform.hpp>
 
-// from semiprof
-#include <semiprof.hpp>
+#include <cassert>
+#include <complex>
+#include <mpi.h>
 
 namespace cosma {
 template <typename T>
@@ -143,7 +139,9 @@ void pgemm(const char trans_a,
     PL();
 
 #ifdef DEBUG
-    std::cout << "Transforming the input matrices A and B from Scalapack -> COSMA" << std::endl;
+    std::cout
+        << "Transforming the input matrices A and B from Scalapack -> COSMA"
+        << std::endl;
 #endif
     PE(transformation_cosma2scalapack);
     // transform A and B from scalapack to cosma layout
@@ -166,7 +164,8 @@ void pgemm(const char trans_a,
     multiply<T>(ctx, A, B, C, strategy, comm, alpha, beta);
 
 #ifdef DEBUG
-    std::cout << "Transforming the result C back from COSMA to ScaLAPACK" << std::endl;
+    std::cout << "Transforming the result C back from COSMA to ScaLAPACK"
+              << std::endl;
 #endif
     PE(transformation_scalapack2cosma);
     // transform the result from cosma back to scalapack

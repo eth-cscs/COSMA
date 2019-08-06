@@ -1,4 +1,5 @@
 if(NOT TARGET cosma::cosma)
+    cmake_policy(PUSH) # Save project's policies
     if(POLICY CMP0074)
         cmake_policy(SET CMP0074 NEW)
     endif()
@@ -33,8 +34,8 @@ if(NOT TARGET cosma::cosma)
     # These are bundled with cosma
     #
     find_dependency(grid2grid)
-    find_dependency(semiprof)
     find_dependency(options)
 
     include("${CMAKE_CURRENT_LIST_DIR}/cosmaTargets.cmake")
+    cmake_policy(POP) # Restore project's policies
 endif()
