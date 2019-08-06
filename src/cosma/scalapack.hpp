@@ -1,10 +1,10 @@
 #pragma once
-// from std
-#include <cassert>
-// from cosma
+
 #include <cosma/blacs.hpp>
-// from grid2grid
-#include <scalapack_layout.hpp>
+
+#include <grid2grid/scalapack_layout.hpp>
+
+#include <cassert>
 
 namespace cosma {
 namespace scalapack {

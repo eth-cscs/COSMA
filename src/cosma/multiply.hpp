@@ -1,17 +1,14 @@
 #pragma once
 
-// mpi
-#include <mpi.h>
-
-// cosma
 #include <cosma/communicator.hpp>
 #include <cosma/context.hpp>
 #include <cosma/interval.hpp>
 #include <cosma/matrix.hpp>
 #include <cosma/strategy.hpp>
 
-// grid2grid
-#include <transform.hpp>
+#include <mpi.h>
+
+#include <grid2grid/transform.hpp>
 
 namespace cosma {
 

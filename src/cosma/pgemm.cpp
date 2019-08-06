@@ -4,8 +4,7 @@
 #include <cosma/profiler.hpp>
 #include <cosma/scalapack.hpp>
 
-// from grid2grid
-#include <transform.hpp>
+#include <grid2grid/transform.hpp>
 
 #include <cassert>
 #include <complex>
