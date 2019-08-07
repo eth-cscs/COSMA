@@ -1,8 +1,25 @@
 #include <cosma/buffer.hpp>
-
 #include <complex>
 
 namespace cosma {
+
+template <typename T>
+Buffer<T>::Buffer(cosma_context<T>* ctxt,
+                  char label,
+                  const Strategy &strategy,
+                  int rank,
+                  Mapper *mapper,
+                  Layout *layout,
+                  bool dry_run)
+    : ctxt_(ctxt)
+    , label_(label)
+    , strategy_(&strategy)
+    , rank_(rank)
+    , mapper_(mapper)
+    , layout_(layout) {
+    compute_n_buckets();
+    allocate_initial_buffers(dry_run);
+}
 
 template <typename T>
 Buffer<T>::Buffer(context<T>& ctxt,
@@ -12,15 +29,7 @@ Buffer<T>::Buffer(context<T>& ctxt,
                   Mapper *mapper,
                   Layout *layout,
                   bool dry_run)
-    : ctxt_(ctxt.get())
-    , label_(label)
-    , strategy_(&strategy)
-    , rank_(rank)
-    , mapper_(mapper)
-    , layout_(layout) {
-    compute_n_buckets();
-    initialize_buffers(dry_run);
-}
+    : Buffer(ctxt.get(), label, strategy, rank, mapper, layout, dry_run) {}
 
 template <typename T>
 Buffer<T>::Buffer(char label,
@@ -29,45 +38,16 @@ Buffer<T>::Buffer(char label,
                   Mapper *mapper,
                   Layout *layout,
                   bool dry_run)
-    : label_(label)
-    , strategy_(&strategy)
-    , rank_(rank)
-    , mapper_(mapper)
-    , layout_(layout) {
-    ctxt_ = 
-    compute_n_buckets();
-    initialize_buffers(dry_run);
-}
+    : Buffer(get_context_instance(), label, strategy, rank, mapper, layout, dry_run) {}
 
 template <typename T>
-void Buffer<T>::initialize_buffers(bool dry_run) {
-    max_base_buffer_size_ = -1;
-    max_reduce_buffer_size_ = -1;
-    max_reshuffle_buffer_size_ = -1;
-    max_send_buffer_size_ = (size_t)mapper_->initial_size();
-    max_recv_buffer_size_ = (size_t)mapper_->initial_size();
-
-    init_first_split_steps();
-
-    buff_sizes_ = compute_buffer_size();
-
+void Buffer<T>::allocate_communication_buffers(bool dry_run) {
+    current_buffer_ = 0;
     if (!dry_run) {
-        // buffers_ = std::vector<std::vector<double,
-        // mpi_allocator<double>>>(buff_sizes.size()+1, std::vector<double,
-        // mpi_allocator<double>>());
-        // buffers_ = std::vector<mpi_buffer_t>(buff_sizes.size(), mpi_buffer_t());
-        // std::cout << "buff sizes for " << label_ << " = " <<
-        // buff_sizes.size() << std::endl;
-        // buffers_[0].resize(mapper_->initial_size());
-        // buffers_[0] = std::vector<double,
-        // mpi_allocator<double>>(mapper_->initial_size()); ignore the first
-        // buffer size since it's already allocated in the initial buffers
-        // std::cout << "buffer sizes = " << std::endl;
-
-        buffers_.reserve(buff_sizes_.size());
-
-        buff_sizes_[0] = std::max((size_t) buff_sizes_[0], mapper_->initial_size());
-        for (int i = 0; i < buff_sizes_.size(); ++i) {
+        // check if the initial buffer is already initialized
+        assert(buffers_.size() == 1);
+        // initial buffer is already allocated, so start from 1
+        for (int i = 1; i < buff_sizes_.size(); ++i) {
             auto ptr = ctxt_->get_memory_pool().get_buffer(buff_sizes_[i]);
             buffers_.push_back(ptr);
         }
@@ -79,40 +59,104 @@ void Buffer<T>::initialize_buffers(bool dry_run) {
         if (max_reduce_buffer_size_ > 0) {
             reduce_buffer_ = ctxt_->get_memory_pool().get_buffer(max_reduce_buffer_size_);
         }
-    }
-
-    current_buffer_ = 0;
 
 #ifdef DEBUG
-    std::cout << "Buffer sizes for matrix " << label_ << " on rank " << rank_
-              << std::endl;
-    std::cout << "max_reshuffle_buffer_size_ = " << max_reshuffle_buffer_size_
-              << std::endl;
-    std::cout << "max_reduce_buffer_size_ = " << max_reduce_buffer_size_
-              << std::endl;
-    std::cout << "max_send_buffer_size_ = " << max_send_buffer_size_
-              << std::endl;
-    std::cout << "max_recv_buffer_size_ = " << max_recv_buffer_size_
-              << std::endl;
-    std::cout << "max_base_buffer_size_ = " << max_base_buffer_size_
-              << std::endl;
+        std::cout << "Buffer sizes for matrix " << label_ << " on rank " << rank_
+                  << std::endl;
+        std::cout << "max_reshuffle_buffer_size_ = " << max_reshuffle_buffer_size_
+                  << std::endl;
+        std::cout << "max_reduce_buffer_size_ = " << max_reduce_buffer_size_
+                  << std::endl;
+        std::cout << "max_send_buffer_size_ = " << max_send_buffer_size_
+                  << std::endl;
+        std::cout << "max_recv_buffer_size_ = " << max_recv_buffer_size_
+                  << std::endl;
+        std::cout << "max_base_buffer_size_ = " << max_base_buffer_size_
+                  << std::endl;
 #endif
 
 #ifdef COSMA_HAVE_GPU
-    // pin the buffer that will be used in gemm
-    int buff_index_to_pin = buff_index_before_gemm();
-    // std::cout << "Buffer index to pin  for " << label_ << " = " <<
-    // buff_index_to_pin << std::endl;
-    auto buffer_to_pin = buffers_[buff_index_to_pin];
-    auto status = cudaHostRegister(buffer_to_pin,
-                                   buffer_sizes[buff_index_to_pin] * sizeof(T),
-                                   cudaHostRegisterDefault);
-    gpu::cuda_check_status(status);
+        // pin the buffer that will be used in gemm
+        int buff_index_to_pin = buff_index_before_gemm();
+        // std::cout << "Buffer index to pin  for " << label_ << " = " <<
+        // buff_index_to_pin << std::endl;
+        auto buffer_to_pin = buffers_[buff_index_to_pin];
+        auto status = cudaHostRegister(buffer_to_pin,
+                                       buffer_sizes[buff_index_to_pin] * sizeof(T),
+                                       cudaHostRegisterDefault);
+        gpu::cuda_check_status(status);
 #endif
+    }
+}
+
+template <typename T>
+void Buffer<T>::allocate_initial_buffers(bool dry_run) {
+    max_base_buffer_size_ = -1;
+    max_reduce_buffer_size_ = -1;
+    max_reshuffle_buffer_size_ = -1;
+    max_send_buffer_size_ = (size_t)mapper_->initial_size();
+    max_recv_buffer_size_ = (size_t)mapper_->initial_size();
+
+    init_first_split_steps();
+
+    buff_sizes_ = compute_buffer_size();
+
+    if (!dry_run) {
+        buffers_.reserve(buff_sizes_.size());
+
+        // allocate initial buffer (to store the matrix)
+        buff_sizes_[0] = std::max((size_t) buff_sizes_[0], mapper_->initial_size());
+        auto ptr = ctxt_->get_memory_pool().get_buffer(buff_sizes_[0]);
+        buffers_.push_back(ptr);
+    }
+}
+
+template <typename T>
+void Buffer<T>::free_initial_buffers(bool dry_run) {
+    if (dry_run || buff_sizes_.size() == 0) 
+        return;
+    // check if all the other buffers were deallocated previously
+    assert(buffers_.size() == 1);
+
+    // deallocate initial buffer (that are storing the matrix)
+    ctxt_->get_memory_pool().free_buffer(buffers_[0], buff_sizes_[0]);
+    // remove the pointers pointing to them
+    buffers_.pop_back();
+    buff_sizes_.pop_back();
+}
+
+template <typename T>
+void Buffer<T>::free_communication_buffers(bool dry_run) {
+    if (dry_run || buff_sizes_.size() == 0) 
+        return;
+    int n_buffers = buff_sizes_.size();
+    // i = 0 is the initial buffer storing the matrix, so we skip this one.
+    for (int i = 1; i < n_buffers; ++i) {
+        ctxt_->get_memory_pool().free_buffer(buffers_.back(), buff_sizes_.back());
+        // remove the pointers pointing to them
+        buffers_.pop_back();
+        buff_sizes_.pop_back();
+    }
+
+    // deallocate reshuffle and reduce buffers separately
+    if (max_reshuffle_buffer_size_ > 0) {
+        ctxt_->get_memory_pool().free_buffer(reshuffle_buffer_, max_reshuffle_buffer_size_);
+    }
+
+    if (max_reduce_buffer_size_ > 0) {
+        ctxt_->get_memory_pool().free_buffer(reduce_buffer_, max_reduce_buffer_size_);
+    }
 }
 
 template <typename T>
 Buffer<T>::~Buffer() {
+    // check if communication buffers are already deallocated
+    assert(buffers_.size() <= 1);
+    assert(!reshuffle_buffer_);
+    assert(!reduce_buffer_);
+
+    // free the initial buffers
+    free_initial_buffers();
 #ifdef COSMA_HAVE_GPU
     // std::cout << "buffers_ size = " << buffers_.size() << std::endl;
     // unpin the buffer that will be used in gemm

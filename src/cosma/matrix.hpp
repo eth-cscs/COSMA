@@ -30,12 +30,21 @@ class CosmaMatrix {
     using scalar_t = Scalar;
     using buffer_t = Buffer<scalar_t>;
 
+    // using a pointer to cosma_context
+    CosmaMatrix(cosma_context<Scalar>* ctxt,
+                char label,
+                const Strategy &strategy,
+                int rank,
+                bool dry_run = false);
+
+    // using std::unique_ptr<cosma_context>
     CosmaMatrix(context<Scalar>& ctxt,
                 char label,
                 const Strategy &strategy,
                 int rank,
                 bool dry_run = false);
 
+    // using global (singleton) context
     CosmaMatrix(char label,
                 const Strategy &strategy,
                 int rank,
@@ -146,6 +155,9 @@ class CosmaMatrix {
 
     grid2grid::grid_layout<scalar_t> get_grid_layout();
 
+    void allocate_communication_buffers();
+    void free_communication_buffers();
+
   protected:
     cosma_context<scalar_t>* ctxt_;
     // A, B or C
@@ -171,8 +183,6 @@ class CosmaMatrix {
     Mapper mapper_;
     Layout layout_;
     buffer_t buffer_;
-
-    mpi_buffer_t dummy_vector;
 };
 
 template <typename Scalar>

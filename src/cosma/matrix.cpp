@@ -7,13 +7,14 @@ namespace cosma {
 
 extern template class Buffer<double>;
 
+// using a pointer to cosma_context
 template <typename T>
-CosmaMatrix<T>::CosmaMatrix(context<T>& ctxt,
+CosmaMatrix<T>::CosmaMatrix(cosma_context<T>* ctxt,
                             char label,
                             const Strategy &strategy,
                             int rank,
                             bool dry_run)
-    : ctxt_(ctxt.get())
+    : ctxt_(ctxt)
     , label_(label)
     , rank_(rank)
     , strategy_(strategy) {
@@ -43,12 +44,23 @@ CosmaMatrix<T>::CosmaMatrix(context<T>& ctxt,
     PL();
 }
 
+// using std::unique_ptr<cosma_context>
+template <typename T>
+CosmaMatrix<T>::CosmaMatrix(context<T>& ctxt,
+                            char label,
+                            const Strategy &strategy,
+                            int rank,
+                            bool dry_run)
+    : CosmaMatrix(ctxt.get(), label, strategy, rank, dry_run);
+{}
+
+// using global (singleton) context
 template <typename T>
 CosmaMatrix<T>::CosmaMatrix(char label,
                             const Strategy &strategy,
                             int rank,
                             bool dry_run)
-    : CosmaMatrix(std::unique_ptr<T>{}, label, strategy, rank, dry_run) 
+    : CosmaMatrix(get_context_instance(), label, strategy, rank, dry_run);
 {}
 
 template <typename T>
@@ -342,6 +354,14 @@ grid2grid::grid_layout<T> CosmaMatrix<T>::get_grid_layout() {
     grid2grid::local_blocks<T> local_memory(std::move(loc_blocks));
 
     return {std::move(assigned_grid), std::move(local_memory)};
+}
+
+void CosmaMatrix::allocate_communication_buffers() {
+    buffer_.allocate_communication_buffers();
+}
+
+void CosmaMatrix::free_communication_buffers() {
+    buffer_.free_communication_buffers();
 }
 
 // Explicit instantiations

@@ -37,7 +37,17 @@ public:
     // using mpi_buffer_t = std::vector<scalar_t, mpi_allocator<scalar_t>>;
 
     Buffer() = default;
-    // with context
+
+    // with cosma_context*
+    Buffer(cosma_context<Scalar>* ctxt,
+           char label,
+           const Strategy &strategy,
+           int rank,
+           Mapper *mapper,
+           Layout *layout,
+           bool dry_run = false);
+
+    // with std::unique_ptr<cosma_context>
     Buffer(context<Scalar>& ctxt,
            char label,
            const Strategy &strategy,
@@ -46,7 +56,7 @@ public:
            Layout *layout,
            bool dry_run = false);
 
-    // without context
+    // without context (using global singleton context)
     Buffer(char label,
            const Strategy &strategy,
            int rank,
@@ -61,7 +71,11 @@ public:
 
     // allocates all the buffers that are needed for the current matrix and the
     // current rank
-    void initialize_buffers(bool dry_run = false);
+    void allocate_initial_buffers(bool dry_run = false);
+    void allocate_communication_buffers(bool dry_run = false);
+
+    void free_initial_buffers(bool dry_run = false);
+    void free_communication_buffers(bool dry_run = false);
 
     // increases the index of the current buffer
     void advance_buffer();

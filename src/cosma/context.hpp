@@ -43,8 +43,9 @@ context<Scalar> make_context(size_t cpu_mem_limit, int streams, int tile_m, int 
 //     while the variable is being initialized,
 //     the concurrent execution shall wait
 //     for completion of the initialization
-static cosma_context* get_context_instance() {
-    static cosma_context ctxt;
+template <typename Scalar>
+static cosma_context<Scalar>* get_context_instance() {
+    static cosma_context<Scalar> ctxt;
     return &ctxt;
 }
 } // namespace cosma

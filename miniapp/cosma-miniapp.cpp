@@ -48,9 +48,9 @@ long run(Strategy &s, context<double> &ctx, MPI_Comm comm = MPI_COMM_WORLD) {
     MPI_Comm_size(comm, &size);
 
     // Declare A,B and C COSMA matrices objects
-    CosmaMatrix<double> A('A', s, rank);
-    CosmaMatrix<double> B('B', s, rank);
-    CosmaMatrix<double> C('C', s, rank);
+    CosmaMatrix<double> A(ctx, 'A', s, rank);
+    CosmaMatrix<double> B(ctx, 'B', s, rank);
+    CosmaMatrix<double> C(ctx, 'C', s, rank);
     double beta = 0;
     double alpha = 1;
 

@@ -73,4 +73,10 @@ template context<zdouble> cosma::make_context(size_t cpu_mem_limit,
                                               int tile_m,
                                               int tile_n,
                                               int tile_k);
+
+// template instantiation for get_context_instance
+static template cosma_context<float>* cosma::get_context_instance();
+static template cosma_context<double>* cosma::get_context_instance();
+static template cosma_context<zfloat>* cosma::get_context_instance();
+static template cosma_context<zdouble>* cosma::get_context_instance();
 } // namespace cosma
