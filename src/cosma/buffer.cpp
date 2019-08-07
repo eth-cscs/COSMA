@@ -5,6 +5,24 @@
 namespace cosma {
 
 template <typename T>
+Buffer<T>::Buffer(context<T>& ctxt,
+                  char label,
+                  const Strategy &strategy,
+                  int rank,
+                  Mapper *mapper,
+                  Layout *layout,
+                  bool dry_run)
+    : ctxt_(ctxt.get())
+    , label_(label)
+    , strategy_(&strategy)
+    , rank_(rank)
+    , mapper_(mapper)
+    , layout_(layout) {
+    compute_n_buckets();
+    initialize_buffers(dry_run);
+}
+
+template <typename T>
 Buffer<T>::Buffer(char label,
                   const Strategy &strategy,
                   int rank,
@@ -16,6 +34,7 @@ Buffer<T>::Buffer(char label,
     , rank_(rank)
     , mapper_(mapper)
     , layout_(layout) {
+    ctxt_ = 
     compute_n_buckets();
     initialize_buffers(dry_run);
 }
@@ -25,18 +44,18 @@ void Buffer<T>::initialize_buffers(bool dry_run) {
     max_base_buffer_size_ = -1;
     max_reduce_buffer_size_ = -1;
     max_reshuffle_buffer_size_ = -1;
-    max_send_buffer_size_ = (long long)mapper_->initial_size();
-    max_recv_buffer_size_ = (long long)mapper_->initial_size();
+    max_send_buffer_size_ = (size_t)mapper_->initial_size();
+    max_recv_buffer_size_ = (size_t)mapper_->initial_size();
 
     init_first_split_steps();
 
-    std::vector<long long> buff_sizes = compute_buffer_size();
+    buff_sizes_ = compute_buffer_size();
 
     if (!dry_run) {
         // buffers_ = std::vector<std::vector<double,
         // mpi_allocator<double>>>(buff_sizes.size()+1, std::vector<double,
         // mpi_allocator<double>>());
-        buffers_ = std::vector<mpi_buffer_t>(buff_sizes.size(), mpi_buffer_t());
+        // buffers_ = std::vector<mpi_buffer_t>(buff_sizes.size(), mpi_buffer_t());
         // std::cout << "buff sizes for " << label_ << " = " <<
         // buff_sizes.size() << std::endl;
         // buffers_[0].resize(mapper_->initial_size());
@@ -44,27 +63,21 @@ void Buffer<T>::initialize_buffers(bool dry_run) {
         // mpi_allocator<double>>(mapper_->initial_size()); ignore the first
         // buffer size since it's already allocated in the initial buffers
         // std::cout << "buffer sizes = " << std::endl;
-        for (int i = 0; i < buff_sizes.size(); ++i) {
-            buffers_[i].resize(buff_sizes[i]);
-            // std::cout << buff_sizes[i] << ", ";
-        }
-        // std::cout << std::endl;
-        // std::cout << "Initial size = " << mapper_->initial_size() <<
-        // std::endl;
-        buffers_[0].resize(
-            std::max((size_t)buff_sizes[0], mapper_->initial_size()));
 
-        // std::cout << "matrix = " << label_ << ", # buffers = " <<
-        // buffers_.size() << std::endl;
+        buffers_.reserve(buff_sizes_.size());
+
+        buff_sizes_[0] = std::max((size_t) buff_sizes_[0], mapper_->initial_size());
+        for (int i = 0; i < buff_sizes_.size(); ++i) {
+            auto ptr = ctxt_->get_memory_pool().get_buffer(buff_sizes_[i]);
+            buffers_.push_back(ptr);
+        }
 
         if (max_reshuffle_buffer_size_ > 0) {
-            reshuffle_buffer_ = std::unique_ptr<scalar_t[]>(
-                new scalar_t[max_reshuffle_buffer_size_]);
+            reshuffle_buffer_ = ctxt_->get_memory_pool().get_buffer(max_reshuffle_buffer_size_);
         }
 
         if (max_reduce_buffer_size_ > 0) {
-            reduce_buffer_ = std::unique_ptr<scalar_t[]>(
-                new scalar_t[max_reduce_buffer_size_]);
+            reduce_buffer_ = ctxt_->get_memory_pool().get_buffer(max_reduce_buffer_size_);
         }
     }
 
@@ -90,9 +103,9 @@ void Buffer<T>::initialize_buffers(bool dry_run) {
     int buff_index_to_pin = buff_index_before_gemm();
     // std::cout << "Buffer index to pin  for " << label_ << " = " <<
     // buff_index_to_pin << std::endl;
-    auto &buffer_to_pin = buffers_[buff_index_to_pin];
-    auto status = cudaHostRegister(buffer_to_pin.data(),
-                                   buffer_to_pin.size() * sizeof(double),
+    auto buffer_to_pin = buffers_[buff_index_to_pin];
+    auto status = cudaHostRegister(buffer_to_pin,
+                                   buffer_sizes[buff_index_to_pin] * sizeof(T),
                                    cudaHostRegisterDefault);
     gpu::cuda_check_status(status);
 #endif
@@ -106,8 +119,8 @@ Buffer<T>::~Buffer() {
     int buff_index_to_pin = buff_index_before_gemm();
     // std::cout << "Buffer index to unpin: " << buff_index_to_pin << std::endl;
     if (buff_index_to_pin >= 0) {
-        auto &buffer_to_pin = buffers_[buff_index_to_pin];
-        auto status = cudaHostUnregister(buffer_to_pin.data());
+        auto buffer_to_pin = buffers_[buff_index_to_pin];
+        auto status = cudaHostUnregister(buffer_to_pin);
         gpu::cuda_check_status(status);
     }
     // std::cout << "Matrix " << label_ << ", buffers_.size() = " <<
@@ -192,8 +205,18 @@ int Buffer<T>::buff_index_before_gemm() const {
 }
 
 template <typename T>
-typename Buffer<T>::mpi_buffer_t &Buffer<T>::buffer() {
+T* Buffer<T>::buffer_ptr() {
     return buffers_[current_buffer_];
+}
+
+template <typename T>
+const T* Buffer<T>::buffer_ptr() const {
+    return buffers_[current_buffer_];
+}
+
+template <typename T>
+const size_t Buffer<T>::buffer_size() const {
+    return buff_sizes_[current_buffer_];
 }
 
 template <typename T>
@@ -207,41 +230,39 @@ void Buffer<T>::set_buffer_index(int idx) {
 }
 
 template <typename T>
-const typename Buffer<T>::mpi_buffer_t &Buffer<T>::buffer() const {
-    return buffers_[current_buffer_];
-}
-
-template <typename T>
-typename Buffer<T>::scalar_t *Buffer<T>::buffer_ptr() {
-    return buffer().data();
-}
-
-template <typename T>
 typename Buffer<T>::scalar_t *Buffer<T>::reshuffle_buffer_ptr() {
-    return max_reshuffle_buffer_size_ > 0 ? reshuffle_buffer_.get() : nullptr;
+    assert(reshuffle_buffer_);
+    return reshuffle_buffer_;
 }
 
 template <typename T>
 typename Buffer<T>::scalar_t *Buffer<T>::reduce_buffer_ptr() {
-    return max_reduce_buffer_size_ > 0 ? reduce_buffer_.get() : nullptr;
+    assert(reduce_buffer_);
+    return reduce_buffer_;
 }
 
 template <typename T>
-typename Buffer<T>::mpi_buffer_t &Buffer<T>::initial_buffer() {
-    return buffers_[0];
-}
-
-template <typename T>
-const typename Buffer<T>::mpi_buffer_t &Buffer<T>::initial_buffer() const {
-    return buffers_[0];
-}
-
-template <typename T>
-typename Buffer<T>::scalar_t *Buffer<T>::initial_buffer_ptr() {
+T* Buffer<T>::initial_buffer_ptr() {
     if (buffers_.size() == 0) {
         return nullptr;
     }
-    return initial_buffer().data();
+    return buffers_[0];
+}
+
+template <typename T>
+const T* Buffer<T>::initial_buffer_ptr() const {
+    if (buffers_.size() == 0) {
+        return nullptr;
+    }
+    return buffers_[0];
+}
+
+template <typename T>
+const size_t Buffer<T>::initial_buffer_size() const {
+    if (buff_sizes_.size() == 0) {
+        return 0;
+    }
+    return buff_sizes_[0];
 }
 
 // increases the index of the current buffer
@@ -260,7 +281,7 @@ void Buffer<T>::advance_buffer() {
 }
 
 template <typename T>
-std::vector<long long> Buffer<T>::compute_buffer_size() {
+std::vector<size_t> Buffer<T>::compute_buffer_size() {
     Interval m(0, strategy_->m - 1);
     Interval n(0, strategy_->n - 1);
     Interval k(0, strategy_->k - 1);
@@ -270,14 +291,14 @@ std::vector<long long> Buffer<T>::compute_buffer_size() {
 }
 
 template <typename T>
-std::vector<long long> Buffer<T>::compute_buffer_size(Interval &m,
+std::vector<size_t> Buffer<T>::compute_buffer_size(Interval &m,
                                                       Interval &n,
                                                       Interval &k,
                                                       Interval &P,
                                                       int step,
                                                       int rank,
                                                       scalar_t beta) {
-    std::vector<long long> sizes;
+    std::vector<size_t> sizes;
     // current submatrices that are being computed
     Interval2D a_range(m, k);
     Interval2D b_range(k, n);
@@ -338,12 +359,12 @@ std::vector<long long> Buffer<T>::compute_buffer_size(Interval &m,
             }
 
             // compute substeps
-            std::vector<long long> subsizes = compute_buffer_size(
+            std::vector<size_t> subsizes = compute_buffer_size(
                 newm, newn, newk, P, step + 1, rank, new_beta);
 
             // initialize the sizes vector in the first branch of sequential
             if (i == 0) {
-                sizes = std::vector<long long>(subsizes.size());
+                sizes = std::vector<size_t>(subsizes.size());
             }
 
             // finds the maximum buffer size for each step among all sequential
@@ -367,7 +388,7 @@ std::vector<long long> Buffer<T>::compute_buffer_size(Interval &m,
                 if (step == last_first_seq_split_step) {
                     sizes.insert(sizes.begin(), max_size);
                 } else {
-                    sizes[0] = std::max(sizes[0], (long long)max_size);
+                    sizes[0] = std::max(sizes[0], (size_t)max_size);
                 }
             }
         }
@@ -393,7 +414,7 @@ std::vector<long long> Buffer<T>::compute_buffer_size(Interval &m,
         std::vector<std::vector<int>> size_after_expansion(newP.length());
         std::vector<int> total_after_expansion(newP.length());
 
-        long long max_size = -1;
+        size_t max_size = -1;
 
         bool expanded = !strategy_->split(label_, step);
 
@@ -429,8 +450,8 @@ std::vector<long long> Buffer<T>::compute_buffer_size(Interval &m,
             // this is the sum of sizes of all the buckets after expansion
             // that the current rank will own.
             // which is also the size of the matrix after expansion
-            long long old_size = total_before_expansion[rank - P.first()];
-            long long new_size = total_after_expansion[rank - newP.first()];
+            size_t old_size = total_before_expansion[rank - P.first()];
+            size_t new_size = total_after_expansion[rank - newP.first()];
             max_size = std::max(old_size, new_size);
 
             int n_blocks = size_before_expansion[rank - P.first()].size();
@@ -450,7 +471,7 @@ std::vector<long long> Buffer<T>::compute_buffer_size(Interval &m,
                     P.locate_in_interval(div, subint_index, subint_offset);
                 max_reduce_buffer_size_ =
                     std::max(max_reduce_buffer_size_,
-                             (long long)total_before_expansion[target]);
+                             (size_t)total_before_expansion[target]);
             }
         }
 
@@ -466,11 +487,11 @@ std::vector<long long> Buffer<T>::compute_buffer_size(Interval &m,
         }
 
         // invoke the substeps
-        std::vector<long long> subsizes = compute_buffer_size(
+        std::vector<size_t> subsizes = compute_buffer_size(
             newm, newn, newk, newP, step + 1, rank, new_beta);
 
         if (expanded) {
-            sizes = std::vector<long long>(subsizes.size() + 1);
+            sizes = std::vector<size_t>(subsizes.size() + 1);
             sizes[0] = max_size;
             std::copy(subsizes.begin(), subsizes.end(), sizes.begin() + 1);
             // the buffer sizes are back to the previous values
@@ -522,7 +543,7 @@ void Buffer<T>::compute_max_buffer_size(Interval &m,
 
     // invoke a parallel or a sequential step:
     if (strategy_->final_step(step)) {
-        long long max_size = 0;
+        size_t max_size = 0;
         if (label_ == 'A') {
             max_size = 1LL * m.length() * k.length();
         } else if (label_ == 'B') {
@@ -627,9 +648,9 @@ void Buffer<T>::compute_max_buffer_size(Interval &m,
             // this is the sum of sizes of all the buckets after expansion
             // that the current rank will own.
             // which is also the size of the matrix after expansion
-            long long old_size = total_before_expansion[rank - P.first()];
-            long long new_size = total_after_expansion[rank - newP.first()];
-            long long max_size = std::max(old_size, new_size);
+            size_t old_size = total_before_expansion[rank - P.first()];
+            size_t new_size = total_after_expansion[rank - newP.first()];
+            size_t max_size = std::max(old_size, new_size);
             if (max_size > max_recv_buffer_size_) {
                 max_send_buffer_size_ = max_recv_buffer_size_;
                 max_recv_buffer_size_ = max_size;
@@ -653,7 +674,7 @@ void Buffer<T>::compute_max_buffer_size(Interval &m,
                     P.locate_in_interval(div, subint_index, subint_offset);
                 max_reduce_buffer_size_ =
                     std::max(max_reduce_buffer_size_,
-                             (long long)total_before_expansion[target]);
+                             (size_t)total_before_expansion[target]);
                 // std::cout << "max_reduce_buffer_size = " <<
                 // max_reduce_buffer_size_ << std::endl;
             }
@@ -686,24 +707,22 @@ void Buffer<T>::compute_max_buffer_size(Interval &m,
 }
 
 template <typename T>
-typename Buffer<T>::mpi_buffer_t &Buffer<T>::
-operator[](const typename mpi_buffer_t::size_type index) {
+T* Buffer<T>::operator[](const size_t index) {
     return buffers_[index];
 }
 
 template <typename T>
-typename Buffer<T>::mpi_buffer_t Buffer<T>::
-operator[](const typename mpi_buffer_t::size_type index) const {
+T* Buffer<T>::operator[](const size_t index) const {
     return buffers_[index];
 }
 
 template <typename T>
-long long Buffer<T>::max_send_buffer_size() const {
+size_t Buffer<T>::max_send_buffer_size() const {
     return max_send_buffer_size_;
 }
 
 template <typename T>
-long long Buffer<T>::max_recv_buffer_size() const {
+size_t Buffer<T>::max_recv_buffer_size() const {
     return max_recv_buffer_size_;
 }
 

@@ -9,11 +9,13 @@ namespace cosma {
 extern template class Buffer<double>;
 
 template <typename T>
-CosmaMatrix<T>::CosmaMatrix(char label,
+CosmaMatrix<T>::CosmaMatrix(context<T>& ctxt,
+                            char label,
                             const Strategy &strategy,
                             int rank,
                             bool dry_run)
-    : label_(label)
+    : ctxt_(ctxt.get())
+    , label_(label)
     , rank_(rank)
     , strategy_(strategy) {
     PE(preprocessing_matrices);
@@ -35,12 +37,20 @@ CosmaMatrix<T>::CosmaMatrix(char label,
 
     mapper_ = Mapper(label, m_, n_, P_, strategy, rank);
     layout_ = Layout(label, m_, n_, P_, rank, mapper_.complete_layout());
-    buffer_ = buffer_t(label, strategy, rank, &mapper_, &layout_, dry_run);
+    buffer_ = buffer_t(ctxt, label, strategy, rank, &mapper_, &layout_, dry_run);
 
     current_mat = matrix_pointer();
 
     PL();
 }
+
+template <typename T>
+CosmaMatrix<T>::CosmaMatrix(char label,
+                            const Strategy &strategy,
+                            int rank,
+                            bool dry_run)
+    : CosmaMatrix(std::unique_ptr<T>{}, label, strategy, rank, dry_run) 
+{}
 
 template <typename T>
 int CosmaMatrix<T>::m() {
@@ -97,16 +107,6 @@ typename CosmaMatrix<T>::scalar_t *CosmaMatrix<T>::reduce_buffer_ptr() {
 }
 
 template <typename T>
-typename CosmaMatrix<T>::mpi_buffer_t &CosmaMatrix<T>::buffer() {
-    return buffer_.buffer();
-}
-
-template <typename T>
-const typename CosmaMatrix<T>::mpi_buffer_t &CosmaMatrix<T>::buffer() const {
-    return buffer_.buffer();
-}
-
-template <typename T>
 void CosmaMatrix<T>::advance_buffer() {
     buffer_.advance_buffer();
 }
@@ -143,29 +143,17 @@ CosmaMatrix<T>::global_coordinates(int local_index) const {
 
 template <typename T>
 typename CosmaMatrix<T>::scalar_t *CosmaMatrix<T>::matrix_pointer() {
-    // return matrix_.data();
-    if (rank_ >= strategy_.P) {
-        return nullptr;
-    }
     return buffer_.initial_buffer_ptr();
 }
 
 template <typename T>
-typename CosmaMatrix<T>::mpi_buffer_t &CosmaMatrix<T>::matrix() {
-    // return matrix_;
-    if (rank_ >= strategy_.P) {
-        return dummy_vector;
-    }
-    return buffer_.initial_buffer();
+const typename CosmaMatrix<T>::scalar_t*CosmaMatrix<T>::matrix_pointer() const {
+    return buffer_.initial_buffer_ptr();
 }
 
 template <typename T>
-const typename CosmaMatrix<T>::mpi_buffer_t &CosmaMatrix<T>::matrix() const {
-    // return matrix_;
-    if (rank_ >= strategy_.P) {
-        return dummy_vector;
-    }
-    return buffer_.initial_buffer();
+size_t CosmaMatrix<T>::matrix_size() const {
+    return buffer_.initial_buffer_size();
 }
 
 template <typename T>
@@ -271,13 +259,13 @@ void CosmaMatrix<T>::set_sizes(int rank, std::vector<int> &sizes, int start) {
 template <typename T>
 typename CosmaMatrix<T>::scalar_t &CosmaMatrix<T>::
 operator[](const typename std::vector<scalar_t>::size_type index) {
-    return matrix()[index];
+    return matrix_pointer()[index];
 }
 
 template <typename T>
 typename CosmaMatrix<T>::scalar_t CosmaMatrix<T>::
 operator[](const typename std::vector<scalar_t>::size_type index) const {
-    return matrix()[index];
+    return matrix_pointer()[index];
 }
 
 template <typename T>

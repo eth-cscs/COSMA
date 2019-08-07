@@ -4,8 +4,8 @@ if(NOT TARGET cosma::cosma)
 
     find_dependency(MPI)
 
-    set(COSMA_USE_TILEDMM "@COSMA_USE_TILEDMM@")
-    if(COSMA_USE_TILEDMM)
+    set(COSMA_USE_GPU "@COSMA_USE_GPU@")
+    if(COSMA_USE_GPU)
         find_dependency(Tiled-MM)
     else()
         set(MKL_PARALLEL "@MKL_PARALLEL@")

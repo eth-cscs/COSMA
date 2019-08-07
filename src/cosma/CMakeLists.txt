@@ -33,7 +33,7 @@ if(COSMA_WITH_MKL)
     target_compile_definitions(cosma PRIVATE COSMA_WITH_MKL)
 endif()
 
-if(COSMA_WITH_TILEDMM)
+if(COSMA_WITH_GPU)
     # These need to be public because of context hpp|cpp
     #
     target_link_libraries(cosma PUBLIC Tiled-MM)
@@ -46,6 +46,8 @@ if(ScaLAPACK_FOUND)
     )
     target_link_libraries(cosma_with_scalapack PUBLIC cosma MKL::ScaLAPACK
                                                PRIVATE semiprof)
+
+    # private dependencies are not propagated, so add them
     if(COSMA_WITH_PROFILING)
         target_compile_definitions(cosma_with_scalapack PRIVATE SEMIPROF)
     endif()

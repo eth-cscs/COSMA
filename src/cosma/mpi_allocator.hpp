@@ -74,7 +74,9 @@ class mpi_allocator {
         return std::numeric_limits<size_type>::max() / sizeof(T);
     }
 
-    void construct(pointer p, const T &t) { new (p) T(t); }
+    void construct(pointer p, const T &t) {
+        // new (p) T(t);
+    }
 
     void destroy(pointer p) {
         if (p) {

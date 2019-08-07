@@ -32,7 +32,8 @@ namespace cosma {
  * but is very general as it can work with any grid-like data layout.
  */
 template <typename Scalar>
-void multiply_using_layout(grid2grid::grid_layout<Scalar> &A_layout,
+void multiply_using_layout(context<Scalar>& ctx,
+                           grid2grid::grid_layout<Scalar> &A_layout,
                            grid2grid::grid_layout<Scalar> &B_layout,
                            grid2grid::grid_layout<Scalar> &C_layout,
                            int m,

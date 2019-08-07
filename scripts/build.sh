@@ -31,7 +31,7 @@ export MKLROOT=<TODO:mkl_root_dir>
 # `COSMA_WITH_OPENMPI` := ON|OFF (default:OFF)
 #    Only relevant for unit tests. Makes sure correct flags are pasts to tests.
 #
-# `COSMA_WITH_TILEDMM` := ON|OFF (default: OFF)
+# `COSMA_WITH_GPU` := ON|OFF (default: OFF)
 #    If `ON` uses the TiledMM (submodule) GPU gemm back-end instead of MKL.
 # 
 #

@@ -16,7 +16,7 @@ endif()
 
 # Options
 #
-option(COSMA_WITH_TILEDMM "Use CUDA GPU backend." OFF)
+option(COSMA_WITH_GPU "Use CUDA GPU backend." OFF)
 option(COSMA_WITH_PROFILING "Use the semiprof profiler" OFF)
 option(COSMA_WITH_TESTS "Generate the test target." ${MASTER_PROJECT})
 option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
@@ -32,7 +32,7 @@ project(cosma VERSION 0.1 LANGUAGES CXX)
 option(GRID2GRID_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
 option(OPTIONS_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
 option(SEMIPROF_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
-if(COSMA_WITH_TILEDMM)
+if(COSMA_WITH_GPU)
     option(TILEDMM_WITH_INSTALL "" ${COSMA_WITH_INSTALL}) 
 endif()
 
@@ -42,7 +42,7 @@ add_subdirectory(libs/semiprof)
 add_subdirectory(libs/grid2grid)
 
 set(COSMA_WITH_MKL ON)
-if(COSMA_WITH_TILEDMM)
+if(COSMA_WITH_GPU)
     set(COSMA_WITH_MKL OFF)
 endif()
 
@@ -51,7 +51,7 @@ if(COSMA_WITH_MKL)
     find_package(ScaLAPACK)  # optional
 endif()
 
-if(COSMA_WITH_TILEDMM)
+if(COSMA_WITH_GPU)
     add_subdirectory(libs/Tiled-MM)
 endif()
 

@@ -15,8 +15,10 @@
 using namespace cosma;
 
 template <typename T>
-void fillInt(T &in) {
-    std::generate(in.begin(), in.end(), []() { return (int)(10 * drand48()); });
+void fill_int(T* ptr, size_t size) {
+    for (unsigned i = 0u; i < size; ++i) {
+        ptr[i] = 10*drand48();
+    }
 }
 
 // Reads an environment variable `n_iter`
@@ -54,8 +56,8 @@ long run(Strategy &s, context<double> &ctx, MPI_Comm comm = MPI_COMM_WORLD) {
 
     // fill the matrices with random data
     srand48(rank);
-    fillInt(A.matrix());
-    fillInt(B.matrix());
+    fill_int(A.matrix_pointer(), A.matrix_size());
+    fill_int(B.matrix_pointer(), B.matrix_size());
 
     MPI_Barrier(comm);
     auto start = std::chrono::steady_clock::now();
