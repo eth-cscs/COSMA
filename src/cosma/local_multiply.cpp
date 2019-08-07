@@ -1,14 +1,14 @@
 #include <cosma/local_multiply.hpp>
-
+#include <cosma/profiler.hpp>
 #include <cosma/timer.hpp>
-#ifdef COSMA_HAVE_GPU
-#include <tiled_mm.hpp>
-#endif
+
 #ifdef COSMA_WITH_MKL
 #include <cosma/blas.hpp>
 #endif
 
-#include <semiprof.hpp>
+#ifdef COSMA_HAVE_GPU
+#include <Tiled-MM/tiled_mm.hpp>
+#endif
 
 #include <chrono>
 #include <complex>

@@ -6,14 +6,11 @@
 #include <cosma/strategy.hpp>
 #include <cosma/context.hpp>
 
-#include <vector>
-
 #ifdef COSMA_HAVE_GPU
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-#include <driver_types.h>
-#include <util.hpp>
+#include <Tiled-MM/util.hpp>
 #endif
+
+#include <vector>
 
 /*
  * This class wrapps up a vector of buffers representing single matrix (A, B or

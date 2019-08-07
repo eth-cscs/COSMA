@@ -4,7 +4,7 @@
 #include <cosma/memory_pool.hpp>
 
 #ifdef COSMA_HAVE_GPU
-#include <tiled_mm.hpp>
+#include <Tiled-MM/tiled_mm.hpp>
 #endif
 
 namespace cosma {

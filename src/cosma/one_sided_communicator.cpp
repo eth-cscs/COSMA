@@ -1,9 +1,9 @@
+#include <cosma/one_sided_communicator.hpp>
+
 #include <cosma/local_multiply.hpp>
 #include <cosma/math_utils.hpp>
 #include <cosma/mpi_mapper.hpp>
-#include <cosma/one_sided_communicator.hpp>
-
-#include <semiprof.hpp>
+#include <cosma/profiler.hpp>
 
 #include <algorithm>
 #include <atomic>

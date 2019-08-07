@@ -20,8 +20,7 @@ find_package(MKL REQUIRED)
 function(__mkl_find_library _name)
     find_library(${_name}
         NAMES ${ARGN}
-        HINTS ENV MKLROOT
-              ${MKL_ROOT}
+        HINTS ${MKL_ROOT}
         PATH_SUFFIXES ${_mkl_libpath_suffix}
                       lib
     )

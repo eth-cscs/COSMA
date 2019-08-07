@@ -7,6 +7,8 @@
 #include <cosma/mapper.hpp>
 #include <cosma/strategy.hpp>
 
+#include <grid2grid/transform.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <fstream>
@@ -17,7 +19,6 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
-#include <transform.hpp>
 #include <unordered_map>
 #include <vector>
 

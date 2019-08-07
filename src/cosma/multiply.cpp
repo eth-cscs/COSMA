@@ -1,7 +1,6 @@
 #include <cosma/local_multiply.hpp>
 #include <cosma/multiply.hpp>
-
-#include <semiprof.hpp>
+#include <cosma/profiler.hpp>
 
 #include <complex>
 
