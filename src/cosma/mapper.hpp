@@ -3,6 +3,8 @@
 #include <cosma/interval.hpp>
 #include <cosma/strategy.hpp>
 
+#include <grid2grid/transform.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <fstream>
@@ -11,7 +13,6 @@
 #include <set>
 #include <stdexcept>
 #include <string>
-#include <transform.hpp>
 #include <tuple>
 #include <unordered_map>
 #include <vector>

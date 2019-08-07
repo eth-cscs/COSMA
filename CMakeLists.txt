@@ -22,6 +22,10 @@ option(COSMA_WITH_TESTS "Generate the test target." ${MASTER_PROJECT})
 option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
 option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT})
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
+set(COSMA_WITH_MKL ON)
+if(COSMA_WITH_TILEDMM)
+    set(COSMA_WITH_MKL OFF)
+endif()
 
 
 project(cosma VERSION 0.1 LANGUAGES CXX)
@@ -29,21 +33,16 @@ project(cosma VERSION 0.1 LANGUAGES CXX)
 
 # Dependencies
 #
-option(GRID2GRID_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
-option(OPTIONS_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
-option(SEMIPROF_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
-if(COSMA_WITH_TILEDMM)
-    option(TILEDMM_WITH_INSTALL "" ${COSMA_WITH_INSTALL}) 
-endif()
-
 find_package(MPI REQUIRED)
+
+option(OPTIONS_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
 add_subdirectory(libs/options)
-add_subdirectory(libs/semiprof)
+
+option(GRID2GRID_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
 add_subdirectory(libs/grid2grid)
 
-set(COSMA_WITH_MKL ON)
-if(COSMA_WITH_TILEDMM)
-    set(COSMA_WITH_MKL OFF)
+if(COSMA_WITH_PROFILING)
+    add_subdirectory(libs/semiprof)
 endif()
 
 if(COSMA_WITH_MKL)
@@ -52,6 +51,7 @@ if(COSMA_WITH_MKL)
 endif()
 
 if(COSMA_WITH_TILEDMM)
+    option(TILEDMM_WITH_INSTALL "" ${COSMA_WITH_INSTALL}) 
     add_subdirectory(libs/Tiled-MM)
 endif()
 

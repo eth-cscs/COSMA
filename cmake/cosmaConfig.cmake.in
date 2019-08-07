@@ -1,29 +1,41 @@
 if(NOT TARGET cosma::cosma)
-    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
+    cmake_policy(PUSH) # Save project's policies
+    if(POLICY CMP0074)
+        cmake_policy(SET CMP0074 NEW)
+    endif()
     include(CMakeFindDependencyMacro)
 
+    # Bundled modules should be found first to prevent conflicts with similarly 
+    # named modules in calling projects. 
+    #
+    set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_MODULE_PATH})
+
+    set(MPI_CXX_COMPILER "@MPI_CXX_COMPILER@")
     find_dependency(MPI)
 
-    set(COSMA_USE_TILEDMM "@COSMA_USE_TILEDMM@")
-    if(COSMA_USE_TILEDMM)
-        find_dependency(Tiled-MM)
+    if("@COSMA_USE_TILEDMM@")
+        find_dependency(Tiled-MM) # bundled
     else()
+        set(MKL_ROOT "@MKL_ROOT@")
         set(MKL_PARALLEL "@MKL_PARALLEL@")
         set(MKL_64BIT "@MKL_64BIT@")
         find_dependency(MKL)
 
-        set(ScaLAPACK_FOUND "@ScaLAPACK_FOUND@")
-        if(ScaLAPACK_FOUND)
+        if("@ScaLAPACK_FOUND@")
             set(MKL_MPI_TYPE "@MKL_MPI_TYPE@")
             find_dependency(ScaLAPACK)
         endif()
     endif()
 
+    # Clean-up module path.
+    #
+    list(REMOVE_ITEM CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+
     # These are bundled with cosma
     #
     find_dependency(grid2grid)
-    find_dependency(semiprof)
     find_dependency(options)
 
     include("${CMAKE_CURRENT_LIST_DIR}/cosmaTargets.cmake")
+    cmake_policy(POP) # Restore project's policies
 endif()
