@@ -86,6 +86,9 @@ void multiply(context<Scalar> &ctx,
     matrixB.allocate_communication_buffers();
     matrixC.allocate_communication_buffers();
 
+    // register context to be deleted at MPI_Finalize
+    ctxt.register_to_destroy_at_finalize();
+
     communicator cosma_comm = communicator(&strategy, comm);
     PL();
 

@@ -79,7 +79,7 @@ class mpi_allocator {
     }
 
     void destroy(pointer p) {
-        if (p) {
+        if (mpi_enabled() && p) {
             p->~T();
         }
     }

@@ -20,7 +20,11 @@ public:
     gpu::mm_handle<Scalar>& get_gpu_ctx();
 #endif
 
+    void register_to_destroy_at_finalize();
+
 private:
+    bool mpi_keyval_set = false;
+    int mpi_keyval;
     memory_pool<Scalar> memory_pool_;
 #ifdef COSMA_HAVE_GPU
     // std::unique_ptr<gpu::mm_handle<Scalar>> gpu_ctx;

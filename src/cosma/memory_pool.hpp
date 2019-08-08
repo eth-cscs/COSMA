@@ -27,6 +27,8 @@ public:
     void resize(size_t capacity);
     void reset();
 
+    T* get_pool_pointer();
+
 private:
     mpi_buffer_t pool_;
     size_t pool_size_;

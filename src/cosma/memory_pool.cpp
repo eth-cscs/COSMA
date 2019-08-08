@@ -46,6 +46,11 @@ void memory_pool<T>::reset() {
     n_buffers_ = 0;
 }
 
+template <typename T>
+T* get_pool_pointer() {
+    return pool_.data();
+}
+
 template class memory_pool<double>;
 template class memory_pool<float>;
 template class memory_pool<std::complex<double>>;

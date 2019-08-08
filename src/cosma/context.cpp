@@ -1,13 +1,9 @@
 #include <cosma/context.hpp>
 #include <complex>
 #include <limits>
+#include <mpi.h>
 
 namespace cosma {
-template <typename Scalar>
-memory_pool<Scalar>& cosma_context<Scalar>::get_memory_pool() {
-    return memory_pool_;
-}
-
 #ifdef COSMA_HAVE_GPU
 template <typename Scalar>
 gpu::mm_handle<Scalar>& cosma_context<Scalar>::get_gpu_ctx() {
@@ -26,6 +22,29 @@ cosma_context<Scalar>::cosma_context(size_t cpu_mem_limit, int streams, int tile
                  "used in the CPU version."
               << std::endl;
 #endif
+}
+
+template <typename Scalar>
+memory_pool<Scalar>& cosma_context<Scalar>::get_memory_pool() {
+    return memory_pool_;
+}
+
+// we want to cache cosma_context as an attribute to MPI_COMM_SELF
+// so that it is destroyed when MPI_Finalize is invoked
+//
+int delete_fn(MPI_Datatype datatype, int key void* attr_val, void * extra_state) {
+    if (attr_val) {
+        MPI_Free_mem(attr_val);
+    }
+}
+
+template <typename Scalar>
+void cosma_context<Scalar>::register_to_destroy_at_finalize() {
+    if (!mpi_keyval_set) {
+        MPI_Comm_create_keyval(MPI_COMM_NULL_COPY_FN, delete_fn, &key, NULL);
+    }
+    MPI_Comm_set_attr(MPI_COMM_SELF, mpi_keyval, memory_pool_.get_pool_pointer());
+    mpi_keyval_set = true;
 }
 
 template <typename Scalar>
