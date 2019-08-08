@@ -48,16 +48,16 @@ void Buffer<T>::allocate_communication_buffers(bool dry_run) {
         assert(buffers_.size() == 1);
         // initial buffer is already allocated, so start from 1
         for (int i = 1; i < buff_sizes_.size(); ++i) {
-            auto ptr = ctxt_->get_memory_pool().get_buffer(buff_sizes_[i]);
-            buffers_.push_back(ptr);
+            auto id = ctxt_->get_memory_pool().get_buffer_id(buff_sizes_[i]);
+            buffers_.push_back(id);
         }
 
         if (max_reshuffle_buffer_size_ > 0) {
-            reshuffle_buffer_ = ctxt_->get_memory_pool().get_buffer(max_reshuffle_buffer_size_);
+            reshuffle_buffer_ = ctxt_->get_memory_pool().get_buffer_id(max_reshuffle_buffer_size_);
         }
 
         if (max_reduce_buffer_size_ > 0) {
-            reduce_buffer_ = ctxt_->get_memory_pool().get_buffer(max_reduce_buffer_size_);
+            reduce_buffer_ = ctxt_->get_memory_pool().get_buffer_id(max_reduce_buffer_size_);
         }
 
 #ifdef DEBUG
@@ -80,7 +80,7 @@ void Buffer<T>::allocate_communication_buffers(bool dry_run) {
         int buff_index_to_pin = buff_index_before_gemm();
         // std::cout << "Buffer index to pin  for " << label_ << " = " <<
         // buff_index_to_pin << std::endl;
-        auto buffer_to_pin = buffers_[buff_index_to_pin];
+        auto buffer_to_pin = ctxt_->get_memory_pool().get_buffer_pointer(buffers_[buff_index_to_pin]);
         auto status = cudaHostRegister(buffer_to_pin,
                                        buffer_sizes[buff_index_to_pin] * sizeof(T),
                                        cudaHostRegisterDefault);
@@ -106,8 +106,8 @@ void Buffer<T>::allocate_initial_buffers(bool dry_run) {
 
         // allocate initial buffer (to store the matrix)
         buff_sizes_[0] = std::max((size_t) buff_sizes_[0], mapper_->initial_size());
-        auto ptr = ctxt_->get_memory_pool().get_buffer(buff_sizes_[0]);
-        buffers_.push_back(ptr);
+        auto id = ctxt_->get_memory_pool().get_buffer_id(buff_sizes_[0]);
+        buffers_.push_back(id);
     }
 }
 
@@ -129,6 +129,22 @@ template <typename T>
 void Buffer<T>::free_communication_buffers(bool dry_run) {
     if (dry_run || buff_sizes_.size() == 0) 
         return;
+
+    // unpin the pinned memory
+#ifdef COSMA_HAVE_GPU
+    // std::cout << "buffers_ size = " << buffers_.size() << std::endl;
+    // unpin the buffer that will be used in gemm
+    int buff_index_to_pin = buff_index_before_gemm();
+    // std::cout << "Buffer index to unpin: " << buff_index_to_pin << std::endl;
+    if (buff_index_to_pin >= 0) {
+        auto buffer_to_pin = ctxt_->get_memory_pool().get_buffer_pointer(buffers_[buff_index_to_pin]);
+        auto status = cudaHostUnregister(buffer_to_pin);
+        gpu::cuda_check_status(status);
+    }
+    // std::cout << "Matrix " << label_ << ", buffers_.size() = " <<
+    // buffers_.size() << ", pinned_index = " << buff_index_to_pin << std::endl;
+#endif
+
     int n_buffers = buff_sizes_.size();
     // i = 0 is the initial buffer storing the matrix, so we skip this one.
     for (int i = 1; i < n_buffers; ++i) {
@@ -152,24 +168,11 @@ template <typename T>
 Buffer<T>::~Buffer() {
     // check if communication buffers are already deallocated
     assert(buffers_.size() <= 1);
-    assert(!reshuffle_buffer_);
-    assert(!reduce_buffer_);
+    // assert(!reshuffle_buffer_);
+    // assert(!reduce_buffer_);
 
     // free the initial buffers
     free_initial_buffers();
-#ifdef COSMA_HAVE_GPU
-    // std::cout << "buffers_ size = " << buffers_.size() << std::endl;
-    // unpin the buffer that will be used in gemm
-    int buff_index_to_pin = buff_index_before_gemm();
-    // std::cout << "Buffer index to unpin: " << buff_index_to_pin << std::endl;
-    if (buff_index_to_pin >= 0) {
-        auto buffer_to_pin = buffers_[buff_index_to_pin];
-        auto status = cudaHostUnregister(buffer_to_pin);
-        gpu::cuda_check_status(status);
-    }
-    // std::cout << "Matrix " << label_ << ", buffers_.size() = " <<
-    // buffers_.size() << ", pinned_index = " << buff_index_to_pin << std::endl;
-#endif
 }
 
 template <typename T>
@@ -275,14 +278,14 @@ void Buffer<T>::set_buffer_index(int idx) {
 
 template <typename T>
 typename Buffer<T>::scalar_t *Buffer<T>::reshuffle_buffer_ptr() {
-    assert(reshuffle_buffer_);
-    return reshuffle_buffer_;
+    assert(max_reshuffle_buffer_size_ > 0);
+    return ctxt_->get_buffer_pointer(reshuffle_buffer_);
 }
 
 template <typename T>
 typename Buffer<T>::scalar_t *Buffer<T>::reduce_buffer_ptr() {
-    assert(reduce_buffer_);
-    return reduce_buffer_;
+    assert(max_reduce_buffer_size_ > 0);
+    return ctxt_->get_buffer_pointer(reduce_buffer_);
 }
 
 template <typename T>

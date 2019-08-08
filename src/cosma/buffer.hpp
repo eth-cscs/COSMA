@@ -176,14 +176,14 @@ protected:
 
     // vector of buffers being used for the current matrix (given by label)
     // by the current rank (determined by variable rank_)
-    std::vector<scalar_t*> buffers_;
+    std::vector<size_t> buffers_;
     std::vector<size_t> buff_sizes_;
     // temporary buffer used for reshuffling of data received from other ranks
     // this happens when sequential steps are present, i.e. when n_blocks > 1
-    scalar_t* reshuffle_buffer_;
+    size_t reshuffle_buffer_;
     // temporary buffer used in parallel-reduce step (two-sided communication)
     // used when beta > 0 (to save current C)
-    scalar_t* reduce_buffer_;
+    size_t reduce_buffer_;
     // pointer to the current buffer being used in the previous vector of
     // buffers
     int current_buffer_;

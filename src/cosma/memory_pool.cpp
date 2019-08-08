@@ -8,12 +8,19 @@ memory_pool<T>::memory_pool(size_t capacity) {
 }
 
 template <typename T>
-T* memory_pool<T>::get_buffer(size_t size) {
+size_t memory_pool<T>::get_buffer_id(size_t size) {
     assert(pool_size_ + size <= pool_capacity_);
-    T* ptr = pool_.data() + pool_size_;
+    // T* ptr = pool_.data() + pool_size_;
+    size_t offset = pool_size_;
     pool_size_ += size;
     ++n_buffers_;
-    return ptr;
+    return offset;
+}
+
+template <typename T>
+T* memory_pool<T>::get_buffer_pointer(size_t id) {
+    assert(size < pool_capacity_);
+    return pool_.data() + id;
 }
 
 template <typename T>

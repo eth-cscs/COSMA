@@ -11,7 +11,17 @@ public:
     memory_pool() = default;
     memory_pool(size_t capacity);
 
-    T* get_buffer(size_t size);
+    // since vector can resize at some point,
+    // we don't want to return pointer immediately
+    // instead, when a new buffer is requested,
+    // we return the current offset within the pool
+    // that is used as an id of the buffer.
+    // when the buffer actually used, its pointer
+    // can be retrieved with get_buffer_pointer
+    // that takes the buffer id (i.e. its offset within the pool)
+    // and returns its pointer.
+    size_t get_buffer_id(size_t size);
+    T* get_buffer_pointer(size_t id);
     void free_buffer(T* ptr);
 
     void resize(size_t capacity);
