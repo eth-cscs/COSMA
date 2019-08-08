@@ -46,12 +46,12 @@ CosmaMatrix<T>::CosmaMatrix(cosma_context<T>* ctxt,
 
 // using std::unique_ptr<cosma_context>
 template <typename T>
-CosmaMatrix<T>::CosmaMatrix(context<T>& ctxt,
+CosmaMatrix<T>::CosmaMatrix(const context<T>& ctxt,
                             char label,
                             const Strategy &strategy,
                             int rank,
                             bool dry_run)
-    : CosmaMatrix(ctxt.get(), label, strategy, rank, dry_run);
+    : CosmaMatrix(ctxt.get(), label, strategy, rank, dry_run)
 {}
 
 // using global (singleton) context
@@ -60,7 +60,7 @@ CosmaMatrix<T>::CosmaMatrix(char label,
                             const Strategy &strategy,
                             int rank,
                             bool dry_run)
-    : CosmaMatrix(get_context_instance(), label, strategy, rank, dry_run);
+    : CosmaMatrix(get_context_instance<T>(), label, strategy, rank, dry_run)
 {}
 
 template <typename T>
@@ -356,11 +356,13 @@ grid2grid::grid_layout<T> CosmaMatrix<T>::get_grid_layout() {
     return {std::move(assigned_grid), std::move(local_memory)};
 }
 
-void CosmaMatrix::allocate_communication_buffers() {
+template <typename T>
+void CosmaMatrix<T>::allocate_communication_buffers() {
     buffer_.allocate_communication_buffers();
 }
 
-void CosmaMatrix::free_communication_buffers() {
+template <typename T>
+void CosmaMatrix<T>::free_communication_buffers() {
     buffer_.free_communication_buffers();
 }
 

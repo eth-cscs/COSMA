@@ -22,7 +22,7 @@ public:
     // and returns its pointer.
     size_t get_buffer_id(size_t size);
     T* get_buffer_pointer(size_t id);
-    void free_buffer(T* ptr);
+    void free_buffer(T* ptr, size_t size);
 
     void resize(size_t capacity);
     void reset();

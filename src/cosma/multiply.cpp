@@ -65,8 +65,22 @@ void multiply_using_layout(const context<T>& ctx,
  Compute C = alpha*A*B + beta*C
  Assumption: we assume that at each step only 1 dimension is split
 */
+
+// using the global singleton context
 template <typename Scalar>
-void multiply(context<Scalar> &ctx,
+void multiply(CosmaMatrix<Scalar> &matrixA,
+              CosmaMatrix<Scalar> &matrixB,
+              CosmaMatrix<Scalar> &matrixC,
+              const Strategy &strategy,
+              MPI_Comm comm,
+              Scalar alpha,
+              Scalar beta) {
+    multiply(get_context_instance<Scalar>(), matrixA, matrixB, matrixC, strategy, comm, alpha, beta);
+}
+
+// using the given context
+template <typename Scalar>
+void multiply(const context<Scalar> &ctx,
               CosmaMatrix<Scalar> &matrixA,
               CosmaMatrix<Scalar> &matrixB,
               CosmaMatrix<Scalar> &matrixC,
@@ -87,7 +101,7 @@ void multiply(context<Scalar> &ctx,
     matrixC.allocate_communication_buffers();
 
     // register context to be deleted at MPI_Finalize
-    ctxt.register_to_destroy_at_finalize();
+    ctx->register_to_destroy_at_finalize();
 
     communicator cosma_comm = communicator(&strategy, comm);
     PL();
@@ -119,7 +133,7 @@ void multiply(context<Scalar> &ctx,
 }
 
 template <typename Scalar>
-void multiply(context<Scalar> &ctx,
+void multiply(const context<Scalar> &ctx,
               CosmaMatrix<Scalar> &matrixA,
               CosmaMatrix<Scalar> &matrixB,
               CosmaMatrix<Scalar> &matrixC,
@@ -247,7 +261,7 @@ void multiply(context<Scalar> &ctx,
  and each of the subproblems is solved sequentially by all P processors.
 */
 template <typename Scalar>
-void sequential(context<Scalar> &ctx,
+void sequential(const context<Scalar> &ctx,
                 CosmaMatrix<Scalar> &matrixA,
                 CosmaMatrix<Scalar> &matrixB,
                 CosmaMatrix<Scalar> &matrixC,
@@ -389,7 +403,7 @@ T which_is_expanded(T &&A,
  owned by newP ranks - thus local matrices are shrinked.
  */
 template <typename Scalar>
-void parallel(context<Scalar> &ctx,
+void parallel(const context<Scalar> &ctx,
               CosmaMatrix<Scalar> &matrixA,
               CosmaMatrix<Scalar> &matrixB,
               CosmaMatrix<Scalar> &matrixC,
@@ -629,7 +643,6 @@ multiply_using_layout<zfloat_t>(const context<zfloat_t>& ctx,
                                 MPI_Comm comm);
 
 // Explicit instantiations for short `multiply`
-
 template void multiply<double>(const context<double> &ctx,
                                CosmaMatrix<double> &A,
                                CosmaMatrix<double> &B,
@@ -659,6 +672,40 @@ template void multiply<zdouble_t>(const context<zdouble_t> &ctx,
 
 template void multiply<zfloat_t>(const context<zfloat_t> &ctx,
                                  CosmaMatrix<zfloat_t> &A,
+                                 CosmaMatrix<zfloat_t> &B,
+                                 CosmaMatrix<zfloat_t> &C,
+                                 const Strategy &strategy,
+                                 MPI_Comm comm,
+                                 zfloat_t alpha,
+                                 zfloat_t beta);
+
+// Explicit instantiations for short `multiply` without the context
+//
+template void multiply<double>(CosmaMatrix<double> &A,
+                               CosmaMatrix<double> &B,
+                               CosmaMatrix<double> &C,
+                               const Strategy &strategy,
+                               MPI_Comm comm,
+                               double alpha,
+                               double beta);
+
+template void multiply<float>(CosmaMatrix<float> &A,
+                              CosmaMatrix<float> &B,
+                              CosmaMatrix<float> &C,
+                              const Strategy &strategy,
+                              MPI_Comm comm,
+                              float alpha,
+                              float beta);
+
+template void multiply<zdouble_t>(CosmaMatrix<zdouble_t> &A,
+                                  CosmaMatrix<zdouble_t> &B,
+                                  CosmaMatrix<zdouble_t> &C,
+                                  const Strategy &strategy,
+                                  MPI_Comm comm,
+                                  zdouble_t alpha,
+                                  zdouble_t beta);
+
+template void multiply<zfloat_t>(CosmaMatrix<zfloat_t> &A,
                                  CosmaMatrix<zfloat_t> &B,
                                  CosmaMatrix<zfloat_t> &C,
                                  const Strategy &strategy,

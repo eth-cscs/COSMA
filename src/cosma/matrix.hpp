@@ -38,7 +38,7 @@ class CosmaMatrix {
                 bool dry_run = false);
 
     // using std::unique_ptr<cosma_context>
-    CosmaMatrix(context<Scalar>& ctxt,
+    CosmaMatrix(const context<Scalar>& ctxt,
                 char label,
                 const Strategy &strategy,
                 int rank,

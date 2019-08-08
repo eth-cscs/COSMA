@@ -57,6 +57,15 @@ void multiply(const context<Scalar> &ctx,
               Scalar alpha,
               Scalar beta);
 
+template <typename Scalar>
+void multiply(CosmaMatrix<Scalar> &A,
+              CosmaMatrix<Scalar> &B,
+              CosmaMatrix<Scalar> &C,
+              const Strategy &strategy,
+              MPI_Comm comm,
+              Scalar alpha,
+              Scalar beta);
+
 /*
  * Functions below are more interesting to the developer than the user.
  */

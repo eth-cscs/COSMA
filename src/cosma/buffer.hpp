@@ -36,10 +36,11 @@ public:
     using scalar_t = Scalar;
     // using mpi_buffer_t = std::vector<scalar_t, mpi_allocator<scalar_t>>;
 
-    Buffer() = default;
+    // Buffer() = default;
+    Buffer();
 
     // with cosma_context*
-    Buffer(cosma_context<Scalar>* ctxt,
+    Buffer(cosma_context<Scalar>* const ctxt,
            char label,
            const Strategy &strategy,
            int rank,
@@ -48,7 +49,7 @@ public:
            bool dry_run = false);
 
     // with std::unique_ptr<cosma_context>
-    Buffer(context<Scalar>& ctxt,
+    Buffer(const context<Scalar>& ctxt,
            char label,
            const Strategy &strategy,
            int rank,
@@ -165,7 +166,7 @@ protected:
     //     step if it is NOT split in that step.
     void compute_n_buckets();
 
-    cosma_context<scalar_t>* ctxt_;
+    cosma_context<scalar_t>* const ctxt_;
 
     // computes the number of buckets in the current step
     // the number of buckets in some step i is equal to the

@@ -71,7 +71,7 @@ clock_t::time_point debug_gemm_end(Scalar *matrixA,
 }
 
 template <typename Scalar>
-void local_multiply(context<Scalar> &ctx,
+void local_multiply(const context<Scalar> &ctx,
                     Scalar *matrixA,
                     Scalar *matrixB,
                     Scalar *matrixC,
@@ -106,7 +106,7 @@ void local_multiply(context<Scalar> &ctx,
 #endif
 }
 
-template void local_multiply<double>(context<double> &ctx,
+template void local_multiply<double>(const context<double> &ctx,
                                      double *matrixA,
                                      double *matrixB,
                                      double *matrixC,
@@ -116,7 +116,7 @@ template void local_multiply<double>(context<double> &ctx,
                                      double alpha,
                                      double beta);
 
-template void local_multiply<float>(context<float> &ctx,
+template void local_multiply<float>(const context<float> &ctx,
                                     float *matrixA,
                                     float *matrixB,
                                     float *matrixC,
@@ -127,7 +127,7 @@ template void local_multiply<float>(context<float> &ctx,
                                     float beta);
 
 template void
-local_multiply<std::complex<double>>(context<std::complex<double>> &ctx,
+local_multiply<std::complex<double>>(const context<std::complex<double>> &ctx,
                                      std::complex<double> *matrixA,
                                      std::complex<double> *matrixB,
                                      std::complex<double> *matrixC,
@@ -138,7 +138,7 @@ local_multiply<std::complex<double>>(context<std::complex<double>> &ctx,
                                      std::complex<double> beta);
 
 template void
-local_multiply<std::complex<float>>(context<std::complex<float>> &ctx,
+local_multiply<std::complex<float>>(const context<std::complex<float>> &ctx,
                                     std::complex<float> *matrixA,
                                     std::complex<float> *matrixB,
                                     std::complex<float> *matrixC,

@@ -4,7 +4,7 @@
 namespace cosma {
 
 template <typename Scalar>
-void local_multiply(context<Scalar> &ctx,
+void local_multiply(const context<Scalar> &ctx,
                     Scalar *a,
                     Scalar *b,
                     Scalar *c,

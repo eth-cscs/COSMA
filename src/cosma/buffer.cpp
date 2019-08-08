@@ -1,10 +1,14 @@
 #include <cosma/buffer.hpp>
+#include <cosma/context.hpp>
 #include <complex>
 
 namespace cosma {
 
+template<typename T>
+Buffer<T>::Buffer(): ctxt_(nullptr) {}
+
 template <typename T>
-Buffer<T>::Buffer(cosma_context<T>* ctxt,
+Buffer<T>::Buffer(cosma_context<T>* const ctxt,
                   char label,
                   const Strategy &strategy,
                   int rank,
@@ -22,7 +26,7 @@ Buffer<T>::Buffer(cosma_context<T>* ctxt,
 }
 
 template <typename T>
-Buffer<T>::Buffer(context<T>& ctxt,
+Buffer<T>::Buffer(const context<T>& ctxt,
                   char label,
                   const Strategy &strategy,
                   int rank,
@@ -38,7 +42,7 @@ Buffer<T>::Buffer(char label,
                   Mapper *mapper,
                   Layout *layout,
                   bool dry_run)
-    : Buffer(get_context_instance(), label, strategy, rank, mapper, layout, dry_run) {}
+    : Buffer(get_context_instance<T>(), label, strategy, rank, mapper, layout, dry_run) {}
 
 template <typename T>
 void Buffer<T>::allocate_communication_buffers(bool dry_run) {
@@ -119,7 +123,8 @@ void Buffer<T>::free_initial_buffers(bool dry_run) {
     assert(buffers_.size() == 1);
 
     // deallocate initial buffer (that are storing the matrix)
-    ctxt_->get_memory_pool().free_buffer(buffers_[0], buff_sizes_[0]);
+    auto ptr = ctxt_->get_memory_pool().get_buffer_pointer(buffers_[0]);
+    ctxt_->get_memory_pool().free_buffer(ptr, buff_sizes_[0]);
     // remove the pointers pointing to them
     buffers_.pop_back();
     buff_sizes_.pop_back();
@@ -148,7 +153,8 @@ void Buffer<T>::free_communication_buffers(bool dry_run) {
     int n_buffers = buff_sizes_.size();
     // i = 0 is the initial buffer storing the matrix, so we skip this one.
     for (int i = 1; i < n_buffers; ++i) {
-        ctxt_->get_memory_pool().free_buffer(buffers_.back(), buff_sizes_.back());
+        auto ptr = ctxt_->get_memory_pool().get_buffer_pointer(buffers_.back());
+        ctxt_->get_memory_pool().free_buffer(ptr, buff_sizes_.back());
         // remove the pointers pointing to them
         buffers_.pop_back();
         buff_sizes_.pop_back();
@@ -156,11 +162,13 @@ void Buffer<T>::free_communication_buffers(bool dry_run) {
 
     // deallocate reshuffle and reduce buffers separately
     if (max_reshuffle_buffer_size_ > 0) {
-        ctxt_->get_memory_pool().free_buffer(reshuffle_buffer_, max_reshuffle_buffer_size_);
+        auto ptr = ctxt_->get_memory_pool().get_buffer_pointer(reshuffle_buffer_);
+        ctxt_->get_memory_pool().free_buffer(ptr, max_reshuffle_buffer_size_);
     }
 
     if (max_reduce_buffer_size_ > 0) {
-        ctxt_->get_memory_pool().free_buffer(reduce_buffer_, max_reduce_buffer_size_);
+        auto ptr = ctxt_->get_memory_pool().get_buffer_pointer(reshuffle_buffer_);
+        ctxt_->get_memory_pool().free_buffer(ptr, max_reduce_buffer_size_);
     }
 }
 
@@ -253,12 +261,12 @@ int Buffer<T>::buff_index_before_gemm() const {
 
 template <typename T>
 T* Buffer<T>::buffer_ptr() {
-    return buffers_[current_buffer_];
+    return ctxt_->get_memory_pool().get_buffer_pointer(buffers_[current_buffer_]);
 }
 
 template <typename T>
 const T* Buffer<T>::buffer_ptr() const {
-    return buffers_[current_buffer_];
+    return ctxt_->get_memory_pool().get_buffer_pointer(buffers_[current_buffer_]);
 }
 
 template <typename T>
@@ -279,13 +287,13 @@ void Buffer<T>::set_buffer_index(int idx) {
 template <typename T>
 typename Buffer<T>::scalar_t *Buffer<T>::reshuffle_buffer_ptr() {
     assert(max_reshuffle_buffer_size_ > 0);
-    return ctxt_->get_buffer_pointer(reshuffle_buffer_);
+    return ctxt_->get_memory_pool().get_buffer_pointer(reshuffle_buffer_);
 }
 
 template <typename T>
 typename Buffer<T>::scalar_t *Buffer<T>::reduce_buffer_ptr() {
     assert(max_reduce_buffer_size_ > 0);
-    return ctxt_->get_buffer_pointer(reduce_buffer_);
+    return ctxt_->get_memory_pool().get_buffer_pointer(reduce_buffer_);
 }
 
 template <typename T>
@@ -293,7 +301,7 @@ T* Buffer<T>::initial_buffer_ptr() {
     if (buffers_.size() == 0) {
         return nullptr;
     }
-    return buffers_[0];
+    return ctxt_->get_memory_pool().get_buffer_pointer(buffers_[0]);
 }
 
 template <typename T>
@@ -301,7 +309,7 @@ const T* Buffer<T>::initial_buffer_ptr() const {
     if (buffers_.size() == 0) {
         return nullptr;
     }
-    return buffers_[0];
+    return ctxt_->get_memory_pool().get_buffer_pointer(buffers_[0]);
 }
 
 template <typename T>
@@ -755,12 +763,12 @@ void Buffer<T>::compute_max_buffer_size(Interval &m,
 
 template <typename T>
 T* Buffer<T>::operator[](const size_t index) {
-    return buffers_[index];
+    return ctxt_->get_memory_pool().get_buffer_pointer(buffers_[index]);
 }
 
 template <typename T>
 T* Buffer<T>::operator[](const size_t index) const {
-    return buffers_[index];
+    return ctxt_->get_memory_pool().get_buffer_pointer(buffers_[index]);
 }
 
 template <typename T>

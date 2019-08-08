@@ -32,19 +32,20 @@ memory_pool<Scalar>& cosma_context<Scalar>::get_memory_pool() {
 // we want to cache cosma_context as an attribute to MPI_COMM_SELF
 // so that it is destroyed when MPI_Finalize is invoked
 //
-int delete_fn(MPI_Datatype datatype, int key void* attr_val, void * extra_state) {
+int delete_fn(MPI_Datatype datatype, int key, void* attr_val, void * extra_state) {
     if (attr_val) {
         MPI_Free_mem(attr_val);
     }
+    return MPI_SUCCESS;
 }
 
 template <typename Scalar>
 void cosma_context<Scalar>::register_to_destroy_at_finalize() {
     if (!mpi_keyval_set) {
-        MPI_Comm_create_keyval(MPI_COMM_NULL_COPY_FN, delete_fn, &key, NULL);
+        MPI_Comm_create_keyval(MPI_COMM_NULL_COPY_FN, delete_fn, &mpi_keyval, NULL);
+        mpi_keyval_set = true;
     }
     MPI_Comm_set_attr(MPI_COMM_SELF, mpi_keyval, memory_pool_.get_pool_pointer());
-    mpi_keyval_set = true;
 }
 
 template <typename Scalar>
@@ -61,10 +62,10 @@ using zfloat = std::complex<float>;
 using zdouble = std::complex<double>;
 
 // template instantiation for cosma_context
-template class cosma_context<float>;
-template class cosma_context<double>;
-template class cosma_context<zfloat>;
-template class cosma_context<zdouble>;
+template class cosma::cosma_context<float>;
+template class cosma::cosma_context<double>;
+template class cosma::cosma_context<zfloat>;
+template class cosma::cosma_context<zdouble>;
 
 // template instantiation for make_context
 template context<float> cosma::make_context();
@@ -94,8 +95,8 @@ template context<zdouble> cosma::make_context(size_t cpu_mem_limit,
                                               int tile_k);
 
 // template instantiation for get_context_instance
-static template cosma_context<float>* cosma::get_context_instance();
-static template cosma_context<double>* cosma::get_context_instance();
-static template cosma_context<zfloat>* cosma::get_context_instance();
-static template cosma_context<zdouble>* cosma::get_context_instance();
+template cosma_context<float>* const cosma::get_context_instance();
+template cosma_context<double>* const cosma::get_context_instance();
+template cosma_context<zfloat>* const cosma::get_context_instance();
+template cosma_context<zdouble>* const cosma::get_context_instance();
 } // namespace cosma
