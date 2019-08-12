@@ -50,12 +50,14 @@ void cosma_context<Scalar>::register_to_destroy_at_finalize() {
 
 template <typename Scalar>
 context<Scalar> cosma::make_context() {
-    return std::make_unique<cosma_context<Scalar>>();
+    auto ptr = std::make_unique<cosma_context<Scalar>>();
+    return ptr.get();
 }
 
 template <typename Scalar>
 context<Scalar> cosma::make_context(size_t cpu_mem_limit, int streams, int tile_m, int tile_n, int tile_k) {
-    return std::make_unique<cosma_context<Scalar>>(cpu_mem_limit, streams, tile_m, tile_n, tile_k);
+    auto ptr = std::make_unique<cosma_context<Scalar>>(cpu_mem_limit, streams, tile_m, tile_n, tile_k);
+    return ptr.get();
 }
 
 using zfloat = std::complex<float>;
@@ -95,8 +97,8 @@ template context<zdouble> cosma::make_context(size_t cpu_mem_limit,
                                               int tile_k);
 
 // template instantiation for get_context_instance
-template cosma_context<float>* const cosma::get_context_instance();
-template cosma_context<double>* const cosma::get_context_instance();
-template cosma_context<zfloat>* const cosma::get_context_instance();
-template cosma_context<zdouble>* const cosma::get_context_instance();
+template context<float> cosma::get_context_instance();
+template context<double> cosma::get_context_instance();
+template context<zfloat> cosma::get_context_instance();
+template context<zdouble> cosma::get_context_instance();
 } // namespace cosma

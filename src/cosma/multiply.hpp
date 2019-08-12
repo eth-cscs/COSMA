@@ -29,7 +29,7 @@ namespace cosma {
  * but is very general as it can work with any grid-like data layout.
  */
 template <typename Scalar>
-void multiply_using_layout(const context<Scalar>& ctx,
+void multiply_using_layout(context<Scalar> ctx,
                            grid2grid::grid_layout<Scalar> &A_layout,
                            grid2grid::grid_layout<Scalar> &B_layout,
                            grid2grid::grid_layout<Scalar> &C_layout,
@@ -48,7 +48,7 @@ void multiply_using_layout(const context<Scalar>& ctx,
  * optimal COSMA layout.
  */
 template <typename Scalar>
-void multiply(const context<Scalar> &ctx,
+void multiply(context<Scalar> ctx,
               CosmaMatrix<Scalar> &A,
               CosmaMatrix<Scalar> &B,
               CosmaMatrix<Scalar> &C,
@@ -70,7 +70,7 @@ void multiply(CosmaMatrix<Scalar> &A,
  * Functions below are more interesting to the developer than the user.
  */
 template <typename Scalar>
-void multiply(const context<Scalar> &ctx,
+void multiply(context<Scalar> ctx,
               CosmaMatrix<Scalar> &A,
               CosmaMatrix<Scalar> &B,
               CosmaMatrix<Scalar> &C,
@@ -85,7 +85,7 @@ void multiply(const context<Scalar> &ctx,
               Scalar beta);
 
 template <typename Scalar>
-void sequential(const context<Scalar> &ctx,
+void sequential(context<Scalar> ctx,
                 CosmaMatrix<Scalar> &A,
                 CosmaMatrix<Scalar> &B,
                 CosmaMatrix<Scalar> &C,
@@ -100,7 +100,7 @@ void sequential(const context<Scalar> &ctx,
                 Scalar beta);
 
 template <typename Scalar>
-void parallel(const context<Scalar> &ctx,
+void parallel(context<Scalar> ctx,
               CosmaMatrix<Scalar> &A,
               CosmaMatrix<Scalar> &B,
               CosmaMatrix<Scalar> &C,

@@ -14,25 +14,25 @@
 #include <string>
 #include <vector>
 
-template <typename Real, typename Allocator>
-void fill_matrix(std::vector<Real, Allocator> &data) {
+template <typename T>
+void fill_matrix(T* ptr, size_t size) {
     std::random_device dev;                        // seed
     std::mt19937 rng(dev());                       // generator
-    std::uniform_real_distribution<Real> dist(1.); // distribution
+    std::uniform_real_distribution<T> dist(1.); // distribution
 
-    for (auto &el : data) {
-        el = Real{dist(rng)};
+    for (unsigned i = 0; i < size; ++i) {
+        ptr[i] = T{dist(rng)};
     }
 }
 
-template <typename Real, typename Allocator>
-void fill_matrix(std::vector<std::complex<Real>, Allocator> &data) {
+template <typename T>
+void fill_matrix(std::complex<T>* ptr, size_t size) {
     std::random_device dev;                        // seed
     std::mt19937 rng(dev());                       // generator
-    std::uniform_real_distribution<Real> dist(1.); // distribution
+    std::uniform_real_distribution<T> dist(1.); // distribution
 
-    for (auto &el : data) {
-        el = std::complex<Real>{dist(rng), dist(rng)};
+    for (unsigned i = 0; i < size; ++i) {
+        ptr[i] = std::complex<T>{dist(rng), dist(rng)};
     }
 }
 
@@ -57,8 +57,8 @@ void run(cosma::Strategy &strategy,
         constexpr auto alpha = Scalar{1};
         constexpr auto beta = Scalar{0};
 
-        fill_matrix(A.matrix());
-        fill_matrix(B.matrix());
+        fill_matrix(A.matrix_pointer(), A.matrix_size());
+        fill_matrix(B.matrix_pointer(), B.matrix_size());
 
         auto start = clock_t::now();
         multiply(ctx, A, B, C, strategy, comm, alpha, beta);

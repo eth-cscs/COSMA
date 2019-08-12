@@ -3,12 +3,12 @@
 #include <cosma/memory_pool.hpp>
 
 template <typename T>
-memory_pool<T>::memory_pool(size_t capacity) {
+cosma::memory_pool<T>::memory_pool(size_t capacity) {
     resize(capacity);
 }
 
 template <typename T>
-size_t memory_pool<T>::get_buffer_id(size_t size) {
+size_t cosma::memory_pool<T>::get_buffer_id(size_t size) {
     assert(pool_size_ + size <= pool_capacity_);
     // T* ptr = pool_.data() + pool_size_;
     size_t offset = pool_size_;
@@ -18,13 +18,13 @@ size_t memory_pool<T>::get_buffer_id(size_t size) {
 }
 
 template <typename T>
-T* memory_pool<T>::get_buffer_pointer(size_t id) {
+T* cosma::memory_pool<T>::get_buffer_pointer(size_t id) {
     assert(size < pool_capacity_);
     return pool_.data() + id;
 }
 
 template <typename T>
-void free_buffer(T* ptr, size_t size) {
+void cosma::memory_pool<T>::free_buffer(T* ptr, size_t size) {
     assert(pool_size_ >= size);
     pool_size_ -= size;
     --n_buffers_;
@@ -33,7 +33,7 @@ void free_buffer(T* ptr, size_t size) {
 }
 
 template <typename T>
-void memory_pool<T>::resize(size_t capacity) {
+void cosma::memory_pool<T>::resize(size_t capacity) {
     pool_.resize(capacity);
     pool_capacity_ = capacity;
     pool_size_ = 0;
@@ -41,17 +41,17 @@ void memory_pool<T>::resize(size_t capacity) {
 }
 
 template <typename T>
-void memory_pool<T>::reset() {
+void cosma::memory_pool<T>::reset() {
     pool_size_ = 0;
     n_buffers_ = 0;
 }
 
 template <typename T>
-T* get_pool_pointer() {
+T* cosma::memory_pool<T>::get_pool_pointer() {
     return pool_.data();
 }
 
-template class memory_pool<double>;
-template class memory_pool<float>;
-template class memory_pool<std::complex<double>>;
-template class memory_pool<std::complex<float>>;
+template class cosma::memory_pool<double>;
+template class cosma::memory_pool<float>;
+template class cosma::memory_pool<std::complex<double>>;
+template class cosma::memory_pool<std::complex<float>>;

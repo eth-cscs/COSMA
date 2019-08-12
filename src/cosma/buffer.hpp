@@ -40,16 +40,7 @@ public:
     Buffer();
 
     // with cosma_context*
-    Buffer(cosma_context<Scalar>* const ctxt,
-           char label,
-           const Strategy &strategy,
-           int rank,
-           Mapper *mapper,
-           Layout *layout,
-           bool dry_run = false);
-
-    // with std::unique_ptr<cosma_context>
-    Buffer(const context<Scalar>& ctxt,
+    Buffer(context<Scalar> ctxt,
            char label,
            const Strategy &strategy,
            int rank,
@@ -166,7 +157,7 @@ protected:
     //     step if it is NOT split in that step.
     void compute_n_buckets();
 
-    cosma_context<scalar_t>* const ctxt_;
+    context<scalar_t> ctxt_;
 
     // computes the number of buckets in the current step
     // the number of buckets in some step i is equal to the

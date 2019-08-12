@@ -8,7 +8,7 @@ template<typename T>
 Buffer<T>::Buffer(): ctxt_(nullptr) {}
 
 template <typename T>
-Buffer<T>::Buffer(cosma_context<T>* const ctxt,
+Buffer<T>::Buffer(context<T> ctxt,
                   char label,
                   const Strategy &strategy,
                   int rank,
@@ -24,16 +24,6 @@ Buffer<T>::Buffer(cosma_context<T>* const ctxt,
     compute_n_buckets();
     allocate_initial_buffers(dry_run);
 }
-
-template <typename T>
-Buffer<T>::Buffer(const context<T>& ctxt,
-                  char label,
-                  const Strategy &strategy,
-                  int rank,
-                  Mapper *mapper,
-                  Layout *layout,
-                  bool dry_run)
-    : Buffer(ctxt.get(), label, strategy, rank, mapper, layout, dry_run) {}
 
 template <typename T>
 Buffer<T>::Buffer(char label,

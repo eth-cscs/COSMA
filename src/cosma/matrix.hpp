@@ -30,15 +30,7 @@ class CosmaMatrix {
     using scalar_t = Scalar;
     using buffer_t = Buffer<scalar_t>;
 
-    // using a pointer to cosma_context
-    CosmaMatrix(cosma_context<Scalar>* ctxt,
-                char label,
-                const Strategy &strategy,
-                int rank,
-                bool dry_run = false);
-
-    // using std::unique_ptr<cosma_context>
-    CosmaMatrix(const context<Scalar>& ctxt,
+    CosmaMatrix(context<Scalar> ctxt,
                 char label,
                 const Strategy &strategy,
                 int rank,
@@ -57,9 +49,6 @@ class CosmaMatrix {
     // **********************************************
     // METHODS FROM mapper.hpp
     // **********************************************
-    int initial_size(int rank) const;
-    int initial_size() const;
-
     // (gi, gj) -> (local_id, rank)
     std::pair<int, int> local_coordinates(int gi, int gj);
     // (local_id, rank) -> (gi, gj)
@@ -145,6 +134,7 @@ class CosmaMatrix {
     scalar_t *matrix_pointer();
     const scalar_t *matrix_pointer() const;
     size_t matrix_size() const;
+    size_t matrix_size(int rank) const;
 
     // pointer to send buffer
     // scalar_t* buffer_ptr();
@@ -159,7 +149,7 @@ class CosmaMatrix {
     void free_communication_buffers();
 
   protected:
-    cosma_context<scalar_t>* ctxt_;
+    context<scalar_t> ctxt_;
     // A, B or C
     char label_;
     /// Number of rows of the global matrix
@@ -187,7 +177,7 @@ class CosmaMatrix {
 
 template <typename Scalar>
 std::ostream &operator<<(std::ostream &os, const CosmaMatrix<Scalar> &mat) {
-    for (auto local = 0; local < mat.initial_size(); ++local) {
+    for (auto local = 0; local < mat.matrix_size(); ++local) {
         auto value = mat[local];
         int row, col;
         std::tie(row, col) = mat.global_coordinates(local);

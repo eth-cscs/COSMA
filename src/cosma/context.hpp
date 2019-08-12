@@ -33,7 +33,7 @@ private:
 };
 
 template <typename Scalar>
-using context = std::unique_ptr<cosma_context<Scalar>>;
+using context = cosma_context<Scalar>*;
 
 template <typename Scalar>
 context<Scalar> make_context();
@@ -48,7 +48,7 @@ context<Scalar> make_context(size_t cpu_mem_limit, int streams, int tile_m, int 
 //     the concurrent execution shall wait
 //     for completion of the initialization
 template <typename Scalar>
-static cosma_context<Scalar>* const get_context_instance() {
+static context<Scalar> get_context_instance() {
     static cosma_context<Scalar> ctxt;
     return &ctxt;
 }

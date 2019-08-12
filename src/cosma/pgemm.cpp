@@ -10,9 +10,6 @@
 #include <complex>
 #include <mpi.h>
 
-// from semiprof
-#include <semiprof.hpp>
-
 namespace cosma {
 template <typename T>
 void pgemm(const char trans_a,

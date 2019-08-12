@@ -2,6 +2,7 @@ set(cosma_src_files blas.cpp
                     buffer.cpp
                     communicator.cpp
                     context.cpp
+                    memory_pool.cpp
                     interval.cpp
                     layout.cpp
                     local_multiply.cpp
@@ -51,15 +52,14 @@ if(ScaLAPACK_FOUND)
                                             pgemm.cpp
     )
     # private dependencies are not propagated, so add them
-    target_link_libraries(cosma_with_scalapack PUBLIC cosma MKL::ScaLAPACK
-                                               PRIVATE semiprof)
+    target_link_libraries(cosma_with_scalapack PUBLIC cosma MKL::ScaLAPACK)
 
     if(COSMA_WITH_PROFILING)
         target_link_libraries(cosma_with_scalapack PRIVATE 
-          $<BUILD_INTERFACE:semiprof> 
+            $<BUILD_INTERFACE:semiprof>
         )
         target_compile_definitions(cosma_with_scalapack PRIVATE 
-          $<BUILD_INTERFACE:COSMA_WITH_PROFILING>
+            $<BUILD_INTERFACE:COSMA_WITH_PROFILING>
         )
     endif()
 endif()

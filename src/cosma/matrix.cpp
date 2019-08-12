@@ -9,7 +9,7 @@ extern template class Buffer<double>;
 
 // using a pointer to cosma_context
 template <typename T>
-CosmaMatrix<T>::CosmaMatrix(cosma_context<T>* ctxt,
+CosmaMatrix<T>::CosmaMatrix(context<T> ctxt,
                             char label,
                             const Strategy &strategy,
                             int rank,
@@ -44,16 +44,6 @@ CosmaMatrix<T>::CosmaMatrix(cosma_context<T>* ctxt,
     PL();
 }
 
-// using std::unique_ptr<cosma_context>
-template <typename T>
-CosmaMatrix<T>::CosmaMatrix(const context<T>& ctxt,
-                            char label,
-                            const Strategy &strategy,
-                            int rank,
-                            bool dry_run)
-    : CosmaMatrix(ctxt.get(), label, strategy, rank, dry_run)
-{}
-
 // using global (singleton) context
 template <typename T>
 CosmaMatrix<T>::CosmaMatrix(char label,
@@ -76,20 +66,6 @@ int CosmaMatrix<T>::n() {
 template <typename T>
 char CosmaMatrix<T>::label() {
     return label_;
-}
-
-template <typename T>
-int CosmaMatrix<T>::initial_size(int rank) const {
-    if (rank >= strategy_.P)
-        return 0;
-    return mapper_.initial_size(rank);
-}
-
-template <typename T>
-int CosmaMatrix<T>::initial_size() const {
-    if (rank_ >= strategy_.P)
-        return 0;
-    return mapper_.initial_size();
 }
 
 template <typename T>
@@ -164,7 +140,16 @@ const typename CosmaMatrix<T>::scalar_t*CosmaMatrix<T>::matrix_pointer() const {
 
 template <typename T>
 size_t CosmaMatrix<T>::matrix_size() const {
+    if (rank_ >= strategy_.P)
+        return 0;
     return buffer_.initial_buffer_size();
+}
+
+template <typename T>
+size_t CosmaMatrix<T>::matrix_size(int rank) const {
+    if (rank >= strategy_.P)
+        return 0;
+    return mapper_.initial_size(rank);
 }
 
 template <typename T>
