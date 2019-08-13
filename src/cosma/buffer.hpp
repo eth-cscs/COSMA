@@ -178,7 +178,7 @@ protected:
     size_t reduce_buffer_;
     // pointer to the current buffer being used in the previous vector of
     // buffers
-    int current_buffer_;
+    int current_buffer_ = 0;
 
     // buffer used in sequential steps for reshuffling
     size_t max_reshuffle_buffer_size_ = 0;

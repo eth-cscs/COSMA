@@ -94,7 +94,6 @@ void pgemm(const char trans_a,
     // get abstract layout descriptions for COSMA layout
     auto cosma_layout_a = A.get_grid_layout();
     auto cosma_layout_b = B.get_grid_layout();
-    auto cosma_layout_c = C.get_grid_layout();
 
     // get abstract layout descriptions for ScaLAPACK layout
     auto scalapack_layout_a = grid2grid::get_scalapack_grid<T>(
@@ -147,6 +146,7 @@ void pgemm(const char trans_a,
 
     // transform C from scalapack to cosma only if beta > 0
     if (std::abs(beta) > 0) {
+        auto cosma_layout_c = C.get_grid_layout();
         grid2grid::transform<T>(scalapack_layout_c, cosma_layout_c, comm);
     }
     PL();
@@ -157,6 +157,7 @@ void pgemm(const char trans_a,
 #endif
     multiply<T>(A, B, C, strategy, comm, alpha, beta);
 
+    auto cosma_layout_c = C.get_grid_layout();
 #ifdef DEBUG
     std::cout << "Transforming the result C back from COSMA to ScaLAPACK" << std::endl;
 #endif

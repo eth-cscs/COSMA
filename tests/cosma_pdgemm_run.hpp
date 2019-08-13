@@ -171,16 +171,19 @@ bool test_pdgemm(int m, int n, int k, // matrix sizes
            b.data(), &ib, &jb, &desc_b[0], &beta,
            c_scalapack.data(), &ic, &jc, &desc_c[0]);
 
-    // std::cout << "c(cosma) = ";
-    // for (int i = 0; i < c_cosma.size(); ++i) {
-    //     std::cout << c_cosma[i] << ", ";
+
+    // if (myrow == 0 && mycol == 0) {
+    //     std::cout << "c(cosma) = ";
+    //     for (int i = 0; i < c_cosma.size(); ++i) {
+    //         std::cout << c_cosma[i] << ", ";
+    //     }
+    //     std::cout << std::endl;
+    //     std::cout << "c(scalapack) = ";
+    //     for (int i = 0; i < c_scalapack.size(); ++i) {
+    //         std::cout << c_scalapack[i] << ", ";
+    //     }
+    //     std::cout << std::endl;
     // }
-    // std::cout << std::endl;
-    // std::cout << "c(scalapack) = ";
-    // for (int i = 0; i < c_scalapack.size(); ++i) {
-    //     std::cout << c_scalapack[i] << ", ";
-    // }
-    // std::cout << std::endl;
 
     // exit blacs context
     blacs::Cblacs_gridexit(ctxt);

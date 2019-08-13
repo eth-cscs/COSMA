@@ -8,7 +8,7 @@ class memory_pool {
 public:
     using mpi_buffer_t = std::vector<T, mpi_allocator<T>>;
 
-    memory_pool() = default;
+    memory_pool();
     memory_pool(size_t capacity);
 
     // since vector can resize at some point,
@@ -32,7 +32,7 @@ public:
 private:
     mpi_buffer_t pool_;
     size_t pool_size_ = 0;
-    size_t pool_capacity_ = 0;
+    size_t pool_capacity_ = 10;
     size_t n_buffers_ = 0;
 };
 }

@@ -118,6 +118,14 @@ void multiply(context<Scalar> ctx,
     matrixB.allocate_communication_buffers();
     matrixC.allocate_communication_buffers();
 
+    // once all buffers are allocated from the memory pool
+    // we know that the memory pool will not be resized
+    // and thus we can safely set the pointer to the 
+    // initial buffers in all matrices.
+    matrixA.set_current_matrix();
+    matrixB.set_current_matrix();
+    matrixC.set_current_matrix();
+
     // register context to be deleted at MPI_Finalize
     ctx->register_to_destroy_at_finalize();
 

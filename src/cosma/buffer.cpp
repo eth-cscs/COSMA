@@ -36,7 +36,6 @@ Buffer<T>::Buffer(char label,
 
 template <typename T>
 void Buffer<T>::allocate_communication_buffers(bool dry_run) {
-    current_buffer_ = 0;
     if (!dry_run) {
         // check if the initial buffer is already initialized
         assert(buffers_.size() == 1);
@@ -90,6 +89,7 @@ void Buffer<T>::allocate_initial_buffers(bool dry_run) {
     max_reshuffle_buffer_size_ = 0;
     max_send_buffer_size_ = (size_t)mapper_->initial_size();
     max_recv_buffer_size_ = (size_t)mapper_->initial_size();
+    current_buffer_ = 0;
 
     init_first_split_steps();
 

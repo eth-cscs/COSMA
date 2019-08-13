@@ -4,6 +4,11 @@
 #include <iostream>
 
 template <typename T>
+cosma::memory_pool<T>::memory_pool() {
+    resize(pool_capacity_);
+}
+
+template <typename T>
 cosma::memory_pool<T>::memory_pool(size_t capacity) {
     resize(capacity);
 }

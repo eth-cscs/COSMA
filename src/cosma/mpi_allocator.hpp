@@ -75,7 +75,7 @@ class mpi_allocator {
     }
 
     void construct(pointer p, const T &t) {
-        // new (p) T(t);
+        new (p) T(t);
     }
 
     void destroy(pointer p) {

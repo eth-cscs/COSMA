@@ -39,8 +39,6 @@ CosmaMatrix<T>::CosmaMatrix(context<T> ctxt,
     layout_ = Layout(label, m_, n_, P_, rank, mapper_.complete_layout());
     buffer_ = buffer_t(ctxt, label, strategy, rank, &mapper_, &layout_, dry_run);
 
-    current_mat = matrix_pointer();
-
     PL();
 }
 
@@ -267,6 +265,11 @@ operator[](const typename std::vector<scalar_t>::size_type index) const {
 template <typename T>
 typename CosmaMatrix<T>::scalar_t *CosmaMatrix<T>::current_matrix() {
     return current_mat;
+}
+
+template <typename T>
+void CosmaMatrix<T>::set_current_matrix() {
+    current_mat = matrix_pointer();
 }
 
 template <typename T>
