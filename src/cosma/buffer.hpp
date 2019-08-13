@@ -181,17 +181,17 @@ protected:
     int current_buffer_;
 
     // buffer used in sequential steps for reshuffling
-    size_t max_reshuffle_buffer_size_;
+    size_t max_reshuffle_buffer_size_ = 0;
     // buffer used in parallel reduce step, when beta == 1
-    size_t max_reduce_buffer_size_;
+    size_t max_reduce_buffer_size_ = 0;
 
     // computed by compute_max_buffer_size function. represent the two largest
     // buffer sizes (max_recv_buffer_size >= max_send_buffer_size);
-    size_t max_send_buffer_size_;
-    size_t max_recv_buffer_size_;
-    size_t max_par_block_size_;
+    size_t max_send_buffer_size_ = 0;
+    size_t max_recv_buffer_size_ = 0;
+    size_t max_par_block_size_ = 0;
     // max size of the matrix in the base case (among all base cases)
-    size_t max_base_buffer_size_;
+    size_t max_base_buffer_size_ = 0;
     size_t max_send_buffer_size() const;
     size_t max_recv_buffer_size() const;
 

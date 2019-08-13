@@ -42,6 +42,20 @@ void multiply_using_layout(context<Scalar> ctx,
                            char trans_B = 'N',
                            MPI_Comm comm = MPI_COMM_WORLD);
 
+template <typename Scalar>
+void multiply_using_layout(grid2grid::grid_layout<Scalar> &A_layout,
+                           grid2grid::grid_layout<Scalar> &B_layout,
+                           grid2grid::grid_layout<Scalar> &C_layout,
+                           int m,
+                           int n,
+                           int k,
+                           Scalar alpha = Scalar{1},
+                           Scalar beta = Scalar{0},
+                           char trans_A = 'N',
+                           char trans_B = 'N',
+                           MPI_Comm comm = MPI_COMM_WORLD);
+
+
 /*
  * Takes matrices in the optimal COSMA layout and the division strategy
  * and performs the multiplication. It is very efficient as it uses the

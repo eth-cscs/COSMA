@@ -148,6 +148,8 @@ class CosmaMatrix {
     void allocate_communication_buffers();
     void free_communication_buffers();
 
+    context<scalar_t> get_context();
+
   protected:
     context<scalar_t> ctxt_;
     // A, B or C

@@ -151,14 +151,11 @@ void pgemm(const char trans_a,
     }
     PL();
 
-    PE(ContextCreation);
     // perform cosma multiplication
-    auto ctx = cosma::make_context<T>();
-    PL();
 #ifdef DEBUG
     std::cout << "COSMA multiply" << std::endl;
 #endif
-    multiply<T>(ctx, A, B, C, strategy, comm, alpha, beta);
+    multiply<T>(A, B, C, strategy, comm, alpha, beta);
 
 #ifdef DEBUG
     std::cout << "Transforming the result C back from COSMA to ScaLAPACK" << std::endl;

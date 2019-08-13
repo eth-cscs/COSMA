@@ -61,7 +61,7 @@ long run(Strategy &s, context<double> &ctx, MPI_Comm comm = MPI_COMM_WORLD) {
 
     MPI_Barrier(comm);
     auto start = std::chrono::steady_clock::now();
-    multiply(ctx, A, B, C, s, comm, alpha, beta);
+    multiply(A, B, C, s, comm, alpha, beta);
     MPI_Barrier(comm);
     auto end = std::chrono::steady_clock::now();
 

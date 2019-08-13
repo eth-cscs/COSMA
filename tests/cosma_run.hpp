@@ -50,9 +50,9 @@ bool run(Strategy &s,
     int P = s.P;
 
     // Declare A,B and C COSMA matrices objects
-    CosmaMatrix<Scalar> A('A', s, rank);
-    CosmaMatrix<Scalar> B('B', s, rank);
-    CosmaMatrix<Scalar> C('C', s, rank);
+    CosmaMatrix<Scalar> A(ctx, 'A', s, rank);
+    CosmaMatrix<Scalar> B(ctx, 'B', s, rank);
+    CosmaMatrix<Scalar> C(ctx, 'C', s, rank);
 
     // initial sizes
     auto sizeA = A.matrix_size();
@@ -201,7 +201,7 @@ bool run(Strategy &s,
 #endif
     }
 
-    multiply(ctx, A, B, C, s, comm, Scalar{1}, Scalar{0});
+    multiply(A, B, C, s, comm, Scalar{1}, Scalar{0});
 
     // Then rank0 ask for other ranks data
     std::vector<Scalar> Cs;

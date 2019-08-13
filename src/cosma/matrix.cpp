@@ -351,6 +351,11 @@ void CosmaMatrix<T>::free_communication_buffers() {
     buffer_.free_communication_buffers();
 }
 
+template <typename T>
+context<T> CosmaMatrix<T>::get_context() {
+    return ctxt_;
+}
+
 // Explicit instantiations
 //
 template class CosmaMatrix<float>;

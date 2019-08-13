@@ -51,9 +51,9 @@ void run(cosma::Strategy &strategy,
     std::stringstream times_str;
     times_str << scalar_str << " : ";
     for (int i = 0; i < num_matmuls; ++i) {
-        cosma::CosmaMatrix<Scalar> A('A', strategy, rank);
-        cosma::CosmaMatrix<Scalar> B('B', strategy, rank);
-        cosma::CosmaMatrix<Scalar> C('C', strategy, rank);
+        cosma::CosmaMatrix<Scalar> A(ctx, 'A', strategy, rank);
+        cosma::CosmaMatrix<Scalar> B(ctx, 'B', strategy, rank);
+        cosma::CosmaMatrix<Scalar> C(ctx, 'C', strategy, rank);
         constexpr auto alpha = Scalar{1};
         constexpr auto beta = Scalar{0};
 
@@ -61,7 +61,7 @@ void run(cosma::Strategy &strategy,
         fill_matrix(B.matrix_pointer(), B.matrix_size());
 
         auto start = clock_t::now();
-        multiply(ctx, A, B, C, strategy, comm, alpha, beta);
+        multiply(A, B, C, strategy, comm, alpha, beta);
         auto end = clock_t::now();
         times_str << seconds_t(end - start).count() << "s ";
     }

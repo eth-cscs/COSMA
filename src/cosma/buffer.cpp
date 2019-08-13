@@ -85,9 +85,9 @@ void Buffer<T>::allocate_communication_buffers(bool dry_run) {
 
 template <typename T>
 void Buffer<T>::allocate_initial_buffers(bool dry_run) {
-    max_base_buffer_size_ = -1;
-    max_reduce_buffer_size_ = -1;
-    max_reshuffle_buffer_size_ = -1;
+    max_base_buffer_size_ = 0;
+    max_reduce_buffer_size_ = 0;
+    max_reshuffle_buffer_size_ = 0;
     max_send_buffer_size_ = (size_t)mapper_->initial_size();
     max_recv_buffer_size_ = (size_t)mapper_->initial_size();
 
@@ -140,6 +140,17 @@ void Buffer<T>::free_communication_buffers(bool dry_run) {
     // buffers_.size() << ", pinned_index = " << buff_index_to_pin << std::endl;
 #endif
 
+    // deallocate reshuffle and reduce buffers separately
+    if (max_reduce_buffer_size_ > 0) {
+        auto ptr = ctxt_->get_memory_pool().get_buffer_pointer(reduce_buffer_);
+        ctxt_->get_memory_pool().free_buffer(ptr, max_reduce_buffer_size_);
+    }
+
+    if (max_reshuffle_buffer_size_ > 0) {
+        auto ptr = ctxt_->get_memory_pool().get_buffer_pointer(reshuffle_buffer_);
+        ctxt_->get_memory_pool().free_buffer(ptr, max_reshuffle_buffer_size_);
+    }
+
     int n_buffers = buff_sizes_.size();
     // i = 0 is the initial buffer storing the matrix, so we skip this one.
     for (int i = 1; i < n_buffers; ++i) {
@@ -148,17 +159,6 @@ void Buffer<T>::free_communication_buffers(bool dry_run) {
         // remove the pointers pointing to them
         buffers_.pop_back();
         buff_sizes_.pop_back();
-    }
-
-    // deallocate reshuffle and reduce buffers separately
-    if (max_reshuffle_buffer_size_ > 0) {
-        auto ptr = ctxt_->get_memory_pool().get_buffer_pointer(reshuffle_buffer_);
-        ctxt_->get_memory_pool().free_buffer(ptr, max_reshuffle_buffer_size_);
-    }
-
-    if (max_reduce_buffer_size_ > 0) {
-        auto ptr = ctxt_->get_memory_pool().get_buffer_pointer(reshuffle_buffer_);
-        ctxt_->get_memory_pool().free_buffer(ptr, max_reduce_buffer_size_);
     }
 }
 
@@ -276,14 +276,16 @@ void Buffer<T>::set_buffer_index(int idx) {
 
 template <typename T>
 typename Buffer<T>::scalar_t *Buffer<T>::reshuffle_buffer_ptr() {
-    assert(max_reshuffle_buffer_size_ > 0);
-    return ctxt_->get_memory_pool().get_buffer_pointer(reshuffle_buffer_);
+    if (max_reshuffle_buffer_size_ > 0)
+        return ctxt_->get_memory_pool().get_buffer_pointer(reshuffle_buffer_);
+    return nullptr;
 }
 
 template <typename T>
 typename Buffer<T>::scalar_t *Buffer<T>::reduce_buffer_ptr() {
-    assert(max_reduce_buffer_size_ > 0);
-    return ctxt_->get_memory_pool().get_buffer_pointer(reduce_buffer_);
+    if (max_reduce_buffer_size_ > 0)
+        return ctxt_->get_memory_pool().get_buffer_pointer(reduce_buffer_);
+    return nullptr;
 }
 
 template <typename T>

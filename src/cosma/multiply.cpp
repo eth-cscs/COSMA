@@ -7,10 +7,9 @@
 namespace cosma {
 
 template <typename T>
-void multiply_using_layout(context<T> ctx,
-                           grid2grid::grid_layout<T> A,
-                           grid2grid::grid_layout<T> B,
-                           grid2grid::grid_layout<T> C,
+void multiply_using_layout(grid2grid::grid_layout<T> &A,
+                           grid2grid::grid_layout<T> &B,
+                           grid2grid::grid_layout<T> &C,
                            int m,
                            int n,
                            int k,
@@ -19,7 +18,24 @@ void multiply_using_layout(context<T> ctx,
                            char trans_A,
                            char trans_B,
                            MPI_Comm comm) {
+    multiply_using_layout<T>(get_context_instance<T>(),
+                          A, B, C, m, n, k, alpha, beta,
+                          trans_A, trans_B, comm);
+}
 
+template <typename T>
+void multiply_using_layout(context<T> ctx,
+                           grid2grid::grid_layout<T> &A,
+                           grid2grid::grid_layout<T> &B,
+                           grid2grid::grid_layout<T> &C,
+                           int m,
+                           int n,
+                           int k,
+                           T alpha,
+                           T beta,
+                           char trans_A,
+                           char trans_B,
+                           MPI_Comm comm) {
     // apply the transpose flags
     // this will not change the layout of the matrix
     // but will transpose the data (if flag is 'T' or 'C')
@@ -55,7 +71,7 @@ void multiply_using_layout(context<T> ctx,
 
     // perform cosma multiplication
     // auto ctx = cosma::make_context<T>();
-    multiply<T>(ctx, A_cosma, B_cosma, C_cosma, strategy, comm, alpha, beta);
+    multiply<T>(A_cosma, B_cosma, C_cosma, strategy, comm, alpha, beta);
 
     // transform the result from cosma back to the given layout
     grid2grid::transform<T>(cosma_layout_c, C, comm);
@@ -75,7 +91,9 @@ void multiply(CosmaMatrix<Scalar> &matrixA,
               MPI_Comm comm,
               Scalar alpha,
               Scalar beta) {
-    multiply(get_context_instance<Scalar>(), matrixA, matrixB, matrixC, strategy, comm, alpha, beta);
+    assert(matrixA.get_context() == matrixB.get_context()
+            && matrixB.get_context() == matrixC.get_context());
+    multiply(matrixA.get_context(), matrixA, matrixB, matrixC, strategy, comm, alpha, beta);
 }
 
 // using the given context
@@ -123,9 +141,11 @@ void multiply(context<Scalar> ctx,
     }
 
     // deallocate buffers used for communication
-    matrixA.free_communication_buffers();
-    matrixB.free_communication_buffers();
+    // since its a stack allocator, we deallocate
+    // in the opposite order than when we allocated
     matrixC.free_communication_buffers();
+    matrixB.free_communication_buffers();
+    matrixA.free_communication_buffers();
 
     if (cosma_comm.rank() == 0) {
         PP();
@@ -587,11 +607,62 @@ void parallel(context<Scalar> ctx,
 using zfloat_t = std::complex<float>;
 using zdouble_t = std::complex<double>;
 
-// explicit instantiation for multiply_using_layout
+// explicit instantiation for multiply_using_layout without context
+template void multiply_using_layout<double>(grid2grid::grid_layout<double> &A,
+                                            grid2grid::grid_layout<double> &B,
+                                            grid2grid::grid_layout<double> &C,
+                                            int m,
+                                            int n,
+                                            int k,
+                                            double alpha,
+                                            double beta,
+                                            char trans_A,
+                                            char trans_B,
+                                            MPI_Comm comm);
+
+template void multiply_using_layout<float>(grid2grid::grid_layout<float> &A,
+                                           grid2grid::grid_layout<float> &B,
+                                           grid2grid::grid_layout<float> &C,
+                                           int m,
+                                           int n,
+                                           int k,
+                                           float alpha,
+                                           float beta,
+                                           char trans_A,
+                                           char trans_B,
+                                           MPI_Comm comm);
+
+template void
+multiply_using_layout<zdouble_t>(grid2grid::grid_layout<zdouble_t> &A,
+                                 grid2grid::grid_layout<zdouble_t> &B,
+                                 grid2grid::grid_layout<zdouble_t> &C,
+                                 int m,
+                                 int n,
+                                 int k,
+                                 zdouble_t alpha,
+                                 zdouble_t beta,
+                                 char trans_A,
+                                 char trans_B,
+                                 MPI_Comm comm);
+
+template void
+multiply_using_layout<zfloat_t>(grid2grid::grid_layout<zfloat_t> &A,
+                                grid2grid::grid_layout<zfloat_t> &B,
+                                grid2grid::grid_layout<zfloat_t> &C,
+                                int m,
+                                int n,
+                                int k,
+                                zfloat_t alpha,
+                                zfloat_t beta,
+                                char trans_A,
+                                char trans_B,
+                                MPI_Comm comm);
+
+// explicit instantiation for multiply_using_layout with context
 template void multiply_using_layout<double>(context<double> ctx,
-                                            grid2grid::grid_layout<double> A,
-                                            grid2grid::grid_layout<double> B,
-                                            grid2grid::grid_layout<double> C,
+                                            grid2grid::grid_layout<double> &A,
+                                            grid2grid::grid_layout<double> &B,
+                                            grid2grid::grid_layout<double> &C,
                                             int m,
                                             int n,
                                             int k,
@@ -602,9 +673,9 @@ template void multiply_using_layout<double>(context<double> ctx,
                                             MPI_Comm comm);
 
 template void multiply_using_layout<float>(context<float> ctx,
-                                           grid2grid::grid_layout<float> A,
-                                           grid2grid::grid_layout<float> B,
-                                           grid2grid::grid_layout<float> C,
+                                           grid2grid::grid_layout<float> &A,
+                                           grid2grid::grid_layout<float> &B,
+                                           grid2grid::grid_layout<float> &C,
                                            int m,
                                            int n,
                                            int k,
@@ -616,9 +687,9 @@ template void multiply_using_layout<float>(context<float> ctx,
 
 template void
 multiply_using_layout<zdouble_t>(context<zdouble_t> ctx,
-                                 grid2grid::grid_layout<zdouble_t> A,
-                                 grid2grid::grid_layout<zdouble_t> B,
-                                 grid2grid::grid_layout<zdouble_t> C,
+                                 grid2grid::grid_layout<zdouble_t> &A,
+                                 grid2grid::grid_layout<zdouble_t> &B,
+                                 grid2grid::grid_layout<zdouble_t> &C,
                                  int m,
                                  int n,
                                  int k,
@@ -630,9 +701,9 @@ multiply_using_layout<zdouble_t>(context<zdouble_t> ctx,
 
 template void
 multiply_using_layout<zfloat_t>(context<zfloat_t> ctx,
-                                grid2grid::grid_layout<zfloat_t> A,
-                                grid2grid::grid_layout<zfloat_t> B,
-                                grid2grid::grid_layout<zfloat_t> C,
+                                grid2grid::grid_layout<zfloat_t> &A,
+                                grid2grid::grid_layout<zfloat_t> &B,
+                                grid2grid::grid_layout<zfloat_t> &C,
                                 int m,
                                 int n,
                                 int k,
