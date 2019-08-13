@@ -42,15 +42,15 @@ void output_matrix(CosmaMatrix<double> &M, int rank) {
     local_file.close();
 }
 
-long run(Strategy &s, context<double> &ctx, MPI_Comm comm = MPI_COMM_WORLD) {
+long run(Strategy &s, MPI_Comm comm = MPI_COMM_WORLD) {
     int rank, size;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
 
     // Declare A,B and C COSMA matrices objects
-    CosmaMatrix<double> A(ctx, 'A', s, rank);
-    CosmaMatrix<double> B(ctx, 'B', s, rank);
-    CosmaMatrix<double> C(ctx, 'C', s, rank);
+    CosmaMatrix<double> A('A', s, rank);
+    CosmaMatrix<double> B('B', s, rank);
+    CosmaMatrix<double> C('C', s, rank);
     double beta = 0;
     double alpha = 1;
 
@@ -77,7 +77,6 @@ int main(int argc, char **argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     Strategy strategy(argc, argv);
-    auto ctx = cosma::make_context<double>();
 
     if (rank == 0) {
         std::cout << "Strategy = " << strategy << std::endl;
@@ -87,7 +86,7 @@ int main(int argc, char **argv) {
     std::vector<long> times;
     for (int i = 0; i < n_iter; ++i) {
         long t_run = 0;
-        t_run = run(strategy, ctx);
+        t_run = run(strategy);
         times.push_back(t_run);
     }
     std::sort(times.begin(), times.end());

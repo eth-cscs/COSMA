@@ -2,6 +2,7 @@
 #include <complex>
 #include <cosma/memory_pool.hpp>
 #include <iostream>
+#include <mpi.h>
 
 template <typename T>
 cosma::memory_pool<T>::memory_pool() {

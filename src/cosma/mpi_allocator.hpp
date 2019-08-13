@@ -61,11 +61,7 @@ class mpi_allocator {
     }
 
     void deallocate(pointer p, size_type cnt) {
-        if (!mpi_enabled()) {
-            throw_not_enabled_error();
-            return;
-        }
-        if (p) {
+        if (mpi_enabled() && p) {
             MPI_Free_mem(p);
         }
     }
@@ -79,7 +75,7 @@ class mpi_allocator {
     }
 
     void destroy(pointer p) {
-        if (mpi_enabled() && p) {
+        if (p) {
             p->~T();
         }
     }

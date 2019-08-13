@@ -38,7 +38,6 @@ void fill_matrix(std::complex<T>* ptr, size_t size) {
 
 template <typename Scalar>
 void run(cosma::Strategy &strategy,
-         cosma::context<Scalar> &ctx,
          std::string scalar_str) {
     using seconds_t = std::chrono::duration<double>;
     using clock_t = std::chrono::high_resolution_clock;
@@ -51,9 +50,9 @@ void run(cosma::Strategy &strategy,
     std::stringstream times_str;
     times_str << scalar_str << " : ";
     for (int i = 0; i < num_matmuls; ++i) {
-        cosma::CosmaMatrix<Scalar> A(ctx, 'A', strategy, rank);
-        cosma::CosmaMatrix<Scalar> B(ctx, 'B', strategy, rank);
-        cosma::CosmaMatrix<Scalar> C(ctx, 'C', strategy, rank);
+        cosma::CosmaMatrix<Scalar> A('A', strategy, rank);
+        cosma::CosmaMatrix<Scalar> B('B', strategy, rank);
+        cosma::CosmaMatrix<Scalar> C('C', strategy, rank);
         constexpr auto alpha = Scalar{1};
         constexpr auto beta = Scalar{0};
 
@@ -80,16 +79,16 @@ int main(int argc, char **argv) {
     cosma::Strategy strategy(argc, argv);
 
     auto cxt_f = cosma::make_context<float>();
-    run<float>(strategy, cxt_f, "Float");
+    run<float>(strategy, "Float");
 
     auto cxt_d = cosma::make_context<double>();
-    run<double>(strategy, cxt_d, "Double");
+    run<double>(strategy, "Double");
 
     auto cxt_zf = cosma::make_context<zfloat>();
-    run<zfloat>(strategy, cxt_zf, "Complex Float");
+    run<zfloat>(strategy, "Complex Float");
 
     auto cxt_zd = cosma::make_context<zdouble>();
-    run<zdouble>(strategy, cxt_zd, "Complex Double");
+    run<zdouble>(strategy, "Complex Double");
 
     MPI_Finalize();
 }

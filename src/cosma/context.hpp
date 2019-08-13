@@ -9,6 +9,16 @@
 
 namespace cosma {
 
+typedef struct mpi_buffer_pointer_info {
+    void* ptr = NULL;
+    int id = -1;
+    int* global_counter = NULL;
+
+    mpi_buffer_pointer_info() = default;
+    mpi_buffer_pointer_info(void* ptr, int id, int* gl_counter):
+        ptr(ptr), id(id), global_counter(gl_counter) {}
+} mpi_buffer_info;
+
 template <typename Scalar>
 class cosma_context {
 public:
@@ -21,11 +31,16 @@ public:
 #endif
 
     void register_to_destroy_at_finalize();
+    void unregister_to_destroy_at_finalize();
+
+    ~cosma_context();
 
 private:
-    bool mpi_keyval_set = false;
-    int mpi_keyval;
     memory_pool<Scalar> memory_pool_;
+    int n_registers = 0;
+    std::vector<mpi_buffer_info> buffer_infos;
+    bool mpi_keyval_set = false;
+    int mpi_keyval = -1;
 #ifdef COSMA_HAVE_GPU
     // std::unique_ptr<gpu::mm_handle<Scalar>> gpu_ctx;
     gpu::mm_handle<Scalar> gpu_ctx_;
