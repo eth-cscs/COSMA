@@ -35,11 +35,11 @@ void multiply_using_layout(grid2grid::grid_layout<Scalar> &A_layout,
                            int m,
                            int n,
                            int k,
-                           Scalar alpha = Scalar{1},
-                           Scalar beta = Scalar{0},
-                           char trans_A = 'N',
-                           char trans_B = 'N',
-                           MPI_Comm comm = MPI_COMM_WORLD);
+                           Scalar alpha,
+                           Scalar beta,
+                           char trans_A,
+                           char trans_B,
+                           MPI_Comm comm);
 
 
 /*
