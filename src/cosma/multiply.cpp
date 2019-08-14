@@ -57,8 +57,8 @@ void multiply_using_layout(grid2grid::grid_layout<T> &A,
                            int m,
                            int n,
                            int k,
-                           Scalar alpha,
-                           Scalar beta,
+                           T alpha,
+                           T beta,
                            char trans_A,
                            char trans_B,
                            MPI_Comm comm) {
@@ -102,23 +102,24 @@ void multiply_using_layout(cosma_context<T>* ctx,
     // get abstract layout descriptions for COSMA layout
     auto cosma_layout_a = A_cosma.get_grid_layout();
     auto cosma_layout_b = B_cosma.get_grid_layout();
-    auto cosma_layout_c = C_cosma.get_grid_layout();
 
     // transform A and B from given layout to cosma layout
-    grid2grid::transform<Scalar>(A, cosma_layout_a, comm);
-    grid2grid::transform<Scalar>(B, cosma_layout_b, comm);
+    grid2grid::transform<T>(A, cosma_layout_a, comm);
+    grid2grid::transform<T>(B, cosma_layout_b, comm);
 
     // transform C from given layout to cosma layout only if beta > 0
     if (std::abs(beta) > 0) {
-        grid2grid::transform<Scalar>(C, cosma_layout_c, comm);
+        auto cosma_layout_c = C_cosma.get_grid_layout();
+        grid2grid::transform<T>(C, cosma_layout_c, comm);
     }
 
     // perform cosma multiplication
     // auto ctx = cosma::make_context<T>();
     multiply<T>(A_cosma, B_cosma, C_cosma, strategy, comm, alpha, beta);
 
+    auto cosma_layout_c = C_cosma.get_grid_layout();
     // transform the result from cosma back to the given layout
-    grid2grid::transform<Scalar>(cosma_layout_c, C, comm);
+    grid2grid::transform<T>(cosma_layout_c, C, comm);
 }
 
 /*
