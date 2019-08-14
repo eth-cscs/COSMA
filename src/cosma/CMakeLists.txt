@@ -1,7 +1,9 @@
 set(cosma_src_files blas.cpp
                     buffer.cpp
                     communicator.cpp
+                    mpi_attribute.cpp
                     context.cpp
+                    memory_pool.cpp
                     interval.cpp
                     layout.cpp
                     local_multiply.cpp
@@ -39,7 +41,7 @@ if(COSMA_WITH_MKL)
     target_compile_definitions(cosma PRIVATE COSMA_WITH_MKL)
 endif()
 
-if(COSMA_WITH_TILEDMM)
+if(COSMA_WITH_GPU)
     # These need to be public because of context hpp|cpp
     #
     target_link_libraries(cosma PUBLIC Tiled-MM)
@@ -50,13 +52,15 @@ if(ScaLAPACK_FOUND)
     add_library(cosma_with_scalapack STATIC scalapack.cpp
                                             pgemm.cpp
     )
+    # private dependencies are not propagated, so add them
     target_link_libraries(cosma_with_scalapack PUBLIC cosma MKL::ScaLAPACK)
+
     if(COSMA_WITH_PROFILING)
         target_link_libraries(cosma_with_scalapack PRIVATE 
-          $<BUILD_INTERFACE:semiprof> 
+            $<BUILD_INTERFACE:semiprof>
         )
         target_compile_definitions(cosma_with_scalapack PRIVATE 
-          $<BUILD_INTERFACE:COSMA_WITH_PROFILING>
+            $<BUILD_INTERFACE:COSMA_WITH_PROFILING>
         )
     endif()
 endif()

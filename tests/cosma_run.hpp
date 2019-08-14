@@ -7,29 +7,27 @@
 
 using namespace cosma;
 
-template <typename Real, typename Allocator>
-void fill_matrix(std::vector<Real, Allocator> &data) {
+template <typename T>
+void fill_matrix(T* ptr, size_t size) {
     std::random_device dev;                        // seed
     std::mt19937 rng(dev());                       // generator
-    std::uniform_real_distribution<Real> dist(1.); // distribution
+    std::uniform_real_distribution<T> dist(1.); // distribution
 
-    for (auto &el : data) {
-        el = Real{dist(rng)};
+    for (unsigned i = 0; i < size; ++i) {
+        ptr[i] = T{dist(rng)};
     }
 }
 
-template <typename Real, typename Allocator>
-void fill_matrix(std::vector<std::complex<Real>, Allocator> &data) {
+template <typename T>
+void fill_matrix(std::complex<T>* ptr, size_t size) {
     std::random_device dev;                        // seed
     std::mt19937 rng(dev());                       // generator
-    std::uniform_real_distribution<Real> dist(1.); // distribution
+    std::uniform_real_distribution<T> dist(1.); // distribution
 
-    for (auto &el : data) {
-        el = std::complex<Real>{dist(rng), dist(rng)};
+    for (unsigned i = 0; i < size; ++i) {
+        ptr[i] = std::complex<T>{dist(rng), dist(rng)};
     }
 }
-
-// TODO: generalize to generate complex numbers
 
 template <typename Scalar>
 bool run(Strategy &s,
@@ -52,19 +50,23 @@ bool run(Strategy &s,
     int P = s.P;
 
     // Declare A,B and C COSMA matrices objects
+    // CosmaMatrix<Scalar> A(ctx, 'A', s, rank);
+    // CosmaMatrix<Scalar> B(ctx, 'B', s, rank);
+    // CosmaMatrix<Scalar> C(ctx, 'C', s, rank);
+
     CosmaMatrix<Scalar> A('A', s, rank);
     CosmaMatrix<Scalar> B('B', s, rank);
     CosmaMatrix<Scalar> C('C', s, rank);
 
+    // initial sizes
+    auto sizeA = A.matrix_size();
+    auto sizeB = B.matrix_size();
+    auto sizeC = C.matrix_size();
+
     // fill the matrices with random data
     srand48(rank);
-    fill_matrix(A.matrix());
-    fill_matrix(B.matrix());
-
-    // initial sizes
-    auto sizeA = A.initial_size();
-    auto sizeB = B.initial_size();
-    auto sizeC = C.initial_size();
+    fill_matrix(A.matrix_pointer(), sizeA);
+    fill_matrix(B.matrix_pointer(), sizeB);
 
 #ifdef DEBUG
     std::cout << "Initial data in A and B:" << std::endl;
@@ -72,12 +74,12 @@ bool run(Strategy &s,
         if (rank == i) {
             printf("(%d) A: ", i);
             for (auto j = 0; j < sizeA; j++)
-                printf("%5.3f ", A.matrix()[j]);
+                printf("%5.3f ", A.matrix_pointer()[j]);
             printf("\n");
 
             printf("(%d) B: ", i);
             for (auto j = 0; j < sizeB; j++)
-                printf("%5.3f ", B.matrix()[j]);
+                printf("%5.3f ", B.matrix_pointer()[j]);
             printf("\n");
         }
         MPI_Barrier(comm);
@@ -90,16 +92,16 @@ bool run(Strategy &s,
     std::vector<Scalar> As, Bs;
     if (rank == 0) {
         As = std::vector<Scalar>(m * k);
-        std::copy(A.matrix().cbegin(), A.matrix().cend(), As.begin());
+        std::memcpy(As.data(), A.matrix_pointer(), A.matrix_size()*sizeof(Scalar));
         Bs = std::vector<Scalar>(k * n);
-        std::copy(B.matrix().cbegin(), B.matrix().cend(), Bs.begin());
+        std::memcpy(Bs.data(), B.matrix_pointer(), B.matrix_size()*sizeof(Scalar));
 
         int offsetA = sizeA;
         int offsetB = sizeB;
 
         for (int i = 1; i < P; i++) {
-            int receive_size_A = A.initial_size(i);
-            int receive_size_B = B.initial_size(i);
+            int receive_size_A = A.matrix_size(i);
+            int receive_size_B = B.matrix_size(i);
             // Rank 0 receive data
             MPI_Recv(As.data() + offsetA,
                      receive_size_A,
@@ -140,8 +142,8 @@ bool run(Strategy &s,
         int offsetB = 0;
 
         for (int i = 0; i < P; i++) {
-            int local_size_A = A.initial_size(i);
-            int local_size_B = B.initial_size(i);
+            int local_size_A = A.matrix_size(i);
+            int local_size_B = B.matrix_size(i);
 
             for (int j = 0; j < local_size_A; j++) {
                 int y, x;
@@ -165,8 +167,7 @@ bool run(Strategy &s,
             offsetB += local_size_B;
         }
         // Now compute the result
-        cosma::local_multiply(ctx,
-                              globA.data(),
+        cosma::local_multiply(globA.data(),
                               globB.data(),
                               globCcheck.data(),
                               m,
@@ -203,18 +204,18 @@ bool run(Strategy &s,
 #endif
     }
 
-    multiply(ctx, A, B, C, s, comm, Scalar{1}, Scalar{0});
+    multiply(A, B, C, s, comm, Scalar{1}, Scalar{0});
 
     // Then rank0 ask for other ranks data
     std::vector<Scalar> Cs;
     if (rank == 0) {
         Cs = std::vector<Scalar>(m * n);
-        std::copy(C.matrix().cbegin(), C.matrix().cend(), Cs.begin());
+        std::memcpy(Cs.data(), C.matrix_pointer(), C.matrix_size()*sizeof(Scalar));
 
         int offsetC = sizeC;
 
         for (int i = 1; i < P; i++) {
-            int receive_size_C = C.initial_size(i);
+            int receive_size_C = C.matrix_size(i);
             // Rank 0 receive data
             MPI_Recv(Cs.data() + offsetC,
                      receive_size_C,
@@ -240,7 +241,7 @@ bool run(Strategy &s,
         int offsetC = 0;
 
         for (int i = 0; i < P; i++) {
-            int local_size_C = C.initial_size(i);
+            int local_size_C = C.matrix_size(i);
 
             for (int j = 0; j < local_size_C; j++) {
                 int y, x;
@@ -273,26 +274,26 @@ bool run(Strategy &s,
                 }
             }
         }
-        // else {
-        //     std::cout <<"Result is OK"<<std::endl;
-        // }
+        else {
+            std::cout <<"Result is OK"<<std::endl;
+        }
     }
 #ifdef DEBUG
     for (int i = 0; i < P; i++) {
         if (rank == i) {
             printf("(%d) A: ", i);
             for (auto j = 0; j < sizeA; j++)
-                printf("%5.3f ", A.matrix()[j]);
+                printf("%5.3f ", A.matrix_pointer()[j]);
             printf("\n");
 
             printf("(%d) B: ", i);
             for (auto j = 0; j < sizeB; j++)
-                printf("%5.3f ", B.matrix()[j]);
+                printf("%5.3f ", B.matrix_pointer()[j]);
             printf("\n");
 
             printf("(%d) C: ", i);
             for (auto j = 0; j < sizeC; j++)
-                printf("%5.3f ", C.matrix()[j]);
+                printf("%5.3f ", C.matrix_pointer()[j]);
             printf("\n");
         }
         MPI_Barrier(comm);

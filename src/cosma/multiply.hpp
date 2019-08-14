@@ -41,67 +41,19 @@ void multiply_using_layout(grid2grid::grid_layout<Scalar> &A_layout,
                            char trans_B,
                            MPI_Comm comm);
 
+
 /*
  * Takes matrices in the optimal COSMA layout and the division strategy
  * and performs the multiplication. It is very efficient as it uses the
  * optimal COSMA layout.
  */
+
 template <typename Scalar>
-void multiply(context<Scalar> &ctx,
-              CosmaMatrix<Scalar> &A,
+void multiply(CosmaMatrix<Scalar> &A,
               CosmaMatrix<Scalar> &B,
               CosmaMatrix<Scalar> &C,
               const Strategy &strategy,
               MPI_Comm comm,
               Scalar alpha,
               Scalar beta);
-
-/*
- * Functions below are more interesting to the developer than the user.
- */
-template <typename Scalar>
-void multiply(context<Scalar> &ctx,
-              CosmaMatrix<Scalar> &A,
-              CosmaMatrix<Scalar> &B,
-              CosmaMatrix<Scalar> &C,
-              Interval &m,
-              Interval &n,
-              Interval &k,
-              Interval &P,
-              size_t step,
-              const Strategy &strategy,
-              communicator &comm,
-              Scalar alpha,
-              Scalar beta);
-
-template <typename Scalar>
-void sequential(context<Scalar> &ctx,
-                CosmaMatrix<Scalar> &A,
-                CosmaMatrix<Scalar> &B,
-                CosmaMatrix<Scalar> &C,
-                Interval &m,
-                Interval &n,
-                Interval &k,
-                Interval &P,
-                size_t step,
-                const Strategy &strategy,
-                communicator &comm,
-                Scalar alpha,
-                Scalar beta);
-
-template <typename Scalar>
-void parallel(context<Scalar> &ctx,
-              CosmaMatrix<Scalar> &A,
-              CosmaMatrix<Scalar> &B,
-              CosmaMatrix<Scalar> &C,
-              Interval &m,
-              Interval &n,
-              Interval &k,
-              Interval &P,
-              size_t step,
-              const Strategy &strategy,
-              communicator &comm,
-              Scalar alpha,
-              Scalar beta);
-
 } // namespace cosma

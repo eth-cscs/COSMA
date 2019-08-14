@@ -149,7 +149,7 @@ class communicator {
                 int step);
 
     template <typename Scalar>
-    void overlap_comm_and_comp(context<Scalar> &ctx,
+    void overlap_comm_and_comp(cosma_context<Scalar> *ctx,
                                CosmaMatrix<Scalar> &matrixA,
                                CosmaMatrix<Scalar> &matrixB,
                                CosmaMatrix<Scalar> &matrixC,

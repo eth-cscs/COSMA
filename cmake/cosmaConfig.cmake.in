@@ -13,7 +13,7 @@ if(NOT TARGET cosma::cosma)
     set(MPI_CXX_COMPILER "@MPI_CXX_COMPILER@")
     find_dependency(MPI)
 
-    if("@COSMA_USE_TILEDMM@")
+    if("@COSMA_USE_GPU@")
         find_dependency(Tiled-MM) # bundled
     else()
         set(MKL_ROOT "@MKL_ROOT@")

@@ -7,12 +7,15 @@ namespace cosma {
 
 extern template class Buffer<double>;
 
+// using a pointer to cosma_context
 template <typename T>
-CosmaMatrix<T>::CosmaMatrix(char label,
+CosmaMatrix<T>::CosmaMatrix(cosma_context<T>* ctxt,
+                            char label,
                             const Strategy &strategy,
                             int rank,
                             bool dry_run)
-    : label_(label)
+    : ctxt_(ctxt)
+    , label_(label)
     , rank_(rank)
     , strategy_(strategy) {
     PE(preprocessing_matrices);
@@ -34,12 +37,29 @@ CosmaMatrix<T>::CosmaMatrix(char label,
 
     mapper_ = Mapper(label, m_, n_, P_, strategy, rank);
     layout_ = Layout(label, m_, n_, P_, rank, mapper_.complete_layout());
-    buffer_ = buffer_t(label, strategy, rank, &mapper_, &layout_, dry_run);
-
-    current_mat = matrix_pointer();
+    buffer_ = buffer_t(ctxt, label, strategy, rank, &mapper_, &layout_, dry_run);
 
     PL();
 }
+
+// using custom context
+template <typename T>
+CosmaMatrix<T>::CosmaMatrix(std::unique_ptr<cosma_context<T>>& ctxt,
+                            char label,
+                            const Strategy &strategy,
+                            int rank,
+                            bool dry_run)
+    : CosmaMatrix(ctxt.get(), label, strategy, rank, dry_run)
+{}
+
+// using global (singleton) context
+template <typename T>
+CosmaMatrix<T>::CosmaMatrix(char label,
+                            const Strategy &strategy,
+                            int rank,
+                            bool dry_run)
+    : CosmaMatrix(get_context_instance<T>(), label, strategy, rank, dry_run)
+{}
 
 template <typename T>
 int CosmaMatrix<T>::m() {
@@ -54,20 +74,6 @@ int CosmaMatrix<T>::n() {
 template <typename T>
 char CosmaMatrix<T>::label() {
     return label_;
-}
-
-template <typename T>
-int CosmaMatrix<T>::initial_size(int rank) const {
-    if (rank >= strategy_.P)
-        return 0;
-    return mapper_.initial_size(rank);
-}
-
-template <typename T>
-int CosmaMatrix<T>::initial_size() const {
-    if (rank_ >= strategy_.P)
-        return 0;
-    return mapper_.initial_size();
 }
 
 template <typename T>
@@ -93,16 +99,6 @@ typename CosmaMatrix<T>::scalar_t *CosmaMatrix<T>::reshuffle_buffer_ptr() {
 template <typename T>
 typename CosmaMatrix<T>::scalar_t *CosmaMatrix<T>::reduce_buffer_ptr() {
     return buffer_.reduce_buffer_ptr();
-}
-
-template <typename T>
-typename CosmaMatrix<T>::mpi_buffer_t &CosmaMatrix<T>::buffer() {
-    return buffer_.buffer();
-}
-
-template <typename T>
-const typename CosmaMatrix<T>::mpi_buffer_t &CosmaMatrix<T>::buffer() const {
-    return buffer_.buffer();
 }
 
 template <typename T>
@@ -142,29 +138,26 @@ CosmaMatrix<T>::global_coordinates(int local_index) const {
 
 template <typename T>
 typename CosmaMatrix<T>::scalar_t *CosmaMatrix<T>::matrix_pointer() {
-    // return matrix_.data();
-    if (rank_ >= strategy_.P) {
-        return nullptr;
-    }
     return buffer_.initial_buffer_ptr();
 }
 
 template <typename T>
-typename CosmaMatrix<T>::mpi_buffer_t &CosmaMatrix<T>::matrix() {
-    // return matrix_;
-    if (rank_ >= strategy_.P) {
-        return dummy_vector;
-    }
-    return buffer_.initial_buffer();
+const typename CosmaMatrix<T>::scalar_t*CosmaMatrix<T>::matrix_pointer() const {
+    return buffer_.initial_buffer_ptr();
 }
 
 template <typename T>
-const typename CosmaMatrix<T>::mpi_buffer_t &CosmaMatrix<T>::matrix() const {
-    // return matrix_;
-    if (rank_ >= strategy_.P) {
-        return dummy_vector;
-    }
-    return buffer_.initial_buffer();
+size_t CosmaMatrix<T>::matrix_size() const {
+    if (rank_ >= strategy_.P)
+        return 0;
+    return mapper_.initial_size(rank_);
+}
+
+template <typename T>
+size_t CosmaMatrix<T>::matrix_size(int rank) const {
+    if (rank >= strategy_.P)
+        return 0;
+    return mapper_.initial_size(rank);
 }
 
 template <typename T>
@@ -270,18 +263,23 @@ void CosmaMatrix<T>::set_sizes(int rank, std::vector<int> &sizes, int start) {
 template <typename T>
 typename CosmaMatrix<T>::scalar_t &CosmaMatrix<T>::
 operator[](const typename std::vector<scalar_t>::size_type index) {
-    return matrix()[index];
+    return matrix_pointer()[index];
 }
 
 template <typename T>
 typename CosmaMatrix<T>::scalar_t CosmaMatrix<T>::
 operator[](const typename std::vector<scalar_t>::size_type index) const {
-    return matrix()[index];
+    return matrix_pointer()[index];
 }
 
 template <typename T>
 typename CosmaMatrix<T>::scalar_t *CosmaMatrix<T>::current_matrix() {
     return current_mat;
+}
+
+template <typename T>
+void CosmaMatrix<T>::set_current_matrix() {
+    current_mat = matrix_pointer();
 }
 
 template <typename T>
@@ -354,6 +352,21 @@ grid2grid::grid_layout<T> CosmaMatrix<T>::get_grid_layout() {
     grid2grid::local_blocks<T> local_memory(std::move(loc_blocks));
 
     return {std::move(assigned_grid), std::move(local_memory)};
+}
+
+template <typename T>
+void CosmaMatrix<T>::allocate_communication_buffers() {
+    buffer_.allocate_communication_buffers();
+}
+
+template <typename T>
+void CosmaMatrix<T>::free_communication_buffers() {
+    buffer_.free_communication_buffers();
+}
+
+template <typename T>
+cosma_context<T>* CosmaMatrix<T>::get_context() {
+    return ctxt_;
 }
 
 // Explicit instantiations

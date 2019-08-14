@@ -330,9 +330,11 @@ std::vector<Interval2D> Mapper::local_blocks() {
 }
 
 int Mapper::owner(Interval2D& block) {
-    std::pair<int, int> rank_and_offset = range_to_rank_[block];
-    assert(rank_and_offset != range_to_rank_.end());
-    return rank_and_offset.first;
+    auto rank_and_offset_iterator = range_to_rank_.find(block);
+    assert(rank_and_offset_iterator != range_to_rank_.end());
+    auto rank_and_offset = rank_and_offset_iterator->second;
+    int rank = rank_and_offset.first;
+    return rank;
 }
 
 grid2grid::grid2D Mapper::get_layout_grid() {

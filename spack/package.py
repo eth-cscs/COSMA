@@ -13,14 +13,14 @@ class Cosma(CMakePackage, CudaPackage):
         description='CMake build type',
         values=('Debug', 'Release', 'RelWithDebInfo', 'MinSizeRel'))
 
-    variant('tiledmm', default=False,
+    variant('gpu', default=False,
             description='Use Tiled-MM GPU back end.')
 
     depends_on('cmake@3.12:', type='build')
     depends_on('mpi@3:')
-    depends_on('intel-mkl threads=openmp', when='tiledmm=False')
-    depends_on('scalapack', when='tiledmm=False')
-    depends_on('cuda', when='tiledmm=True')
+    depends_on('intel-mkl threads=openmp', when='gpu=False')
+    depends_on('scalapack', when='gpu=False')
+    depends_on('cuda', when='gpu=True')
 
     def cmake_args(self):
         spec = self.spec
@@ -28,10 +28,10 @@ class Cosma(CMakePackage, CudaPackage):
                 '-DCOSMA_WITH_APPS=OFF',
                 '-DCOSMA_WITH_BENCHMARKS=OFF']
 
-        if '+tiledmm' in spec:
-            args.append('-DCOSMA_WITH_TILEDMM=ON')
+        if '+gpu' in spec:
+            args.append('-DCOSMA_WITH_GPU=ON')
 
         if spec['mpi'].name == 'openmpi':
             args.append('-DMKL_MPI_TYPE=OMPI')
-        
+
         return args

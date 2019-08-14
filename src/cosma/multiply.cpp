@@ -5,20 +5,81 @@
 #include <complex>
 
 namespace cosma {
+template <typename Scalar>
+void multiply(cosma_context<Scalar> *ctx,
+              CosmaMatrix<Scalar> &A,
+              CosmaMatrix<Scalar> &B,
+              CosmaMatrix<Scalar> &C,
+              Interval &m,
+              Interval &n,
+              Interval &k,
+              Interval &P,
+              size_t step,
+              const Strategy &strategy,
+              communicator &comm,
+              Scalar alpha,
+              Scalar beta);
 
 template <typename Scalar>
-void multiply_using_layout(grid2grid::grid_layout<Scalar> &A,
-                           grid2grid::grid_layout<Scalar> &B,
-                           grid2grid::grid_layout<Scalar> &C,
+void sequential(cosma_context<Scalar> *ctx,
+                CosmaMatrix<Scalar> &A,
+                CosmaMatrix<Scalar> &B,
+                CosmaMatrix<Scalar> &C,
+                Interval &m,
+                Interval &n,
+                Interval &k,
+                Interval &P,
+                size_t step,
+                const Strategy &strategy,
+                communicator &comm,
+                Scalar alpha,
+                Scalar beta);
+
+template <typename Scalar>
+void parallel(cosma_context<Scalar> *ctx,
+              CosmaMatrix<Scalar> &A,
+              CosmaMatrix<Scalar> &B,
+              CosmaMatrix<Scalar> &C,
+              Interval &m,
+              Interval &n,
+              Interval &k,
+              Interval &P,
+              size_t step,
+              const Strategy &strategy,
+              communicator &comm,
+              Scalar alpha,
+              Scalar beta);
+
+template <typename T>
+void multiply_using_layout(grid2grid::grid_layout<T> &A,
+                           grid2grid::grid_layout<T> &B,
+                           grid2grid::grid_layout<T> &C,
                            int m,
                            int n,
                            int k,
-                           Scalar alpha,
-                           Scalar beta,
+                           T alpha,
+                           T beta,
                            char trans_A,
                            char trans_B,
                            MPI_Comm comm) {
+    multiply_using_layout<T>(get_context_instance<T>(),
+                          A, B, C, m, n, k, alpha, beta,
+                          trans_A, trans_B, comm);
+}
 
+template <typename T>
+void multiply_using_layout(cosma_context<T>* ctx,
+                           grid2grid::grid_layout<T> &A,
+                           grid2grid::grid_layout<T> &B,
+                           grid2grid::grid_layout<T> &C,
+                           int m,
+                           int n,
+                           int k,
+                           T alpha,
+                           T beta,
+                           char trans_A,
+                           char trans_B,
+                           MPI_Comm comm) {
     // apply the transpose flags
     // this will not change the layout of the matrix
     // but will transpose the data (if flag is 'T' or 'C')
@@ -34,39 +95,55 @@ void multiply_using_layout(grid2grid::grid_layout<Scalar> &A,
     Strategy strategy(m, n, k, P);
 
     // create COSMA matrices
-    CosmaMatrix<Scalar> A_cosma('A', strategy, rank);
-    CosmaMatrix<Scalar> B_cosma('B', strategy, rank);
-    CosmaMatrix<Scalar> C_cosma('C', strategy, rank);
+    CosmaMatrix<T> A_cosma(ctx, 'A', strategy, rank);
+    CosmaMatrix<T> B_cosma(ctx, 'B', strategy, rank);
+    CosmaMatrix<T> C_cosma(ctx, 'C', strategy, rank);
 
     // get abstract layout descriptions for COSMA layout
     auto cosma_layout_a = A_cosma.get_grid_layout();
     auto cosma_layout_b = B_cosma.get_grid_layout();
-    auto cosma_layout_c = C_cosma.get_grid_layout();
 
     // transform A and B from given layout to cosma layout
-    grid2grid::transform<Scalar>(A, cosma_layout_a, comm);
-    grid2grid::transform<Scalar>(B, cosma_layout_b, comm);
+    grid2grid::transform<T>(A, cosma_layout_a, comm);
+    grid2grid::transform<T>(B, cosma_layout_b, comm);
 
     // transform C from given layout to cosma layout only if beta > 0
     if (std::abs(beta) > 0) {
-        grid2grid::transform<Scalar>(C, cosma_layout_c, comm);
+        auto cosma_layout_c = C_cosma.get_grid_layout();
+        grid2grid::transform<T>(C, cosma_layout_c, comm);
     }
 
     // perform cosma multiplication
-    auto ctx = cosma::make_context<Scalar>();
-    multiply<Scalar>(
-        ctx, A_cosma, B_cosma, C_cosma, strategy, comm, alpha, beta);
+    // auto ctx = cosma::make_context<T>();
+    multiply<T>(A_cosma, B_cosma, C_cosma, strategy, comm, alpha, beta);
 
+    auto cosma_layout_c = C_cosma.get_grid_layout();
     // transform the result from cosma back to the given layout
-    grid2grid::transform<Scalar>(cosma_layout_c, C, comm);
+    grid2grid::transform<T>(cosma_layout_c, C, comm);
 }
 
 /*
  Compute C = alpha*A*B + beta*C
  Assumption: we assume that at each step only 1 dimension is split
 */
+
+// using the global singleton context
 template <typename Scalar>
-void multiply(context<Scalar> &ctx,
+void multiply(CosmaMatrix<Scalar> &matrixA,
+              CosmaMatrix<Scalar> &matrixB,
+              CosmaMatrix<Scalar> &matrixC,
+              const Strategy &strategy,
+              MPI_Comm comm,
+              Scalar alpha,
+              Scalar beta) {
+    assert(matrixA.get_context() == matrixB.get_context()
+            && matrixB.get_context() == matrixC.get_context());
+    multiply(matrixA.get_context(), matrixA, matrixB, matrixC, strategy, comm, alpha, beta);
+}
+
+// using the given context
+template <typename Scalar>
+void multiply(cosma_context<Scalar>* ctx,
               CosmaMatrix<Scalar> &matrixA,
               CosmaMatrix<Scalar> &matrixB,
               CosmaMatrix<Scalar> &matrixC,
@@ -80,6 +157,23 @@ void multiply(context<Scalar> &ctx,
     Interval Pi = Interval(0, strategy.P - 1);
 
     PE(preprocessing_communicators);
+
+    // allocate buffers used for communication
+    matrixA.allocate_communication_buffers();
+    matrixB.allocate_communication_buffers();
+    matrixC.allocate_communication_buffers();
+
+    // once all buffers are allocated from the memory pool
+    // we know that the memory pool will not be resized
+    // and thus we can safely set the pointer to the 
+    // initial buffers in all matrices.
+    matrixA.set_current_matrix();
+    matrixB.set_current_matrix();
+    matrixC.set_current_matrix();
+
+    // register context to be deleted at MPI_Finalize
+    ctx->register_to_destroy_at_finalize();
+
     communicator cosma_comm = communicator(&strategy, comm);
     PL();
 
@@ -99,13 +193,20 @@ void multiply(context<Scalar> &ctx,
                  beta);
     }
 
+    // deallocate buffers used for communication
+    // since its a stack allocator, we deallocate
+    // in the opposite order than when we allocated
+    matrixC.free_communication_buffers();
+    matrixB.free_communication_buffers();
+    matrixA.free_communication_buffers();
+
     if (cosma_comm.rank() == 0) {
         PP();
     }
 }
 
 template <typename Scalar>
-void multiply(context<Scalar> &ctx,
+void multiply(cosma_context<Scalar>* ctx,
               CosmaMatrix<Scalar> &matrixA,
               CosmaMatrix<Scalar> &matrixB,
               CosmaMatrix<Scalar> &matrixC,
@@ -233,7 +334,7 @@ void multiply(context<Scalar> &ctx,
  and each of the subproblems is solved sequentially by all P processors.
 */
 template <typename Scalar>
-void sequential(context<Scalar> &ctx,
+void sequential(cosma_context<Scalar>* ctx,
                 CosmaMatrix<Scalar> &matrixA,
                 CosmaMatrix<Scalar> &matrixB,
                 CosmaMatrix<Scalar> &matrixC,
@@ -375,7 +476,7 @@ T which_is_expanded(T &&A,
  owned by newP ranks - thus local matrices are shrinked.
  */
 template <typename Scalar>
-void parallel(context<Scalar> &ctx,
+void parallel(cosma_context<Scalar>* ctx,
               CosmaMatrix<Scalar> &matrixA,
               CosmaMatrix<Scalar> &matrixB,
               CosmaMatrix<Scalar> &matrixC,
@@ -559,7 +660,7 @@ void parallel(context<Scalar> &ctx,
 using zfloat_t = std::complex<float>;
 using zdouble_t = std::complex<double>;
 
-// explicit instantiation for multiply_using_layout
+// explicit instantiation for multiply_using_layout without context
 template void multiply_using_layout<double>(grid2grid::grid_layout<double> &A,
                                             grid2grid::grid_layout<double> &B,
                                             grid2grid::grid_layout<double> &C,
@@ -610,9 +711,63 @@ multiply_using_layout<zfloat_t>(grid2grid::grid_layout<zfloat_t> &A,
                                 char trans_B,
                                 MPI_Comm comm);
 
-// Explicit instantiations for short `multiply`
+// explicit instantiation for multiply_using_layout with context
+template void multiply_using_layout<double>(cosma_context<double>* ctx,
+                                            grid2grid::grid_layout<double> &A,
+                                            grid2grid::grid_layout<double> &B,
+                                            grid2grid::grid_layout<double> &C,
+                                            int m,
+                                            int n,
+                                            int k,
+                                            double alpha,
+                                            double beta,
+                                            char trans_A,
+                                            char trans_B,
+                                            MPI_Comm comm);
 
-template void multiply<double>(context<double> &ctx,
+template void multiply_using_layout<float>(cosma_context<float>* ctx,
+                                           grid2grid::grid_layout<float> &A,
+                                           grid2grid::grid_layout<float> &B,
+                                           grid2grid::grid_layout<float> &C,
+                                           int m,
+                                           int n,
+                                           int k,
+                                           float alpha,
+                                           float beta,
+                                           char trans_A,
+                                           char trans_B,
+                                           MPI_Comm comm);
+
+template void
+multiply_using_layout<zdouble_t>(cosma_context<zdouble_t>* ctx,
+                                 grid2grid::grid_layout<zdouble_t> &A,
+                                 grid2grid::grid_layout<zdouble_t> &B,
+                                 grid2grid::grid_layout<zdouble_t> &C,
+                                 int m,
+                                 int n,
+                                 int k,
+                                 zdouble_t alpha,
+                                 zdouble_t beta,
+                                 char trans_A,
+                                 char trans_B,
+                                 MPI_Comm comm);
+
+template void
+multiply_using_layout<zfloat_t>(cosma_context<zfloat_t>* ctx,
+                                grid2grid::grid_layout<zfloat_t> &A,
+                                grid2grid::grid_layout<zfloat_t> &B,
+                                grid2grid::grid_layout<zfloat_t> &C,
+                                int m,
+                                int n,
+                                int k,
+                                zfloat_t alpha,
+                                zfloat_t beta,
+                                char trans_A,
+                                char trans_B,
+                                MPI_Comm comm);
+
+// Explicit instantiations for short `multiply`
+template void multiply<double>(cosma_context<double>* ctx,
                                CosmaMatrix<double> &A,
                                CosmaMatrix<double> &B,
                                CosmaMatrix<double> &C,
@@ -621,7 +776,7 @@ template void multiply<double>(context<double> &ctx,
                                double alpha,
                                double beta);
 
-template void multiply<float>(context<float> &ctx,
+template void multiply<float>(cosma_context<float>* ctx,
                               CosmaMatrix<float> &A,
                               CosmaMatrix<float> &B,
                               CosmaMatrix<float> &C,
@@ -630,7 +785,7 @@ template void multiply<float>(context<float> &ctx,
                               float alpha,
                               float beta);
 
-template void multiply<zdouble_t>(context<zdouble_t> &ctx,
+template void multiply<zdouble_t>(cosma_context<zdouble_t>* ctx,
                                   CosmaMatrix<zdouble_t> &A,
                                   CosmaMatrix<zdouble_t> &B,
                                   CosmaMatrix<zdouble_t> &C,
@@ -639,7 +794,7 @@ template void multiply<zdouble_t>(context<zdouble_t> &ctx,
                                   zdouble_t alpha,
                                   zdouble_t beta);
 
-template void multiply<zfloat_t>(context<zfloat_t> &ctx,
+template void multiply<zfloat_t>(cosma_context<zfloat_t>* ctx,
                                  CosmaMatrix<zfloat_t> &A,
                                  CosmaMatrix<zfloat_t> &B,
                                  CosmaMatrix<zfloat_t> &C,
@@ -648,178 +803,37 @@ template void multiply<zfloat_t>(context<zfloat_t> &ctx,
                                  zfloat_t alpha,
                                  zfloat_t beta);
 
-// Explicit instantiations for `multiply`
+// Explicit instantiations for short `multiply` without the context
 //
-template void multiply<double>(context<double> &ctx,
-                               CosmaMatrix<double> &A,
+template void multiply<double>(CosmaMatrix<double> &A,
                                CosmaMatrix<double> &B,
                                CosmaMatrix<double> &C,
-                               Interval &m,
-                               Interval &n,
-                               Interval &k,
-                               Interval &P,
-                               size_t step,
                                const Strategy &strategy,
-                               communicator &comm,
+                               MPI_Comm comm,
                                double alpha,
                                double beta);
 
-template void multiply<float>(context<float> &ctx,
-                              CosmaMatrix<float> &A,
+template void multiply<float>(CosmaMatrix<float> &A,
                               CosmaMatrix<float> &B,
                               CosmaMatrix<float> &C,
-                              Interval &m,
-                              Interval &n,
-                              Interval &k,
-                              Interval &P,
-                              size_t step,
                               const Strategy &strategy,
-                              communicator &comm,
+                              MPI_Comm comm,
                               float alpha,
                               float beta);
 
-template void multiply<zdouble_t>(context<zdouble_t> &ctx,
-                                  CosmaMatrix<zdouble_t> &A,
+template void multiply<zdouble_t>(CosmaMatrix<zdouble_t> &A,
                                   CosmaMatrix<zdouble_t> &B,
                                   CosmaMatrix<zdouble_t> &C,
-                                  Interval &m,
-                                  Interval &n,
-                                  Interval &k,
-                                  Interval &P,
-                                  size_t step,
                                   const Strategy &strategy,
-                                  communicator &comm,
+                                  MPI_Comm comm,
                                   zdouble_t alpha,
                                   zdouble_t beta);
 
-template void multiply<zfloat_t>(context<zfloat_t> &ctx,
-                                 CosmaMatrix<zfloat_t> &A,
+template void multiply<zfloat_t>(CosmaMatrix<zfloat_t> &A,
                                  CosmaMatrix<zfloat_t> &B,
                                  CosmaMatrix<zfloat_t> &C,
-                                 Interval &m,
-                                 Interval &n,
-                                 Interval &k,
-                                 Interval &P,
-                                 size_t step,
                                  const Strategy &strategy,
-                                 communicator &comm,
+                                 MPI_Comm comm,
                                  zfloat_t alpha,
                                  zfloat_t beta);
-
-// Explicit instantiations for `sequential`
-//
-template void sequential<double>(context<double> &ctx,
-                                 CosmaMatrix<double> &A,
-                                 CosmaMatrix<double> &B,
-                                 CosmaMatrix<double> &C,
-                                 Interval &m,
-                                 Interval &n,
-                                 Interval &k,
-                                 Interval &P,
-                                 size_t step,
-                                 const Strategy &strategy,
-                                 communicator &comm,
-                                 double alpha,
-                                 double beta);
-
-template void sequential<float>(context<float> &ctx,
-                                CosmaMatrix<float> &A,
-                                CosmaMatrix<float> &B,
-                                CosmaMatrix<float> &C,
-                                Interval &m,
-                                Interval &n,
-                                Interval &k,
-                                Interval &P,
-                                size_t step,
-                                const Strategy &strategy,
-                                communicator &comm,
-                                float alpha,
-                                float beta);
-
-template void sequential<zdouble_t>(context<zdouble_t> &ctx,
-                                    CosmaMatrix<zdouble_t> &A,
-                                    CosmaMatrix<zdouble_t> &B,
-                                    CosmaMatrix<zdouble_t> &C,
-                                    Interval &m,
-                                    Interval &n,
-                                    Interval &k,
-                                    Interval &P,
-                                    size_t step,
-                                    const Strategy &strategy,
-                                    communicator &comm,
-                                    zdouble_t alpha,
-                                    zdouble_t beta);
-
-template void sequential<zfloat_t>(context<zfloat_t> &ctx,
-                                   CosmaMatrix<zfloat_t> &A,
-                                   CosmaMatrix<zfloat_t> &B,
-                                   CosmaMatrix<zfloat_t> &C,
-                                   Interval &m,
-                                   Interval &n,
-                                   Interval &k,
-                                   Interval &P,
-                                   size_t step,
-                                   const Strategy &strategy,
-                                   communicator &comm,
-                                   zfloat_t alpha,
-                                   zfloat_t beta);
-
-// Explicit instantiations for `parallel`
-//
-template void parallel<double>(context<double> &ctx,
-                               CosmaMatrix<double> &A,
-                               CosmaMatrix<double> &B,
-                               CosmaMatrix<double> &C,
-                               Interval &m,
-                               Interval &n,
-                               Interval &k,
-                               Interval &P,
-                               size_t step,
-                               const Strategy &strategy,
-                               communicator &comm,
-                               double alpha,
-                               double beta);
-
-template void parallel<float>(context<float> &ctx,
-                              CosmaMatrix<float> &A,
-                              CosmaMatrix<float> &B,
-                              CosmaMatrix<float> &C,
-                              Interval &m,
-                              Interval &n,
-                              Interval &k,
-                              Interval &P,
-                              size_t step,
-                              const Strategy &strategy,
-                              communicator &comm,
-                              float alpha,
-                              float beta);
-
-template void parallel<zdouble_t>(context<zdouble_t> &ctx,
-                                  CosmaMatrix<zdouble_t> &A,
-                                  CosmaMatrix<zdouble_t> &B,
-                                  CosmaMatrix<zdouble_t> &C,
-                                  Interval &m,
-                                  Interval &n,
-                                  Interval &k,
-                                  Interval &P,
-                                  size_t step,
-                                  const Strategy &strategy,
-                                  communicator &comm,
-                                  zdouble_t alpha,
-                                  zdouble_t beta);
-
-template void parallel<zfloat_t>(context<zfloat_t> &ctx,
-                                 CosmaMatrix<zfloat_t> &A,
-                                 CosmaMatrix<zfloat_t> &B,
-                                 CosmaMatrix<zfloat_t> &C,
-                                 Interval &m,
-                                 Interval &n,
-                                 Interval &k,
-                                 Interval &P,
-                                 size_t step,
-                                 const Strategy &strategy,
-                                 communicator &comm,
-                                 zfloat_t alpha,
-                                 zfloat_t beta);
-
 } // namespace cosma

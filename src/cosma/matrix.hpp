@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cosma/buffer.hpp>
+#include <cosma/context.hpp>
 #include <cosma/interval.hpp>
 #include <cosma/layout.hpp>
 #include <cosma/mapper.hpp>
@@ -28,8 +29,20 @@ class CosmaMatrix {
   public:
     using scalar_t = Scalar;
     using buffer_t = Buffer<scalar_t>;
-    using mpi_buffer_t = typename buffer_t::mpi_buffer_t;
 
+    CosmaMatrix(cosma_context<Scalar>* ctxt,
+                char label,
+                const Strategy &strategy,
+                int rank,
+                bool dry_run = false);
+
+    CosmaMatrix(std::unique_ptr<cosma_context<Scalar>>& ctxt,
+                char label,
+                const Strategy &strategy,
+                int rank,
+                bool dry_run = false);
+
+    // using global (singleton) context
     CosmaMatrix(char label,
                 const Strategy &strategy,
                 int rank,
@@ -42,9 +55,6 @@ class CosmaMatrix {
     // **********************************************
     // METHODS FROM mapper.hpp
     // **********************************************
-    int initial_size(int rank) const;
-    int initial_size() const;
-
     // (gi, gj) -> (local_id, rank)
     std::pair<int, int> local_coordinates(int gi, int gj);
     // (local_id, rank) -> (gi, gj)
@@ -113,15 +123,11 @@ class CosmaMatrix {
     // in case when beta > 0 in that step
     scalar_t *reduce_buffer_ptr();
 
-    mpi_buffer_t &buffer();
-    const mpi_buffer_t &buffer() const;
-
     // **********************************************
     // NEW METHODS
     // **********************************************
     scalar_t &operator[](const typename std::vector<scalar_t>::size_type index);
-    scalar_t
-    operator[](const typename std::vector<scalar_t>::size_type index) const;
+    scalar_t operator[](const typename std::vector<scalar_t>::size_type index) const;
 
     // outputs matrix in a format:
     //      row, column, value
@@ -130,20 +136,29 @@ class CosmaMatrix {
     friend std::ostream &operator<<(std::ostream &os,
                                     const CosmaMatrix<Scalar_> &mat);
 
+    // get a pointer to the initial/final data
     scalar_t *matrix_pointer();
-    mpi_buffer_t &matrix();
-    const mpi_buffer_t &matrix() const;
+    const scalar_t *matrix_pointer() const;
+    size_t matrix_size() const;
+    size_t matrix_size(int rank) const;
 
     // pointer to send buffer
     // scalar_t* buffer_ptr();
     // std::vector<scalar_t, mpi_allocator<scalar_t>>& buffer();
     // pointer to current matrix (send buffer)
     scalar_t *current_matrix();
+    void set_current_matrix();
     void set_current_matrix(scalar_t *mat);
 
     grid2grid::grid_layout<scalar_t> get_grid_layout();
 
+    void allocate_communication_buffers();
+    void free_communication_buffers();
+
+    cosma_context<scalar_t>* get_context();
+
   protected:
+    cosma_context<scalar_t>* ctxt_;
     // A, B or C
     char label_;
     /// Number of rows of the global matrix
@@ -158,6 +173,7 @@ class CosmaMatrix {
     const Strategy &strategy_;
 
     /// temporary local matrix
+    size_t current_mat_id;
     scalar_t *current_mat;
 
     Interval mi_;
@@ -167,13 +183,11 @@ class CosmaMatrix {
     Mapper mapper_;
     Layout layout_;
     buffer_t buffer_;
-
-    mpi_buffer_t dummy_vector;
 };
 
 template <typename Scalar>
 std::ostream &operator<<(std::ostream &os, const CosmaMatrix<Scalar> &mat) {
-    for (auto local = 0; local < mat.initial_size(); ++local) {
+    for (auto local = 0; local < mat.matrix_size(); ++local) {
         auto value = mat[local];
         int row, col;
         std::tie(row, col) = mat.global_coordinates(local);

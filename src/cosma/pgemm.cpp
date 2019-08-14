@@ -94,7 +94,6 @@ void pgemm(const char trans_a,
     // get abstract layout descriptions for COSMA layout
     auto cosma_layout_a = A.get_grid_layout();
     auto cosma_layout_b = B.get_grid_layout();
-    auto cosma_layout_c = C.get_grid_layout();
 
     // get abstract layout descriptions for ScaLAPACK layout
     auto scalapack_layout_a = grid2grid::get_scalapack_grid<T>(
@@ -138,9 +137,7 @@ void pgemm(const char trans_a,
     PL();
 
 #ifdef DEBUG
-    std::cout
-        << "Transforming the input matrices A and B from Scalapack -> COSMA"
-        << std::endl;
+    std::cout << "Transforming the input matrices A and B from Scalapack -> COSMA" << std::endl;
 #endif
     PE(transformation_cosma2scalapack);
     // transform A and B from scalapack to cosma layout
@@ -149,22 +146,20 @@ void pgemm(const char trans_a,
 
     // transform C from scalapack to cosma only if beta > 0
     if (std::abs(beta) > 0) {
+        auto cosma_layout_c = C.get_grid_layout();
         grid2grid::transform<T>(scalapack_layout_c, cosma_layout_c, comm);
     }
     PL();
 
-    PE(ContextCreation);
     // perform cosma multiplication
-    auto ctx = cosma::make_context<T>();
-    PL();
 #ifdef DEBUG
     std::cout << "COSMA multiply" << std::endl;
 #endif
-    multiply<T>(ctx, A, B, C, strategy, comm, alpha, beta);
+    multiply<T>(A, B, C, strategy, comm, alpha, beta);
 
+    auto cosma_layout_c = C.get_grid_layout();
 #ifdef DEBUG
-    std::cout << "Transforming the result C back from COSMA to ScaLAPACK"
-              << std::endl;
+    std::cout << "Transforming the result C back from COSMA to ScaLAPACK" << std::endl;
 #endif
     PE(transformation_scalapack2cosma);
     // transform the result from cosma back to scalapack

@@ -71,7 +71,7 @@ clock_t::time_point debug_gemm_end(Scalar *matrixA,
 }
 
 template <typename Scalar>
-void local_multiply(context<Scalar> &ctx,
+void local_multiply(cosma_context<Scalar>* ctx,
                     Scalar *matrixA,
                     Scalar *matrixB,
                     Scalar *matrixC,
@@ -106,6 +106,75 @@ void local_multiply(context<Scalar> &ctx,
 #endif
 }
 
+template <typename Scalar>
+void local_multiply(Scalar *matrixA,
+                    Scalar *matrixB,
+                    Scalar *matrixC,
+                    int m,
+                    int n,
+                    int k,
+                    Scalar alpha,
+                    Scalar beta) {
+    local_multiply(get_context_instance<Scalar>(), matrixA, matrixB, matrixC, m, n, k, alpha, beta);
+}
+
+template <typename Scalar>
+void local_multiply(context<Scalar>& ctx,
+                    Scalar *matrixA,
+                    Scalar *matrixB,
+                    Scalar *matrixC,
+                    int m,
+                    int n,
+                    int k,
+                    Scalar alpha,
+                    Scalar beta) {
+    local_multiply(ctx.get(), matrixA, matrixB, matrixC, m, n, k, alpha, beta);
+}
+
+// explicit template instantiation using context
+template void local_multiply<double>(cosma_context<double> *ctx,
+                                     double *matrixA,
+                                     double *matrixB,
+                                     double *matrixC,
+                                     int m,
+                                     int n,
+                                     int k,
+                                     double alpha,
+                                     double beta);
+
+template void local_multiply<float>(cosma_context<float> *ctx,
+                                    float *matrixA,
+                                    float *matrixB,
+                                    float *matrixC,
+                                    int m,
+                                    int n,
+                                    int k,
+                                    float alpha,
+                                    float beta);
+
+template void
+local_multiply<std::complex<double>>(cosma_context<std::complex<double>> *ctx,
+                                     std::complex<double> *matrixA,
+                                     std::complex<double> *matrixB,
+                                     std::complex<double> *matrixC,
+                                     int m,
+                                     int n,
+                                     int k,
+                                     std::complex<double> alpha,
+                                     std::complex<double> beta);
+
+template void
+local_multiply<std::complex<float>>(cosma_context<std::complex<float>> *ctx,
+                                    std::complex<float> *matrixA,
+                                    std::complex<float> *matrixB,
+                                    std::complex<float> *matrixC,
+                                    int m,
+                                    int n,
+                                    int k,
+                                    std::complex<float> alpha,
+                                    std::complex<float> beta);
+
+// explicit template instantiation using context with unique_ptr context
 template void local_multiply<double>(context<double> &ctx,
                                      double *matrixA,
                                      double *matrixB,
@@ -148,4 +217,42 @@ local_multiply<std::complex<float>>(context<std::complex<float>> &ctx,
                                     std::complex<float> alpha,
                                     std::complex<float> beta);
 
+// explicit instantiation without context
+template void local_multiply<double>(double *matrixA,
+                                     double *matrixB,
+                                     double *matrixC,
+                                     int m,
+                                     int n,
+                                     int k,
+                                     double alpha,
+                                     double beta);
+
+template void local_multiply<float>(float *matrixA,
+                                    float *matrixB,
+                                    float *matrixC,
+                                    int m,
+                                    int n,
+                                    int k,
+                                    float alpha,
+                                    float beta);
+
+template void
+local_multiply<std::complex<double>>(std::complex<double> *matrixA,
+                                     std::complex<double> *matrixB,
+                                     std::complex<double> *matrixC,
+                                     int m,
+                                     int n,
+                                     int k,
+                                     std::complex<double> alpha,
+                                     std::complex<double> beta);
+
+template void
+local_multiply<std::complex<float>>(std::complex<float> *matrixA,
+                                    std::complex<float> *matrixB,
+                                    std::complex<float> *matrixC,
+                                    int m,
+                                    int n,
+                                    int k,
+                                    std::complex<float> alpha,
+                                    std::complex<float> beta);
 } // namespace cosma

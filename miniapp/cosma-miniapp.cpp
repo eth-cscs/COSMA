@@ -15,8 +15,10 @@
 using namespace cosma;
 
 template <typename T>
-void fillInt(T &in) {
-    std::generate(in.begin(), in.end(), []() { return (int)(10 * drand48()); });
+void fill_int(T* ptr, size_t size) {
+    for (unsigned i = 0u; i < size; ++i) {
+        ptr[i] = 10*drand48();
+    }
 }
 
 // Reads an environment variable `n_iter`
@@ -40,7 +42,7 @@ void output_matrix(CosmaMatrix<double> &M, int rank) {
     local_file.close();
 }
 
-long run(Strategy &s, context<double> &ctx, MPI_Comm comm = MPI_COMM_WORLD) {
+long run(Strategy &s, MPI_Comm comm = MPI_COMM_WORLD) {
     int rank, size;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
@@ -54,12 +56,12 @@ long run(Strategy &s, context<double> &ctx, MPI_Comm comm = MPI_COMM_WORLD) {
 
     // fill the matrices with random data
     srand48(rank);
-    fillInt(A.matrix());
-    fillInt(B.matrix());
+    fill_int(A.matrix_pointer(), A.matrix_size());
+    fill_int(B.matrix_pointer(), B.matrix_size());
 
     MPI_Barrier(comm);
     auto start = std::chrono::steady_clock::now();
-    multiply(ctx, A, B, C, s, comm, alpha, beta);
+    multiply(A, B, C, s, comm, alpha, beta);
     MPI_Barrier(comm);
     auto end = std::chrono::steady_clock::now();
 
@@ -75,7 +77,6 @@ int main(int argc, char **argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     Strategy strategy(argc, argv);
-    auto ctx = cosma::make_context<double>();
 
     if (rank == 0) {
         std::cout << "Strategy = " << strategy << std::endl;
@@ -85,7 +86,7 @@ int main(int argc, char **argv) {
     std::vector<long> times;
     for (int i = 0; i < n_iter; ++i) {
         long t_run = 0;
-        t_run = run(strategy, ctx);
+        t_run = run(strategy);
         times.push_back(t_run);
     }
     std::sort(times.begin(), times.end());

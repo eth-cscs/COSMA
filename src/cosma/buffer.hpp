@@ -4,6 +4,7 @@
 #include <cosma/mapper.hpp>
 #include <cosma/mpi_allocator.hpp>
 #include <cosma/strategy.hpp>
+#include <cosma/context.hpp>
 
 #ifdef COSMA_HAVE_GPU
 #include <Tiled-MM/util.hpp>
@@ -31,17 +32,30 @@ namespace cosma {
 
 template <typename Scalar>
 class Buffer {
-  public:
+public:
     using scalar_t = Scalar;
-    using mpi_buffer_t = std::vector<scalar_t, mpi_allocator<scalar_t>>;
+    // using mpi_buffer_t = std::vector<scalar_t, mpi_allocator<scalar_t>>;
 
-    Buffer() = default;
+    // Buffer() = default;
+    Buffer();
+
+    // with cosma_context*
+    Buffer(cosma_context<Scalar>* ctxt,
+           char label,
+           const Strategy &strategy,
+           int rank,
+           Mapper *mapper,
+           Layout *layout,
+           bool dry_run = false);
+
+    // without context (using global singleton context)
     Buffer(char label,
            const Strategy &strategy,
            int rank,
            Mapper *mapper,
            Layout *layout,
            bool dry_run = false);
+
     ~Buffer();
 
     Buffer &operator=(Buffer &) = delete;
@@ -49,7 +63,11 @@ class Buffer {
 
     // allocates all the buffers that are needed for the current matrix and the
     // current rank
-    void initialize_buffers(bool dry_run = false);
+    void allocate_initial_buffers(bool dry_run = false);
+    void allocate_communication_buffers(bool dry_run = false);
+
+    void free_initial_buffers(bool dry_run = false);
+    void free_communication_buffers(bool dry_run = false);
 
     // increases the index of the current buffer
     void advance_buffer();
@@ -59,14 +77,14 @@ class Buffer {
     void set_buffer_index(int idx);
 
     // returns the pointer to the current buffer
-    scalar_t *buffer_ptr();
+    scalar_t* buffer_ptr();
+    const scalar_t* buffer_ptr() const;
+    const size_t buffer_size() const;
+
     // pointer to the reshuffle buffer used when n_blocks > 1
     scalar_t *reshuffle_buffer_ptr();
     // pointer to the parallel-reduce buffer used when beta > 0
     scalar_t *reduce_buffer_ptr();
-    // returns a reference to the current buffer
-    mpi_buffer_t &buffer();
-    const mpi_buffer_t &buffer() const;
     // returns index of a buffer that is used in gemm
     // it can be either last or pre-last buffer
     // depending on the parity of #parallel steps
@@ -76,13 +94,13 @@ class Buffer {
 
     // returns the initial buffer (i.e. with index 0)
     // this buffer owns the initial matrix data
-    scalar_t *initial_buffer_ptr();
-    mpi_buffer_t &initial_buffer();
-    const mpi_buffer_t &initial_buffer() const;
+    scalar_t* initial_buffer_ptr();
+    const scalar_t* initial_buffer_ptr() const;
+    const size_t initial_buffer_size() const;
 
     // we can access i-th buffer of this class with [] operator
-    mpi_buffer_t &operator[](const typename mpi_buffer_t::size_type index);
-    mpi_buffer_t operator[](const typename mpi_buffer_t::size_type index) const;
+    scalar_t* operator[](const size_t index);
+    scalar_t* operator[](const size_t index) const;
 
     // can be A, B or C, determining the matrix
     char label_;
@@ -97,12 +115,12 @@ class Buffer {
     // used to get the sizes of buffers needed in each step
     Layout *layout_;
 
-  protected:
+protected:
     // computes the buffer sizes that is needed for this matrix (where
     // label_="A", "B" or "C"); the length of this vector is the number of
     // different buffers that is needed.
-    std::vector<long long> compute_buffer_size();
-    std::vector<long long> compute_buffer_size(Interval &m,
+    std::vector<size_t> compute_buffer_size();
+    std::vector<size_t> compute_buffer_size(Interval &m,
                                                Interval &n,
                                                Interval &k,
                                                Interval &P,
@@ -139,6 +157,8 @@ class Buffer {
     //     step if it is NOT split in that step.
     void compute_n_buckets();
 
+    cosma_context<Scalar>* ctxt_;
+
     // computes the number of buckets in the current step
     // the number of buckets in some step i is equal to the
     // product of all divisors in sequential steps that follow step i
@@ -148,31 +168,32 @@ class Buffer {
 
     // vector of buffers being used for the current matrix (given by label)
     // by the current rank (determined by variable rank_)
-    std::vector<mpi_buffer_t> buffers_;
+    std::vector<size_t> buffers_;
+    std::vector<size_t> buff_sizes_;
     // temporary buffer used for reshuffling of data received from other ranks
     // this happens when sequential steps are present, i.e. when n_blocks > 1
-    std::unique_ptr<scalar_t[]> reshuffle_buffer_;
+    size_t reshuffle_buffer_;
     // temporary buffer used in parallel-reduce step (two-sided communication)
     // used when beta > 0 (to save current C)
-    std::unique_ptr<scalar_t[]> reduce_buffer_;
+    size_t reduce_buffer_;
     // pointer to the current buffer being used in the previous vector of
     // buffers
-    int current_buffer_;
+    int current_buffer_ = 0;
 
     // buffer used in sequential steps for reshuffling
-    long long max_reshuffle_buffer_size_;
+    size_t max_reshuffle_buffer_size_ = 0;
     // buffer used in parallel reduce step, when beta == 1
-    long long max_reduce_buffer_size_;
+    size_t max_reduce_buffer_size_ = 0;
 
     // computed by compute_max_buffer_size function. represent the two largest
     // buffer sizes (max_recv_buffer_size >= max_send_buffer_size);
-    long long max_send_buffer_size_;
-    long long max_recv_buffer_size_;
-    long long max_par_block_size_;
+    size_t max_send_buffer_size_ = 0;
+    size_t max_recv_buffer_size_ = 0;
+    size_t max_par_block_size_ = 0;
     // max size of the matrix in the base case (among all base cases)
-    long long max_base_buffer_size_;
-    long long max_send_buffer_size() const;
-    long long max_recv_buffer_size() const;
+    size_t max_base_buffer_size_ = 0;
+    size_t max_send_buffer_size() const;
+    size_t max_recv_buffer_size() const;
 
     void init_first_split_steps();
     // first seq step that splits the current matrix

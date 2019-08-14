@@ -16,14 +16,14 @@ endif()
 
 # Options
 #
-option(COSMA_WITH_TILEDMM "Use CUDA GPU backend." OFF)
+option(COSMA_WITH_GPU "Use CUDA GPU backend." OFF)
 option(COSMA_WITH_PROFILING "Use the semiprof profiler" OFF)
 option(COSMA_WITH_TESTS "Generate the test target." ${MASTER_PROJECT})
 option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
 option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT})
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
 set(COSMA_WITH_MKL ON)
-if(COSMA_WITH_TILEDMM)
+if(COSMA_WITH_GPU)
     set(COSMA_WITH_MKL OFF)
 endif()
 
@@ -50,7 +50,7 @@ if(COSMA_WITH_MKL)
     find_package(ScaLAPACK)  # optional
 endif()
 
-if(COSMA_WITH_TILEDMM)
+if(COSMA_WITH_GPU)
     option(TILEDMM_WITH_INSTALL "" ${COSMA_WITH_INSTALL}) 
     add_subdirectory(libs/Tiled-MM)
 endif()

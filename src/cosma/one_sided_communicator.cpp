@@ -415,7 +415,7 @@ k.length(), beta); PE(multiply_communication_copy);
 // ***********************************
 template <typename Scalar>
 void overlap_m_split(bool use_busy_waiting,
-                     context<Scalar> &ctx,
+                     cosma_context<Scalar> *ctx,
                      MPI_Comm comm,
                      int rank,
                      int divisor,
@@ -535,7 +535,7 @@ void overlap_m_split(bool use_busy_waiting,
 // ***********************************
 template <typename Scalar>
 void overlap_n_split(bool use_busy_waiting,
-                     context<Scalar> &ctx,
+                     cosma_context<Scalar> *ctx,
                      MPI_Comm comm,
                      int rank,
                      int divisor,
@@ -716,7 +716,7 @@ void comm_task_k_split(int divisor,
 }
 
 template <typename Scalar>
-void compute(context<Scalar> &ctx,
+void compute(cosma_context<Scalar> *ctx,
              CosmaMatrix<Scalar> &A,
              CosmaMatrix<Scalar> &B,
              CosmaMatrix<Scalar> &C,
@@ -767,7 +767,7 @@ void compute(context<Scalar> &ctx,
 //           DIVISION BY K
 // ***********************************
 template <typename Scalar>
-void overlap_k_split(context<Scalar> &ctx,
+void overlap_k_split(cosma_context<Scalar> *ctx,
                      MPI_Comm comm,
                      int rank,
                      int divisor,
@@ -1007,7 +1007,7 @@ void overlap_k_split(context<Scalar> &ctx,
 }
 
 template <typename Scalar>
-void overlap_comm_and_comp(context<Scalar> &ctx,
+void overlap_comm_and_comp(cosma_context<Scalar> *ctx,
                            MPI_Comm comm,
                            int rank,
                            const Strategy *strategy,
@@ -1070,7 +1070,7 @@ void overlap_comm_and_comp(context<Scalar> &ctx,
     }
 }
 
-template void overlap_comm_and_comp<float>(context<float> &ctx,
+template void overlap_comm_and_comp<float>(cosma_context<float> *ctx,
                                            MPI_Comm comm,
                                            int rank,
                                            const Strategy *strategy,
@@ -1085,7 +1085,7 @@ template void overlap_comm_and_comp<float>(context<float> &ctx,
                                            float alpha,
                                            float beta);
 
-template void overlap_comm_and_comp<double>(context<double> &ctx,
+template void overlap_comm_and_comp<double>(cosma_context<double> *ctx,
                                             MPI_Comm comm,
                                             int rank,
                                             const Strategy *strategy,
@@ -1101,7 +1101,7 @@ template void overlap_comm_and_comp<double>(context<double> &ctx,
                                             double beta);
 
 template void overlap_comm_and_comp<std::complex<float>>(
-    context<std::complex<float>> &ctx,
+    cosma_context<std::complex<float>> *ctx,
     MPI_Comm comm,
     int rank,
     const Strategy *strategy,
@@ -1117,7 +1117,7 @@ template void overlap_comm_and_comp<std::complex<float>>(
     std::complex<float> beta);
 
 template void overlap_comm_and_comp<std::complex<double>>(
-    context<std::complex<double>> &ctx,
+    cosma_context<std::complex<double>> *ctx,
     MPI_Comm comm,
     int rank,
     const Strategy *strategy,
