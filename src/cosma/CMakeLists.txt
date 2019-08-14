@@ -1,6 +1,7 @@
 set(cosma_src_files blas.cpp
                     buffer.cpp
                     communicator.cpp
+                    mpi_attribute.cpp
                     context.cpp
                     memory_pool.cpp
                     interval.cpp
