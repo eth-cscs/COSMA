@@ -50,9 +50,13 @@ bool run(Strategy &s,
     int P = s.P;
 
     // Declare A,B and C COSMA matrices objects
-    CosmaMatrix<Scalar> A(ctx, 'A', s, rank);
-    CosmaMatrix<Scalar> B(ctx, 'B', s, rank);
-    CosmaMatrix<Scalar> C(ctx, 'C', s, rank);
+    // CosmaMatrix<Scalar> A(ctx, 'A', s, rank);
+    // CosmaMatrix<Scalar> B(ctx, 'B', s, rank);
+    // CosmaMatrix<Scalar> C(ctx, 'C', s, rank);
+
+    CosmaMatrix<Scalar> A('A', s, rank);
+    CosmaMatrix<Scalar> B('B', s, rank);
+    CosmaMatrix<Scalar> C('C', s, rank);
 
     // initial sizes
     auto sizeA = A.matrix_size();
@@ -88,9 +92,9 @@ bool run(Strategy &s,
     std::vector<Scalar> As, Bs;
     if (rank == 0) {
         As = std::vector<Scalar>(m * k);
-        std::memcpy(As.data(), A.matrix_pointer(), A.matrix_size());
+        std::memcpy(As.data(), A.matrix_pointer(), A.matrix_size()*sizeof(Scalar));
         Bs = std::vector<Scalar>(k * n);
-        std::memcpy(Bs.data(), B.matrix_pointer(), B.matrix_size());
+        std::memcpy(Bs.data(), B.matrix_pointer(), B.matrix_size()*sizeof(Scalar));
 
         int offsetA = sizeA;
         int offsetB = sizeB;
@@ -163,8 +167,7 @@ bool run(Strategy &s,
             offsetB += local_size_B;
         }
         // Now compute the result
-        cosma::local_multiply(ctx,
-                              globA.data(),
+        cosma::local_multiply(globA.data(),
                               globB.data(),
                               globCcheck.data(),
                               m,
@@ -207,7 +210,7 @@ bool run(Strategy &s,
     std::vector<Scalar> Cs;
     if (rank == 0) {
         Cs = std::vector<Scalar>(m * n);
-        std::memcpy(Cs.data(), C.matrix_pointer(), C.matrix_size());
+        std::memcpy(Cs.data(), C.matrix_pointer(), C.matrix_size()*sizeof(Scalar));
 
         int offsetC = sizeC;
 
@@ -271,9 +274,9 @@ bool run(Strategy &s,
                 }
             }
         }
-        // else {
-        //     std::cout <<"Result is OK"<<std::endl;
-        // }
+        else {
+            std::cout <<"Result is OK"<<std::endl;
+        }
     }
 #ifdef DEBUG
     for (int i = 0; i < P; i++) {

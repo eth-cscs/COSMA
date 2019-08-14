@@ -29,20 +29,6 @@ namespace cosma {
  * but is very general as it can work with any grid-like data layout.
  */
 template <typename Scalar>
-void multiply_using_layout(context<Scalar> ctx,
-                           grid2grid::grid_layout<Scalar> &A_layout,
-                           grid2grid::grid_layout<Scalar> &B_layout,
-                           grid2grid::grid_layout<Scalar> &C_layout,
-                           int m,
-                           int n,
-                           int k,
-                           Scalar alpha = Scalar{1},
-                           Scalar beta = Scalar{0},
-                           char trans_A = 'N',
-                           char trans_B = 'N',
-                           MPI_Comm comm = MPI_COMM_WORLD);
-
-template <typename Scalar>
 void multiply_using_layout(grid2grid::grid_layout<Scalar> &A_layout,
                            grid2grid::grid_layout<Scalar> &B_layout,
                            grid2grid::grid_layout<Scalar> &C_layout,
@@ -61,15 +47,6 @@ void multiply_using_layout(grid2grid::grid_layout<Scalar> &A_layout,
  * and performs the multiplication. It is very efficient as it uses the
  * optimal COSMA layout.
  */
-template <typename Scalar>
-void multiply(context<Scalar> ctx,
-              CosmaMatrix<Scalar> &A,
-              CosmaMatrix<Scalar> &B,
-              CosmaMatrix<Scalar> &C,
-              const Strategy &strategy,
-              MPI_Comm comm,
-              Scalar alpha,
-              Scalar beta);
 
 template <typename Scalar>
 void multiply(CosmaMatrix<Scalar> &A,
@@ -79,53 +56,4 @@ void multiply(CosmaMatrix<Scalar> &A,
               MPI_Comm comm,
               Scalar alpha,
               Scalar beta);
-
-/*
- * Functions below are more interesting to the developer than the user.
- */
-template <typename Scalar>
-void multiply(context<Scalar> ctx,
-              CosmaMatrix<Scalar> &A,
-              CosmaMatrix<Scalar> &B,
-              CosmaMatrix<Scalar> &C,
-              Interval &m,
-              Interval &n,
-              Interval &k,
-              Interval &P,
-              size_t step,
-              const Strategy &strategy,
-              communicator &comm,
-              Scalar alpha,
-              Scalar beta);
-
-template <typename Scalar>
-void sequential(context<Scalar> ctx,
-                CosmaMatrix<Scalar> &A,
-                CosmaMatrix<Scalar> &B,
-                CosmaMatrix<Scalar> &C,
-                Interval &m,
-                Interval &n,
-                Interval &k,
-                Interval &P,
-                size_t step,
-                const Strategy &strategy,
-                communicator &comm,
-                Scalar alpha,
-                Scalar beta);
-
-template <typename Scalar>
-void parallel(context<Scalar> ctx,
-              CosmaMatrix<Scalar> &A,
-              CosmaMatrix<Scalar> &B,
-              CosmaMatrix<Scalar> &C,
-              Interval &m,
-              Interval &n,
-              Interval &k,
-              Interval &P,
-              size_t step,
-              const Strategy &strategy,
-              communicator &comm,
-              Scalar alpha,
-              Scalar beta);
-
 } // namespace cosma

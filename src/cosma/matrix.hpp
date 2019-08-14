@@ -30,7 +30,13 @@ class CosmaMatrix {
     using scalar_t = Scalar;
     using buffer_t = Buffer<scalar_t>;
 
-    CosmaMatrix(context<Scalar> ctxt,
+    CosmaMatrix(cosma_context<Scalar>* ctxt,
+                char label,
+                const Strategy &strategy,
+                int rank,
+                bool dry_run = false);
+
+    CosmaMatrix(std::unique_ptr<cosma_context<Scalar>>& ctxt,
                 char label,
                 const Strategy &strategy,
                 int rank,
@@ -149,10 +155,10 @@ class CosmaMatrix {
     void allocate_communication_buffers();
     void free_communication_buffers();
 
-    context<scalar_t> get_context();
+    cosma_context<scalar_t>* get_context();
 
   protected:
-    context<scalar_t> ctxt_;
+    cosma_context<scalar_t>* ctxt_;
     // A, B or C
     char label_;
     /// Number of rows of the global matrix

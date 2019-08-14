@@ -9,7 +9,7 @@ extern template class Buffer<double>;
 
 // using a pointer to cosma_context
 template <typename T>
-CosmaMatrix<T>::CosmaMatrix(context<T> ctxt,
+CosmaMatrix<T>::CosmaMatrix(cosma_context<T>* ctxt,
                             char label,
                             const Strategy &strategy,
                             int rank,
@@ -41,6 +41,16 @@ CosmaMatrix<T>::CosmaMatrix(context<T> ctxt,
 
     PL();
 }
+
+// using custom context
+template <typename T>
+CosmaMatrix<T>::CosmaMatrix(std::unique_ptr<cosma_context<T>>& ctxt,
+                            char label,
+                            const Strategy &strategy,
+                            int rank,
+                            bool dry_run)
+    : CosmaMatrix(ctxt.get(), label, strategy, rank, dry_run)
+{}
 
 // using global (singleton) context
 template <typename T>
@@ -140,7 +150,7 @@ template <typename T>
 size_t CosmaMatrix<T>::matrix_size() const {
     if (rank_ >= strategy_.P)
         return 0;
-    return buffer_.initial_buffer_size();
+    return mapper_.initial_size(rank_);
 }
 
 template <typename T>
@@ -355,7 +365,7 @@ void CosmaMatrix<T>::free_communication_buffers() {
 }
 
 template <typename T>
-context<T> CosmaMatrix<T>::get_context() {
+cosma_context<T>* CosmaMatrix<T>::get_context() {
     return ctxt_;
 }
 

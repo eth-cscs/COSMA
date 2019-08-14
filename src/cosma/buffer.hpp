@@ -40,7 +40,7 @@ public:
     Buffer();
 
     // with cosma_context*
-    Buffer(context<Scalar> ctxt,
+    Buffer(cosma_context<Scalar>* ctxt,
            char label,
            const Strategy &strategy,
            int rank,
@@ -157,7 +157,7 @@ protected:
     //     step if it is NOT split in that step.
     void compute_n_buckets();
 
-    context<scalar_t> ctxt_;
+    cosma_context<Scalar>* ctxt_;
 
     // computes the number of buckets in the current step
     // the number of buckets in some step i is equal to the

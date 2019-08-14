@@ -8,7 +8,7 @@ template<typename T>
 Buffer<T>::Buffer(): ctxt_(nullptr) {}
 
 template <typename T>
-Buffer<T>::Buffer(context<T> ctxt,
+Buffer<T>::Buffer(cosma_context<T>* ctxt,
                   char label,
                   const Strategy &strategy,
                   int rank,
