@@ -6,15 +6,15 @@
 
 namespace cosma {
 
-template <typename T>
-void multiply_using_layout(grid2grid::grid_layout<T> A,
-                           grid2grid::grid_layout<T> B,
-                           grid2grid::grid_layout<T> C,
+template <typename Scalar>
+void multiply_using_layout(grid2grid::grid_layout<Scalar> &A,
+                           grid2grid::grid_layout<Scalar> &B,
+                           grid2grid::grid_layout<Scalar> &C,
                            int m,
                            int n,
                            int k,
-                           T alpha,
-                           T beta,
+                           Scalar alpha,
+                           Scalar beta,
                            char trans_A,
                            char trans_B,
                            MPI_Comm comm) {
@@ -34,9 +34,9 @@ void multiply_using_layout(grid2grid::grid_layout<T> A,
     Strategy strategy(m, n, k, P);
 
     // create COSMA matrices
-    CosmaMatrix<T> A_cosma('A', strategy, rank);
-    CosmaMatrix<T> B_cosma('B', strategy, rank);
-    CosmaMatrix<T> C_cosma('C', strategy, rank);
+    CosmaMatrix<Scalar> A_cosma('A', strategy, rank);
+    CosmaMatrix<Scalar> B_cosma('B', strategy, rank);
+    CosmaMatrix<Scalar> C_cosma('C', strategy, rank);
 
     // get abstract layout descriptions for COSMA layout
     auto cosma_layout_a = A_cosma.get_grid_layout();
@@ -44,20 +44,21 @@ void multiply_using_layout(grid2grid::grid_layout<T> A,
     auto cosma_layout_c = C_cosma.get_grid_layout();
 
     // transform A and B from given layout to cosma layout
-    grid2grid::transform<T>(A, cosma_layout_a, comm);
-    grid2grid::transform<T>(B, cosma_layout_b, comm);
+    grid2grid::transform<Scalar>(A, cosma_layout_a, comm);
+    grid2grid::transform<Scalar>(B, cosma_layout_b, comm);
 
     // transform C from given layout to cosma layout only if beta > 0
     if (std::abs(beta) > 0) {
-        grid2grid::transform<T>(C, cosma_layout_c, comm);
+        grid2grid::transform<Scalar>(C, cosma_layout_c, comm);
     }
 
     // perform cosma multiplication
-    auto ctx = cosma::make_context<T>();
-    multiply<T>(ctx, A_cosma, B_cosma, C_cosma, strategy, comm, alpha, beta);
+    auto ctx = cosma::make_context<Scalar>();
+    multiply<Scalar>(
+        ctx, A_cosma, B_cosma, C_cosma, strategy, comm, alpha, beta);
 
     // transform the result from cosma back to the given layout
-    grid2grid::transform<T>(cosma_layout_c, C, comm);
+    grid2grid::transform<Scalar>(cosma_layout_c, C, comm);
 }
 
 /*
@@ -559,9 +560,9 @@ using zfloat_t = std::complex<float>;
 using zdouble_t = std::complex<double>;
 
 // explicit instantiation for multiply_using_layout
-template void multiply_using_layout<double>(grid2grid::grid_layout<double> A,
-                                            grid2grid::grid_layout<double> B,
-                                            grid2grid::grid_layout<double> C,
+template void multiply_using_layout<double>(grid2grid::grid_layout<double> &A,
+                                            grid2grid::grid_layout<double> &B,
+                                            grid2grid::grid_layout<double> &C,
                                             int m,
                                             int n,
                                             int k,
@@ -571,9 +572,9 @@ template void multiply_using_layout<double>(grid2grid::grid_layout<double> A,
                                             char trans_B,
                                             MPI_Comm comm);
 
-template void multiply_using_layout<float>(grid2grid::grid_layout<float> A,
-                                           grid2grid::grid_layout<float> B,
-                                           grid2grid::grid_layout<float> C,
+template void multiply_using_layout<float>(grid2grid::grid_layout<float> &A,
+                                           grid2grid::grid_layout<float> &B,
+                                           grid2grid::grid_layout<float> &C,
                                            int m,
                                            int n,
                                            int k,
@@ -584,9 +585,9 @@ template void multiply_using_layout<float>(grid2grid::grid_layout<float> A,
                                            MPI_Comm comm);
 
 template void
-multiply_using_layout<zdouble_t>(grid2grid::grid_layout<zdouble_t> A,
-                                 grid2grid::grid_layout<zdouble_t> B,
-                                 grid2grid::grid_layout<zdouble_t> C,
+multiply_using_layout<zdouble_t>(grid2grid::grid_layout<zdouble_t> &A,
+                                 grid2grid::grid_layout<zdouble_t> &B,
+                                 grid2grid::grid_layout<zdouble_t> &C,
                                  int m,
                                  int n,
                                  int k,
@@ -597,9 +598,9 @@ multiply_using_layout<zdouble_t>(grid2grid::grid_layout<zdouble_t> A,
                                  MPI_Comm comm);
 
 template void
-multiply_using_layout<zfloat_t>(grid2grid::grid_layout<zfloat_t> A,
-                                grid2grid::grid_layout<zfloat_t> B,
-                                grid2grid::grid_layout<zfloat_t> C,
+multiply_using_layout<zfloat_t>(grid2grid::grid_layout<zfloat_t> &A,
+                                grid2grid::grid_layout<zfloat_t> &B,
+                                grid2grid::grid_layout<zfloat_t> &C,
                                 int m,
                                 int n,
                                 int k,
