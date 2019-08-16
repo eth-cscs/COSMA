@@ -165,6 +165,10 @@ class Strategy {
 
     void compute_min_sizes();
 
+    // if number of processes is 0, then n_steps = 0
+    // and then the strategy is considered empty
+    bool empty() const;
+
   private:
     bool divide(std::vector<int> &div_factors,
                 int &dim_i,

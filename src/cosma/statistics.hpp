@@ -116,7 +116,7 @@ void multiply(Interval &m,
     matrixB->update_buckets(P, b_range);
     matrixC->update_buckets(P, c_range);
 
-    if (strategy.final_step(step))
+    if (strategy.final_step(step) || strategy.empty())
         local_multiply(m.length(), n.length(), k.length(), beta);
     else {
         if (strategy.parallel_step(step))

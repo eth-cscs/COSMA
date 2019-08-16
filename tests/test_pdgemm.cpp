@@ -134,6 +134,10 @@ INSTANTIATE_TEST_CASE_P(
     PdgemmTestWithParams,
     testing::Values(
         // alpha = 1.0, beta = 0.0
+        // single process
+        pdgemm_state{10, 10, 10, 2, 2, 2, 1, 1, 'N', 'N', 1.0, 0.0},
+        pdgemm_state{10, 11, 13, 2, 2, 2, 1, 1, 'N', 'N', 1.0, 0.0},
+
         pdgemm_state{10, 10, 10, 2, 2, 2, 2, 2, 'N', 'N', 1.0, 0.0},
         pdgemm_state{5, 5, 5, 2, 2, 2, 2, 2, 'N', 'N', 1.0, 0.0},
         pdgemm_state{5, 5, 5, 2, 2, 2, 2, 2, 'T', 'N', 1.0, 0.0},

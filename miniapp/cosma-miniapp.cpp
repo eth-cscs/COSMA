@@ -24,15 +24,8 @@ void fill_int(T* ptr, size_t size) {
 // Reads an environment variable `n_iter`
 //
 int get_n_iter() {
-    int intValue = std::atoi(std::getenv("n_iter"));
-    if (intValue < 1 || intValue > 100) {
-        std::cout << "Number of iteration must be in the interval [1, 100]"
-                  << std::endl;
-        std::cout << "Setting it to 1 iteration instead" << std::endl;
-        return 1;
-    }
-
-    return intValue;
+    auto env = std::getenv("n_iter");
+    return env == nullptr ? 1 : std::atoi(env);
 }
 
 void output_matrix(CosmaMatrix<double> &M, int rank) {

@@ -258,7 +258,7 @@ void multiply(cosma_context<Scalar>* ctx,
     int offsetC = matrixC.shift(bucketC[comm.relative_rank(P)]);
     PL();
 
-    if (strategy.final_step(step))
+    if (strategy.final_step(step) || strategy.empty())
         local_multiply(ctx,
                        matrixA.current_matrix(),
                        matrixB.current_matrix(),

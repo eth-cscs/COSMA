@@ -123,6 +123,9 @@ INSTANTIATE_TEST_CASE_P(
     Default,
     MultiplyTestWithParams,
     testing::Values(
+        multiply_state{4, 4, 4, 1},
+        multiply_state{3, 4, 5, 1},
+
         multiply_state{4, 4, 4, 4, "-s sm2,pn2,pn2"},
 
         multiply_state{30, 35, 40, 4},

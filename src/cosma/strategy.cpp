@@ -224,6 +224,8 @@ Strategy::initial_memory(long long m, long long n, long long k, int P) {
 }
 
 void Strategy::default_strategy() {
+    if (empty()) 
+        return;
     std::vector<int> factors = math_utils::decompose(P);
     long long m = this->m;
     long long n = this->n;
@@ -847,6 +849,9 @@ long long Strategy::required_memory(Strategy &strategy) {
 
 // checks if the strategy is well-defined
 void Strategy::check_if_valid() {
+    if (empty() && P != 1) {
+        throw_exception("Strategy empty but number of ranks P != 1");
+    }
 #ifdef DEBUG
     std::cout << "Checking if the following strategy is valid: " << std::endl;
     std::cout << *this << std::endl;
@@ -1089,6 +1094,10 @@ bool Strategy::should_overlap_comm_and_comp(int step) const {
 
     // return condition;
     return condition;
+}
+
+bool Strategy::empty() const {
+    return n_steps == 0;
 }
 
 std::ostream &operator<<(std::ostream &os, const Strategy &other) {

@@ -105,7 +105,7 @@ void Mapper::compute_sizes(Interval m,
     Interval2D submatrix(m, n);
 
     // base case
-    if (strategy.final_step(step)) {
+    if (strategy.final_step(step) || strategy.empty()) {
         auto submatrices = rank_to_range_[P.first()];
         rank_to_range_[P.first()].push_back(submatrix);
         return;

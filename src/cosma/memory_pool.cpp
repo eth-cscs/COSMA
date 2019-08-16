@@ -16,7 +16,7 @@ cosma::memory_pool<T>::memory_pool(size_t capacity) {
 
 template <typename T>
 size_t cosma::memory_pool<T>::get_buffer_id(size_t size) {
-    // assert(pool_size_ + size <= pool_capacity_);
+    assert(size > 0);
     if (pool_size_ + size > pool_capacity_) {
         resize(pool_size_ + size);
     }

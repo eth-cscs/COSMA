@@ -87,9 +87,9 @@ void Buffer<T>::allocate_initial_buffers(bool dry_run) {
     max_base_buffer_size_ = 0;
     max_reduce_buffer_size_ = 0;
     max_reshuffle_buffer_size_ = 0;
+    current_buffer_ = 0;
     max_send_buffer_size_ = (size_t)mapper_->initial_size();
     max_recv_buffer_size_ = (size_t)mapper_->initial_size();
-    current_buffer_ = 0;
 
     init_first_split_steps();
 
@@ -107,10 +107,11 @@ void Buffer<T>::allocate_initial_buffers(bool dry_run) {
 
 template <typename T>
 void Buffer<T>::free_initial_buffers(bool dry_run) {
-    if (dry_run || buff_sizes_.size() == 0) 
-        return;
+    // if (dry_run || buff_sizes_.size() == 0) 
+    //     return;
     // check if all the other buffers were deallocated previously
     assert(buffers_.size() == 1);
+    assert(buff_sizes_.size() == 1);
 
     // deallocate initial buffer (that are storing the matrix)
     auto ptr = ctxt_->get_memory_pool().get_buffer_pointer(buffers_[0]);
@@ -122,7 +123,7 @@ void Buffer<T>::free_initial_buffers(bool dry_run) {
 
 template <typename T>
 void Buffer<T>::free_communication_buffers(bool dry_run) {
-    if (dry_run || buff_sizes_.size() == 0) 
+    if (dry_run || buff_sizes_.size() == 1) 
         return;
 
     // unpin the pinned memory
@@ -170,11 +171,16 @@ Buffer<T>::~Buffer() {
     // assert(!reduce_buffer_);
 
     // free the initial buffers
-    free_initial_buffers();
+    // buffers_.size() can also be 0 if the buffer was default constructed
+    if (buffers_.size() > 0) {
+        free_initial_buffers();
+    }
 }
 
 template <typename T>
 void Buffer<T>::compute_n_buckets() {
+    if (strategy_->empty()) 
+        return ;
     n_buckets_ = std::vector<int>(strategy_->n_steps);
     expanded_after_ = std::vector<bool>(strategy_->n_steps);
     int prod_n_seq = 1;
@@ -329,6 +335,10 @@ void Buffer<T>::advance_buffer() {
 
 template <typename T>
 std::vector<size_t> Buffer<T>::compute_buffer_size() {
+    if (strategy_->empty()) {
+        return {(size_t)mapper_->initial_size()};
+    }
+
     Interval m(0, strategy_->m - 1);
     Interval n(0, strategy_->n - 1);
     Interval k(0, strategy_->k - 1);
