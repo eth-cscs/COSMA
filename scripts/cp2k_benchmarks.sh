@@ -3,7 +3,7 @@
 #SBATCH --constraint=mc
 #SBATCH --nodes=128
 #SBATCH --ntasks-per-node=2
-#SBATCH --time=20
+#SBATCH --time=10
 #SBATCH --output=cosma_cp2k_bench.out
 #SBATCH --error=cosma_cp2k_bench.err
 
@@ -43,20 +43,39 @@ block_small=68 # M/128 because there are 128 processors in a row
 block_medium=2176
 block_large=3392
 
-echo "64 H2O benchmark\n"
+echo "*******************************"
+echo "*       64 H2O benchmark      *"
+echo "*******************************"
+echo ""
+
+echo "---------------------"
+echo "ALGORITHM: SCALAPACK"
+echo "---------------------"
 
 srun -N 128 -n 256 -C mc ${MINIAPP_PATH}/pdgemm-miniapp -m $M -n $N -k $K -P 256 \
     --block_a "${block_medium}x${block_large}" \
     --block_b "${block_large}x${block_medium}" \
     --block_c "${block_small}x${block_small}" \
+    --trans_a \
     -p 128 -q 2 --scalapack
 
+echo ""
+echo "---------------------"
+echo "ALGORITHM: COSMA"
+echo "---------------------"
+
 srun -N 128 -n 256 -C mc ${MINIAPP_PATH}/pdgemm-miniapp -m $M -n $N -k $K -P 256 \
     --block_a "${block_medium}x${block_large}" \
     --block_b "${block_large}x${block_medium}" \
     --block_c "${block_small}x${block_small}" \
+    --trans_a \
     -p 128 -q 2 --cosma
 
+echo ""
+echo "*******************************"
+echo "*      128 H2O benchmark      *"
+echo "*******************************"
+echo ""
 # 128 waters
 waters=128
 M=$((136*waters)) # 17408
@@ -66,17 +85,26 @@ block_small=136 # M/128, because there are 128 processors in a row
 block_medium=4352
 block_large=13568
 
-echo "128 H2O benchmark\n"
+echo "---------------------"
+echo "ALGORITHM: SCALAPACK"
+echo "---------------------"
 
 srun -N 128 -n 256 -C mc ${MINIAPP_PATH}/pdgemm-miniapp -m $M -n $N -k $K -P 256 \
     --block_a "${block_medium}x${block_large}" \
     --block_b "${block_large}x${block_medium}" \
     --block_c "${block_small}x${block_small}" \
+    --trans_a \
     -p 128 -q 2 --scalapack
 
+echo ""
+echo "---------------------"
+echo "ALGORITHM: COSMA"
+echo "---------------------"
+
 srun -N 128 -n 256 -C mc ${MINIAPP_PATH}/pdgemm-miniapp -m $M -n $N -k $K -P 256 \
     --block_a "${block_medium}x${block_large}" \
     --block_b "${block_large}x${block_medium}" \
     --block_c "${block_small}x${block_small}" \
+    --trans_a \
     -p 128 -q 2 --cosma
 

@@ -144,11 +144,6 @@ std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
     srand48(rank);
     fillInt(c);
 
-    // create the context here, so that
-    // it doesn't have to be created later
-    // (this is not necessary)
-    auto ctx = cosma::get_context_instance<double>();
-
     // vectors to store timings
     std::vector<long> times(n_rep);
 
@@ -216,6 +211,11 @@ int main(int argc, char **argv) {
     int rank, P;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &P);
+
+    // create the context here, so that
+    // it doesn't have to be created later
+    // (this is not necessary)
+    auto ctx = cosma::get_context_instance<double>();
 
     // **************************************
     //   readout the command line arguments
