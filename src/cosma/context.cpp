@@ -40,12 +40,12 @@ void cosma_context<Scalar>::register_to_destroy_at_finalize() {
 }
 
 template <typename Scalar>
-context<Scalar> cosma::make_context() {
+context<Scalar> make_context() {
     return std::make_unique<cosma_context<Scalar>>();
 }
 
 template <typename Scalar>
-context<Scalar> cosma::make_context(size_t cpu_mem_limit, int streams, int tile_m, int tile_n, int tile_k) {
+context<Scalar> make_context(size_t cpu_mem_limit, int streams, int tile_m, int tile_n, int tile_k) {
     return std::make_unique<cosma_context<Scalar>>(cpu_mem_limit, streams, tile_m, tile_n, tile_k);
 }
 
@@ -53,41 +53,41 @@ using zfloat = std::complex<float>;
 using zdouble = std::complex<double>;
 
 // template instantiation for cosma_context
-template class cosma::cosma_context<float>;
-template class cosma::cosma_context<double>;
-template class cosma::cosma_context<zfloat>;
-template class cosma::cosma_context<zdouble>;
+template class cosma_context<float>;
+template class cosma_context<double>;
+template class cosma_context<zfloat>;
+template class cosma_context<zdouble>;
 
 // template instantiation for make_context
-template context<float> cosma::make_context();
-template context<double> cosma::make_context();
-template context<zfloat> cosma::make_context();
-template context<zdouble> cosma::make_context();
+template context<float> make_context();
+template context<double> make_context();
+template context<zfloat> make_context();
+template context<zdouble> make_context();
 
-template context<float> cosma::make_context(size_t cpu_mem_limit,
+template context<float> make_context(size_t cpu_mem_limit,
                                             int streams,
                                             int tile_m,
                                             int tile_n,
                                             int tile_k);
-template context<double> cosma::make_context(size_t cpu_mem_limit,
+template context<double> make_context(size_t cpu_mem_limit,
                                              int streams,
                                              int tile_m,
                                              int tile_n,
                                              int tile_k);
-template context<zfloat> cosma::make_context(size_t cpu_mem_limit,
+template context<zfloat> make_context(size_t cpu_mem_limit,
                                              int streams,
                                              int tile_m,
                                              int tile_n,
                                              int tile_k);
-template context<zdouble> cosma::make_context(size_t cpu_mem_limit,
+template context<zdouble> make_context(size_t cpu_mem_limit,
                                               int streams,
                                               int tile_m,
                                               int tile_n,
                                               int tile_k);
 
 // template instantiation for get_context_instance
-template global_context<float> cosma::get_context_instance();
-template global_context<double> cosma::get_context_instance();
-template global_context<zfloat> cosma::get_context_instance();
-template global_context<zdouble> cosma::get_context_instance();
-} // namespace cosma
+template global_context<float> get_context_instance();
+template global_context<double> get_context_instance();
+template global_context<zfloat> get_context_instance();
+template global_context<zdouble> get_context_instance();
+}
