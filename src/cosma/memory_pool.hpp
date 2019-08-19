@@ -32,7 +32,7 @@ public:
 private:
     mpi_buffer_t pool_;
     size_t pool_size_ = 0;
-    size_t pool_capacity_ = 10;
+    size_t pool_capacity_ = 100;
     size_t n_buffers_ = 0;
 };
 }

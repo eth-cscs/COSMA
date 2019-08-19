@@ -11,6 +11,7 @@
 // from cosma
 #include <cosma/blacs.hpp>
 #include <cosma/pgemm.hpp>
+#include <cosma/context.hpp>
 
 // from options
 #include <options.hpp>
@@ -45,10 +46,17 @@ int transpose_if(char transpose_flag, int row, int col) {
     return transpose_flag == 'N' ? row : col;
 }
 
+std::pair<int, int> transpose_if(char transpose_flag, std::pair<int, int> p) {
+    std::pair<int, int> transposed{p.second, p.first};
+    return transpose_flag == 'T' ? transposed : p;
+}
+
 // runs cosma or scalapack pdgemm wrapper for n_rep times and returns
 // a vector of timings (in milliseconds) of size n_rep
 std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
-        int block_m, int block_n, int block_k, // blocks sizes
+        std::pair<int, int> block_a, // blocks sizes
+        std::pair<int, int> block_b,
+        std::pair<int, int> block_c,
         int sub_m, int sub_n, int sub_k, // defines submatrices
         char trans_a, char trans_b, // transpose flags
         int p, int q, // processor grid
@@ -101,25 +109,21 @@ std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
 
     // This is for compatible blocks
     // in general p*gemm works for any combination of them
-    int bam = transpose_if(trans_a, block_m, block_k);
-    int ban = transpose_if(trans_a, block_k, block_m);
-    int bbm = transpose_if(trans_b, block_k, block_n);
-    int bbn = transpose_if(trans_b, block_n, block_k);
-    int bcm = block_m;
-    int bcn = block_n;
+    block_a = transpose_if(trans_a, block_a);
+    block_b = transpose_if(trans_b, block_b);
 
     // ********************************************
     //   allocate scalapack buffers for matrices
     // ********************************************
     // get the local number of rows that this rank owns
-    int nrows_a = scalapack::numroc_(&am, &bam, &myrow, &rsrc, &p);
-    int nrows_b = scalapack::numroc_(&bm, &bbm, &myrow, &rsrc, &p);
-    int nrows_c = scalapack::numroc_(&cm, &bcm, &myrow, &rsrc, &p);
+    int nrows_a = scalapack::numroc_(&am, &block_a.first, &myrow, &rsrc, &p);
+    int nrows_b = scalapack::numroc_(&bm, &block_b.first, &myrow, &rsrc, &p);
+    int nrows_c = scalapack::numroc_(&cm, &block_c.first, &myrow, &rsrc, &p);
 
     // get the local number of cols that this rank owns
-    int ncols_a = scalapack::numroc_(&an, &ban, &mycol, &csrc, &q);
-    int ncols_b = scalapack::numroc_(&bn, &bbn, &mycol, &csrc, &q);
-    int ncols_c = scalapack::numroc_(&cn, &bcn, &mycol, &csrc, &q);
+    int ncols_a = scalapack::numroc_(&an, &block_a.second, &mycol, &csrc, &q);
+    int ncols_b = scalapack::numroc_(&bn, &block_b.second, &mycol, &csrc, &q);
+    int ncols_c = scalapack::numroc_(&cn, &block_c.second, &mycol, &csrc, &q);
 
     // allocate size for the local buffers
     std::vector<double> a(nrows_a * ncols_a);
@@ -132,13 +136,18 @@ std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
     std::array<int, 9> desc_b;
     std::array<int, 9> desc_c;
     int info;
-    scalapack::descinit_(&desc_a[0], &am, &an, &bam, &ban, &rsrc, &csrc, &ctxt, &nrows_a, &info);
-    scalapack::descinit_(&desc_b[0], &bm, &bn, &bbm, &bbn, &rsrc, &csrc, &ctxt, &nrows_b, &info);
-    scalapack::descinit_(&desc_c[0], &cm, &cn, &bcm, &bcn, &rsrc, &csrc, &ctxt, &nrows_c, &info);
+    scalapack::descinit_(&desc_a[0], &am, &an, &block_a.first, &block_a.second, &rsrc, &csrc, &ctxt, &nrows_a, &info);
+    scalapack::descinit_(&desc_b[0], &bm, &bn, &block_b.first, &block_b.second, &rsrc, &csrc, &ctxt, &nrows_b, &info);
+    scalapack::descinit_(&desc_c[0], &cm, &cn, &block_c.first, &block_c.second, &rsrc, &csrc, &ctxt, &nrows_c, &info);
 
     // fill the matrices with random data
     srand48(rank);
     fillInt(c);
+
+    // create the context here, so that
+    // it doesn't have to be created later
+    // (this is not necessary)
+    auto ctx = cosma::get_context_instance<double>();
 
     // vectors to store timings
     std::vector<long> times(n_rep);
@@ -218,9 +227,9 @@ int main(int argc, char **argv) {
     auto k = options::next_int("-k", "--k_dim", "number of columns of A and rows of B.", 1000);
 
     // block sizes
-    auto bm = options::next_int("-bm", "--m_block", "block size for the number of rows of A and C.", 128);
-    auto bn = options::next_int("-bn", "--n_block", "block size for the number of columns of B and C.", 128);
-    auto bk = options::next_int("-bk", "--k_block", "block size for the number of columns of A and rows of B.", 128);
+    auto block_a = options::next_int_pair("-ba", "--block_a", "block size for the number of rows of A.", 128);
+    auto block_b = options::next_int_pair("-bb", "--block_b", "block size for the number of rows of B.", 128);
+    auto block_c = options::next_int_pair("-bc", "--block_c", "block size for the number of rows of C.", 128);
 
     // indices of submatrices of A, B and C to be multiplied
     // if 1 then full matrices A and B are multiplied
@@ -276,7 +285,11 @@ int main(int argc, char **argv) {
         std::cout << "Running PDGEMM on the following problem size:" << std::endl;
         std::cout << "Matrix sizes: (m, n, k) = (" << m << ", " << n << ", " << k << ")" << std::endl;;
         std::cout << "(alpha, beta) = (" << alpha << ", " << beta << ")" << std::endl;
-        std::cout << "Block sizes: (bm, bn, bk) = (" << bm << ", " << bn << ", " << bk << ")" << std::endl;
+
+        std::cout << "Block sizes for A: (" << block_a.first << ", " << block_a.second << ")" << std::endl;
+        std::cout << "Block sizes for B: (" << block_b.first << ", " << block_b.second << ")" << std::endl;
+        std::cout << "Block sizes for C: (" << block_c.first << ", " << block_c.second << ")" << std::endl;
+
         std::cout << "Transpose flags (TA, TB) = (" << ta << ", " << tb << ")" << std::endl;
         std::cout << "Processor grid: (prows, pcols) = (" << p << ", " << q << ")" << std::endl;
         std::cout << "Number of repetitions: " << n_rep << std::endl;
@@ -292,7 +305,7 @@ int main(int argc, char **argv) {
     // ******************************
     std::vector<long> times =
         run_pdgemm(m, n, k,
-                   bm, bn, bk,
+                   block_a, block_b, block_c,
                    submatrix_m, submatrix_n, submatrix_k,
                    ta, tb,
                    p, q,

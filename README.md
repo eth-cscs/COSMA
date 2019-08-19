@@ -161,7 +161,7 @@ be run with the following command line on Piz Daint (assuming we are in the root
 the project):
 
 ```
-OMP_NUM_THREADS=18 MKL_NUM_THREADS=18 srun -C mc -N 8 -n 16 ./build/miniapp/pdgemm-miniapp -m 1000 -n 1000 -k 1000 -p 4 -q 4 -bm 128 -bn 128 -bk 128 --trans_a
+OMP_NUM_THREADS=18 MKL_NUM_THREADS=18 srun -C mc -N 8 -n 16 ./build/miniapp/pdgemm-miniapp -m 1000 -n 1000 -k 1000 --block_a 128x128 --block_b 128x128 --block_c 128x128 -p 4 -q 4 --trans_a
 ```
 
 The flags have the following meaning:
@@ -169,11 +169,13 @@ The flags have the following meaning:
 - `-m (--m_dim)`: number of rows of matrices `A` and `C`
 - `-n (--n_dim)`: number of columns of matrices `B` and `C`
 - `-k (--k_dim)`: number of columns of matrix `A` and rows of matrix `B`
-- `-bm (--m_block)` (optional, default 128): block size for dimension m
-- `-bn (--n_block)` (optional, default 128): block size for dimension n
-- `-bk (--k_block)` (optional, default 128): block size for dimension k
+- `-ba (--block_a)` (optional, default 128x128): block size for matrix A
+- `-bb (--block_b)` (optional, default 128x128): block size for matrix B
+- `-bc (--block_c)` (optional, default 128x128): block size for matrix C
 - `-ta (--trans_a)` (optional, default: no transpose): transpose A before mutliplication
 - `-tb (--trans_b)` (optional, default: no transpose): transpose B before mutliplication
+- `-p (--p_row)` (optinal, default: 1): number of rows in a processor grid.
+- `-q (--q_row)` (optinal, default: P): number of cols in a processor grid.
 
 ### Dry-run for statistics
 
