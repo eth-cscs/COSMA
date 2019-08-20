@@ -1,5 +1,4 @@
 #include <cosma/matrix.hpp>
-#include <cosma/profiler.hpp>
 
 #include <complex>
 
@@ -18,7 +17,6 @@ CosmaMatrix<T>::CosmaMatrix(cosma_context<T>* ctxt,
     , label_(label)
     , rank_(rank)
     , strategy_(strategy) {
-    PE(preprocessing_matrices);
     if (label_ == 'A') {
         m_ = strategy.m;
         n_ = strategy.k;
@@ -38,8 +36,6 @@ CosmaMatrix<T>::CosmaMatrix(cosma_context<T>* ctxt,
     mapper_ = Mapper(label, m_, n_, P_, strategy, rank);
     layout_ = Layout(label, m_, n_, P_, rank, mapper_.complete_layout());
     buffer_ = buffer_t(ctxt, label, strategy, rank, &mapper_, &layout_, dry_run);
-
-    PL();
 }
 
 // using custom context
@@ -131,8 +127,8 @@ std::pair<int, int> CosmaMatrix<T>::global_coordinates(int local_index,
 
 // local_id -> (gi, gj) for local elements on the current rank
 template <typename T>
-const std::pair<int, int>
-CosmaMatrix<T>::global_coordinates(int local_index) const {
+std::pair<int, int>
+CosmaMatrix<T>::global_coordinates(int local_index) {
     return mapper_.global_coordinates(local_index);
 }
 

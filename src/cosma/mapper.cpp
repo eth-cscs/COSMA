@@ -1,4 +1,5 @@
 #include <cosma/mapper.hpp>
+#include <cosma/profiler.hpp>
 
 namespace cosma {
 Mapper::Mapper(char label,
@@ -12,6 +13,7 @@ Mapper::Mapper(char label,
     , n_(n)
     , P_(P)
     , rank_(rank) {
+    PE(preprocessing_matrices_mapper_sizes);
     skip_ranges_ = std::vector<int>(P);
     rank_to_range_ =
         std::vector<std::vector<Interval2D>>(P, std::vector<Interval2D>());
@@ -37,7 +39,9 @@ Mapper::Mapper(char label,
                       << std::endl;
         }
     }
+    PL();
 
+    PE(preprocessing_matrices_mapper_coordinates);
     // both partitions start with 0
     row_partition_set_ = std::set<int>{-1};
     col_partition_set_ = std::set<int>{-1};
@@ -47,10 +51,11 @@ Mapper::Mapper(char label,
     col_partition_ =
         std::vector<int>(col_partition_set_.begin(), col_partition_set_.end());
 
-    compute_global_coord();
+    // compute_global_coord();
 #ifdef DEBUG
     output_layout();
 #endif
+    PL();
 }
 
 void Mapper::output_layout() {
@@ -164,7 +169,7 @@ void Mapper::compute_sizes(Interval m,
                 for (int shift = 0; shift < newP.length(); ++shift) {
                     int rank = newP.first() + shift;
 
-                    // go through all the submatrices this ranks owns
+                    // go through all the submatrices this rank owns
                     auto &submatrices = rank_to_range_[rank];
                     for (int mat = skip_ranges_[rank]; mat < submatrices.size();
                          mat++) {
@@ -287,9 +292,12 @@ void Mapper::compute_global_coord() {
 }
 
 // local_id -> (gi, gj) (only for the current rank)
-const std::pair<int, int> Mapper::global_coordinates(int local_index) const {
+std::pair<int, int> Mapper::global_coordinates(int local_index) {
     if (local_index >= initial_size()) {
         return {-1, -1};
+    }
+    if (global_coord.size() == 0) {
+        compute_global_coord();
     }
     return global_coord[local_index];
 }

@@ -46,6 +46,9 @@ void cosma::memory_pool<T>::free_buffer(T* ptr, size_t size) {
 
 template <typename T>
 void cosma::memory_pool<T>::resize(size_t capacity) {
+    if (output) {
+        std::cout << "Resizing from " << pool_capacity_  << " to " << capacity << std::endl;
+    }
     pool_.resize(capacity);
     pool_capacity_ = capacity;
 }
@@ -59,6 +62,11 @@ void cosma::memory_pool<T>::reset() {
 template <typename T>
 T* cosma::memory_pool<T>::get_pool_pointer() {
     return pool_.data();
+}
+
+template <typename T>
+void cosma::memory_pool<T>::turn_on_output() {
+    output = true;
 }
 
 template class cosma::memory_pool<double>;

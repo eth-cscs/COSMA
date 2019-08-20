@@ -46,8 +46,7 @@ class Mapper {
     std::pair<int, int> global_coordinates(int local_index, int rank);
 
     // local_id -> (gi, gj) (for local elements on the current rank)
-    // runtime: constant (pre-computed)
-    const std::pair<int, int> global_coordinates(int local_index) const;
+    std::pair<int, int> global_coordinates(int local_index);
 
     // returns the label of the matrix (A, B or C)
     char which_matrix();

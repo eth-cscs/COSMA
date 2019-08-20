@@ -23,6 +23,15 @@ cosma_context<Scalar>::cosma_context(size_t cpu_mem_limit, int streams, int tile
 }
 
 template <typename Scalar>
+cosma_context<Scalar>::~cosma_context() {
+#ifdef DEBUG
+    if (output) {
+        std::cout << "context destroyed" << std::endl;
+    }
+#endif
+}
+
+template <typename Scalar>
 memory_pool<Scalar>& cosma_context<Scalar>::get_memory_pool() {
     return memory_pool_;
 }
@@ -37,6 +46,12 @@ void cosma_context<Scalar>::register_to_destroy_at_finalize() {
     // (through attribute destruction function that we provide: delete_fn) in case
     // no context destructor was invoked before MPI_Finalize.
     attr.update_attribute(memory_pool_.get_pool_pointer());
+}
+
+template <typename Scalar>
+void cosma_context<Scalar>::turn_on_output() {
+    output = true;
+    memory_pool_.turn_on_output();
 }
 
 template <typename Scalar>

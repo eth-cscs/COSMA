@@ -1,5 +1,6 @@
 #include <cosma/buffer.hpp>
 #include <cosma/context.hpp>
+#include <cosma/profiler.hpp>
 #include <complex>
 
 namespace cosma {
@@ -21,8 +22,10 @@ Buffer<T>::Buffer(cosma_context<T>* ctxt,
     , rank_(rank)
     , mapper_(mapper)
     , layout_(layout) {
+    PE(preprocessing_matrices_buffer);
     compute_n_buckets();
     allocate_initial_buffers(dry_run);
+    PL();
 }
 
 template <typename T>

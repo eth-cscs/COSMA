@@ -6,6 +6,12 @@ set(executables "cosma-miniapp" "blocking_vs_non_blocking" "cosma-statistics" "s
 if (ScaLAPACK_FOUND)
     add_executable(pdgemm-miniapp "pdgemm-miniapp.cpp")
     target_link_libraries(pdgemm-miniapp PRIVATE cosma_with_scalapack options)
+    if (COSMA_WITH_PROFILING)
+        target_link_libraries(pdgemm-miniapp PRIVATE semiprof)
+        target_compile_definitions(pdgemm-miniapp PRIVATE
+            $<BUILD_INTERFACE:COSMA_WITH_PROFILING>
+        )
+    endif()
 endif()
 
 foreach(exec ${executables})

@@ -8,4 +8,5 @@
 #define PE(name)
 #define PL()
 #define PP()
+#define PC()
 #endif

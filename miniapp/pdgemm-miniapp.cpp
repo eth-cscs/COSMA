@@ -12,6 +12,7 @@
 #include <cosma/blacs.hpp>
 #include <cosma/pgemm.hpp>
 #include <cosma/context.hpp>
+#include <cosma/profiler.hpp>
 
 // from options
 #include <options.hpp>
@@ -152,6 +153,8 @@ std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
     // ***********************************
     // run COSMA or ScaLAPACK pdgemm n_rep times
     for (int i = 0; i < n_rep; ++i) {
+        // clears the profiler
+        PC();
         // refill matrices with random data to avoid
         // reusing the cache in subsequent iterations
         fillInt(a);
@@ -216,6 +219,9 @@ int main(int argc, char **argv) {
     // it doesn't have to be created later
     // (this is not necessary)
     auto ctx = cosma::get_context_instance<double>();
+    if (rank == 0) {
+        ctx->turn_on_output();
+    }
 
     // **************************************
     //   readout the command line arguments

@@ -1,4 +1,5 @@
 #include <cosma/layout.hpp>
+#include <cosma/profiler.hpp>
 
 namespace cosma {
 Layout::Layout(char label,
@@ -13,6 +14,7 @@ Layout::Layout(char label,
     P_(P),
     rank_(rank),
     rank_to_range_(rank_to_range) {
+    PE(preprocessing_matrices_layout);
     initial_size_ = std::vector<int>(P);
     bucket_size_ = std::vector<std::vector<int>>(P, std::vector<int>());
     pointer_ = std::vector<int>(P);
@@ -28,6 +30,7 @@ Layout::Layout(char label,
         }
         initial_size_[p] = sum;
     }
+    PL();
 }
 
 int Layout::size() { return size(rank_); }

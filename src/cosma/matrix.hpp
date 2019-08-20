@@ -60,8 +60,7 @@ class CosmaMatrix {
     // (local_id, rank) -> (gi, gj)
     std::pair<int, int> global_coordinates(int local_index, int rank);
     // local_id -> (gi, gj) for local elements on the current rank
-    // runtime: constant (pre-computed)
-    const std::pair<int, int> global_coordinates(int local_index) const;
+    std::pair<int, int> global_coordinates(int local_index);
 
     char which_matrix();
 
@@ -186,7 +185,7 @@ class CosmaMatrix {
 };
 
 template <typename Scalar>
-std::ostream &operator<<(std::ostream &os, const CosmaMatrix<Scalar> &mat) {
+std::ostream &operator<<(std::ostream &os, CosmaMatrix<Scalar> &mat) {
     for (auto local = 0; local < mat.matrix_size(); ++local) {
         auto value = mat[local];
         int row, col;
