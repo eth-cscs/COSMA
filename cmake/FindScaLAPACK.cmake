@@ -6,16 +6,18 @@
 # Imported Targets: 
 #     MKL::ScaLAPACK
 #
-# The MPI backend has to be specified
-#        MKL_MPI_TYPE             := OMPI|MPICH          (default: MPICH)
-#
-# Note: Do not mix MPI implementations.
-#       The module depends on FindThreads and FindOpenMP.
+# Note: The default is MPICH. Do not mix MPI implementations.
 #
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
 include(FindPackageHandleStandardArgs)
 
+find_package(MPI REQUIRED)
 find_package(MKL REQUIRED)
+
+if (NOT COSMA_WITH_OPENMPI)
+    include(${CMAKE_CURRENT_LIST_DIR}/check_for_openmpi.cmake)
+    check_for_openmpi()
+endif()
 
 function(__mkl_find_library _name)
     find_library(${_name}
@@ -29,7 +31,7 @@ endfunction()
 
 __mkl_find_library(MKL_SCALAPACK_LIB mkl_scalapack_${_mkl_lp})
 
-if(MKL_MPI_TYPE MATCHES "OMPI")
+if(COSMA_WITH_OPENMPI) # OpenMPI
     if(APPLE)
         message(FATAL_ERROR "Only MPICH is supported on Apple.")
     endif()

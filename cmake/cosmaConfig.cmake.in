@@ -22,7 +22,7 @@ if(NOT TARGET cosma::cosma)
         find_dependency(MKL)
 
         if("@ScaLAPACK_FOUND@")
-            set(MKL_MPI_TYPE "@MKL_MPI_TYPE@")
+          set(COSMA_WITH_OPENMPI "@COSMA_WITH_OPENMPI@")
             find_dependency(ScaLAPACK)
         endif()
     endif()

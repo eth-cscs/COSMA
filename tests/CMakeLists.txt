@@ -1,4 +1,7 @@
-option(COSMA_WITH_OPENMPI "Is MPI vendor OpenMPI?" OFF)
+# OpenMPI needs the `--oversubscribe` flag for 3 and above
+#
+include(${PROJECT_SOURCE_DIR}/cmake/check_for_openmpi.cmake)
+check_for_openmpi()
 set(OVERSUBSCRIBE "")
 if (COSMA_WITH_OPENMPI)
     set(OVERSUBSCRIBE "--oversubscribe")
