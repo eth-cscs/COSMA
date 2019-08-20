@@ -16,6 +16,6 @@ private:
     int modify = 1;
 };
 
-int delete_fn(MPI_Datatype datatype, int key, void* attr_val, void * extra_state);
+int delete_fn(MPI_Comm, int key, void* attr_val, void * extra_state);
 
 }

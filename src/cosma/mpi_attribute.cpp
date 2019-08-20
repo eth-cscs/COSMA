@@ -40,7 +40,7 @@ void mpi_attribute::update_attribute(void* value) {
 // we want to associate this attribute with MPI_COMM_SELF
 // so that it is destroyed when MPI_Finalize is invoked
 // (in fact, it is the first object to get destroyed in MPI_Finalize).
-int delete_fn(MPI_Datatype datatype, int key, void* attr_val, void * extra_state) {
+int delete_fn(MPI_Comm, int key, void* attr_val, void * extra_state) {
     int* ptr = (int*) attr_val;
     int* modify = (int*) extra_state;
     if ((*modify == 1) && ptr) {
