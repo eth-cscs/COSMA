@@ -83,12 +83,20 @@ void pgemm(const char trans_a,
     PE(strategy);
     // find an optimal strategy for this problem
     Strategy strategy(m, n, k, P);
+    // if (rank == 0) {
+    //     std::cout << strategy << std::endl;
+    // }
     PL();
 
     // create COSMA matrices
     CosmaMatrix<T> A('A', strategy, rank);
     CosmaMatrix<T> B('B', strategy, rank);
     CosmaMatrix<T> C('C', strategy, rank);
+
+    // initialize COSMA matrices
+    A.initialize();
+    B.initialize();
+    C.initialize();
 
     PE(transformation_initialization);
     // get abstract layout descriptions for COSMA layout

@@ -55,7 +55,6 @@ void Buffer<T>::allocate_communication_buffers(bool dry_run) {
         if (max_reduce_buffer_size_ > 0) {
             reduce_buffer_ = ctxt_->get_memory_pool().get_buffer_id(max_reduce_buffer_size_);
         }
-
 #ifdef DEBUG
         std::cout << "Buffer sizes for matrix " << label_ << " on rank " << rank_
                   << std::endl;
@@ -70,19 +69,25 @@ void Buffer<T>::allocate_communication_buffers(bool dry_run) {
         std::cout << "max_base_buffer_size_ = " << max_base_buffer_size_
                   << std::endl;
 #endif
+    }
+}
 
+template<typename T>
+void Buffer<T>::pin_for_gpu() {
 #ifdef COSMA_HAVE_GPU
+        if (pinned_) return;
         // pin the buffer that will be used in gemm
         int buff_index_to_pin = buff_index_before_gemm();
         // std::cout << "Buffer index to pin  for " << label_ << " = " <<
         // buff_index_to_pin << std::endl;
         auto buffer_to_pin = ctxt_->get_memory_pool().get_buffer_pointer(buffers_[buff_index_to_pin]);
         auto status = cudaHostRegister(buffer_to_pin,
-                                       buffer_sizes[buff_index_to_pin] * sizeof(T),
+                                       buff_sizes_[buff_index_to_pin] * sizeof(T),
                                        cudaHostRegisterDefault);
         gpu::cuda_check_status(status);
+        pinned_ = true;
 #endif
-    }
+
 }
 
 template <typename T>

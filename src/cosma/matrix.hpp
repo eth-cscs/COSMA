@@ -146,7 +146,11 @@ class CosmaMatrix {
     // std::vector<scalar_t, mpi_allocator<scalar_t>>& buffer();
     // pointer to current matrix (send buffer)
     scalar_t *current_matrix();
-    void set_current_matrix();
+
+    // this should be invoked after all allocations are finished
+    // it will query the memory pool for the current buffers
+    void initialize();
+
     void set_current_matrix(scalar_t *mat);
 
     grid2grid::grid_layout<scalar_t> get_grid_layout();

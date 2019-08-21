@@ -49,7 +49,7 @@ int transpose_if(char transpose_flag, int row, int col) {
 
 std::pair<int, int> transpose_if(char transpose_flag, std::pair<int, int> p) {
     std::pair<int, int> transposed{p.second, p.first};
-    return transpose_flag == 'T' ? transposed : p;
+    return transpose_flag == 'N' ? p : transposed;
 }
 
 // runs cosma or scalapack pdgemm wrapper for n_rep times and returns
@@ -110,8 +110,8 @@ std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
 
     // This is for compatible blocks
     // in general p*gemm works for any combination of them
-    block_a = transpose_if(trans_a, block_a);
-    block_b = transpose_if(trans_b, block_b);
+    // block_a = transpose_if(trans_a, block_a);
+    // block_b = transpose_if(trans_b, block_b);
 
     // ********************************************
     //   allocate scalapack buffers for matrices
@@ -120,6 +120,11 @@ std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
     int nrows_a = scalapack::numroc_(&am, &block_a.first, &myrow, &rsrc, &p);
     int nrows_b = scalapack::numroc_(&bm, &block_b.first, &myrow, &rsrc, &p);
     int nrows_c = scalapack::numroc_(&cm, &block_c.first, &myrow, &rsrc, &p);
+
+    // local leading dimensions
+    int lld_a = std::max(1, nrows_a);
+    int lld_b = std::max(1, nrows_b);
+    int lld_c = std::max(1, nrows_c);
 
     // get the local number of cols that this rank owns
     int ncols_a = scalapack::numroc_(&an, &block_a.second, &mycol, &csrc, &q);
@@ -137,9 +142,9 @@ std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
     std::array<int, 9> desc_b;
     std::array<int, 9> desc_c;
     int info;
-    scalapack::descinit_(&desc_a[0], &am, &an, &block_a.first, &block_a.second, &rsrc, &csrc, &ctxt, &nrows_a, &info);
-    scalapack::descinit_(&desc_b[0], &bm, &bn, &block_b.first, &block_b.second, &rsrc, &csrc, &ctxt, &nrows_b, &info);
-    scalapack::descinit_(&desc_c[0], &cm, &cn, &block_c.first, &block_c.second, &rsrc, &csrc, &ctxt, &nrows_c, &info);
+    scalapack::descinit_(&desc_a[0], &am, &an, &block_a.first, &block_a.second, &rsrc, &csrc, &ctxt, &lld_a, &info);
+    scalapack::descinit_(&desc_b[0], &bm, &bn, &block_b.first, &block_b.second, &rsrc, &csrc, &ctxt, &lld_b, &info);
+    scalapack::descinit_(&desc_c[0], &cm, &cn, &block_c.first, &block_c.second, &rsrc, &csrc, &ctxt, &lld_c, &info);
 
     // fill the matrices with random data
     srand48(rank);

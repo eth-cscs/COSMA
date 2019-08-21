@@ -42,7 +42,7 @@ class Strategy {
     // the ranks which communicate are physically close to each other
     bool topology;
     // if true, the communication and computation will be overlapped
-    bool overlap_comm_and_comp = true;
+    bool overlap_comm_and_comp = false;
     // if true, uses busy waiting in the thread performing MPI communication
     // otherwise, uses polling to query if the communication request has
     // completed
@@ -76,7 +76,7 @@ class Strategy {
              long long mem_limit = std::numeric_limits<long long>::max(),
              double b = 0.0,
              bool top = false,
-             bool overlap = true,
+             bool overlap = false,
              bool busy_waiting = true);
 
     Strategy(int mm,
@@ -97,7 +97,7 @@ class Strategy {
              long long mem_limit = std::numeric_limits<long long>::max(),
              double b = 0.0,
              bool top = false,
-             bool overlap = true,
+             bool overlap = false,
              bool busy_waiting = true);
 
     // parses the command line options and initializes the varialbes

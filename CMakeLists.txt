@@ -23,9 +23,12 @@ option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
 option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT})
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
 set(COSMA_WITH_MKL ON)
-if(COSMA_WITH_GPU)
-    set(COSMA_WITH_MKL OFF)
-endif()
+
+# we don't necessarily want to turn off MKL because maybe
+# the user still wants to run pdgemm wrapper
+# if(COSMA_WITH_GPU)
+#     set(COSMA_WITH_MKL OFF)
+# endif()
 
 
 project(cosma VERSION 0.1 LANGUAGES CXX)

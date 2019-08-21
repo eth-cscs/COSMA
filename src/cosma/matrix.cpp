@@ -274,8 +274,9 @@ typename CosmaMatrix<T>::scalar_t *CosmaMatrix<T>::current_matrix() {
 }
 
 template <typename T>
-void CosmaMatrix<T>::set_current_matrix() {
+void CosmaMatrix<T>::initialize() {
     current_mat = matrix_pointer();
+    buffer_.pin_for_gpu();
 }
 
 template <typename T>

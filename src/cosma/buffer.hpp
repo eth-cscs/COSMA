@@ -69,6 +69,8 @@ public:
     void free_initial_buffers(bool dry_run = false);
     void free_communication_buffers(bool dry_run = false);
 
+    void pin_for_gpu();
+
     // increases the index of the current buffer
     void advance_buffer();
     // returns the index of the current buffer
@@ -157,6 +159,7 @@ protected:
     //     step if it is NOT split in that step.
     void compute_n_buckets();
 
+
     cosma_context<Scalar>* ctxt_;
 
     // computes the number of buckets in the current step
@@ -202,6 +205,9 @@ protected:
     // first parallel step that does expands (i.e. does not split) the current
     // matrix
     int first_par_extend_step;
+
+    // if true, memory already pinned
+    bool pinned_ = false;
 };
 
 } // namespace cosma

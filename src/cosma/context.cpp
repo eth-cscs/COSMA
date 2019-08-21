@@ -6,15 +6,22 @@
 namespace cosma {
 #ifdef COSMA_HAVE_GPU
 template <typename Scalar>
-gpu::mm_handle<Scalar>& cosma_context<Scalar>::get_gpu_ctx() {
-    return gpu_ctx_;
+gpu::mm_handle<Scalar>* cosma_context<Scalar>::get_gpu_context() {
+    return gpu_ctx_.get();
 }
 #endif
+template <typename Scalar>
+cosma_context<Scalar>::cosma_context() {
+#ifdef COSMA_HAVE_GPU
+    gpu_ctx_ = gpu::make_context<Scalar>();
+#endif
+}
+
 template <typename Scalar>
 cosma_context<Scalar>::cosma_context(size_t cpu_mem_limit, int streams, int tile_m, int tile_n, int tile_k) {
     memory_pool_.resize(cpu_mem_limit);
 #ifdef COSMA_HAVE_GPU
-    gpu_ctx = gpu::make_context<Scalar>(streams, tile_m, tile_n, tile_k);
+    gpu_ctx_ = gpu::make_context<Scalar>(streams, tile_m, tile_n, tile_k);
 #else
     std::cout << "Ignoring parameters in make_context. These parameters only "
                  "used in the CPU version."

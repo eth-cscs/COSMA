@@ -3,7 +3,7 @@
 #SBATCH --constraint=mc
 #SBATCH --nodes=128
 #SBATCH --ntasks-per-node=2
-#SBATCH --time=10
+#SBATCH --time=5
 #SBATCH --output=cosma_cp2k_bench.out
 #SBATCH --error=cosma_cp2k_bench.err
 
@@ -28,7 +28,7 @@ export MKL_NUM_THREADS=18
 
 # Move to `build` directory if not there already
 #
-COSMA_DIR=$SCRATCH/cosma
+COSMA_DIR=$SCRATCH/cosma-latest
 MINIAPP_PATH=${COSMA_DIR}/build/miniapp
 
 # Run tests
@@ -53,9 +53,9 @@ echo "ALGORITHM: SCALAPACK"
 echo "---------------------"
 
 srun -N 128 -n 256 -C mc ${MINIAPP_PATH}/pdgemm-miniapp -m $M -n $N -k $K -P 256 \
-    --block_a "${block_medium}x${block_large}" \
+    --block_a "${block_large}x${block_medium}" \
     --block_b "${block_large}x${block_medium}" \
-    --block_c "${block_small}x${block_small}" \
+    --block_c "${block_medium}x${block_medium}" \
     --trans_a \
     -p 128 -q 2 --scalapack
 
@@ -65,9 +65,9 @@ echo "ALGORITHM: COSMA"
 echo "---------------------"
 
 srun -N 128 -n 256 -C mc ${MINIAPP_PATH}/pdgemm-miniapp -m $M -n $N -k $K -P 256 \
-    --block_a "${block_medium}x${block_large}" \
+    --block_a "${block_large}x${block_medium}" \
     --block_b "${block_large}x${block_medium}" \
-    --block_c "${block_small}x${block_small}" \
+    --block_c "${block_medium}x${block_medium}" \
     --trans_a \
     -p 128 -q 2 --cosma
 
@@ -90,9 +90,9 @@ echo "ALGORITHM: SCALAPACK"
 echo "---------------------"
 
 srun -N 128 -n 256 -C mc ${MINIAPP_PATH}/pdgemm-miniapp -m $M -n $N -k $K -P 256 \
-    --block_a "${block_medium}x${block_large}" \
+    --block_a "${block_large}x${block_medium}" \
     --block_b "${block_large}x${block_medium}" \
-    --block_c "${block_small}x${block_small}" \
+    --block_c "${block_medium}x${block_medium}" \
     --trans_a \
     -p 128 -q 2 --scalapack
 
@@ -102,9 +102,9 @@ echo "ALGORITHM: COSMA"
 echo "---------------------"
 
 srun -N 128 -n 256 -C mc ${MINIAPP_PATH}/pdgemm-miniapp -m $M -n $N -k $K -P 256 \
-    --block_a "${block_medium}x${block_large}" \
+    --block_a "${block_large}x${block_medium}" \
     --block_b "${block_large}x${block_medium}" \
-    --block_c "${block_small}x${block_small}" \
+    --block_c "${block_medium}x${block_medium}" \
     --trans_a \
     -p 128 -q 2 --cosma
 

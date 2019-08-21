@@ -13,13 +13,13 @@ namespace cosma {
 template <typename Scalar>
 class cosma_context {
 public:
-    cosma_context() = default;
+    cosma_context();
     cosma_context(size_t cpu_mem_limit, int streams, int tile_m, int tile_n, int tile_k);
     ~cosma_context();
 
     memory_pool<Scalar>& get_memory_pool();
 #ifdef COSMA_HAVE_GPU
-    gpu::mm_handle<Scalar>& get_gpu_ctx();
+    gpu::mm_handle<Scalar>* get_gpu_context();
 #endif
 
     void register_to_destroy_at_finalize();
@@ -30,8 +30,8 @@ private:
     memory_pool<Scalar> memory_pool_;
     mpi_attribute attr;
 #ifdef COSMA_HAVE_GPU
-    // std::unique_ptr<gpu::mm_handle<Scalar>> gpu_ctx;
-    gpu::mm_handle<Scalar> gpu_ctx_;
+    std::unique_ptr<gpu::mm_handle<Scalar>> gpu_ctx_;
+    // gpu::mm_handle<Scalar> gpu_ctx_;
 #endif
     bool output = false;
 };

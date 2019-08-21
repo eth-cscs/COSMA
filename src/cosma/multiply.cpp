@@ -167,9 +167,9 @@ void multiply(cosma_context<Scalar>* ctx,
     // we know that the memory pool will not be resized
     // and thus we can safely set the pointer to the 
     // initial buffers in all matrices.
-    matrixA.set_current_matrix();
-    matrixB.set_current_matrix();
-    matrixC.set_current_matrix();
+    matrixA.initialize();
+    matrixB.initialize();
+    matrixC.initialize();
 
     // register context to be deleted at MPI_Finalize
     ctx->register_to_destroy_at_finalize();
