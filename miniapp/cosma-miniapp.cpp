@@ -45,9 +45,10 @@ long run(Strategy &s, MPI_Comm comm = MPI_COMM_WORLD) {
     CosmaMatrix<double> B('B', s, rank);
     CosmaMatrix<double> C('C', s, rank);
 
-    A.initialize();
-    B.initialize();
-    C.initialize();
+    // not necessary
+    // A.initialize();
+    // B.initialize();
+    // C.initialize();
 
     double beta = 0;
     double alpha = 1;

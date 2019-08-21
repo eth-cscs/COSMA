@@ -93,10 +93,12 @@ void pgemm(const char trans_a,
     CosmaMatrix<T> B('B', strategy, rank);
     CosmaMatrix<T> C('C', strategy, rank);
 
+    // not necessary since multiply will invoke it
+    // and matrix_pointer in matrix class is not outdated
     // initialize COSMA matrices
-    A.initialize();
-    B.initialize();
-    C.initialize();
+    // A.initialize();
+    // B.initialize();
+    // C.initialize();
 
     PE(transformation_initialization);
     // get abstract layout descriptions for COSMA layout

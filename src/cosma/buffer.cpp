@@ -75,7 +75,7 @@ void Buffer<T>::allocate_communication_buffers(bool dry_run) {
 template<typename T>
 void Buffer<T>::pin_for_gpu() {
 #ifdef COSMA_HAVE_GPU
-        if (pinned_) return;
+        if (pinned_ || buffers_.size() == 0) return;
         // pin the buffer that will be used in gemm
         int buff_index_to_pin = buff_index_before_gemm();
         // std::cout << "Buffer index to pin  for " << label_ << " = " <<
@@ -87,7 +87,6 @@ void Buffer<T>::pin_for_gpu() {
         gpu::cuda_check_status(status);
         pinned_ = true;
 #endif
-
 }
 
 template <typename T>

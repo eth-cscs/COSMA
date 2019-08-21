@@ -1,16 +1,16 @@
 #!/bin/bash -l
-#SBATCH --job-name=mc_cp2k
-#SBATCH --constraint=mc
+#SBATCH --job-name=gpu_cp2k
+#SBATCH --constraint=gpu
 #SBATCH --nodes=128
 #SBATCH --ntasks-per-node=2
 #SBATCH --time=5
-#SBATCH --output=mc_cp2k.out
-#SBATCH --error=mc_cp2k.err
+#SBATCH --output=gpu_cp2k.out
+#SBATCH --error=gpu_cp2k.err
 
-module load daint-mc
+module load daint-gpu
 module load CMake
 module unload cray-libsci
-module load intel # defines $MKLROOT
+module load cudatoolkit
 
 # Setup the compiler
 #
@@ -20,16 +20,17 @@ export CXX=`which CC`
 # Enable dynamic linking
 #
 export CRAYPE_LINK_TYPE=dynamic
+export CRAY_CUDA_MPS=1
 
 # Enable threading
 # 
-export OMP_NUM_THREADS=18
-export MKL_NUM_THREADS=18
+export OMP_NUM_THREADS=6
+export MKL_NUM_THREADS=6
 
 # Move to `build` directory if not there already
 #
 COSMA_DIR=$SCRATCH/cosma-latest
-MINIAPP_PATH=${COSMA_DIR}/build/miniapp
+MINIAPP_PATH=${COSMA_DIR}/build-gpu/miniapp
 
 # Run tests
 #
@@ -52,7 +53,7 @@ echo "---------------------"
 echo "ALGORITHM: SCALAPACK"
 echo "---------------------"
 
-srun -N 128 -n 256 -C mc ${MINIAPP_PATH}/pdgemm-miniapp -m $M -n $N -k $K -P 256 \
+srun -N 128 -n 256 ${MINIAPP_PATH}/pdgemm-miniapp -m $M -n $N -k $K -P 256 \
     --block_a "${block_large}x${block_medium}" \
     --block_b "${block_large}x${block_medium}" \
     --block_c "${block_medium}x${block_medium}" \
@@ -64,7 +65,7 @@ echo "---------------------"
 echo "ALGORITHM: COSMA"
 echo "---------------------"
 
-srun -N 128 -n 256 -C mc ${MINIAPP_PATH}/pdgemm-miniapp -m $M -n $N -k $K -P 256 \
+srun -N 128 -n 256 ${MINIAPP_PATH}/pdgemm-miniapp -m $M -n $N -k $K -P 256 \
     --block_a "${block_large}x${block_medium}" \
     --block_b "${block_large}x${block_medium}" \
     --block_c "${block_medium}x${block_medium}" \
@@ -89,7 +90,7 @@ echo "---------------------"
 echo "ALGORITHM: SCALAPACK"
 echo "---------------------"
 
-srun -N 128 -n 256 -C mc ${MINIAPP_PATH}/pdgemm-miniapp -m $M -n $N -k $K -P 256 \
+srun -N 128 -n 256 ${MINIAPP_PATH}/pdgemm-miniapp -m $M -n $N -k $K -P 256 \
     --block_a "${block_large}x${block_medium}" \
     --block_b "${block_large}x${block_medium}" \
     --block_c "${block_medium}x${block_medium}" \
@@ -101,7 +102,7 @@ echo "---------------------"
 echo "ALGORITHM: COSMA"
 echo "---------------------"
 
-srun -N 128 -n 256 -C mc ${MINIAPP_PATH}/pdgemm-miniapp -m $M -n $N -k $K -P 256 \
+srun -N 128 -n 256 ${MINIAPP_PATH}/pdgemm-miniapp -m $M -n $N -k $K -P 256 \
     --block_a "${block_large}x${block_medium}" \
     --block_b "${block_large}x${block_medium}" \
     --block_c "${block_medium}x${block_medium}" \
