@@ -78,8 +78,6 @@ void Buffer<T>::pin_for_gpu() {
         if (pinned_ || buffers_.size() == 0) return;
         // pin the buffer that will be used in gemm
         int buff_index_to_pin = buff_index_before_gemm();
-        // std::cout << "Buffer index to pin  for " << label_ << " = " <<
-        // buff_index_to_pin << std::endl;
         auto buffer_to_pin = ctxt_->get_memory_pool().get_buffer_pointer(buffers_[buff_index_to_pin]);
         auto status = cudaHostRegister(buffer_to_pin,
                                        buff_sizes_[buff_index_to_pin] * sizeof(T),
@@ -130,23 +128,30 @@ void Buffer<T>::free_initial_buffers(bool dry_run) {
 
 template <typename T>
 void Buffer<T>::free_communication_buffers(bool dry_run) {
-    if (dry_run || buff_sizes_.size() == 1) 
-        return;
-
-    // unpin the pinned memory
+    if (dry_run) return;
 #ifdef COSMA_HAVE_GPU
-    // std::cout << "buffers_ size = " << buffers_.size() << std::endl;
-    // unpin the buffer that will be used in gemm
-    int buff_index_to_pin = buff_index_before_gemm();
-    // std::cout << "Buffer index to unpin: " << buff_index_to_pin << std::endl;
-    if (buff_index_to_pin >= 0) {
-        auto buffer_to_pin = ctxt_->get_memory_pool().get_buffer_pointer(buffers_[buff_index_to_pin]);
-        auto status = cudaHostUnregister(buffer_to_pin);
-        gpu::cuda_check_status(status);
+    // unpin the buffer that was used in gemm
+    if (pinned_) {
+        int buff_index_to_pin = buff_index_before_gemm();
+        // if pinned buffer is the communication buffer
+        if (buff_index_to_pin >= 0) {
+            auto buffer_to_pin = ctxt_->get_memory_pool().get_buffer_pointer(buffers_[buff_index_to_pin]);
+            auto status = cudaHostUnregister(buffer_to_pin);
+            gpu::cuda_check_status(status);
+
+            // any cuda kernel call is asynchronous,
+            // so make sure it is finished on GPU
+            // before deallocting the memory
+            // status =
+            // cudaDeviceSynchronize();
+            // gpu::cuda_check_status(status);
+        }
+        pinned_ = false;
     }
-    // std::cout << "Matrix " << label_ << ", buffers_.size() = " <<
-    // buffers_.size() << ", pinned_index = " << buff_index_to_pin << std::endl;
 #endif
+    // if there are no communication buffers left, skip
+    if (buff_sizes_.size() == 1)
+        return;
 
     // deallocate reshuffle and reduce buffers separately
     if (max_reduce_buffer_size_ > 0) {
