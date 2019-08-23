@@ -95,6 +95,7 @@ if(COSMA_WITH_INSTALL)
                   "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
                   "${cosma_SOURCE_DIR}/cmake/FindMKL.cmake"
                   "${cosma_SOURCE_DIR}/cmake/FindScaLAPACK.cmake"
+                  "${cosma_SOURCE_DIR}/cmake/check_for_openmpi.cmake"
             DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
 
     install(FILES "${cosma_BINARY_DIR}/cosma.pc"
