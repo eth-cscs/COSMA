@@ -13,9 +13,11 @@ if(NOT TARGET cosma::cosma)
     set(MPI_CXX_COMPILER "@MPI_CXX_COMPILER@")
     find_dependency(MPI)
 
-    if("@COSMA_USE_GPU@")
+    if("@COSMA_WITH_GPU@")
         find_dependency(Tiled-MM) # bundled
-    else()
+    endif()
+
+    if("@COSMA_WITH_MKL@")
         set(MKL_ROOT "@MKL_ROOT@")
         set(MKL_PARALLEL "@MKL_PARALLEL@")
         set(MKL_64BIT "@MKL_64BIT@")
