@@ -71,7 +71,7 @@ class Mapper {
     // in order to minimize the communication volume
     // if matrices are initially given in a different
     // data layout
-    void reorder_ranks(int new_rank);
+    void reorder_rank(int new_rank);
 
   protected:
     // A, B or C

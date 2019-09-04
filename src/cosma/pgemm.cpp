@@ -163,14 +163,14 @@ void pgemm(const char trans_a,
 #endif
     // reorder ranks in COSMA to minimize the communication
     // volume when data layout changes
-    mapper_a.reorder_ranks(rank_permutation[rank]);
-    mapper_b.reorder_ranks(rank_permutation[rank]);
-    mapper_c.reorder_ranks(rank_permutation[rank]);
+    // mapper_a.reorder_ranks(rank_permutation[rank]);
+    // mapper_b.reorder_ranks(rank_permutation[rank]);
+    // mapper_c.reorder_ranks(rank_permutation[rank]);
 
     // create cosma matrices
-    CosmaMatrix<T> A(std::move(mapper_a));
-    CosmaMatrix<T> B(std::move(mapper_b));
-    CosmaMatrix<T> C(std::move(mapper_c));
+    CosmaMatrix<T> A(std::move(mapper_a), rank_permutation[rank]);
+    CosmaMatrix<T> B(std::move(mapper_b), rank_permutation[rank]);
+    CosmaMatrix<T> C(std::move(mapper_c), rank_permutation[rank]);
 
     // get abstract layout descriptions for COSMA layout
     auto cosma_layout_a = A.get_grid_layout();

@@ -34,10 +34,11 @@ CosmaMatrix<T>::CosmaMatrix(cosma_context<T>* ctxt,
 template <typename T>
 CosmaMatrix<T>::CosmaMatrix(cosma_context<T>* ctxt,
                             Mapper&& mapper,
+                            int rank,
                             bool dry_run)
         : ctxt_(ctxt)
         , mapper_(std::forward<Mapper>(mapper))
-        , rank_(mapper_.rank())
+        , rank_(rank)
         , strategy_(mapper_.strategy())
         , label_(mapper_.label())
         , m_(mapper_.m())
@@ -48,6 +49,7 @@ CosmaMatrix<T>::CosmaMatrix(cosma_context<T>* ctxt,
         return;
     }
 
+    mapper_.reorder_rank(rank);
     layout_ = Layout(label_, m_, n_, P_, rank_, &mapper_);
     buffer_ = buffer_t(ctxt_, label_, strategy_, rank_, &mapper_, &layout_, dry_run);
 }
@@ -65,8 +67,8 @@ CosmaMatrix<T>::CosmaMatrix(std::unique_ptr<cosma_context<T>>& ctxt,
 // with given mapper
 template <typename T>
 CosmaMatrix<T>::CosmaMatrix(std::unique_ptr<cosma_context<T>>& ctxt,
-            Mapper&& mapper, bool dry_run)
-    : CosmaMatrix(ctxt.get(), std::forward<Mapper&&>(mapper), dry_run) 
+            Mapper&& mapper, int rank, bool dry_run)
+    : CosmaMatrix(ctxt.get(), std::forward<Mapper&&>(mapper), rank, dry_run) 
 {}
 
 // using global (singleton) context
@@ -80,8 +82,8 @@ CosmaMatrix<T>::CosmaMatrix(char label,
 
 // with given mapper
 template <typename T>
-CosmaMatrix<T>::CosmaMatrix(Mapper&& mapper, bool dry_run)
-    : CosmaMatrix(get_context_instance<T>(), std::forward<Mapper&&>(mapper), dry_run)
+CosmaMatrix<T>::CosmaMatrix(Mapper&& mapper, int rank, bool dry_run)
+    : CosmaMatrix(get_context_instance<T>(), std::forward<Mapper&&>(mapper), rank, dry_run)
 {}
 
 template <typename T>

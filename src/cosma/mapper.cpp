@@ -429,7 +429,7 @@ const Strategy& Mapper::strategy() const {
     return strategy_;
 }
 
-void Mapper::reorder_ranks(int new_rank) {
+void Mapper::reorder_rank(int new_rank) {
     rank_ = new_rank;
 }
 } // namespace cosma

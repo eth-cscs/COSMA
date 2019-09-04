@@ -37,7 +37,7 @@ class CosmaMatrix {
                 int rank,
                 bool dry_run = false);
     CosmaMatrix(cosma_context<Scalar>* ctxt,
-                Mapper&& mapper, bool dry_run = false);
+                Mapper&& mapper, int rank, bool dry_run = false);
 
     // using a custom context
     CosmaMatrix(std::unique_ptr<cosma_context<Scalar>>& ctxt,
@@ -46,14 +46,14 @@ class CosmaMatrix {
                 int rank,
                 bool dry_run = false);
     CosmaMatrix(std::unique_ptr<cosma_context<Scalar>>& ctxt,
-                Mapper&& mapper, bool dry_run = false);
+                Mapper&& mapper, int rank, bool dry_run = false);
 
     // using global (singleton) context
     CosmaMatrix(char label,
                 const Strategy &strategy,
                 int rank,
                 bool dry_run = false);
-    CosmaMatrix(Mapper&& mapper, bool dry_run = false);
+    CosmaMatrix(Mapper&& mapper, int rank, bool dry_run = false);
 
     int m();
     int n();
