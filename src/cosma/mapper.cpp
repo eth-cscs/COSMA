@@ -3,28 +3,29 @@
 
 namespace cosma {
 Mapper::Mapper(char label,
-               int m,
-               int n,
-               size_t P,
-               const Strategy &strategy,
+               const Strategy& strategy,
                int rank)
     : label_(label)
-    , m_(m)
-    , n_(n)
-    , P_(P)
+    , strategy_(strategy)
+    , m_(strategy.n_rows(label))
+    , n_(strategy.n_cols(label))
+    , P_(strategy.P)
     , rank_(rank) {
+    if (rank_ >= P_) {
+        return;
+    }
     PE(preprocessing_matrices_mapper_sizes);
-    skip_ranges_ = std::vector<int>(P);
+    skip_ranges_ = std::vector<int>(P_);
     rank_to_range_ =
-        std::vector<std::vector<Interval2D>>(P, std::vector<Interval2D>());
-    mi_ = Interval(0, m - 1);
-    ni_ = Interval(0, n - 1);
-    Pi_ = Interval(0, P - 1);
+        std::vector<std::vector<Interval2D>>(P_, std::vector<Interval2D>());
+    mi_ = Interval(0, m_ - 1);
+    ni_ = Interval(0, n_ - 1);
+    Pi_ = Interval(0, P_ - 1);
     compute_sizes(mi_, ni_, Pi_, 0, strategy);
-    initial_buffer_size_ = std::vector<size_t>(P);
-    range_offset_ = std::vector<std::vector<int>>(P, std::vector<int>());
+    initial_buffer_size_ = std::vector<size_t>(P_);
+    range_offset_ = std::vector<std::vector<int>>(P_, std::vector<int>());
 
-    for (size_t rank = 0; rank < P; ++rank) {
+    for (size_t rank = 0; rank < P_; ++rank) {
         size_t size = 0;
         int matrix_id = 0;
         for (auto &matrix : rank_to_range_[rank]) {
@@ -205,6 +206,10 @@ void Mapper::compute_sizes(Interval m,
 }
 
 size_t Mapper::initial_size(int rank) const {
+    // check if reorered
+    // if (ranks_reordered) {
+    //     rank = ranks_reordering[rank];
+    // }
     return initial_buffer_size_[rank];
 }
 
@@ -215,6 +220,10 @@ std::vector<size_t> Mapper::all_initial_sizes() const {
 }
 
 const std::vector<Interval2D> &Mapper::initial_layout(int rank) const {
+    // check if reorered
+    // if (ranks_reordered) {
+    //     rank = ranks_reordering[rank];
+    // }
     return rank_to_range_[rank];
 }
 
@@ -274,6 +283,9 @@ std::pair<int, int> Mapper::local_coordinates(int gi, int gj) {
     int local_index;
 
     std::tie(rank, offset) = range_to_rank_[range];
+    // if (ranks_reordered) {
+    //     rank = ranks_reordering[rank];
+    // }
     local_index = offset + range.local_index(gi, gj);
 
     return {local_index, rank};
@@ -304,6 +316,9 @@ std::pair<int, int> Mapper::global_coordinates(int local_index) {
 
 // (local_id, rank) -> (gi, gj)
 std::pair<int, int> Mapper::global_coordinates(int local_index, int rank) {
+    // if (ranks_reordered) {
+    //     rank = ranks_reordering[rank];
+    // }
     // TODO: use segment tree to locate with matrix of all the matrices
     // owned by rank contain the local_index
     for (auto matrix_id = 0u; matrix_id < rank_to_range_[rank].size();
@@ -342,10 +357,15 @@ int Mapper::owner(Interval2D& block) {
     assert(rank_and_offset_iterator != range_to_rank_.end());
     auto rank_and_offset = rank_and_offset_iterator->second;
     int rank = rank_and_offset.first;
+    if (ranks_reordered) 
+       return ranks_reordering[rank];
     return rank;
 }
 
-grid2grid::grid2D Mapper::get_layout_grid() {
+grid2grid::assigned_grid2D Mapper::get_layout_grid() {
+    // **************************
+    // create grid2D
+    // **************************
     // prepare row intervals
     // and col intervals
     std::vector<int> rows_split;
@@ -358,6 +378,62 @@ grid2grid::grid2D Mapper::get_layout_grid() {
     }
 
     grid2grid::grid2D grid(std::move(rows_split), std::move(cols_split));
-    return grid;
+
+    int n_blocks_row = grid.n_rows;
+    int n_blocks_col = grid.n_cols;
+
+    // **************************
+    // create an assigned grid2D
+    // **************************
+    // create a matrix of ranks owning each block
+    std::vector<std::vector<int>> owners(n_blocks_row,
+                                         std::vector<int>(n_blocks_col));
+    for (int i = 0; i < n_blocks_row; ++i) {
+        auto r_inter = grid.row_interval(i);
+        Interval row_interval(r_inter.start, r_inter.end - 1);
+        for (int j = 0; j < n_blocks_col; ++j) {
+            auto c_inter = grid.col_interval(j);
+            Interval col_interval(c_inter.start, c_inter.end - 1);
+
+            Interval2D range(row_interval, col_interval);
+            owners[i][j] = owner(range);
+        }
+    }
+
+    // create an assigned grid2D
+    grid2grid::assigned_grid2D assigned_grid(
+        std::move(grid), std::move(owners), P_);
+
+    return assigned_grid;
+}
+
+int Mapper::m() const {
+    return m_;
+}
+
+int Mapper::n() const {
+    return n_;
+}
+
+int Mapper::P() const {
+    return P_;
+}
+
+int Mapper::rank() const {
+    return rank_;
+}
+
+char Mapper::label() const {
+    return label_;
+}
+
+const Strategy& Mapper::strategy() const {
+    return strategy_;
+}
+
+void Mapper::reorder_ranks(std::vector<int>& ranks_permutation) {
+    rank_ = ranks_permutation[rank_];
+    ranks_reordered = true;
+    ranks_reordering = ranks_permutation;
 }
 } // namespace cosma

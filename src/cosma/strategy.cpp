@@ -4,6 +4,8 @@
 namespace cosma {
 // constructors
 Strategy::Strategy() = default;
+// copy constructor
+// Strategy::Strategy(Strategy& other) = default;
 // move constructor
 Strategy::Strategy(Strategy &&other) = default;
 
@@ -1098,6 +1100,27 @@ bool Strategy::should_overlap_comm_and_comp(int step) const {
 
 bool Strategy::empty() const {
     return n_steps == 0;
+}
+
+int Strategy::n_rows(char label) const {
+    if (label == 'A') 
+        return m;
+    if (label == 'B') 
+        return k;
+    if (label == 'C') 
+        return m;
+    return -1;
+}
+
+int Strategy::n_cols(char label) const {
+    if (label == 'A') 
+        return k;
+    if (label == 'B') 
+        return n;
+    if (label == 'C') 
+        return n;
+
+    return -1;
 }
 
 std::ostream &operator<<(std::ostream &os, const Strategy &other) {

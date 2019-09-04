@@ -57,6 +57,8 @@ class Strategy {
 
     // constructors
     Strategy();
+    // copy constructor
+    // Strategy(Strategy &other);
     // move constructor
     Strategy(Strategy &&other);
 
@@ -168,6 +170,11 @@ class Strategy {
     // if number of processes is 0, then n_steps = 0
     // and then the strategy is considered empty
     bool empty() const;
+
+    // returns dimensions of a matrix with given label
+    // where label = A, B or C
+    int n_rows(char label) const;
+    int n_cols(char label) const;
 
   private:
     bool divide(std::vector<int> &div_factors,

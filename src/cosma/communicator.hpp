@@ -16,7 +16,7 @@ namespace cosma {
 class communicator {
   public:
     communicator() = default;
-    communicator(const Strategy *strategy, MPI_Comm comm = MPI_COMM_WORLD);
+    communicator(const Strategy *strategy, MPI_Comm comm, std::vector<int>& reordering);
     ~communicator();
 
     /* In each communication step, processors are split and the communication is
@@ -221,6 +221,8 @@ class communicator {
     static int rank_inside_ring(Interval &P, int div, int global_rank);
     static int rank_outside_ring(Interval &P, int div, int off, int gp);
 
+    int reordered_rank(int rank);
+
   protected:
     // groups corresponding to the hierarchy of communicators
     std::vector<MPI_Group> comm_ring_group_;
@@ -252,6 +254,9 @@ class communicator {
     create_comm_subproblem(MPI_Comm comm, Interval &P, Interval &newP);
 
     void free_comms();
+
+    // rank reordering
+    std::vector<int> reordering_;
 };
 
 } // namespace cosma

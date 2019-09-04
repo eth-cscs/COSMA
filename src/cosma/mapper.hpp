@@ -22,10 +22,7 @@ class Mapper {
   public:
     Mapper() = default;
     Mapper(char label,
-           int m,
-           int n,
-           size_t P,
-           const Strategy &strategy,
+           const Strategy& strategy,
            int rank);
 
     size_t initial_size(int rank) const;
@@ -60,7 +57,25 @@ class Mapper {
     // returns a rank owning given block
     int owner(Interval2D& block);
 
-    grid2grid::grid2D get_layout_grid();
+    grid2grid::assigned_grid2D get_layout_grid();
+
+    int m() const;
+    int n() const;
+    int P() const;
+    int rank() const;
+    char label() const;
+    const Strategy& strategy() const;
+
+    // changes the current rank to new_rank
+    // this is used when we want to reorder ranks
+    // in order to minimize the communication volume
+    // if matrices are initially given in a different
+    // data layout
+    void reorder_ranks(std::vector<int>& ranks_permutation);
+
+    bool ranks_reordered = false;
+
+    std::vector<int> ranks_reordering;
 
   protected:
     // A, B or C
@@ -72,6 +87,7 @@ class Mapper {
     /// Maximum number of rank in the global communicator
     size_t P_;
     int rank_;
+    const Strategy& strategy_;
 
     // rank -> list of submatrices that this rank owns
     // the number of submatrices that this rank owns

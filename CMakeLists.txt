@@ -14,6 +14,10 @@ if(NOT CMAKE_BUILD_TYPE)
         "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release." FORCE)
 endif()
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_definitions(-DDEBUG)
+endif()
+
 # Options
 #
 option(COSMA_WITH_GPU "Use CUDA GPU backend." OFF)

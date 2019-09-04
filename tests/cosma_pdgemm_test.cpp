@@ -40,9 +40,9 @@ int main(int argc, char **argv) {
     auto k = options::next_int("-k", "--k_dim", "number of columns of A and rows of B.", 1000);
 
     // block sizes
-    auto bm = options::next_int("-bm", "--m_block", "block size for the number of rows of A and C.", 128);
-    auto bn = options::next_int("-bn", "--n_block", "block size for the number of columns of B and C.", 128);
-    auto bk = options::next_int("-bk", "--k_block", "block size for the number of columns of A and rows of B.", 128);
+    auto block_a = options::next_int_pair("-ba", "--block_a", "block size for the number of rows of A.", 128);
+    auto block_b = options::next_int_pair("-bb", "--block_b", "block size for the number of rows of B.", 128);
+    auto block_c = options::next_int_pair("-bc", "--block_c", "block size for the number of rows of C.", 128);
 
     // transpose flags
     bool trans_a = options::flag_exists("-ta", "--trans_a");
@@ -68,7 +68,11 @@ int main(int argc, char **argv) {
         std::cout << "Running PDGEMM on the following problem size:" << std::endl;
         std::cout << "Matrix sizes: (m, n, k) = (" << m << ", " << n << ", " << k << ")" << std::endl;
         std::cout << "(alpha, beta) = (" << alpha << ", " << beta << ")" << std::endl;
-        std::cout << "Block sizes: (bm, bn, bk) = (" << bm << ", " << bn << ", " << bk << ")" << std::endl;
+
+        std::cout << "Block sizes for A: (" << block_a.first << ", " << block_a.second << ")" << std::endl;
+        std::cout << "Block sizes for B: (" << block_b.first << ", " << block_b.second << ")" << std::endl;
+        std::cout << "Block sizes for C: (" << block_c.first << ", " << block_c.second << ")" << std::endl;
+
         std::cout << "Transpose flags (TA, TB) = (" << ta << ", " << tb << ")" << std::endl;
         std::cout << "Processor grid: (prows, pcols) = (" << p << ", " << q << ")" << std::endl;
     }
@@ -77,7 +81,7 @@ int main(int argc, char **argv) {
     //   multiply and validate
     // *******************************
     bool ok = test_pdgemm(m, n, k,
-                          bm, bn, bk,
+                          block_a, block_b, block_c,
                           1, 1, 1,
                           ta, tb,
                           p, q,

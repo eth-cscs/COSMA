@@ -3,6 +3,7 @@
 #include <cosma/pgemm.hpp>
 #include <cosma/profiler.hpp>
 #include <cosma/scalapack.hpp>
+#include <grid2grid/ranks_reordering.hpp>
 
 #include <grid2grid/transform.hpp>
 
@@ -88,23 +89,16 @@ void pgemm(const char trans_a,
     // }
     PL();
 
-    // create COSMA matrices
-    CosmaMatrix<T> A('A', strategy, rank);
-    CosmaMatrix<T> B('B', strategy, rank);
-    CosmaMatrix<T> C('C', strategy, rank);
+    // create COSMA mappers
+    Mapper mapper_a('A', strategy, rank);
+    Mapper mapper_b('B', strategy, rank);
+    Mapper mapper_c('C', strategy, rank);
 
-    // not necessary since multiply will invoke it
-    // and matrix_pointer in matrix class is not outdated
-    // initialize COSMA matrices
-    // A.initialize();
-    // B.initialize();
-    // C.initialize();
+    auto cosma_grid_a = mapper_a.get_layout_grid();
+    auto cosma_grid_b = mapper_b.get_layout_grid();
+    auto cosma_grid_c = mapper_c.get_layout_grid();
 
     PE(transform_init);
-    // get abstract layout descriptions for COSMA layout
-    auto cosma_layout_a = A.get_grid_layout();
-    auto cosma_layout_b = B.get_grid_layout();
-
     // get abstract layout descriptions for ScaLAPACK layout
     auto scalapack_layout_a = grid2grid::get_scalapack_grid<T>(
         lld_a,
@@ -146,6 +140,52 @@ void pgemm(const char trans_a,
         rank);
     PL();
 
+    // total communication volume for transformation of layouts
+    auto comm_vol = grid2grid::communication_volume(scalapack_layout_a.grid, cosma_grid_a);
+    comm_vol += grid2grid::communication_volume(scalapack_layout_b.grid, cosma_grid_b);
+
+    if (std::abs(beta) > 0) {
+        comm_vol += grid2grid::communication_volume(scalapack_layout_c.grid, cosma_grid_c);
+    }
+
+    comm_vol += grid2grid::communication_volume(cosma_grid_c, scalapack_layout_c.grid);
+
+    // compute the optimal rank reordering that minimizes the communication volume
+    std::vector<int> rank_permutation = grid2grid::optimal_reordering(comm_vol, P);
+
+#ifdef DEBUG
+    for (int i = 0; i < P; ++i) {
+        if (rank == i) {
+            std::cout << "Optimal rank relabeling:" << std::endl;
+            for (int i = 0; i < P; ++i) {
+                std::cout << i << "->" << rank_permutation[i] << std::endl;
+            }
+        }
+        MPI_Barrier(comm);
+    }
+#endif
+
+    // reorder ranks in COSMA to minimize the communication
+    // volume when data layout changes
+    mapper_a.reorder_ranks(rank_permutation);
+    mapper_b.reorder_ranks(rank_permutation);
+    mapper_c.reorder_ranks(rank_permutation);
+
+    // create cosma matrices
+    CosmaMatrix<T> A(std::move(mapper_a));
+    CosmaMatrix<T> B(std::move(mapper_b));
+    CosmaMatrix<T> C(std::move(mapper_c));
+
+    // get abstract layout descriptions for COSMA layout
+    auto cosma_layout_a = A.get_grid_layout();
+    auto cosma_layout_b = B.get_grid_layout();
+    auto cosma_layout_c = C.get_grid_layout();
+
+    // reorder cosma layouts
+    // cosma_layout_a.reorder_ranks(rank_permutation);
+    // cosma_layout_b.reorder_ranks(rank_permutation);
+    // cosma_layout_c.reorder_ranks(rank_permutation);
+
 #ifdef DEBUG
     std::cout << "Transforming the input matrices A and B from Scalapack -> COSMA" << std::endl;
 #endif
@@ -155,7 +195,6 @@ void pgemm(const char trans_a,
 
     // transform C from scalapack to cosma only if beta > 0
     if (std::abs(beta) > 0) {
-        auto cosma_layout_c = C.get_grid_layout();
         grid2grid::transform<T>(scalapack_layout_c, cosma_layout_c, comm);
     }
 
@@ -164,8 +203,14 @@ void pgemm(const char trans_a,
     std::cout << "COSMA multiply" << std::endl;
 #endif
     multiply<T>(A, B, C, strategy, comm, alpha, beta);
+    MPI_Barrier(comm);
 
-    auto cosma_layout_c = C.get_grid_layout();
+    // construct cosma layout again, to avoid outdated
+    // pointers when the memory pool has been used
+    // in case it resized during multiply
+    cosma_layout_c = C.get_grid_layout();
+    cosma_layout_c.reorder_ranks(rank_permutation);
+
 #ifdef DEBUG
     std::cout << "Transforming the result C back from COSMA to ScaLAPACK" << std::endl;
 #endif
