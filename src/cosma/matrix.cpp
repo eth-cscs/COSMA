@@ -136,7 +136,7 @@ const std::vector<Interval2D> &CosmaMatrix<T>::initial_layout(int rank) const {
 
 template <typename T>
 const std::vector<Interval2D> &CosmaMatrix<T>::initial_layout() const {
-    return initial_layout();
+    return mapper_.initial_layout();
 }
 
 // (gi, gj) -> (local_id, rank)

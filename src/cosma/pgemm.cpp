@@ -153,22 +153,21 @@ void pgemm(const char trans_a,
     // compute the optimal rank reordering that minimizes the communication volume
     std::vector<int> rank_permutation = grid2grid::optimal_reordering(comm_vol, P);
 
-// #ifdef DEBUG
-    for (int i = 0; i < P; ++i) {
-        if (rank == i) {
-            std::cout << "Optimal rank relabeling:" << std::endl;
-            for (int i = 0; i < P; ++i) {
-                std::cout << i << "->" << rank_permutation[i] << std::endl;
-            }
+#ifdef DEBUG
+    if (rank == 0) {
+        std::cout << "Optimal rank relabeling:" << std::endl;
+        for (int i = 0; i < P; ++i) {
+            std::cout << i << "->" << rank_permutation[i] << std::endl;
         }
-        MPI_Barrier(comm);
     }
-//#endif
-    // create cosma matrices
+#endif
+    // reorder ranks in COSMA to minimize the communication
+    // volume when data layout changes
     mapper_a.reorder_ranks(rank_permutation[rank]);
     mapper_b.reorder_ranks(rank_permutation[rank]);
     mapper_c.reorder_ranks(rank_permutation[rank]);
 
+    // create cosma matrices
     CosmaMatrix<T> A(std::move(mapper_a));
     CosmaMatrix<T> B(std::move(mapper_b));
     CosmaMatrix<T> C(std::move(mapper_c));
@@ -177,7 +176,6 @@ void pgemm(const char trans_a,
     auto cosma_layout_a = A.get_grid_layout();
     auto cosma_layout_b = B.get_grid_layout();
 
-    // reorder cosma layouts
     cosma_layout_a.reorder_ranks(rank_permutation);
     cosma_layout_b.reorder_ranks(rank_permutation);
 
