@@ -370,10 +370,6 @@ int CosmaMatrix<T>::rank() const {
     return rank_;
 }
 
-template <typename T>
-std::vector<int>& CosmaMatrix<T>::ranks_reordering() {
-    return mapper_.ranks_reordering;
-}
 // Explicit instantiations
 //
 template class CosmaMatrix<float>;

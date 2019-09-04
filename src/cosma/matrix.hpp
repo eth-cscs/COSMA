@@ -169,8 +169,6 @@ class CosmaMatrix {
 
     int rank() const;
 
-    std::vector<int>& ranks_reordering();
-
   protected:
     cosma_context<scalar_t>* ctxt_;
     // mapper containing information

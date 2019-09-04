@@ -153,7 +153,7 @@ void pgemm(const char trans_a,
     // compute the optimal rank reordering that minimizes the communication volume
     std::vector<int> rank_permutation = grid2grid::optimal_reordering(comm_vol, P);
 
-#ifdef DEBUG
+// #ifdef DEBUG
     for (int i = 0; i < P; ++i) {
         if (rank == i) {
             std::cout << "Optimal rank relabeling:" << std::endl;
@@ -163,15 +163,12 @@ void pgemm(const char trans_a,
         }
         MPI_Barrier(comm);
     }
-#endif
-
-    // reorder ranks in COSMA to minimize the communication
-    // volume when data layout changes
-    mapper_a.reorder_ranks(rank_permutation);
-    mapper_b.reorder_ranks(rank_permutation);
-    mapper_c.reorder_ranks(rank_permutation);
-
+//#endif
     // create cosma matrices
+    mapper_a.reorder_ranks(rank_permutation[rank]);
+    mapper_b.reorder_ranks(rank_permutation[rank]);
+    mapper_c.reorder_ranks(rank_permutation[rank]);
+
     CosmaMatrix<T> A(std::move(mapper_a));
     CosmaMatrix<T> B(std::move(mapper_b));
     CosmaMatrix<T> C(std::move(mapper_c));
@@ -179,12 +176,10 @@ void pgemm(const char trans_a,
     // get abstract layout descriptions for COSMA layout
     auto cosma_layout_a = A.get_grid_layout();
     auto cosma_layout_b = B.get_grid_layout();
-    auto cosma_layout_c = C.get_grid_layout();
 
     // reorder cosma layouts
-    // cosma_layout_a.reorder_ranks(rank_permutation);
-    // cosma_layout_b.reorder_ranks(rank_permutation);
-    // cosma_layout_c.reorder_ranks(rank_permutation);
+    cosma_layout_a.reorder_ranks(rank_permutation);
+    cosma_layout_b.reorder_ranks(rank_permutation);
 
 #ifdef DEBUG
     std::cout << "Transforming the input matrices A and B from Scalapack -> COSMA" << std::endl;
@@ -195,6 +190,8 @@ void pgemm(const char trans_a,
 
     // transform C from scalapack to cosma only if beta > 0
     if (std::abs(beta) > 0) {
+        auto cosma_layout_c = C.get_grid_layout();
+        cosma_layout_c.reorder_ranks(rank_permutation);
         grid2grid::transform<T>(scalapack_layout_c, cosma_layout_c, comm);
     }
 
@@ -202,13 +199,18 @@ void pgemm(const char trans_a,
 #ifdef DEBUG
     std::cout << "COSMA multiply" << std::endl;
 #endif
-    multiply<T>(A, B, C, strategy, comm, alpha, beta);
-    MPI_Barrier(comm);
+    // create reordered communicator, which has same ranks
+    // but relabelled as given by the rank_permutation
+    // (to avoid the communication during layout transformation)
+    MPI_Comm reordered_comm;
+    MPI_Comm_split(comm, 0, rank_permutation[rank], &reordered_comm);
+    multiply<T>(A, B, C, strategy, reordered_comm, alpha, beta);
+    MPI_Comm_free(&reordered_comm);
 
     // construct cosma layout again, to avoid outdated
     // pointers when the memory pool has been used
     // in case it resized during multiply
-    cosma_layout_c = C.get_grid_layout();
+    auto cosma_layout_c = C.get_grid_layout();
     cosma_layout_c.reorder_ranks(rank_permutation);
 
 #ifdef DEBUG

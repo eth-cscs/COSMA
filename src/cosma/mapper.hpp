@@ -71,11 +71,7 @@ class Mapper {
     // in order to minimize the communication volume
     // if matrices are initially given in a different
     // data layout
-    void reorder_ranks(std::vector<int>& ranks_permutation);
-
-    bool ranks_reordered = false;
-
-    std::vector<int> ranks_reordering;
+    void reorder_ranks(int new_rank);
 
   protected:
     // A, B or C

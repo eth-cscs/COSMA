@@ -357,8 +357,6 @@ int Mapper::owner(Interval2D& block) {
     assert(rank_and_offset_iterator != range_to_rank_.end());
     auto rank_and_offset = rank_and_offset_iterator->second;
     int rank = rank_and_offset.first;
-    if (ranks_reordered) 
-       return ranks_reordering[rank];
     return rank;
 }
 
@@ -431,9 +429,7 @@ const Strategy& Mapper::strategy() const {
     return strategy_;
 }
 
-void Mapper::reorder_ranks(std::vector<int>& ranks_permutation) {
-    rank_ = ranks_permutation[rank_];
-    ranks_reordered = true;
-    ranks_reordering = ranks_permutation;
+void Mapper::reorder_ranks(int new_rank) {
+    rank_ = new_rank;
 }
 } // namespace cosma

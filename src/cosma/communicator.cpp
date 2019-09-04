@@ -8,11 +8,9 @@ namespace cosma {
 bool communicator::use_busy_waiting = true;
 
 communicator::communicator(const Strategy *strategy, 
-                           MPI_Comm comm,
-                           std::vector<int>& reordering)
+                           MPI_Comm comm)
     : strategy_(strategy)
-    , full_comm_(comm)
-    , reordering_(reordering) {
+    , full_comm_(comm) {
     use_busy_waiting = strategy_->use_busy_waiting;
     MPI_Group group;
 
@@ -26,7 +24,6 @@ communicator::communicator(const Strategy *strategy,
     is_idle_ = rank_ >= strategy->P;
 
     if (using_reduced_comm_) {
-        std::cout << "using reduced comm" << std::endl;
         MPI_Comm_group(comm, &group);
         std::vector<int> exclude_ranks;
         for (int i = strategy->P; i < comm_size_; ++i) {
@@ -329,12 +326,6 @@ void communicator::free_comms() {
         free_group(comm_subproblem_group_[i]);
         free_comm(comm_subproblem_[i]);
     }
-}
-
-int communicator::reordered_rank(int rank) {
-    if (reordering_.size())
-        return reordering_[rank];
-    return rank;
 }
 
 template <typename Scalar>

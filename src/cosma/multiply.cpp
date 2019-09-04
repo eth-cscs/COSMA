@@ -179,15 +179,7 @@ void multiply(cosma_context<Scalar>* ctx,
     assert(matrixA.rank() == matrixB.rank());
     assert(matrixB.rank() == matrixC.rank());
 
-    // this might be different than MPI_Comm_rank(comm)
-    // in case we want to reorder ranks 
-    // (to avoid the communication during layout transformation)
-    MPI_Comm reordered_comm;
-    int rank;
-    MPI_Comm_rank(comm, &rank);
-    // TODO: check if reordered first and then use comm or reodered_comm
-    MPI_Comm_split(comm, 0, matrixA.ranks_reordering()[rank], &reordered_comm);
-    communicator cosma_comm = communicator(&strategy, reordered_comm, matrixA.ranks_reordering());
+    communicator cosma_comm = communicator(&strategy, comm);
     PL();
 
     if (!cosma_comm.is_idle()) {
