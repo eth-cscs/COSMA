@@ -216,6 +216,17 @@ void pgemm(const char trans_a,
 #endif
     // transform the result from cosma back to scalapack
     grid2grid::transform<T>(cosma_layout_c, scalapack_layout_c, comm);
+
+#ifdef DEBUG
+    if (rank == 0) {
+        auto comm_vol_reordered = grid2grid::communication_volume(scalapack_layout_a.grid, cosma_layout_a.grid);
+        comm_vol_reordered += grid2grid::communication_volume(scalapack_layout_b.grid, cosma_layout_b.grid);
+        comm_vol_reordered += grid2grid::communication_volume(cosma_layout_b.grid, scalapack_layout_b.grid);
+
+        std::cout << "Initial comm volume = " << comm_vol.total_volume() << std::endl;
+        std::cout << "Reduced comm volume = " << comm_vol_reordered.total_volume() << std::endl;
+    }
+#endif
 }
 
 // explicit instantiation for pgemm
