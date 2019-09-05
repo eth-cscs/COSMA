@@ -18,20 +18,26 @@ class Cosma(CMakePackage, CudaPackage):
 
     depends_on('cmake@3.12:', type='build')
     depends_on('mpi@3:')
-    depends_on('intel-mkl threads=openmp', when='gpu=False')
-    depends_on('scalapack', when='gpu=False')
+
+    # FIXME: MKL need not be a required dependncy. 
+    #
+    depends_on('intel-mkl threads=openmp')
+    depends_on('scalapack')
     depends_on('cuda', when='gpu=True')
+
+    def setup_environment(self, spack_env, run_env):
+        if '+gpu' in self.spec:
+            spack_env.set('CUDA_PATH', self.spec['cuda'].prefix)
+
 
     def cmake_args(self):
         spec = self.spec
         args = ['-DCOSMA_WITH_TESTS=OFF',
                 '-DCOSMA_WITH_APPS=OFF',
+                '-DCOSMA_WITH_PROFILING=OFF',
                 '-DCOSMA_WITH_BENCHMARKS=OFF']
 
         if '+gpu' in spec:
             args.append('-DCOSMA_WITH_GPU=ON')
-
-        if spec['mpi'].name == 'openmpi':
-            args.append('-DMKL_MPI_TYPE=OMPI')
 
         return args
