@@ -1,7 +1,7 @@
 Add repo to Spack:
 
 ```
-git clone https://github.com/teonnik/cosma_spack.git
+git clone https://github.com/eth-cscs/COSMA.git
 spack repo add cosma_spack
 ```
 
