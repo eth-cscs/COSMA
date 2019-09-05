@@ -54,38 +54,28 @@ template <typename T>
 void multiply_using_layout(grid2grid::grid_layout<T> &A,
                            grid2grid::grid_layout<T> &B,
                            grid2grid::grid_layout<T> &C,
-                           int m,
-                           int n,
-                           int k,
                            T alpha,
                            T beta,
-                           char trans_A,
-                           char trans_B,
                            MPI_Comm comm) {
-    multiply_using_layout<T>(get_context_instance<T>(),
-                          A, B, C, m, n, k, alpha, beta,
-                          trans_A, trans_B, comm);
+    multiply_using_layout<T>(
+        get_context_instance<T>(), A, B, C, alpha, beta, comm);
 }
 
 template <typename T>
-void multiply_using_layout(cosma_context<T>* ctx,
+void multiply_using_layout(cosma_context<T> *ctx,
                            grid2grid::grid_layout<T> &A,
                            grid2grid::grid_layout<T> &B,
                            grid2grid::grid_layout<T> &C,
-                           int m,
-                           int n,
-                           int k,
                            T alpha,
                            T beta,
-                           char trans_A,
-                           char trans_B,
                            MPI_Comm comm) {
-    // apply the transpose flags
-    // this will not change the layout of the matrix
-    // but will transpose the data (if flag is 'T' or 'C')
-    // during the layout transformation
-    A.transpose_or_conjugate(trans_A);
-    B.transpose_or_conjugate(trans_B);
+    assert(A.num_cols() == B.num_rows());
+
+    // Note: `k` is always the shared dimension.
+    //
+    int m = A.num_rows();
+    int n = B.num_cols();
+    int k = A.num_cols();
 
     int rank, P;
     MPI_Comm_rank(comm, &rank);
@@ -136,14 +126,21 @@ void multiply(CosmaMatrix<Scalar> &matrixA,
               MPI_Comm comm,
               Scalar alpha,
               Scalar beta) {
-    assert(matrixA.get_context() == matrixB.get_context()
-            && matrixB.get_context() == matrixC.get_context());
-    multiply(matrixA.get_context(), matrixA, matrixB, matrixC, strategy, comm, alpha, beta);
+    assert(matrixA.get_context() == matrixB.get_context() &&
+           matrixB.get_context() == matrixC.get_context());
+    multiply(matrixA.get_context(),
+             matrixA,
+             matrixB,
+             matrixC,
+             strategy,
+             comm,
+             alpha,
+             beta);
 }
 
 // using the given context
 template <typename Scalar>
-void multiply(cosma_context<Scalar>* ctx,
+void multiply(cosma_context<Scalar> *ctx,
               CosmaMatrix<Scalar> &matrixA,
               CosmaMatrix<Scalar> &matrixB,
               CosmaMatrix<Scalar> &matrixC,
@@ -165,7 +162,7 @@ void multiply(cosma_context<Scalar>* ctx,
 
     // once all buffers are allocated from the memory pool
     // we know that the memory pool will not be resized
-    // and thus we can safely set the pointer to the 
+    // and thus we can safely set the pointer to the
     // initial buffers in all matrices.
     matrixA.initialize();
     matrixB.initialize();
@@ -206,7 +203,7 @@ void multiply(cosma_context<Scalar>* ctx,
 }
 
 template <typename Scalar>
-void multiply(cosma_context<Scalar>* ctx,
+void multiply(cosma_context<Scalar> *ctx,
               CosmaMatrix<Scalar> &matrixA,
               CosmaMatrix<Scalar> &matrixB,
               CosmaMatrix<Scalar> &matrixC,
@@ -334,7 +331,7 @@ void multiply(cosma_context<Scalar>* ctx,
  and each of the subproblems is solved sequentially by all P processors.
 */
 template <typename Scalar>
-void sequential(cosma_context<Scalar>* ctx,
+void sequential(cosma_context<Scalar> *ctx,
                 CosmaMatrix<Scalar> &matrixA,
                 CosmaMatrix<Scalar> &matrixB,
                 CosmaMatrix<Scalar> &matrixC,
@@ -476,7 +473,7 @@ T which_is_expanded(T &&A,
  owned by newP ranks - thus local matrices are shrinked.
  */
 template <typename Scalar>
-void parallel(cosma_context<Scalar>* ctx,
+void parallel(cosma_context<Scalar> *ctx,
               CosmaMatrix<Scalar> &matrixA,
               CosmaMatrix<Scalar> &matrixB,
               CosmaMatrix<Scalar> &matrixC,
@@ -664,110 +661,70 @@ using zdouble_t = std::complex<double>;
 template void multiply_using_layout<double>(grid2grid::grid_layout<double> &A,
                                             grid2grid::grid_layout<double> &B,
                                             grid2grid::grid_layout<double> &C,
-                                            int m,
-                                            int n,
-                                            int k,
                                             double alpha,
                                             double beta,
-                                            char trans_A,
-                                            char trans_B,
                                             MPI_Comm comm);
 
 template void multiply_using_layout<float>(grid2grid::grid_layout<float> &A,
                                            grid2grid::grid_layout<float> &B,
                                            grid2grid::grid_layout<float> &C,
-                                           int m,
-                                           int n,
-                                           int k,
                                            float alpha,
                                            float beta,
-                                           char trans_A,
-                                           char trans_B,
                                            MPI_Comm comm);
 
 template void
 multiply_using_layout<zdouble_t>(grid2grid::grid_layout<zdouble_t> &A,
                                  grid2grid::grid_layout<zdouble_t> &B,
                                  grid2grid::grid_layout<zdouble_t> &C,
-                                 int m,
-                                 int n,
-                                 int k,
                                  zdouble_t alpha,
                                  zdouble_t beta,
-                                 char trans_A,
-                                 char trans_B,
                                  MPI_Comm comm);
 
 template void
 multiply_using_layout<zfloat_t>(grid2grid::grid_layout<zfloat_t> &A,
                                 grid2grid::grid_layout<zfloat_t> &B,
                                 grid2grid::grid_layout<zfloat_t> &C,
-                                int m,
-                                int n,
-                                int k,
                                 zfloat_t alpha,
                                 zfloat_t beta,
-                                char trans_A,
-                                char trans_B,
                                 MPI_Comm comm);
 
 // explicit instantiation for multiply_using_layout with context
-template void multiply_using_layout<double>(cosma_context<double>* ctx,
+template void multiply_using_layout<double>(cosma_context<double> *ctx,
                                             grid2grid::grid_layout<double> &A,
                                             grid2grid::grid_layout<double> &B,
                                             grid2grid::grid_layout<double> &C,
-                                            int m,
-                                            int n,
-                                            int k,
                                             double alpha,
                                             double beta,
-                                            char trans_A,
-                                            char trans_B,
                                             MPI_Comm comm);
 
-template void multiply_using_layout<float>(cosma_context<float>* ctx,
+template void multiply_using_layout<float>(cosma_context<float> *ctx,
                                            grid2grid::grid_layout<float> &A,
                                            grid2grid::grid_layout<float> &B,
                                            grid2grid::grid_layout<float> &C,
-                                           int m,
-                                           int n,
-                                           int k,
                                            float alpha,
                                            float beta,
-                                           char trans_A,
-                                           char trans_B,
                                            MPI_Comm comm);
 
 template void
-multiply_using_layout<zdouble_t>(cosma_context<zdouble_t>* ctx,
+multiply_using_layout<zdouble_t>(cosma_context<zdouble_t> *ctx,
                                  grid2grid::grid_layout<zdouble_t> &A,
                                  grid2grid::grid_layout<zdouble_t> &B,
                                  grid2grid::grid_layout<zdouble_t> &C,
-                                 int m,
-                                 int n,
-                                 int k,
                                  zdouble_t alpha,
                                  zdouble_t beta,
-                                 char trans_A,
-                                 char trans_B,
                                  MPI_Comm comm);
 
 template void
-multiply_using_layout<zfloat_t>(cosma_context<zfloat_t>* ctx,
+multiply_using_layout<zfloat_t>(cosma_context<zfloat_t> *ctx,
                                 grid2grid::grid_layout<zfloat_t> &A,
                                 grid2grid::grid_layout<zfloat_t> &B,
                                 grid2grid::grid_layout<zfloat_t> &C,
-                                int m,
-                                int n,
-                                int k,
                                 zfloat_t alpha,
                                 zfloat_t beta,
-                                char trans_A,
-                                char trans_B,
                                 MPI_Comm comm);
 
 // Explicit instantiations for short `multiply`
-template void multiply<double>(cosma_context<double>* ctx,
+template void multiply<double>(cosma_context<double> *ctx,
                                CosmaMatrix<double> &A,
                                CosmaMatrix<double> &B,
                                CosmaMatrix<double> &C,
@@ -776,7 +733,7 @@ template void multiply<double>(cosma_context<double>* ctx,
                                double alpha,
                                double beta);
 
-template void multiply<float>(cosma_context<float>* ctx,
+template void multiply<float>(cosma_context<float> *ctx,
                               CosmaMatrix<float> &A,
                               CosmaMatrix<float> &B,
                               CosmaMatrix<float> &C,
@@ -785,7 +742,7 @@ template void multiply<float>(cosma_context<float>* ctx,
                               float alpha,
                               float beta);
 
-template void multiply<zdouble_t>(cosma_context<zdouble_t>* ctx,
+template void multiply<zdouble_t>(cosma_context<zdouble_t> *ctx,
                                   CosmaMatrix<zdouble_t> &A,
                                   CosmaMatrix<zdouble_t> &B,
                                   CosmaMatrix<zdouble_t> &C,
@@ -794,7 +751,7 @@ template void multiply<zdouble_t>(cosma_context<zdouble_t>* ctx,
                                   zdouble_t alpha,
                                   zdouble_t beta);
 
-template void multiply<zfloat_t>(cosma_context<zfloat_t>* ctx,
+template void multiply<zfloat_t>(cosma_context<zfloat_t> *ctx,
                                  CosmaMatrix<zfloat_t> &A,
                                  CosmaMatrix<zfloat_t> &B,
                                  CosmaMatrix<zfloat_t> &C,
