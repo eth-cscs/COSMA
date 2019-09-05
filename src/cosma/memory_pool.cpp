@@ -17,9 +17,6 @@ cosma::memory_pool<T>::memory_pool(size_t capacity) {
 template <typename T>
 size_t cosma::memory_pool<T>::get_buffer_id(size_t size) {
     assert(size > 0);
-    if (pool_size_ + size > pool_capacity_) {
-        resize(pool_size_ + size);
-    }
     // T* ptr = pool_.data() + pool_size_;
     size_t offset = pool_size_;
     pool_size_ += size;
@@ -30,6 +27,9 @@ size_t cosma::memory_pool<T>::get_buffer_id(size_t size) {
 
 template <typename T>
 T* cosma::memory_pool<T>::get_buffer_pointer(size_t id) {
+    if (pool_size_  > pool_capacity_) {
+        resize(pool_size_);
+    }
     assert(id < pool_capacity_);
     return pool_.data() + id;
 }
