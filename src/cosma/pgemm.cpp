@@ -84,9 +84,10 @@ void pgemm(const char trans_a,
     PE(strategy);
     // find an optimal strategy for this problem
     Strategy strategy(m, n, k, P);
-    // if (rank == 0) {
-    //     std::cout << strategy << std::endl;
-    // }
+    // strategy.overlap_comm_and_comp = true;
+    if (rank == 0) {
+        std::cout << strategy << std::endl;
+    }
     PL();
 
     // create COSMA mappers
@@ -97,6 +98,10 @@ void pgemm(const char trans_a,
     auto cosma_grid_a = mapper_a.get_layout_grid();
     auto cosma_grid_b = mapper_b.get_layout_grid();
     auto cosma_grid_c = mapper_c.get_layout_grid();
+
+    // if (rank == 0) {
+    //     std::cout << "COSMA grid for A before reordering: " << cosma_grid_a << std::endl;
+    // }
 
     PE(transform_init);
     // get abstract layout descriptions for ScaLAPACK layout
@@ -179,6 +184,10 @@ void pgemm(const char trans_a,
     cosma_layout_a.reorder_ranks(rank_permutation);
     cosma_layout_b.reorder_ranks(rank_permutation);
 
+    // if (rank == 0) {
+    //     std::cout << "COSMA grid for A after reordering: " << cosma_grid_a << std::endl;
+    // }
+
 #ifdef DEBUG
     std::cout << "Transforming the input matrices A and B from Scalapack -> COSMA" << std::endl;
 #endif
@@ -219,12 +228,23 @@ void pgemm(const char trans_a,
 
 #ifdef DEBUG
     if (rank == 0) {
-        auto comm_vol_reordered = grid2grid::communication_volume(scalapack_layout_a.grid, cosma_layout_a.grid);
-        comm_vol_reordered += grid2grid::communication_volume(scalapack_layout_b.grid, cosma_layout_b.grid);
-        comm_vol_reordered += grid2grid::communication_volume(cosma_layout_b.grid, scalapack_layout_b.grid);
+        auto reordered_vol = grid2grid::communication_volume(scalapack_layout_a.grid, cosma_layout_a.grid);
+        reordered_vol += grid2grid::communication_volume(scalapack_layout_b.grid, cosma_layout_b.grid);
+        if (std::abs(beta) > 0) {
+            reordered_vol += grid2grid::communication_volume(scalapack_layout_c.grid, cosma_layout_c.grid);
+        }
+        reordered_vol += grid2grid::communication_volume(cosma_layout_c.grid, scalapack_layout_c.grid);
 
-        std::cout << "Initial comm volume = " << comm_vol.total_volume() << std::endl;
-        std::cout << "Reduced comm volume = " << comm_vol_reordered.total_volume() << std::endl;
+        //std::cout << "Detailed comm volume: " << comm_vol << std::endl;
+        //std::cout << "Detailed comm volume reordered: " << reordered_vol << std::endl;
+
+        auto comm_vol_total = comm_vol.total_volume();
+        auto reordered_vol_total = reordered_vol.total_volume();
+        std::cout << "Initial comm volume = " << comm_vol_total << std::endl;
+        std::cout << "Reduced comm volume = " << reordered_vol_total << std::endl;
+        auto diff = comm_vol_total - reordered_vol_total;
+        std::cout << "Comm volume reduction [%] = " << 100.0 * diff / comm_vol_total << std::endl;
+
     }
 #endif
 }
