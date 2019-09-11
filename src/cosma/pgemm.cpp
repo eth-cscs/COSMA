@@ -5,7 +5,7 @@
 #include <cosma/scalapack.hpp>
 #include <grid2grid/ranks_reordering.hpp>
 
-#include <grid2grid/transform.hpp>
+#include <grid2grid/transformer.hpp>
 
 #include <cassert>
 #include <complex>
@@ -85,10 +85,12 @@ void pgemm(const char trans_a,
     // find an optimal strategy for this problem
     Strategy strategy(m, n, k, P);
     // strategy.overlap_comm_and_comp = true;
+    PL();
+#ifdef DEBUG
     if (rank == 0) {
         std::cout << strategy << std::endl;
     }
-    PL();
+#endif
 
     // create COSMA mappers
     Mapper mapper_a('A', strategy, rank);
@@ -192,15 +194,21 @@ void pgemm(const char trans_a,
     std::cout << "Transforming the input matrices A and B from Scalapack -> COSMA" << std::endl;
 #endif
     // transform A and B from scalapack to cosma layout
-    grid2grid::transform<T>(scalapack_layout_a, cosma_layout_a, comm);
-    grid2grid::transform<T>(scalapack_layout_b, cosma_layout_b, comm);
+    grid2grid::transformer<T> transf(comm);
+    transf.schedule(scalapack_layout_a, cosma_layout_a);
+    transf.schedule(scalapack_layout_b, cosma_layout_b);
+    // grid2grid::transform<T>(scalapack_layout_a, cosma_layout_a, comm);
+    // grid2grid::transform<T>(scalapack_layout_b, cosma_layout_b, comm);
 
     // transform C from scalapack to cosma only if beta > 0
     if (std::abs(beta) > 0) {
         auto cosma_layout_c = C.get_grid_layout();
         cosma_layout_c.reorder_ranks(rank_permutation);
-        grid2grid::transform<T>(scalapack_layout_c, cosma_layout_c, comm);
+        // grid2grid::transform<T>(scalapack_layout_c, cosma_layout_c, comm);
+        transf.schedule(scalapack_layout_c, cosma_layout_c);
     }
+
+    transf.transform();
 
     // perform cosma multiplication
 #ifdef DEBUG
@@ -223,8 +231,10 @@ void pgemm(const char trans_a,
 #ifdef DEBUG
     std::cout << "Transforming the result C back from COSMA to ScaLAPACK" << std::endl;
 #endif
-    // transform the result from cosma back to scalapack
-    grid2grid::transform<T>(cosma_layout_c, scalapack_layout_c, comm);
+    // grid2grid::transform the result from cosma back to scalapack
+    // grid2grid::transform<T>(cosma_layout_c, scalapack_layout_c, comm);
+    transf.schedule(cosma_layout_c, scalapack_layout_c);
+    transf.transform();
 
 #ifdef DEBUG
     if (rank == 0) {
