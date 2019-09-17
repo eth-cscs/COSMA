@@ -86,11 +86,11 @@ void pgemm(const char trans_a,
     Strategy strategy(m, n, k, P);
     // strategy.overlap_comm_and_comp = true;
     PL();
-#ifdef DEBUG
+// #ifdef DEBUG
     if (rank == 0) {
         std::cout << strategy << std::endl;
     }
-#endif
+// #endif
 
     // create COSMA mappers
     Mapper mapper_a('A', strategy, rank);
@@ -168,11 +168,6 @@ void pgemm(const char trans_a,
         }
     }
 #endif
-    // reorder ranks in COSMA to minimize the communication
-    // volume when data layout changes
-    // mapper_a.reorder_ranks(rank_permutation[rank]);
-    // mapper_b.reorder_ranks(rank_permutation[rank]);
-    // mapper_c.reorder_ranks(rank_permutation[rank]);
 
     // create cosma matrices
     CosmaMatrix<T> A(std::move(mapper_a), rank_permutation[rank]);
@@ -187,7 +182,7 @@ void pgemm(const char trans_a,
     cosma_layout_b.reorder_ranks(rank_permutation);
 
     // if (rank == 0) {
-    //     std::cout << "COSMA grid for A after reordering: " << cosma_grid_a << std::endl;
+    //     std::cout << "COSMA grid for A after reordering: " << cosma_layout_a.grid << std::endl;
     // }
 
 #ifdef DEBUG
@@ -245,14 +240,14 @@ void pgemm(const char trans_a,
         }
         reordered_vol += grid2grid::communication_volume(cosma_layout_c.grid, scalapack_layout_c.grid);
 
-        //std::cout << "Detailed comm volume: " << comm_vol << std::endl;
-        //std::cout << "Detailed comm volume reordered: " << reordered_vol << std::endl;
+        // std::cout << "Detailed comm volume: " << comm_vol << std::endl;
+        // std::cout << "Detailed comm volume reordered: " << reordered_vol << std::endl;
 
         auto comm_vol_total = comm_vol.total_volume();
         auto reordered_vol_total = reordered_vol.total_volume();
         std::cout << "Initial comm volume = " << comm_vol_total << std::endl;
         std::cout << "Reduced comm volume = " << reordered_vol_total << std::endl;
-        auto diff = comm_vol_total - reordered_vol_total;
+        auto diff = (long long) comm_vol_total - (long long) reordered_vol_total;
         std::cout << "Comm volume reduction [%] = " << 100.0 * diff / comm_vol_total << std::endl;
 
     }
