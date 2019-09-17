@@ -147,6 +147,7 @@ void pgemm(const char trans_a,
         rank);
     PL();
 
+    PE(transform_reordering_matching);
     // total communication volume for transformation of layouts
     auto comm_vol = grid2grid::communication_volume(scalapack_layout_a.grid, cosma_grid_a);
     comm_vol += grid2grid::communication_volume(scalapack_layout_b.grid, cosma_grid_b);
@@ -159,6 +160,7 @@ void pgemm(const char trans_a,
 
     // compute the optimal rank reordering that minimizes the communication volume
     std::vector<int> rank_permutation = grid2grid::optimal_reordering(comm_vol, P);
+    PL();
 
 #ifdef DEBUG
     if (rank == 0) {
@@ -205,17 +207,21 @@ void pgemm(const char trans_a,
 
     transf.transform();
 
-    // perform cosma multiplication
 #ifdef DEBUG
     std::cout << "COSMA multiply" << std::endl;
 #endif
     // create reordered communicator, which has same ranks
     // but relabelled as given by the rank_permutation
     // (to avoid the communication during layout transformation)
+    PE(transform_reordering_comm);
     MPI_Comm reordered_comm;
     MPI_Comm_split(comm, 0, rank_permutation[rank], &reordered_comm);
+    PL();
+    // perform cosma multiplication
     multiply<T>(A, B, C, strategy, reordered_comm, alpha, beta);
+    PE(transform_reordering_comm);
     MPI_Comm_free(&reordered_comm);
+    PL();
 
     // construct cosma layout again, to avoid outdated
     // pointers when the memory pool has been used
