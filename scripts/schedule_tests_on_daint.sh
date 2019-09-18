@@ -3,11 +3,12 @@
 #SBATCH --constraint=mc
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=16
-#SBATCH --time=1
+#SBATCH --time=2
 #SBATCH --output=cosma_tests.out
 #SBATCH --error=cosma_tests.err
 
 module load daint-mc
+module swap PrgEnv-cray PrgEnv-gnu
 module load CMake
 module unload cray-libsci
 module load intel # defines $MKLROOT
@@ -23,8 +24,9 @@ export CRAYPE_LINK_TYPE=dynamic
 
 # Move to `build` directory if not there already
 #
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-COSMA_DIR="$( dirname $SCRIPT_DIR )"
+# SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+# COSMA_DIR="$( dirname $SCRIPT_DIR )"
+COSMA_DIR=$SCRATCH/COSMA
 mkdir -p ${COSMA_DIR}/build
 cd ${COSMA_DIR}/build
 
@@ -34,6 +36,6 @@ make tests
 
 # Run tests
 #
-srun tests/test.multiply
 srun -n 1 tests/test.mapper
 srun -n 1 tests/test.strategy
+srun -n 16 tests/test.multiply

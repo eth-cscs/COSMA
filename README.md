@@ -45,29 +45,55 @@ uses `dgemm` for the local computations, but also has a support for the `GPU`
 acceleration through our `Tiled-MM` library using `cublas` 
 
 
-## Building
+## Building COSMA
 
-The project uses submodules, to clone do:
-
+The project uses submodules, to clone and build do:
 ```bash
+# clone the repository
 git clone --recursive https://github.com/eth-cscs/COSMA.git
-```
+cd COSMA
 
+# create a build directory within COSMA
+mkdir build
+cd bulid
+
+# choose which version of COSMA you want:
+# CPU-only or Hybrid (CPU+GPU)
+
+# CPU-ONLY VERSION OF COSMA
+# if on Piz Daint CPU (Cray XC40), run the following
+# to load the necessary modules:
+source ../scripts/piz_daint_cpu.sh
+# to build a CPU version
+cmake -DMKL_PARALLEL=ON ..
+
+# HYBRID VERSION OF COSMA (requires cublas)
+# if on Piz Daint GPU (Cray XC50), run the following
+# to load the necessary modules:
+source ../scripts/piz_daint_gpu.sh
+# to build a GPU version
+cmake -DMKL_PARALLEL=ON -DCOSMA_WITH_GPU=ON ..
+
+# to compile
+make -j 8
+```
 > !! Note the *--recursive* flag !! 
 
-COSMA is a CMake project, a recent CMake(>=3.12) is needed. From a build
-directory, adjust and run `build.sh` found under the `scripts` directory.
+## COSMA Dependencies
+
+COSMA is a CMake project, a recent CMake(>=3.12) is needed.
 
 External dependencies: 
 
 - `MPI 3` (required)
 - `Intel MKL` (default) or `CUDA` depending on whether CPU or GPU back end is
   used.
+- `NVIDIA cublas (optional)`: only used in Hybrid version of COSMA with GPU.
 
 > Some dependencies are bundled as submodules and need not be installed
 > explicitly:
 >
-> - `TiledMM` - cublasxt GEMM replacement
+> - `TiledMM` - cublasXt GEMM replacement
 > - `grid2grid` - distributed matrix grid converter
 > - `options` - command line utlility
 > - `semiprof` - profiling utlility
@@ -113,9 +139,12 @@ ctest
 ## Miniapps
 
 ```bash
-sbatch schedule_miniapp_on_daint.sh
+# for CPU-only version
+sbatch schedule_miniapp_on_daint_cpu.sh
+# for Hybrid (CPU+GPU) version
+sbatch schedule_miniapp_on_daint_gpu.sh
 ```
-The script will use SLURM to submit a job on 64 nodes. The job will run 2 matrix
+The script will use SLURM to submit a job on 10 nodes. The job will run 2 matrix
 multiplications and output the time COSMA algorithm took.
 
 ### Matrix Multiplication
