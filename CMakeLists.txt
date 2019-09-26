@@ -63,7 +63,6 @@ if(COSMA_WITH_GPU)
     add_subdirectory(libs/Tiled-MM)
 endif()
 
-
 # COSMA
 #
 add_subdirectory(src/cosma)
