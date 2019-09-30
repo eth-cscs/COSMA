@@ -2,12 +2,10 @@
 #include <cosma/profiler.hpp>
 #include <cosma/timer.hpp>
 
-#ifdef COSMA_WITH_MKL
-#include <cosma/blas.hpp>
-#endif
-
 #ifdef COSMA_HAVE_GPU
 #include <Tiled-MM/tiled_mm.hpp>
+#else
+#include <cosma/blas.hpp>
 #endif
 
 #include <chrono>
@@ -89,7 +87,7 @@ void local_multiply(cosma_context<Scalar>* ctx,
 #ifdef COSMA_HAVE_GPU
     // std::cout << "local_multiply a = " << *matrixA << ", b = " << *matrixB << ", c = " << *matrixC << std::endl;
     gpu::gemm(*(ctx->get_gpu_context()), matrixA, matrixB, matrixC, m, n, k, alpha, beta);
-#elif COSMA_WITH_MKL
+#else
     (void)ctx;
     gemm(m, n, k, alpha, matrixA, m, matrixB, k, beta, matrixC, m);
 #endif

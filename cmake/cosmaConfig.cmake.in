@@ -13,21 +13,19 @@ if(NOT TARGET cosma::cosma)
     set(MPI_CXX_COMPILER "@MPI_CXX_COMPILER@")
     find_dependency(MPI)
 
-    if("@COSMA_WITH_GPU@")
+    if ("@COSMA_WITH_GPU@")
         find_dependency(Tiled-MM) # bundled
-    endif()
-
-    if("@COSMA_WITH_MKL@")
+    elseif ("@COSMA_WITH_MKL_BLAS@")
         set(MKL_ROOT "@MKL_ROOT@")
         set(MKL_PARALLEL "@MKL_PARALLEL@")
         set(MKL_64BIT "@MKL_64BIT@")
         find_dependency(MKL)
+    endif ()
 
-        if("@ScaLAPACK_FOUND@")
-          set(COSMA_WITH_OPENMPI "@COSMA_WITH_OPENMPI@")
-            find_dependency(ScaLAPACK)
-        endif()
-    endif()
+    if ("@COSMA_WITH_MKL_ScaLAPACK@")
+        set(COSMA_WITH_OPENMPI "@COSMA_WITH_OPENMPI@")
+        find_dependency(MKL_ScaLAPACK)
+    endif ()
 
     # Clean-up module path.
     #

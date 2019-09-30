@@ -8,6 +8,7 @@ if(NOT DEFINED PROJECT_NAME)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(cmake/build_type.cmake)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING
@@ -16,19 +17,19 @@ endif()
 
 # Options
 #
-option(COSMA_WITH_GPU "Use CUDA GPU backend." OFF)
-option(COSMA_WITH_PROFILING "Use the semiprof profiler" OFF)
 option(COSMA_WITH_TESTS "Generate the test target." ${MASTER_PROJECT})
 option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
 option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT})
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
-set(COSMA_WITH_MKL ON)
+option(COSMA_WITH_PROFILING "Enable installation." OFF)
 
-# The p?gemm wrapper can still be used alongside the GPU back-end.
-#
-# if(COSMA_WITH_GPU)
-#     set(COSMA_WITH_MKL OFF)
-# endif()
+option(COSMA_WITH_GPU "Use CUDA cuBLAS GPU back end." OFF)
+option(COSMA_WITH_MKL_BLAS "Use MKL BLAS back end." OFF)
+option(COSMA_WITH_OPENBLAS "Use OpenBLAS backend." OFF)
+option(COSMA_WITH_NETLIB_BLAS "Use Netlib BLAS backend." OFF)
+
+option(COSMA_WITH_MKL_ScaLAPACK "Use Netlib ScaLAPACK back end." OFF) 
+option(COSMA_WITH_NETLIB_ScaLAPACK "Use Netlib ScaLAPACK back end." OFF) 
 
 
 project(cosma VERSION 0.1 LANGUAGES CXX)
@@ -38,6 +39,8 @@ project(cosma VERSION 0.1 LANGUAGES CXX)
 #
 find_package(MPI REQUIRED)
 
+# Bundled dependencies
+#
 option(OPTIONS_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
 add_subdirectory(libs/options)
 
@@ -45,19 +48,51 @@ option(GRID2GRID_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
 option(GRID2GRID_WITH_PROFILING "" ${COSMA_WITH_PROFILING})
 add_subdirectory(libs/grid2grid)
 
-if(COSMA_WITH_PROFILING)
+if (COSMA_WITH_PROFILING)
     add_subdirectory(libs/semiprof)
-endif()
+endif ()
 
-if(COSMA_WITH_MKL)
+# BLAS providers
+#
+set(BLAS_TARGET "")
+set(BLAS_DEF "")
+if (COSMA_WITH_MKL_BLAS)
     find_package(MKL REQUIRED)
-    find_package(ScaLAPACK)  # optional
-endif()
-
-if(COSMA_WITH_GPU)
+    set(BLAS_TARGET "MKL::MKL")
+    set(BLAS_DEF "COSMA_WITH_MKL_BLAS")
+elseif (COSMA_WITH_GPU)
     option(TILEDMM_WITH_INSTALL "" ${COSMA_WITH_INSTALL}) 
     add_subdirectory(libs/Tiled-MM)
-endif()
+    set(BLAS_TARGET "Tiled-MM")
+    set(BLAS_DEF "COSMA_HAVE_GPU")
+elseif (COSMA_WITH_OPENBLAS)
+    find_package(OpenBLAS REQUIRED)
+    add_library(openblas SHARED IMPORTED)
+    set_target_properties(openblas PROPERTIES 
+                                   INTERFACE_INCLUDE_DIRECTORIES "${OpenBLAS_INCLUDE_DIRS}"
+                                   IMPORTED_LOCATION "${OpenBLAS_LIBRARIES}")
+    set(BLAS_TARGET "openblas")
+    set(BLAS_DEF "COSMA_WITH_BLAS")
+elseif (COSMA_WITH_NETLIB_BLAS)
+    find_package(cblas NO_MODULE REQUIRED)
+    set(BLAS_TARGET "cblas")
+    set(BLAS_DEF "COSMA_WITH_BLAS")
+else ()
+    message(FATAL_ERROR "No BLAS back end found! Select a back end and make sure it's installed with support for the cblas interface and CMake config files.")
+endif ()
+
+# (optional) ScaLAPACK providers 
+#
+set(ScaLAPACK_TARGET "")
+if (COSMA_WITH_MKL_ScaLAPACK)
+    find_package(MKL_ScaLAPACK REQUIRED)  
+    set(ScaLAPACK_TARGET "MKL::ScaLAPACK")
+elseif (COSMA_WITH_NETLIB_ScaLAPACK) 
+    find_package(scalapack REQUIRED)  
+    set(ScaLAPACK_TARGET "scalapack")
+else  ()
+    message(STATUS "Building with no ScaLAPACK interface support.")
+endif ()
 
 
 # COSMA
@@ -94,7 +129,7 @@ if(COSMA_WITH_INSTALL)
     install(FILES "${cosma_BINARY_DIR}/cosmaConfig.cmake"
                   "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
                   "${cosma_SOURCE_DIR}/cmake/FindMKL.cmake"
-                  "${cosma_SOURCE_DIR}/cmake/FindScaLAPACK.cmake"
+                  "${cosma_SOURCE_DIR}/cmake/FindMKL_ScaLAPACK.cmake"
                   "${cosma_SOURCE_DIR}/cmake/check_for_openmpi.cmake"
             DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
 

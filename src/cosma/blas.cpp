@@ -1,6 +1,12 @@
 #include <cosma/blas.hpp>
 
+#ifdef COSMA_WITH_MKL_BLAS
 #include <mkl.h>
+#endif
+
+#ifdef COSMA_WITH_BLAS
+#include <cblas.h>
+#endif
 
 namespace cosma {
 void gemm(const int M,

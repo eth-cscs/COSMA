@@ -1,6 +1,5 @@
 #pragma once
 #include <complex>
-#include <mpi.h>
 
 namespace cosma {
 void gemm(const int M,
