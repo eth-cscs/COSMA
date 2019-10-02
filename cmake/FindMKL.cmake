@@ -16,15 +16,15 @@
 #
 include(FindPackageHandleStandardArgs)
 
-if(NOT MKL_ROOT)
+if(NOT DEFINED MKL_ROOT)
     set(MKL_ROOT $ENV{MKLROOT})
 endif()
 
-if(NOT MKL_PARALLEL)
+if(NOT DEFINED MKL_PARALLEL)
     set(MKL_PARALLEL ON)
 endif()
 
-if(NOT MKL_64BIT)
+if(NOT DEFINED MKL_64BIT)
     set(MKL_64BIT OFF)
 endif()
 
@@ -56,6 +56,7 @@ function(__mkl_find_library _name)
     mark_as_advanced(${_name})
 endfunction()
 
+
 __mkl_find_library(MKL_CORE_LIB mkl_core)
 
 set(_mkl_lp "lp64")
@@ -75,6 +76,7 @@ else()
     __mkl_find_library(MKL_THREADING_LIB mkl_sequential)
 endif()
 
+
 find_package_handle_standard_args(MKL 
     DEFAULT_MSG  MKL_CORE_LIB
     MKL_THREADING_LIB
@@ -86,7 +88,7 @@ if (MKL_FOUND AND NOT TARGET MKL::MKL)
     find_package(Threads REQUIRED)
 
     set(_mkl_threading_backend "")
-    if(MKL_THREADING)
+    if(MKL_PARALLEL)
         find_package(OpenMP REQUIRED)
         set(_mkl_threading_backend "OpenMP::OpenMP_CXX")
     endif()
