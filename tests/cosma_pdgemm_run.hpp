@@ -60,7 +60,9 @@ int transpose_if(char transpose_flag, int row, int col) {
 // runs cosma or scalapack pdgemm wrapper for n_rep times and returns
 // a vector of timings (in milliseconds) of size n_rep
 bool test_pdgemm(int m, int n, int k, // matrix sizes
-        int block_m, int block_n, int block_k, // blocks sizes
+        std::pair<int, int> block_a, // blocks sizes
+        std::pair<int, int> block_b,
+        std::pair<int, int> block_c,
         int sub_m, int sub_n, int sub_k, // defines submatrices
         char trans_a, char trans_b, // transpose flags
         int p, int q, // processor grid
@@ -107,27 +109,23 @@ bool test_pdgemm(int m, int n, int k, // matrix sizes
     int cm = m + ic - 1;
     int cn = n + jc - 1;
 
-    // This is for compatible blocks
-    // in general p*gemm works for any combination of them
-    int bam = transpose_if(trans_a, block_m, block_k);
-    int ban = transpose_if(trans_a, block_k, block_m);
-    int bbm = transpose_if(trans_b, block_k, block_n);
-    int bbn = transpose_if(trans_b, block_n, block_k);
-    int bcm = block_m;
-    int bcn = block_n;
-
     // ********************************************
     //   allocate scalapack buffers for matrices
     // ********************************************
     // get the local number of rows that this rank owns
-    int nrows_a = scalapack::numroc_(&am, &bam, &myrow, &rsrc, &p);
-    int nrows_b = scalapack::numroc_(&bm, &bbm, &myrow, &rsrc, &p);
-    int nrows_c = scalapack::numroc_(&cm, &bcm, &myrow, &rsrc, &p);
+    int nrows_a = scalapack::numroc_(&am, &block_a.first, &myrow, &rsrc, &p);
+    int nrows_b = scalapack::numroc_(&bm, &block_b.first, &myrow, &rsrc, &p);
+    int nrows_c = scalapack::numroc_(&cm, &block_c.first, &myrow, &rsrc, &p);
+
+    // local leading dimensions
+    int lld_a = std::max(1, nrows_a);
+    int lld_b = std::max(1, nrows_b);
+    int lld_c = std::max(1, nrows_c);
 
     // get the local number of cols that this rank owns
-    int ncols_a = scalapack::numroc_(&an, &ban, &mycol, &csrc, &q);
-    int ncols_b = scalapack::numroc_(&bn, &bbn, &mycol, &csrc, &q);
-    int ncols_c = scalapack::numroc_(&cn, &bcn, &mycol, &csrc, &q);
+    int ncols_a = scalapack::numroc_(&an, &block_a.second, &mycol, &csrc, &q);
+    int ncols_b = scalapack::numroc_(&bn, &block_b.second, &mycol, &csrc, &q);
+    int ncols_c = scalapack::numroc_(&cn, &block_c.second, &mycol, &csrc, &q);
 
     // allocate size for the local buffers
     std::vector<double> a(nrows_a * ncols_a);
@@ -141,9 +139,9 @@ bool test_pdgemm(int m, int n, int k, // matrix sizes
     std::array<int, 9> desc_b;
     std::array<int, 9> desc_c;
     int info;
-    scalapack::descinit_(&desc_a[0], &am, &an, &bam, &ban, &rsrc, &csrc, &ctxt, &nrows_a, &info);
-    scalapack::descinit_(&desc_b[0], &bm, &bn, &bbm, &bbn, &rsrc, &csrc, &ctxt, &nrows_b, &info);
-    scalapack::descinit_(&desc_c[0], &cm, &cn, &bcm, &bcn, &rsrc, &csrc, &ctxt, &nrows_c, &info);
+    scalapack::descinit_(&desc_a[0], &am, &an, &block_a.first, &block_a.second, &rsrc, &csrc, &ctxt, &lld_a, &info);
+    scalapack::descinit_(&desc_b[0], &bm, &bn, &block_b.first, &block_b.second, &rsrc, &csrc, &ctxt, &lld_b, &info);
+    scalapack::descinit_(&desc_c[0], &cm, &cn, &block_c.first, &block_c.second, &rsrc, &csrc, &ctxt, &lld_c, &info);
 
     // fill the matrices with random data
     srand48(rank);
@@ -171,19 +169,23 @@ bool test_pdgemm(int m, int n, int k, // matrix sizes
            b.data(), &ib, &jb, &desc_b[0], &beta,
            c_scalapack.data(), &ic, &jc, &desc_c[0]);
 
+    // std::sort(c_cosma.begin(), c_cosma.end());
+    // std::sort(c_scalapack.begin(), c_scalapack.end());
 
-    // if (myrow == 0 && mycol == 0) {
-    //     std::cout << "c(cosma) = ";
-    //     for (int i = 0; i < c_cosma.size(); ++i) {
-    //         std::cout << c_cosma[i] << ", ";
-    //     }
-    //     std::cout << std::endl;
-    //     std::cout << "c(scalapack) = ";
-    //     for (int i = 0; i < c_scalapack.size(); ++i) {
-    //         std::cout << c_scalapack[i] << ", ";
-    //     }
-    //     std::cout << std::endl;
-    // }
+#ifdef DEBUG
+    if (myrow == 0 && mycol == 0) {
+        std::cout << "c(cosma) = ";
+        for (int i = 0; i < c_cosma.size(); ++i) {
+            std::cout << c_cosma[i] << ", ";
+        }
+        std::cout << std::endl;
+        std::cout << "c(scalapack) = ";
+        for (int i = 0; i < c_scalapack.size(); ++i) {
+            std::cout << c_scalapack[i] << ", ";
+        }
+        std::cout << std::endl;
+    }
+#endif
 
     // exit blacs context
     blacs::Cblacs_gridexit(ctxt);

@@ -14,28 +14,44 @@ CosmaMatrix<T>::CosmaMatrix(cosma_context<T>* ctxt,
                             int rank,
                             bool dry_run)
     : ctxt_(ctxt)
-    , label_(label)
+    , mapper_(Mapper(label, strategy, rank))
     , rank_(rank)
-    , strategy_(strategy) {
-    if (label_ == 'A') {
-        m_ = strategy.m;
-        n_ = strategy.k;
-    } else if (label_ == 'B') {
-        m_ = strategy.k;
-        n_ = strategy.n;
-    } else {
-        m_ = strategy.m;
-        n_ = strategy.n;
-    }
-    P_ = strategy.P;
+    , strategy_(strategy)
+    , label_(label)
+    , m_(strategy.n_rows(label))
+    , n_(strategy.n_cols(label))
+    , P_(strategy.P) {
 
-    if (rank >= P_) {
+    if (rank_ >= P_) {
         return;
     }
 
-    mapper_ = Mapper(label, m_, n_, P_, strategy, rank);
-    layout_ = Layout(label, m_, n_, P_, rank, mapper_.complete_layout());
-    buffer_ = buffer_t(ctxt, label, strategy, rank, &mapper_, &layout_, dry_run);
+    layout_ = Layout(label_, m_, n_, P_, rank_, &mapper_);
+    buffer_ = buffer_t(ctxt, label_, strategy_, rank_, &mapper_, &layout_, dry_run);
+}
+
+// with given mapper
+template <typename T>
+CosmaMatrix<T>::CosmaMatrix(cosma_context<T>* ctxt,
+                            Mapper&& mapper,
+                            int rank,
+                            bool dry_run)
+        : ctxt_(ctxt)
+        , mapper_(std::forward<Mapper>(mapper))
+        , rank_(rank)
+        , strategy_(mapper_.strategy())
+        , label_(mapper_.label())
+        , m_(mapper_.m())
+        , n_(mapper_.n())
+        , P_(mapper_.P()) {
+
+    if (rank_ >= P_) {
+        return;
+    }
+
+    mapper_.reorder_rank(rank);
+    layout_ = Layout(label_, m_, n_, P_, rank_, &mapper_);
+    buffer_ = buffer_t(ctxt_, label_, strategy_, rank_, &mapper_, &layout_, dry_run);
 }
 
 // using custom context
@@ -48,6 +64,13 @@ CosmaMatrix<T>::CosmaMatrix(std::unique_ptr<cosma_context<T>>& ctxt,
     : CosmaMatrix(ctxt.get(), label, strategy, rank, dry_run)
 {}
 
+// with given mapper
+template <typename T>
+CosmaMatrix<T>::CosmaMatrix(std::unique_ptr<cosma_context<T>>& ctxt,
+            Mapper&& mapper, int rank, bool dry_run)
+    : CosmaMatrix(ctxt.get(), std::forward<Mapper&&>(mapper), rank, dry_run) 
+{}
+
 // using global (singleton) context
 template <typename T>
 CosmaMatrix<T>::CosmaMatrix(char label,
@@ -55,6 +78,12 @@ CosmaMatrix<T>::CosmaMatrix(char label,
                             int rank,
                             bool dry_run)
     : CosmaMatrix(get_context_instance<T>(), label, strategy, rank, dry_run)
+{}
+
+// with given mapper
+template <typename T>
+CosmaMatrix<T>::CosmaMatrix(Mapper&& mapper, int rank, bool dry_run)
+    : CosmaMatrix(get_context_instance<T>(), std::forward<Mapper&&>(mapper), rank, dry_run)
 {}
 
 template <typename T>
@@ -109,7 +138,7 @@ const std::vector<Interval2D> &CosmaMatrix<T>::initial_layout(int rank) const {
 
 template <typename T>
 const std::vector<Interval2D> &CosmaMatrix<T>::initial_layout() const {
-    return initial_layout();
+    return mapper_.initial_layout();
 }
 
 // (gi, gj) -> (local_id, rank)
@@ -146,7 +175,7 @@ template <typename T>
 size_t CosmaMatrix<T>::matrix_size() const {
     if (rank_ >= strategy_.P)
         return 0;
-    return mapper_.initial_size(rank_);
+    return mapper_.initial_size();
 }
 
 template <typename T>
@@ -287,37 +316,9 @@ void CosmaMatrix<T>::set_current_matrix(scalar_t *mat) {
 template <typename T>
 grid2grid::grid_layout<T> CosmaMatrix<T>::get_grid_layout() {
     // **************************
-    // create grid2D
+    // get an assigned grid2D
     // **************************
-    // prepare row intervals
-    // and col intervals
-    grid2grid::grid2D grid = mapper_.get_layout_grid();
-
-    int n_blocks_row = grid.n_rows;
-    int n_blocks_col = grid.n_cols;
-
-    // **************************
-    // create an assigned grid2D
-    // **************************
-    // create a matrix of ranks owning each block
-    std::vector<std::vector<int>> owners(n_blocks_row,
-                                         std::vector<int>(n_blocks_col));
-    for (int i = 0; i < n_blocks_row; ++i) {
-        auto r_inter = grid.row_interval(i);
-        Interval row_interval(r_inter.start, r_inter.end - 1);
-        for (int j = 0; j < n_blocks_col; ++j) {
-            auto c_inter = grid.col_interval(j);
-            Interval col_interval(c_inter.start, c_inter.end - 1);
-
-            Interval2D range(row_interval, col_interval);
-            int owner = mapper_.owner(range);
-            owners[i][j] = owner;
-        }
-    }
-
-    // create an assigned grid2D
-    grid2grid::assigned_grid2D assigned_grid(
-        std::move(grid), std::move(owners), P_);
+    auto assigned_grid = mapper_.get_layout_grid();
 
     // **************************
     // create local memory view
@@ -364,6 +365,11 @@ void CosmaMatrix<T>::free_communication_buffers() {
 template <typename T>
 cosma_context<T>* CosmaMatrix<T>::get_context() {
     return ctxt_;
+}
+
+template <typename T>
+int CosmaMatrix<T>::rank() const {
+    return rank_;
 }
 
 // Explicit instantiations

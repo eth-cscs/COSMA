@@ -30,23 +30,30 @@ class CosmaMatrix {
     using scalar_t = Scalar;
     using buffer_t = Buffer<scalar_t>;
 
+    // using a pointer to cosma_context
     CosmaMatrix(cosma_context<Scalar>* ctxt,
                 char label,
                 const Strategy &strategy,
                 int rank,
                 bool dry_run = false);
+    CosmaMatrix(cosma_context<Scalar>* ctxt,
+                Mapper&& mapper, int rank, bool dry_run = false);
 
+    // using a custom context
     CosmaMatrix(std::unique_ptr<cosma_context<Scalar>>& ctxt,
                 char label,
                 const Strategy &strategy,
                 int rank,
                 bool dry_run = false);
+    CosmaMatrix(std::unique_ptr<cosma_context<Scalar>>& ctxt,
+                Mapper&& mapper, int rank, bool dry_run = false);
 
     // using global (singleton) context
     CosmaMatrix(char label,
                 const Strategy &strategy,
                 int rank,
                 bool dry_run = false);
+    CosmaMatrix(Mapper&& mapper, int rank, bool dry_run = false);
 
     int m();
     int n();
@@ -160,8 +167,18 @@ class CosmaMatrix {
 
     cosma_context<scalar_t>* get_context();
 
+    int rank() const;
+
   protected:
     cosma_context<scalar_t>* ctxt_;
+    // mapper containing information
+    // about the global grid (data layout)
+    Mapper mapper_;
+    // current rank
+    int rank_;
+    // strategy
+    const Strategy &strategy_;
+
     // A, B or C
     char label_;
     /// Number of rows of the global matrix
@@ -171,10 +188,6 @@ class CosmaMatrix {
     /// Maximum number of rank in the global communicator
     size_t P_;
 
-    int rank_;
-
-    const Strategy &strategy_;
-
     /// temporary local matrix
     size_t current_mat_id;
     scalar_t *current_mat;
@@ -183,7 +196,6 @@ class CosmaMatrix {
     Interval ni_;
     Interval Pi_;
 
-    Mapper mapper_;
     Layout layout_;
     buffer_t buffer_;
 };

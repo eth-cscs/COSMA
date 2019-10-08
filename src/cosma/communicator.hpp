@@ -16,7 +16,7 @@ namespace cosma {
 class communicator {
   public:
     communicator() = default;
-    communicator(const Strategy *strategy, MPI_Comm comm = MPI_COMM_WORLD);
+    communicator(const Strategy *strategy, MPI_Comm comm);
     ~communicator();
 
     /* In each communication step, processors are split and the communication is

@@ -7,14 +7,19 @@
 namespace cosma {
 bool communicator::use_busy_waiting = true;
 
-communicator::communicator(const Strategy *strategy, MPI_Comm comm)
+communicator::communicator(const Strategy *strategy, 
+                           MPI_Comm comm)
     : strategy_(strategy)
     , full_comm_(comm) {
     use_busy_waiting = strategy_->use_busy_waiting;
     MPI_Group group;
 
     MPI_Comm_rank(full_comm_, &rank_);
+    // rank_ = reordered_rank(rank_);
     MPI_Comm_size(full_comm_, &comm_size_);
+    // check if the reordered rank belongs 
+    // to this communicator
+    assert(rank_ < comm_size_);
     using_reduced_comm_ = comm_size_ != strategy->P;
     is_idle_ = rank_ >= strategy->P;
 
@@ -22,6 +27,7 @@ communicator::communicator(const Strategy *strategy, MPI_Comm comm)
         MPI_Comm_group(comm, &group);
         std::vector<int> exclude_ranks;
         for (int i = strategy->P; i < comm_size_; ++i) {
+            // exclude_ranks.push_back(reordered_rank(i));
             exclude_ranks.push_back(i);
         }
 
@@ -264,6 +270,9 @@ std::tuple<MPI_Group, MPI_Comm> communicator::create_comm_ring(MPI_Comm comm,
     std::vector<int> ranks(div);
     for (int i = 0; i < div; ++i) {
         ranks[i] = rank_outside_ring(P, div, offset, i);
+        // if (comm == full_comm_) {
+        //     ranks[i] = reordered_rank(ranks[i]);
+        // }
     }
 
     MPI_Group_incl(comm_group, ranks.size(), ranks.data(), &subgroup);
@@ -288,6 +297,10 @@ communicator::create_comm_subproblem(MPI_Comm comm,
     std::vector<int> ranks(newP.length());
     for (int i = 0; i < ranks.size(); ++i) {
         ranks[i] = relative_rank(P, newP.first() + i);
+        // if (comm == full_comm_) {
+        //     std::cout << "renaming ranks" << std::endl;
+        //     ranks[i] = reordered_rank(ranks[i]);
+        // }
     }
 
     MPI_Group_incl(comm_group, ranks.size(), ranks.data(), &subgroup);

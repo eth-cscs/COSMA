@@ -53,9 +53,11 @@ TEST(mapper, bdb) {
 
     // the last element is rank = 0, but regardless of this parameter
     // the mapper can compute the buffers sizes or the mapper for any rank
-    Mapper A('A', m, k, P, strategy, 0);
-    Mapper B('B', k, n, P, strategy, 0);
-    Mapper C('C', m, n, P, strategy, 0);
+    Mapper A('A', strategy, 0);
+    Mapper B('B', strategy, 0);
+    Mapper C('C', strategy, 0);
+
+    std::cout << "A = " << A.P() << std::endl;
 
     // test initial sizes for all ranks
     std::vector<int> A_initial_size_target = {4, 4, 4, 4};

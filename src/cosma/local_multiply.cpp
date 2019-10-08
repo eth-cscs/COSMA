@@ -99,7 +99,7 @@ void local_multiply(cosma_context<Scalar>* ctx,
     auto t_end =
         debug_gemm_end(matrixA, matrixB, matrixC, m, n, k, alpha, beta);
     std::cout << "time(" << m << ", " << n << ", " << k
-              << ") = " << ms_t(t_end - t_start).count() << std::endl;
+              << ") = " << std::chrono::duration_cast<ms_t>(t_end - t_start).count() << std::endl;
 #endif
 }
 

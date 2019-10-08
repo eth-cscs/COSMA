@@ -171,6 +171,11 @@ void multiply(cosma_context<Scalar> *ctx,
     // register context to be deleted at MPI_Finalize
     ctx->register_to_destroy_at_finalize();
 
+    // check if all the local matrices belong to 
+    // the current rank
+    assert(matrixA.rank() == matrixB.rank());
+    assert(matrixB.rank() == matrixC.rank());
+
     communicator cosma_comm = communicator(&strategy, comm);
     PL();
 

@@ -10,6 +10,10 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(cmake/build_type.cmake)
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_definitions(-DDEBUG)
+endif()
+
 # Options
 #
 option(COSMA_WITH_TESTS "Generate the test target." ${MASTER_PROJECT})
@@ -88,7 +92,6 @@ elseif (COSMA_WITH_NETLIB_ScaLAPACK)
 else  ()
     message(STATUS "Building with no ScaLAPACK interface support.")
 endif ()
-
 
 # COSMA
 #

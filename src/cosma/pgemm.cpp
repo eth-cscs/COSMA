@@ -3,8 +3,9 @@
 #include <cosma/pgemm.hpp>
 #include <cosma/profiler.hpp>
 #include <cosma/scalapack.hpp>
+#include <grid2grid/ranks_reordering.hpp>
 
-#include <grid2grid/transform.hpp>
+#include <grid2grid/transformer.hpp>
 
 #include <cassert>
 #include <complex>
@@ -83,28 +84,28 @@ void pgemm(const char trans_a,
     PE(strategy);
     // find an optimal strategy for this problem
     Strategy strategy(m, n, k, P);
-    // if (rank == 0) {
-    //     std::cout << strategy << std::endl;
-    // }
+    // strategy.overlap_comm_and_comp = true;
     PL();
+// #ifdef DEBUG
+    if (rank == 0) {
+        std::cout << strategy << std::endl;
+    }
+// #endif
 
-    // create COSMA matrices
-    CosmaMatrix<T> A('A', strategy, rank);
-    CosmaMatrix<T> B('B', strategy, rank);
-    CosmaMatrix<T> C('C', strategy, rank);
+    // create COSMA mappers
+    Mapper mapper_a('A', strategy, rank);
+    Mapper mapper_b('B', strategy, rank);
+    Mapper mapper_c('C', strategy, rank);
 
-    // not necessary since multiply will invoke it
-    // and matrix_pointer in matrix class is not outdated
-    // initialize COSMA matrices
-    // A.initialize();
-    // B.initialize();
-    // C.initialize();
+    auto cosma_grid_a = mapper_a.get_layout_grid();
+    auto cosma_grid_b = mapper_b.get_layout_grid();
+    auto cosma_grid_c = mapper_c.get_layout_grid();
+
+    // if (rank == 0) {
+    //     std::cout << "COSMA grid for A before reordering: " << cosma_grid_a << std::endl;
+    // }
 
     PE(transform_init);
-    // get abstract layout descriptions for COSMA layout
-    auto cosma_layout_a = A.get_grid_layout();
-    auto cosma_layout_b = B.get_grid_layout();
-
     // get abstract layout descriptions for ScaLAPACK layout
     auto scalapack_layout_a = grid2grid::get_scalapack_grid<T>(
         lld_a,
@@ -146,31 +147,117 @@ void pgemm(const char trans_a,
         rank);
     PL();
 
+    PE(transform_reordering_matching);
+    // total communication volume for transformation of layouts
+    auto comm_vol = grid2grid::communication_volume(scalapack_layout_a.grid, cosma_grid_a);
+    comm_vol += grid2grid::communication_volume(scalapack_layout_b.grid, cosma_grid_b);
+
+    if (std::abs(beta) > 0) {
+        comm_vol += grid2grid::communication_volume(scalapack_layout_c.grid, cosma_grid_c);
+    }
+
+    comm_vol += grid2grid::communication_volume(cosma_grid_c, scalapack_layout_c.grid);
+
+    // compute the optimal rank reordering that minimizes the communication volume
+    std::vector<int> rank_permutation = grid2grid::optimal_reordering(comm_vol, P);
+    PL();
+
+#ifdef DEBUG
+    if (rank == 0) {
+        std::cout << "Optimal rank relabeling:" << std::endl;
+        for (int i = 0; i < P; ++i) {
+            std::cout << i << "->" << rank_permutation[i] << std::endl;
+        }
+    }
+#endif
+
+    // create cosma matrices
+    CosmaMatrix<T> A(std::move(mapper_a), rank_permutation[rank]);
+    CosmaMatrix<T> B(std::move(mapper_b), rank_permutation[rank]);
+    CosmaMatrix<T> C(std::move(mapper_c), rank_permutation[rank]);
+
+    // get abstract layout descriptions for COSMA layout
+    auto cosma_layout_a = A.get_grid_layout();
+    auto cosma_layout_b = B.get_grid_layout();
+
+    cosma_layout_a.reorder_ranks(rank_permutation);
+    cosma_layout_b.reorder_ranks(rank_permutation);
+
+    // if (rank == 0) {
+    //     std::cout << "COSMA grid for A after reordering: " << cosma_layout_a.grid << std::endl;
+    // }
+
 #ifdef DEBUG
     std::cout << "Transforming the input matrices A and B from Scalapack -> COSMA" << std::endl;
 #endif
     // transform A and B from scalapack to cosma layout
-    grid2grid::transform<T>(scalapack_layout_a, cosma_layout_a, comm);
-    grid2grid::transform<T>(scalapack_layout_b, cosma_layout_b, comm);
+    grid2grid::transformer<T> transf(comm);
+    transf.schedule(scalapack_layout_a, cosma_layout_a);
+    transf.schedule(scalapack_layout_b, cosma_layout_b);
+    // grid2grid::transform<T>(scalapack_layout_a, cosma_layout_a, comm);
+    // grid2grid::transform<T>(scalapack_layout_b, cosma_layout_b, comm);
 
     // transform C from scalapack to cosma only if beta > 0
     if (std::abs(beta) > 0) {
         auto cosma_layout_c = C.get_grid_layout();
-        grid2grid::transform<T>(scalapack_layout_c, cosma_layout_c, comm);
+        cosma_layout_c.reorder_ranks(rank_permutation);
+        // grid2grid::transform<T>(scalapack_layout_c, cosma_layout_c, comm);
+        transf.schedule(scalapack_layout_c, cosma_layout_c);
     }
 
-    // perform cosma multiplication
+    transf.transform();
+
 #ifdef DEBUG
     std::cout << "COSMA multiply" << std::endl;
 #endif
-    multiply<T>(A, B, C, strategy, comm, alpha, beta);
+    // create reordered communicator, which has same ranks
+    // but relabelled as given by the rank_permutation
+    // (to avoid the communication during layout transformation)
+    PE(transform_reordering_comm);
+    MPI_Comm reordered_comm;
+    MPI_Comm_split(comm, 0, rank_permutation[rank], &reordered_comm);
+    PL();
+    // perform cosma multiplication
+    multiply<T>(A, B, C, strategy, reordered_comm, alpha, beta);
+    PE(transform_reordering_comm);
+    MPI_Comm_free(&reordered_comm);
+    PL();
 
+    // construct cosma layout again, to avoid outdated
+    // pointers when the memory pool has been used
+    // in case it resized during multiply
     auto cosma_layout_c = C.get_grid_layout();
+    cosma_layout_c.reorder_ranks(rank_permutation);
+
 #ifdef DEBUG
     std::cout << "Transforming the result C back from COSMA to ScaLAPACK" << std::endl;
 #endif
-    // transform the result from cosma back to scalapack
-    grid2grid::transform<T>(cosma_layout_c, scalapack_layout_c, comm);
+    // grid2grid::transform the result from cosma back to scalapack
+    // grid2grid::transform<T>(cosma_layout_c, scalapack_layout_c, comm);
+    transf.schedule(cosma_layout_c, scalapack_layout_c);
+    transf.transform();
+
+#ifdef DEBUG
+    if (rank == 0) {
+        auto reordered_vol = grid2grid::communication_volume(scalapack_layout_a.grid, cosma_layout_a.grid);
+        reordered_vol += grid2grid::communication_volume(scalapack_layout_b.grid, cosma_layout_b.grid);
+        if (std::abs(beta) > 0) {
+            reordered_vol += grid2grid::communication_volume(scalapack_layout_c.grid, cosma_layout_c.grid);
+        }
+        reordered_vol += grid2grid::communication_volume(cosma_layout_c.grid, scalapack_layout_c.grid);
+
+        // std::cout << "Detailed comm volume: " << comm_vol << std::endl;
+        // std::cout << "Detailed comm volume reordered: " << reordered_vol << std::endl;
+
+        auto comm_vol_total = comm_vol.total_volume();
+        auto reordered_vol_total = reordered_vol.total_volume();
+        std::cout << "Initial comm volume = " << comm_vol_total << std::endl;
+        std::cout << "Reduced comm volume = " << reordered_vol_total << std::endl;
+        auto diff = (long long) comm_vol_total - (long long) reordered_vol_total;
+        std::cout << "Comm volume reduction [%] = " << 100.0 * diff / comm_vol_total << std::endl;
+
+    }
+#endif
 }
 
 // explicit instantiation for pgemm

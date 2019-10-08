@@ -43,7 +43,7 @@ class Interval {
 
     bool contains(int num);
     bool contains(Interval other);
-    bool before(Interval &other);
+    bool before(Interval &other) const;
 
     bool operator==(const Interval &other) const;
 
@@ -68,7 +68,7 @@ class Interval2D {
 
     bool contains(int row, int col);
     bool contains(Interval2D other);
-    bool before(Interval2D &other);
+    bool before(Interval2D &other) const;
 
     int local_index(int row, int col);
     std::pair<int, int> global_index(int local_index);

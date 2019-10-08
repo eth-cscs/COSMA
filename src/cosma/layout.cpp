@@ -7,13 +7,13 @@ Layout::Layout(char label,
                int n,
                size_t P,
                int rank,
-               std::vector<std::vector<Interval2D>> rank_to_range):
+               Mapper* mapper):
     label_(label),
     m_(m),
     n_(n),
     P_(P),
     rank_(rank),
-    rank_to_range_(rank_to_range) {
+    mapper_(mapper) {
     PE(preprocessing_matrices_layout);
     initial_size_ = std::vector<int>(P);
     bucket_size_ = std::vector<std::vector<int>>(P, std::vector<int>());
@@ -21,7 +21,7 @@ Layout::Layout(char label,
 
     for (size_t p = 0; p < P; ++p) {
         int sum = 0;
-        auto ranges = rank_to_range[p];
+        auto ranges = mapper_->initial_layout(p);
 
         for (size_t bucket = 0; bucket < ranges.size(); ++bucket) {
             int size = ranges[bucket].size();
@@ -85,7 +85,7 @@ int Layout::seq_bucket() { return seq_bucket(rank_); }
 void Layout::update_buckets(Interval &P, Interval2D &range) {
     for (int rank = P.first(); rank <= P.last(); ++rank) {
         int pointer = pointer_[rank];
-        auto &ranges = rank_to_range_[rank];
+        auto &ranges = mapper_->initial_layout(rank);
 
         while (pointer < ranges.size() && ranges[pointer].before(range)) {
             next(rank);
@@ -161,7 +161,7 @@ Layout::sizes_inside_range(Interval2D &range, int rank, int &total_size) {
     std::vector<int> sizes;
     total_size = 0;
     int pointer = pointer_[rank];
-    auto &ranges = rank_to_range_[rank];
+    auto &ranges = mapper_->initial_layout(rank);
     auto &b_size = bucket_size_[rank];
 
     while (pointer < ranges.size()) {

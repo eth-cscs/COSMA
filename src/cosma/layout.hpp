@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cosma/interval.hpp>
+#include <cosma/mapper.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -24,7 +25,7 @@ class Layout {
            int n,
            size_t P,
            int rank,
-           std::vector<std::vector<Interval2D>> rank_to_range);
+           Mapper* mapper);
 
     int size(int rank);
     int size();
@@ -76,7 +77,7 @@ class Layout {
     // the number of submatrices that this rank owns
     // is equal to the number of seq steps in which
     // this matrix was divided
-    std::vector<std::vector<Interval2D>> rank_to_range_;
+    // std::vector<std::vector<Interval2D>> rank_to_range_;
     // rank -> total initial buffer size
     std::vector<int> initial_size_;
     // rank -> buffer size in the current branch of steps
@@ -86,6 +87,11 @@ class Layout {
     Interval mi_;
     Interval ni_;
     Interval Pi_;
+
+    std::vector<int> ranks_reordering;
+    bool ranks_reordered = false;
+
+    Mapper* mapper_;
 
   private:
     void next(int rank);

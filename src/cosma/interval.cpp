@@ -106,7 +106,9 @@ bool Interval::contains(Interval other) {
     return first() <= other.first() && last() >= other.last();
 }
 
-bool Interval::before(Interval &other) { return last() < other.first(); }
+bool Interval::before(Interval &other) const { 
+    return last() < other.first(); 
+}
 
 bool Interval::operator==(const Interval &other) const {
     return start_ == other.start_ && end_ == other.end_;
@@ -157,7 +159,7 @@ bool Interval2D::contains(Interval2D other) {
     return rows.contains(other.rows) && cols.contains(other.cols);
 }
 
-bool Interval2D::before(Interval2D &other) {
+bool Interval2D::before(Interval2D &other) const {
     return (rows.before(other.rows) && other.cols.contains(cols)) ||
            (cols.before(other.cols) && other.rows.contains(rows));
     // return (rows.before(other.rows))|| (cols.before(other.cols));

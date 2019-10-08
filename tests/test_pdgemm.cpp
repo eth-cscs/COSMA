@@ -119,7 +119,21 @@ TEST_P(PdgemmTestWithParams, pdgemm) {
             std::cout << state << std::endl;
         }
 
-        bool correct = test_pdgemm(m, n, k, bm, bn, bk,
+        std::pair<int, int> block_a;
+        std::pair<int, int> block_b;
+        std::pair<int, int> block_c;
+        if (state.trans_a)
+            block_a = std::make_pair(bk, bm);
+        else 
+            block_a = std::make_pair(bm, bk);
+
+        if (state.trans_b)
+            block_b = std::make_pair(bn, bk);
+        else 
+            block_a = std::make_pair(bk, bn);
+        block_c = std::make_pair(bm, bn);
+
+        bool correct = test_pdgemm(m, n, k, block_a, block_b, block_c,
             1, 1, 1, state.trans_a, state.trans_b, p, q,
             alpha, beta,
             rank, comm);
