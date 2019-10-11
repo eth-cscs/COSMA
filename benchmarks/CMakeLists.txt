@@ -5,7 +5,8 @@ set(executables "ubench-allgather"
                 "allgather-volume"
                 "sendrecv"
                 "reduce-scatter"
-                "dgemm_perf_model")
+                "dgemm_perf_model"
+                "transpose")
 
 foreach(exec ${executables})
     add_executable(${exec} "${exec}.cpp")
