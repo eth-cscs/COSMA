@@ -17,7 +17,7 @@ add_executable(test.cosma cosma_test.cpp)
 target_link_libraries(test.cosma PRIVATE cosma)
 target_include_directories(test.cosma PRIVATE .)
 
-if(ScaLAPACK_FOUND)
+if(COSMA_WITH_MKL_ScaLAPACK OR COSMA_WITH_NETLIB_ScaLAPACK)
     add_executable(test.cosma_pdgemm cosma_pdgemm_test.cpp)
     target_link_libraries(test.cosma_pdgemm PRIVATE cosma_with_scalapack options)
     target_include_directories(test.cosma_pdgemm PRIVATE .)
@@ -53,7 +53,7 @@ add_test(NAME test.scalar_matmul
                  ${MPIEXEC_NUMPROC_FLAG} 8 ./test.scalar_matmul)
 add_dependencies(tests test.scalar_matmul)
 
-if(ScaLAPACK_FOUND)
+if(COSMA_WITH_MKL_ScaLAPACK OR COSMA_WITH_NETLIB_ScaLAPACK)
     add_executable(test.pdgemm test_pdgemm.cpp unit_test_mpi.cpp)
     target_link_libraries(test.pdgemm PRIVATE gtest_mpi cosma_with_scalapack options)
     target_include_directories(test.pdgemm PRIVATE .)
