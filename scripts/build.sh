@@ -39,18 +39,13 @@
 #    If `ON` uses the TiledMM (submodule) GPU gemm back-end instead of MKL.
 #
 # `COSMA_WITH_MKL_BLAS` := ON|OFF (default: OFF)
-#     `MKL_PARALLEL` := ON|OFF (default: ON)
-#        Uses the Intel/GNU OpenMP back end. If `OFF`, uses sequential MKL.
 #
-#        Note: Mixing OpenMP runtimes results in performance issues. If you use 
-#              COSMA within a large application, make sure that a single OpenMP
-#              back end is used. If using GCC, that should be GNU OpenMP, except
-#              on Mac. COSMA automically selects the right OpenMP runtime back end 
-#              based on platform and compiler.
+#    Note: Mixing OpenMP runtimes results in performance issues. If you use 
+#          COSMA within a large application, make sure that a single OpenMP
+#          back end is used. If using GCC, that should be GNU OpenMP, except
+#          on Mac. COSMA automically selects the right OpenMP runtime back end 
+#          based on platform and compiler.
 #
-#     `MKL_64BIT` := ON|OFF (default: OFF)
-#        `ON` selects the 64 bit MKL integer interface.
-# 
 # `COSMA_WITH_OPENBLAS := ON|OFF (default: OFF)`
 #
 # `COSMA_WITH_NETLIB_BLAS := ON|OFF (default: OFF)`

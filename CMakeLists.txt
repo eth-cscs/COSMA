@@ -55,8 +55,8 @@ endif ()
 set(BLAS_TARGET "")
 set(BLAS_DEF "")
 if (COSMA_WITH_MKL_BLAS)
-    find_package(MKL REQUIRED)
-    set(BLAS_TARGET "MKL::MKL")
+    find_package(MKL REQUIRED COMPONENTS BLAS_32BIT_OMP)
+    set(BLAS_TARGET "mkl::blas_32bit_omp")
     set(BLAS_DEF "COSMA_WITH_MKL_BLAS")
 elseif (COSMA_WITH_GPU)
     option(TILEDMM_WITH_INSTALL "" ${COSMA_WITH_INSTALL}) 
@@ -83,8 +83,8 @@ endif ()
 #
 set(ScaLAPACK_TARGET "")
 if (COSMA_WITH_MKL_ScaLAPACK)
-    find_package(MKL_ScaLAPACK REQUIRED)  
-    set(ScaLAPACK_TARGET "MKL::ScaLAPACK")
+    find_package(MKL REQUIRED COMPONENTS SCALAPACK_32BIT_OMP)
+    set(ScaLAPACK_TARGET "mkl::scalapack_32bit_omp")
 elseif (COSMA_WITH_NETLIB_ScaLAPACK) 
     find_package(scalapack REQUIRED)  
     set(ScaLAPACK_TARGET "scalapack")
@@ -126,7 +126,6 @@ if(COSMA_WITH_INSTALL)
     install(FILES "${cosma_BINARY_DIR}/cosmaConfig.cmake"
                   "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
                   "${cosma_SOURCE_DIR}/cmake/FindMKL.cmake"
-                  "${cosma_SOURCE_DIR}/cmake/FindMKL_ScaLAPACK.cmake"
                   "${cosma_SOURCE_DIR}/cmake/check_for_openmpi.cmake"
             DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
 
