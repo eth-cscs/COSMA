@@ -1,6 +1,8 @@
 #include <cosma/local_multiply.hpp>
 #include <cosma/multiply.hpp>
 #include <cosma/profiler.hpp>
+#include <grid2grid/ranks_reordering.hpp>
+#include <grid2grid/transformer.hpp>
 
 #include <complex>
 
@@ -84,32 +86,76 @@ void multiply_using_layout(cosma_context<T> *ctx,
     // find an optimal strategy for this problem
     Strategy strategy(m, n, k, P);
 
-    // create COSMA matrices
-    CosmaMatrix<T> A_cosma(ctx, 'A', strategy, rank);
-    CosmaMatrix<T> B_cosma(ctx, 'B', strategy, rank);
-    CosmaMatrix<T> C_cosma(ctx, 'C', strategy, rank);
+    // create COSMA mappers
+    Mapper mapper_a('A', strategy, rank);
+    Mapper mapper_b('B', strategy, rank);
+    Mapper mapper_c('C', strategy, rank);
 
-    // get abstract layout descriptions for COSMA layout
+    // get abstract grid for COSMA layout
+    auto cosma_grid_a = mapper_a.get_layout_grid();
+    auto cosma_grid_b = mapper_b.get_layout_grid();
+    auto cosma_grid_c = mapper_c.get_layout_grid();
+
+    // total communication volume for transformation of layouts
+    auto comm_vol = grid2grid::communication_volume(A.grid, cosma_grid_a);
+    comm_vol += grid2grid::communication_volume(B.grid, cosma_grid_b);
+
+    if (std::abs(beta) > 0) {
+        comm_vol += grid2grid::communication_volume(C.grid, cosma_grid_c);
+    }
+
+    comm_vol += grid2grid::communication_volume(cosma_grid_c, C.grid);
+
+    // compute the optimal rank reordering that minimizes the communication volume
+    std::vector<int> rank_permutation = grid2grid::optimal_reordering(comm_vol, P);
+
+    CosmaMatrix<T> A_cosma(ctx, std::move(mapper_a), rank_permutation[rank]);
+    CosmaMatrix<T> B_cosma(ctx, std::move(mapper_b), rank_permutation[rank]);
+    CosmaMatrix<T> C_cosma(ctx, std::move(mapper_c), rank_permutation[rank]);
+
+    // get abstract layouts for COSMA layout
     auto cosma_layout_a = A_cosma.get_grid_layout();
     auto cosma_layout_b = B_cosma.get_grid_layout();
 
-    // transform A and B from given layout to cosma layout
-    grid2grid::transform<T>(A, cosma_layout_a, comm);
-    grid2grid::transform<T>(B, cosma_layout_b, comm);
+    cosma_layout_a.reorder_ranks(rank_permutation);
+    cosma_layout_b.reorder_ranks(rank_permutation);
 
-    // transform C from given layout to cosma layout only if beta > 0
+    // schedule A and B transforms together from given layout to cosma layout
+    grid2grid::transformer<T> transf(comm);
+    transf.schedule(A, cosma_layout_a);
+    transf.schedule(B, cosma_layout_b);
+
+    // transform C (if needed) from scalapack to cosma only if beta > 0
     if (std::abs(beta) > 0) {
         auto cosma_layout_c = C_cosma.get_grid_layout();
-        grid2grid::transform<T>(C, cosma_layout_c, comm);
+        cosma_layout_c.reorder_ranks(rank_permutation);
+        // grid2grid::transform<T>(scalapack_layout_c, cosma_layout_c, comm);
+        transf.schedule(C, cosma_layout_c);
     }
 
+    // transform all scheduled transformations together
+    transf.transform();
+
+    // create reordered communicator, which has same ranks
+    // but relabelled as given by the rank_permutation
+    // (to avoid the communication during layout transformation)
+    PE(transform_reordering_comm);
+    MPI_Comm reordered_comm;
+    MPI_Comm_split(comm, 0, rank_permutation[rank], &reordered_comm);
+    PL();
     // perform cosma multiplication
     // auto ctx = cosma::make_context<T>();
-    multiply<T>(A_cosma, B_cosma, C_cosma, strategy, comm, alpha, beta);
+    multiply<T>(A_cosma, B_cosma, C_cosma, strategy, reordered_comm, alpha, beta);
+    MPI_Comm_free(&reordered_comm);
 
+    // construct cosma layout again, to avoid outdated
+    // pointers when the memory pool has been used
+    // in case it resized during multiply
     auto cosma_layout_c = C_cosma.get_grid_layout();
-    // transform the result from cosma back to the given layout
-    grid2grid::transform<T>(cosma_layout_c, C, comm);
+    cosma_layout_c.reorder_ranks(rank_permutation);
+    // transform the result back
+    transf.schedule(cosma_layout_c, C);
+    transf.transform();
 }
 
 /*
