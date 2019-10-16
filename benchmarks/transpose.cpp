@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
             grid2grid::memory::copy_and_transpose<double>(src.data(), n_rows[i], n_cols[i], src_stride[i],
                                                   dest_g2g.data(), dest_stride[i], false, tiling);
             auto end = std::chrono::steady_clock::now();
-            g2g_time = std::min(g2g_time, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
+            g2g_time = std::min(g2g_time, (long) std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
 
             // ***********************************
             // transpose with mkl
@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
             start = std::chrono::steady_clock::now();
             mkl_domatcopy('C', 'T', n_rows[i], n_cols[i], 1.0, src.data(), src_stride[i], dest_mkl.data(), dest_stride[i]);
             end = std::chrono::steady_clock::now();
-            mkl_time = std::min(mkl_time, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
+            mkl_time = std::min(mkl_time, (long) std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
         }
 
         g2g_times.push_back(g2g_time);

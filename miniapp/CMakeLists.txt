@@ -3,7 +3,7 @@
 ################
 set(executables "cosma-miniapp" "blocking_vs_non_blocking" "cosma-statistics" "scalars_miniapp")
 
-if (ScaLAPACK_FOUND)
+if(COSMA_WITH_MKL_ScaLAPACK OR COSMA_WITH_NETLIB_ScaLAPACK)
     add_executable(pdgemm-miniapp "pdgemm-miniapp.cpp")
     target_link_libraries(pdgemm-miniapp PRIVATE cosma_with_scalapack options)
     if (COSMA_WITH_PROFILING)
