@@ -10,21 +10,19 @@ if(NOT TARGET cosma::cosma)
     #
     set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_MODULE_PATH})
 
+    set(MKL_ROOT "@MKL_ROOT@")
     set(MPI_CXX_COMPILER "@MPI_CXX_COMPILER@")
+
     find_dependency(MPI)
 
     if ("@COSMA_WITH_GPU@")
         find_dependency(Tiled-MM) # bundled
     elseif ("@COSMA_WITH_MKL_BLAS@")
-        set(MKL_ROOT "@MKL_ROOT@")
-        set(MKL_PARALLEL "@MKL_PARALLEL@")
-        set(MKL_64BIT "@MKL_64BIT@")
-        find_dependency(MKL)
+        find_dependency(MKL COMPONENTS BLAS_32BIT_OMP)
     endif ()
 
     if ("@COSMA_WITH_MKL_ScaLAPACK@")
-        set(COSMA_WITH_OPENMPI "@COSMA_WITH_OPENMPI@")
-        find_dependency(MKL_ScaLAPACK)
+        find_dependency(MKL COMPONENTS SCALAPACK_32BIT_OMP)
     endif ()
 
     # Clean-up module path.
