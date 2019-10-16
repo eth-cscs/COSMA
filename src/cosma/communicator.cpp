@@ -48,7 +48,7 @@ communicator::communicator(const Strategy *strategy,
         add_topology();
     }
 
-    create_communicators(full_comm_);
+    // create_communicators(full_comm_);
     // split_communicators(full_comm_);
 
     step_to_comm_index_ = std::vector<int>(strategy_->n_steps);
@@ -57,6 +57,10 @@ communicator::communicator(const Strategy *strategy,
         step_to_comm_index_[i] = idx;
         if (strategy_->parallel_step(i))
             idx++;
+    }
+
+    if (!strategy_->empty()) {
+        create_cartesian_communicators(full_comm_);
     }
 }
 
@@ -255,6 +259,108 @@ void communicator::create_communicators(MPI_Comm comm) {
             P = newP;
         }
     }
+}
+
+void communicator::create_cartesian_communicators(MPI_Comm comm) {
+    std::vector<int> parallel_divisors;
+    std::vector<int> periods;
+    std::vector<int> all_true;
+    std::vector<int> all_false;
+    // extract only divisors from parallel steps
+    for (int i = 0; i < strategy_->n_steps; ++i) {
+        if (strategy_->parallel_step(i)) {
+            parallel_divisors.push_back(strategy_->divisor(i));
+            periods.push_back(0);
+            all_true.push_back(1);
+            all_false.push_back(0);
+        }
+    }
+
+    // create a cartesian grid
+    MPI_Cart_create(comm,
+                    parallel_divisors.size(),
+                    parallel_divisors.data(),
+                    periods.data(),
+                    1,
+                    &full_comm_
+    );
+
+    if (full_comm_ == MPI_COMM_NULL) {
+        std::cout << "rank = " << rank_ << "full comm is null" << std::endl;
+    }
+
+    // update the group
+    MPI_Comm_group(full_comm_, &full_comm_group_);
+
+    comm = full_comm_;
+
+    Interval P(0, strategy_->P - 1);
+    // iterate through all steps and for each parallel
+    // step, create a suitable subcommunicator
+    for (int step = 0; step < strategy_->n_steps; ++step) {
+        if (strategy_->parallel_step(step)) {
+            int div = strategy_->divisor(step);
+            int partition_idx = P.subinterval_index(div, rank_);
+            Interval newP = P.subinterval(div, partition_idx);
+            int group, offset;
+            std::tie(group, offset) = group_and_offset(P, div, rank_);
+
+            MPI_Group ring_group;
+            MPI_Comm ring_comm;
+            std::tie(ring_group, ring_comm) =
+                create_comm_ring(comm, P, offset, div);
+            comm_ring_.push_back(ring_comm);
+            comm_ring_group_.push_back(ring_group);
+
+            MPI_Group subproblem_group;
+            MPI_Comm subproblem_comm;
+            std::tie(subproblem_group, subproblem_comm) =
+                create_comm_subproblem(comm, P, newP);
+            comm_subproblem_.push_back(subproblem_comm);
+            comm_subproblem_group_.push_back(subproblem_group);
+
+            comm = subproblem_comm;
+            P = newP;
+        }
+    }
+    /*
+    // iterate through all steps and for each parallel
+    // step, create a suitable subcommunicator
+    for (int step = 0; step < parallel_divisors.size(); ++step) {
+        int div = parallel_divisors[step];
+
+        // corresponds to a row in a processor grid
+        MPI_Group subproblem_group;
+        MPI_Comm subproblem_comm;
+        all_false[step] = 1;
+        MPI_Cart_sub(comm, &all_false[step], &subproblem_comm);
+        if (subproblem_comm == MPI_COMM_NULL) {
+            std::cout << "rank = " << rank_ << ", subproblem comm is null" << std::endl;
+        }
+        MPI_Comm_group(subproblem_comm, &subproblem_group);
+        comm_subproblem_.push_back(subproblem_comm);
+        comm_subproblem_group_.push_back(subproblem_group);
+
+        // corresponds to a column in a processor grid
+        MPI_Group ring_group;
+        MPI_Comm ring_comm;
+        all_true[step] = 0;
+        // if last step
+        if (step < parallel_divisors.size() - 1) {
+            MPI_Cart_sub(comm, &all_true[step], &ring_comm);
+        } else {
+            ring_comm = subproblem_comm;
+        }
+        if (ring_comm == MPI_COMM_NULL) {
+            std::cout << "rank = " << rank_ << ", ring comm is null" << std::endl;
+        }
+        MPI_Comm_group(ring_comm, &ring_group);
+        comm_ring_.push_back(ring_comm);
+        comm_ring_group_.push_back(ring_group);
+
+        comm = subproblem_comm;
+    }
+    */
 }
 
 std::tuple<MPI_Group, MPI_Comm> communicator::create_comm_ring(MPI_Comm comm,

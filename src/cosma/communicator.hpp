@@ -244,6 +244,7 @@ class communicator {
     void get_topology_edges(std::vector<int> &dest, std::vector<int> &weight);
 
     void create_communicators(MPI_Comm comm);
+    void create_cartesian_communicators(MPI_Comm comm);
     // same as create just uses MPI_Comm_split instead of MPI_Comm_create
     void split_communicators(MPI_Comm comm);
     std::tuple<MPI_Group, MPI_Comm>
