@@ -2,63 +2,87 @@
 #include <grid2grid/tiling_manager.hpp>
 #include <mkl.h>
 #include <chrono>
+#include <limits>
 
 int main(int argc, char** argv) {
-    int n_rep = 5;
+    int n_rep = 3;
     // dimensions before transposing
-    int n_rows = 5000; // 5000;
-    int n_cols = 10000; // 10000;
+    std::vector<int> n_rows = {5000, 10000, 15000, 20000, 25000, 30000}; // 5000;
+    std::vector<int> n_cols = {5000, 10000, 15000, 20000, 25000, 30000}; // 10000;
 
-    int src_stride = n_rows; // 5000;
-    int dest_stride = n_cols; // 10000;
+    // not strided
+    auto src_stride = n_rows; // 5000;
+    auto  dest_stride = n_cols; // 10000;
     bool conjugate = false;
-
-    src_stride = std::max(n_rows, src_stride);
-    // since transposed
-    dest_stride = std::max(n_cols, dest_stride);
-
-    std::vector<double> src(src_stride * n_cols);
-    std::vector<double> dest_g2g(dest_stride * n_rows);
-    std::vector<double> dest_mkl(dest_stride * n_rows);
-
-    std::vector<long> g2g_times(n_rep);
-    std::vector<long> mkl_times(n_rep);
-
-    for (int i = 0; i < n_rows; ++i) {
-        for (int j = 0; j < n_cols; ++j) {
-            src[j * src_stride + i] = j * src_stride + i;
-            // std::cout << src[j*src_stride + i] << ", ";
-        }
-        // std::cout << std::endl;
-    }
 
     grid2grid::memory::tiling_manager<double> tiling;
 
-    for (int i = 0; i < n_rep; ++i) {
-        // ***********************************
-        // transpose with grid2grid
-        // ***********************************
-        auto start = std::chrono::steady_clock::now();
-        grid2grid::memory::copy_and_transpose<double>(src.data(), n_rows, n_cols, src_stride,
-                                              dest_g2g.data(), dest_stride, false, tiling);
-        auto end = std::chrono::steady_clock::now();
-        g2g_times[i] = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    std::vector<long> g2g_times;
+    std::vector<long> mkl_times;
+
+    for (int i = 0; i < n_rows.size(); ++i) {
+        long g2g_time = std::numeric_limits<long>::max();
+        long mkl_time = std::numeric_limits<long>::max();
+
+        src_stride[i] = std::max(n_rows[i], src_stride[i]);
+        // since transposed
+        dest_stride[i] = std::max(n_cols[i], dest_stride[i]);
+
+        std::vector<double> src(src_stride[i] * n_cols[i]);
+        std::vector<double> dest_g2g(dest_stride[i] * n_rows[i]);
+        std::vector<double> dest_mkl(dest_stride[i] * n_rows[i]);
+
+        for (int row = 0; row < n_rows[i]; ++row) {
+            for (int col = 0; col < n_cols[i]; ++col) {
+                src[col * src_stride[i] + row] = col * src_stride[i] + row;
+            }
+        }
+
+        for (int rep = 0; rep < n_rep; ++rep) {
+            // ***********************************
+            // transpose with grid2grid
+            // ***********************************
+            auto start = std::chrono::steady_clock::now();
+            grid2grid::memory::copy_and_transpose<double>(src.data(), n_rows[i], n_cols[i], src_stride[i],
+                                                  dest_g2g.data(), dest_stride[i], false, tiling);
+            auto end = std::chrono::steady_clock::now();
+            g2g_time = std::min(g2g_time, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
+
+            // ***********************************
+            // transpose with mkl
+            // ***********************************
+            start = std::chrono::steady_clock::now();
+            mkl_domatcopy('C', 'T', n_rows[i], n_cols[i], 1.0, src.data(), src_stride[i], dest_mkl.data(), dest_stride[i]);
+            end = std::chrono::steady_clock::now();
+            mkl_time = std::min(mkl_time, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
+        }
+
+        g2g_times.push_back(g2g_time);
+        mkl_times.push_back(mkl_time);
 
         // ***********************************
-        // transpose with mkl
+        // checking results
         // ***********************************
-        start = std::chrono::steady_clock::now();
-        mkl_domatcopy('C', 'T', n_rows, n_cols, 1.0, src.data(), src_stride, dest_mkl.data(), dest_stride);
-        end = std::chrono::steady_clock::now();
-        mkl_times[i] = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        int n_rows_t = n_cols[i];
+        int n_cols_t = n_rows[i];
+        for (int row = 0; row < n_rows_t; ++row) {
+            for (int col = 0; col < n_cols_t; ++col) {
+                // dest_stride >= n_cols
+                auto g2g = dest_g2g[col * dest_stride[i] + row];
+                auto mkl = dest_mkl[col * dest_stride[i] + row];
+                auto target = src[row * src_stride[i] + col];
+                if (g2g != mkl) {
+                    std::cout << "Error: (" << col << ", " << row << ") = " << ", g2g = " << g2g << ", mkl = " << mkl << ", target = " << target << std::endl;
+                }
+            }
+        }
     }
 
     // ***********************************
     // output grid2grid timings
     // ***********************************
-    std::sort(g2g_times.begin(), g2g_times.end());
     std::cout << "grid2grid times: " << std::endl;
-    for (int i = 0; i < n_rep; ++i) {
+    for (int i = 0; i < g2g_times.size(); ++i) {
         std::cout << g2g_times[i] << ", ";
     }
     std::cout << std::endl;
@@ -66,29 +90,11 @@ int main(int argc, char** argv) {
     // ***********************************
     // output MKL timings
     // ***********************************
-    std::sort(mkl_times.begin(), mkl_times.end());
     std::cout << "mkl times: " << std::endl;
-    for (int i = 0; i < n_rep; ++i) {
+    for (int i = 0; i < mkl_times.size(); ++i) {
         std::cout << mkl_times[i] << ", ";
     }
     std::cout << std::endl;
-
-    // ***********************************
-    // checking results
-    // ***********************************
-    int n_rows_t = n_cols;
-    int n_cols_t = n_rows;
-    for (int i = 0; i < n_rows_t; ++i) {
-        for (int j = 0; j < n_cols_t; ++j) {
-            // dest_stride >= n_cols
-            auto g2g = dest_g2g[j * dest_stride + i];
-            auto mkl = dest_mkl[j * dest_stride + i];
-            auto target = src[i * src_stride + j];
-            if (g2g != mkl) {
-                std::cout << "Error: (" << j << ", " << i << ") = " << ", g2g = " << g2g << ", mkl = " << mkl << ", target = " << target << std::endl;
-            }
-        }
-    }
 
     return 0;
 }
