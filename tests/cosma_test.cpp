@@ -1,5 +1,3 @@
-#include <cosma/blas.hpp>
-
 #include <cosma_run.hpp>
 
 #include <algorithm>

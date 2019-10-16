@@ -8,6 +8,9 @@
 #include <cblas.h>
 #endif
 
+// The file is not needed if GPU is used
+//
+#ifndef COSMA_HAVE_GPU
 namespace cosma {
 void gemm(const int M,
           const int N,
@@ -118,3 +121,4 @@ void gemm(const int M,
 }
 
 } // namespace cosma
+#endif

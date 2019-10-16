@@ -1,8 +1,6 @@
 #include <cosma/local_multiply.hpp>
 #include <cosma/timer.hpp>
 
-#include <cosma/blas.hpp>
-
 #include <algorithm>
 #include <chrono>
 #include <vector>
