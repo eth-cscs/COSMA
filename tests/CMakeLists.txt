@@ -1,65 +1,47 @@
-# OpenMPI needs the `--oversubscribe` flag for 3 and above
+add_custom_target(tests COMMENT "Builds all tests.")
+
+# CACHE GTest main into an OBJECT library to avoid recompiling.
 #
-include(${PROJECT_SOURCE_DIR}/cmake/check_for_openmpi.cmake)
-check_for_openmpi()
-set(OVERSUBSCRIBE "")
-if (COSMA_WITH_OPENMPI)
-    set(OVERSUBSCRIBE "--oversubscribe")
+add_library(main_gtest_mpi OBJECT main_gtest_mpi.cpp)
+target_link_libraries(main_gtest_mpi PRIVATE MPI::MPI_CXX gtest_mpi)
+
+add_library(main_gtest OBJECT main_gtest.cpp)
+target_link_libraries(main_gtest PRIVATE gtest)
+
+#  Unit tests
+#
+function(add_cosma_mpi_test test_name num_procs)
+    set(tgt_ test.${test_name})
+    add_executable(${tgt_} ${test_name}.cpp)
+    target_link_libraries(${tgt_} PRIVATE main_gtest_mpi gtest_mpi ${ARGN})
+    target_include_directories(${tgt_} PRIVATE .)
+    add_test(NAME ${tgt_}
+             WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH}
+             COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${num_procs}
+                     ${MPIEXEC_PREFLAGS} ./${tgt_} ${MPIEXEC_POSTFLAGS})
+    add_dependencies(tests ${tgt_})
+endfunction()
+
+add_executable(test.mapper mapper.cpp)
+target_link_libraries(test.mapper PRIVATE main_gtest gtest cosma)
+add_test(NAME test.mapper COMMAND test.mapper)
+add_dependencies(tests test.mapper)
+
+add_cosma_mpi_test(multiply 16 cosma)
+add_cosma_mpi_test(scalar_matmul 8 cosma)
+
+if(COSMA_WITH_MKL_ScaLAPACK OR COSMA_WITH_NETLIB_ScaLAPACK)
+    add_cosma_mpi_test(pdgemm 6 cosma_with_scalapack options)
 endif()
 
-add_custom_target(tests COMMENT "Builds all tests if any.")
-
-
-################
-#  Build test  #
-################
-add_executable(test.cosma cosma_test.cpp)
-target_link_libraries(test.cosma PRIVATE cosma)
-target_include_directories(test.cosma PRIVATE .)
-
+# Functional tests
+#
 if(COSMA_WITH_MKL_ScaLAPACK OR COSMA_WITH_NETLIB_ScaLAPACK)
     add_executable(test.cosma_pdgemm cosma_pdgemm_test.cpp)
     target_link_libraries(test.cosma_pdgemm PRIVATE cosma_with_scalapack options)
     target_include_directories(test.cosma_pdgemm PRIVATE .)
 endif()
 
-add_executable(test.strategy test_strategy.cpp)
-target_link_libraries(test.strategy PRIVATE cosma)
-add_test(NAME test.strategy COMMAND test.strategy)
-add_dependencies(tests test.strategy)
-
-################
-#  unit gtests #
-################
-add_executable(test.mapper test_mapper.cpp unit_test.cpp)
-target_link_libraries(test.mapper PRIVATE gtest cosma)
-target_include_directories(test.mapper PRIVATE .)
-add_test(NAME test.mapper COMMAND test.mapper)
-add_dependencies(tests test.mapper)
-
-add_executable(test.multiply test_multiply.cpp unit_test_mpi.cpp)
-target_link_libraries(test.multiply PRIVATE gtest_mpi cosma)
-target_include_directories(test.multiply PRIVATE .)
-add_test(NAME test.multiply
-         COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-         ${MPIEXEC_NUMPROC_FLAG} 16 ./test.multiply)
-add_dependencies(tests test.multiply)
-
-add_executable(test.scalar_matmul scalar_matmul.test.cpp unit_test_mpi.cpp)
-target_link_libraries(test.scalar_matmul PRIVATE gtest_mpi cosma)
-target_include_directories(test.scalar_matmul PRIVATE .)
-add_test(NAME test.scalar_matmul
-         COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-                 ${MPIEXEC_NUMPROC_FLAG} 8 ./test.scalar_matmul)
-add_dependencies(tests test.scalar_matmul)
-
-if(COSMA_WITH_MKL_ScaLAPACK OR COSMA_WITH_NETLIB_ScaLAPACK)
-    add_executable(test.pdgemm test_pdgemm.cpp unit_test_mpi.cpp)
-    target_link_libraries(test.pdgemm PRIVATE gtest_mpi cosma_with_scalapack options)
-    target_include_directories(test.pdgemm PRIVATE .)
-    add_test(NAME test.pdgemm
-             COMMAND ${MPIEXEC} ${OVERSUBSCRIBE}
-             ${MPIEXEC_NUMPROC_FLAG} 6 ./test.pdgemm)
-    add_dependencies(tests test.pdgemm)
-endif()
-
+add_executable(test.cosma cosma_test.cpp)
+target_link_libraries(test.cosma PRIVATE cosma)
+target_include_directories(test.cosma PRIVATE .)

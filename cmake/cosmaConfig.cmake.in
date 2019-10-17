@@ -13,16 +13,16 @@ if(NOT TARGET cosma::cosma)
     set(MKL_ROOT "@MKL_ROOT@")
     set(MPI_CXX_COMPILER "@MPI_CXX_COMPILER@")
 
-    find_dependency(MPI)
+    find_package(MPI)
 
     if ("@COSMA_WITH_GPU@")
         find_dependency(Tiled-MM) # bundled
     elseif ("@COSMA_WITH_MKL_BLAS@")
-        find_dependency(MKL COMPONENTS BLAS_32BIT_OMP)
+        find_package(MKL COMPONENTS BLAS_32BIT_OMP)
     endif ()
 
     if ("@COSMA_WITH_MKL_ScaLAPACK@")
-        find_dependency(MKL COMPONENTS SCALAPACK_32BIT_OMP)
+        find_package(MKL COMPONENTS SCALAPACK_32BIT_OMP)
     endif ()
 
     # Clean-up module path.

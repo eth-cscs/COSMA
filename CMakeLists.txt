@@ -9,10 +9,7 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(cmake/build_type.cmake)
-
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_definitions(-DDEBUG)
-endif()
+include(cmake/adjust_mpiexec_flags.cmake)
 
 # Options
 #
@@ -36,6 +33,7 @@ project(cosma VERSION 0.1 LANGUAGES CXX)
 # Dependencies
 #
 find_package(MPI REQUIRED)
+adjust_mpiexec_flags()
 
 # Bundled dependencies
 #
@@ -126,7 +124,6 @@ if(COSMA_WITH_INSTALL)
     install(FILES "${cosma_BINARY_DIR}/cosmaConfig.cmake"
                   "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
                   "${cosma_SOURCE_DIR}/cmake/FindMKL.cmake"
-                  "${cosma_SOURCE_DIR}/cmake/check_for_openmpi.cmake"
             DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
 
     install(FILES "${cosma_BINARY_DIR}/cosma.pc"
