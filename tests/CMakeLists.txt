@@ -27,8 +27,10 @@ target_link_libraries(test.mapper PRIVATE main_gtest gtest cosma)
 add_test(NAME test.mapper COMMAND test.mapper)
 add_dependencies(tests test.mapper)
 
+add_cosma_mpi_test(multiply_using_layout 4 cosma)
 add_cosma_mpi_test(multiply 16 cosma)
 add_cosma_mpi_test(scalar_matmul 8 cosma)
+
 
 if(COSMA_WITH_MKL_ScaLAPACK OR COSMA_WITH_NETLIB_ScaLAPACK)
     add_cosma_mpi_test(pdgemm 6 cosma_with_scalapack options)

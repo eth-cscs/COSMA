@@ -31,29 +31,33 @@ class CosmaMatrix {
     using buffer_t = Buffer<scalar_t>;
 
     // using a pointer to cosma_context
-    CosmaMatrix(cosma_context<Scalar>* ctxt,
+    CosmaMatrix(cosma_context<Scalar> *ctxt,
                 char label,
                 const Strategy &strategy,
                 int rank,
                 bool dry_run = false);
-    CosmaMatrix(cosma_context<Scalar>* ctxt,
-                Mapper&& mapper, int rank, bool dry_run = false);
+    CosmaMatrix(cosma_context<Scalar> *ctxt,
+                Mapper &&mapper,
+                int rank,
+                bool dry_run = false);
 
     // using a custom context
-    CosmaMatrix(std::unique_ptr<cosma_context<Scalar>>& ctxt,
+    CosmaMatrix(std::unique_ptr<cosma_context<Scalar>> &ctxt,
                 char label,
                 const Strategy &strategy,
                 int rank,
                 bool dry_run = false);
-    CosmaMatrix(std::unique_ptr<cosma_context<Scalar>>& ctxt,
-                Mapper&& mapper, int rank, bool dry_run = false);
+    CosmaMatrix(std::unique_ptr<cosma_context<Scalar>> &ctxt,
+                Mapper &&mapper,
+                int rank,
+                bool dry_run = false);
 
     // using global (singleton) context
     CosmaMatrix(char label,
                 const Strategy &strategy,
                 int rank,
                 bool dry_run = false);
-    CosmaMatrix(Mapper&& mapper, int rank, bool dry_run = false);
+    CosmaMatrix(Mapper &&mapper, int rank, bool dry_run = false);
 
     int m();
     int n();
@@ -120,6 +124,7 @@ class CosmaMatrix {
     void set_buffer_index(int idx);
     // returns the pointer to the current buffer
     scalar_t *buffer_ptr();
+    size_t buffer_size();
     // returns the pointer to the reshuffle buffer
     // that is used when n_blocks > 1 (i.e. when sequential steps are present)
     // as a temporary buffer in which the data is reshuffled.
@@ -133,7 +138,8 @@ class CosmaMatrix {
     // NEW METHODS
     // **********************************************
     scalar_t &operator[](const typename std::vector<scalar_t>::size_type index);
-    scalar_t operator[](const typename std::vector<scalar_t>::size_type index) const;
+    scalar_t
+    operator[](const typename std::vector<scalar_t>::size_type index) const;
 
     // outputs matrix in a format:
     //      row, column, value
@@ -165,12 +171,12 @@ class CosmaMatrix {
     void allocate_communication_buffers();
     void free_communication_buffers();
 
-    cosma_context<scalar_t>* get_context();
+    cosma_context<scalar_t> *get_context();
 
     int rank() const;
 
   protected:
-    cosma_context<scalar_t>* ctxt_;
+    cosma_context<scalar_t> *ctxt_;
     // mapper containing information
     // about the global grid (data layout)
     Mapper mapper_;
