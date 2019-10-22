@@ -140,6 +140,6 @@ if(COSMA_WITH_APPS)
     add_subdirectory(miniapp)
 endif()
 
-if(COSMA_WITH_BENCHMARKS)
+if(COSMA_WITH_BENCHMARKS AND NOT COSMA_WITH_OPENBLAS)
     add_subdirectory(benchmarks)
 endif()
