@@ -107,7 +107,8 @@ void multiply_using_layout(cosma_context<T> *ctx,
     comm_vol += grid2grid::communication_volume(cosma_grid_c, C.grid);
 
     // compute the optimal rank reordering that minimizes the communication volume
-    std::vector<int> rank_permutation = grid2grid::optimal_reordering(comm_vol, P);
+    bool reordered = false;
+    std::vector<int> rank_permutation = grid2grid::optimal_reordering(comm_vol, P, reordered);
 
     CosmaMatrix<T> A_cosma(ctx, std::move(mapper_a), rank_permutation[rank]);
     CosmaMatrix<T> B_cosma(ctx, std::move(mapper_b), rank_permutation[rank]);
@@ -140,13 +141,19 @@ void multiply_using_layout(cosma_context<T> *ctx,
     // but relabelled as given by the rank_permutation
     // (to avoid the communication during layout transformation)
     PE(transform_reordering_comm);
-    MPI_Comm reordered_comm;
-    MPI_Comm_split(comm, 0, rank_permutation[rank], &reordered_comm);
+    MPI_Comm reordered_comm = comm;
+    if (reordered) {
+        MPI_Comm_split(comm, 0, rank_permutation[rank], &reordered_comm);
+    }
     PL();
     // perform cosma multiplication
     // auto ctx = cosma::make_context<T>();
     multiply<T>(A_cosma, B_cosma, C_cosma, strategy, reordered_comm, alpha, beta);
-    MPI_Comm_free(&reordered_comm);
+    PE(transform_reordering_comm);
+    if (reordered) {
+        MPI_Comm_free(&reordered_comm);
+    }
+    PL();
 
     // construct cosma layout again, to avoid outdated
     // pointers when the memory pool has been used

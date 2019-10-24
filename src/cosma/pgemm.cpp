@@ -86,11 +86,11 @@ void pgemm(const char trans_a,
     Strategy strategy(m, n, k, P);
     // strategy.overlap_comm_and_comp = true;
     PL();
-// #ifdef DEBUG
+#ifdef DEBUG
     if (rank == 0) {
         std::cout << strategy << std::endl;
     }
-// #endif
+#endif
 
     // create COSMA mappers
     Mapper mapper_a('A', strategy, rank);
@@ -159,7 +159,8 @@ void pgemm(const char trans_a,
     comm_vol += grid2grid::communication_volume(cosma_grid_c, scalapack_layout_c.grid);
 
     // compute the optimal rank reordering that minimizes the communication volume
-    std::vector<int> rank_permutation = grid2grid::optimal_reordering(comm_vol, P);
+    bool reordered = false;
+    std::vector<int> rank_permutation = grid2grid::optimal_reordering(comm_vol, P, reordered);
     PL();
 
 #ifdef DEBUG
@@ -214,13 +215,17 @@ void pgemm(const char trans_a,
     // but relabelled as given by the rank_permutation
     // (to avoid the communication during layout transformation)
     PE(transform_reordering_comm);
-    MPI_Comm reordered_comm;
-    MPI_Comm_split(comm, 0, rank_permutation[rank], &reordered_comm);
+    MPI_Comm reordered_comm = comm;
+    if (reordered) {
+        MPI_Comm_split(comm, 0, rank_permutation[rank], &reordered_comm);
+    }
     PL();
     // perform cosma multiplication
     multiply<T>(A, B, C, strategy, reordered_comm, alpha, beta);
     PE(transform_reordering_comm);
-    MPI_Comm_free(&reordered_comm);
+    if (reordered) {
+        MPI_Comm_free(&reordered_comm);
+    }
     PL();
 
     // construct cosma layout again, to avoid outdated
