@@ -17,7 +17,7 @@ option(COSMA_WITH_TESTS "Generate the test target." ${MASTER_PROJECT})
 option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
 option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT})
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
-option(COSMA_WITH_PROFILING "Enable installation." OFF)
+option(COSMA_WITH_PROFILING "Enable profiling." OFF)
 
 if (COSMA_WITH_PROFILING)
     option(SEMIPROF_WITH_INSTALL "" ON)
