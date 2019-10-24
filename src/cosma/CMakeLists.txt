@@ -22,11 +22,14 @@ target_link_libraries(cosma PUBLIC MPI::MPI_CXX
                                    grid2grid
                                    ${BLAS_TARGET}
                             PRIVATE options
-                                    $<$<BOOL:${COSMA_WITH_PROFILING}>:semiprof>
 )
 target_compile_definitions(cosma PRIVATE ${BLAS_DEF}
-                                         $<$<BOOL:${COSMA_WITH_PROFILING}>:COSMA_WITH_PROFILING>
 )
+
+if(COSMA_WITH_PROFILING)
+    target_link_libraries(cosma PRIVATE semiprof)
+    target_compile_definitions(cosma PRIVATE COSMA_WITH_PROFILING)
+endif()
 
 if(COSMA_WITH_INSTALL)
     install(TARGETS cosma
@@ -42,9 +45,12 @@ if(ScaLAPACK_TARGET)
     )
     target_link_libraries(cosma_with_scalapack PUBLIC cosma 
                                                       ${ScaLAPACK_TARGET}
-                                               PRIVATE $<$<BOOL:${COSMA_WITH_PROFILING}>:semiprof>
     )
-    target_compile_definitions(cosma_with_scalapack PRIVATE $<$<BOOL:${COSMA_WITH_PROFILING}>:COSMA_WITH_PROFILING>)
+
+    if(COSMA_WITH_PROFILING)
+        target_link_libraries(cosma_with_scalapack PRIVATE semiprof)
+        target_compile_definitions(cosma_with_scalapack PRIVATE COSMA_WITH_PROFILING)
+    endif()
 
     if(COSMA_WITH_INSTALL)
         install(TARGETS cosma_with_scalapack

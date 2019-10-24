@@ -19,6 +19,10 @@ option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT}
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
 option(COSMA_WITH_PROFILING "Enable installation." OFF)
 
+if (COSMA_WITH_PROFILING)
+    option(SEMIPROF_WITH_INSTALL "" ON)
+endif()
+
 option(COSMA_WITH_GPU "Use CUDA cuBLAS GPU back end." OFF)
 option(COSMA_WITH_MKL_BLAS "Use MKL BLAS back end." OFF)
 option(COSMA_WITH_OPENBLAS "Use OpenBLAS backend." OFF)
@@ -37,16 +41,17 @@ adjust_mpiexec_flags()
 
 # Bundled dependencies
 #
+
+if (COSMA_WITH_PROFILING)
+    add_subdirectory(libs/semiprof)
+endif ()
+
 option(OPTIONS_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
 add_subdirectory(libs/options)
 
 option(GRID2GRID_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
 option(GRID2GRID_WITH_PROFILING "" ${COSMA_WITH_PROFILING})
 add_subdirectory(libs/grid2grid)
-
-if (COSMA_WITH_PROFILING)
-    add_subdirectory(libs/semiprof)
-endif ()
 
 # BLAS providers
 #

@@ -3,7 +3,7 @@
 // The header makes semiprof an optional dependency that needs not be shipped when COSMA is installed.
 //
 #ifdef COSMA_WITH_PROFILING
-#include <semiprof.hpp>
+#include <semiprof/semiprof.hpp>
 #else
 #define PE(name)
 #define PL()
