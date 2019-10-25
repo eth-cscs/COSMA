@@ -155,7 +155,7 @@ bool test_pdgemm(int m, int n, int k, // matrix sizes
     //          run COSMA PDGEMM
     // ***********************************
     // running COSMA wrapper
-    cosma::pdgemm(trans_a, trans_b, m, n, k,
+    cosma::pgemm<double>(trans_a, trans_b, m, n, k,
            alpha, a.data(), ia, ja, &desc_a[0],
            b.data(), ib, jb, &desc_b[0], beta,
            c_cosma.data(), ic, jc, &desc_c[0]);

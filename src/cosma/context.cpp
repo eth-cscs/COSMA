@@ -2,8 +2,19 @@
 #include <complex>
 #include <limits>
 #include <cassert>
+#include <stdlib.h>
 
 namespace cosma {
+
+int get_num_ranks_per_gpu() {
+    char* var;
+    var = getenv ("COSMA_RANKS_PER_GPU");
+    int ranks_per_gpu = 1;
+    if (var != nullptr)
+        ranks_per_gpu = std::atoi(var);
+    return ranks_per_gpu;
+}
+
 #ifdef COSMA_HAVE_GPU
 template <typename Scalar>
 gpu::mm_handle<Scalar>* cosma_context<Scalar>::get_gpu_context() {
@@ -13,7 +24,7 @@ gpu::mm_handle<Scalar>* cosma_context<Scalar>::get_gpu_context() {
 template <typename Scalar>
 cosma_context<Scalar>::cosma_context() {
 #ifdef COSMA_HAVE_GPU
-    gpu_ctx_ = gpu::make_context<Scalar>();
+    gpu_ctx_ = gpu::make_context<Scalar>(get_num_ranks_per_gpu());
 #endif
 }
 

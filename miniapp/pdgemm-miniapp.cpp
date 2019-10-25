@@ -10,7 +10,7 @@
 
 // from cosma
 #include <cosma/blacs.hpp>
-#include <cosma/pgemm.hpp>
+#include <cosma/pxgemm.hpp>
 #include <cosma/context.hpp>
 #include <cosma/profiler.hpp>
 
@@ -174,10 +174,10 @@ std::vector<long> run_pdgemm(int m, int n, int k, // matrix sizes
             // running COSMA wrapper
             MPI_Barrier(comm);
             auto start = std::chrono::steady_clock::now();
-            cosma::pdgemm(trans_a, trans_b, m, n, k,
-                   alpha, a.data(), ia, ja, &desc_a[0],
-                   b.data(), ib, jb, &desc_b[0], beta,
-                   c.data(), ic, jc, &desc_c[0]);
+            pdgemm_(&trans_a, &trans_b, &m, &n, &k,
+                   &alpha, a.data(), &ia, &ja, &desc_a[0],
+                   b.data(), &ib, &jb, &desc_b[0], &beta,
+                   c.data(), &ic, &jc, &desc_c[0]);
             MPI_Barrier(comm);
             auto end = std::chrono::steady_clock::now();
             time = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();

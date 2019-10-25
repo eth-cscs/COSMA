@@ -42,6 +42,7 @@ endif()
 if(ScaLAPACK_TARGET)
     add_library(cosma_with_scalapack STATIC scalapack.cpp
                                             pgemm.cpp
+                                            pxgemm.cpp
     )
     target_link_libraries(cosma_with_scalapack PUBLIC cosma 
                                                       ${ScaLAPACK_TARGET}
