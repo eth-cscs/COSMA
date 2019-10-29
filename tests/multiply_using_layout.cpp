@@ -24,7 +24,7 @@ TEST(MultiplyUsingLayout, ) {
     constexpr int n = 20;
     constexpr int k = 80;
     constexpr scalar_t alpha = 1;
-    constexpr scalar_t beta = 0;
+    constexpr scalar_t beta = 1;
 
     MPI_Comm comm = MPI_COMM_WORLD;
     int rank;

@@ -198,10 +198,6 @@ class CosmaMatrix {
     size_t current_mat_id;
     scalar_t *current_mat;
 
-    Interval mi_;
-    Interval ni_;
-    Interval Pi_;
-
     Layout layout_;
     buffer_t buffer_;
 };

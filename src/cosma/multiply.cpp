@@ -106,9 +106,11 @@ void multiply_using_layout(cosma_context<T> *ctx,
 
     comm_vol += grid2grid::communication_volume(cosma_grid_c, C.grid);
 
-    // compute the optimal rank reordering that minimizes the communication volume
+    // compute the optimal rank reordering that minimizes the communication
+    // volume
     bool reordered = false;
-    std::vector<int> rank_permutation = grid2grid::optimal_reordering(comm_vol, P, reordered);
+    std::vector<int> rank_permutation =
+        grid2grid::optimal_reordering(comm_vol, P, reordered);
 
     CosmaMatrix<T> A_cosma(ctx, std::move(mapper_a), rank_permutation[rank]);
     CosmaMatrix<T> B_cosma(ctx, std::move(mapper_b), rank_permutation[rank]);
@@ -130,7 +132,7 @@ void multiply_using_layout(cosma_context<T> *ctx,
     if (std::abs(beta) > 0) {
         auto cosma_layout_c = C_cosma.get_grid_layout();
         cosma_layout_c.reorder_ranks(rank_permutation);
-        // grid2grid::transform<T>(scalapack_layout_c, cosma_layout_c, comm);
+        // grid2grid::transform<T>(C, cosma_layout_c, comm);
         transf.schedule(C, cosma_layout_c);
     }
 
@@ -148,7 +150,8 @@ void multiply_using_layout(cosma_context<T> *ctx,
     PL();
     // perform cosma multiplication
     // auto ctx = cosma::make_context<T>();
-    multiply<T>(A_cosma, B_cosma, C_cosma, strategy, reordered_comm, alpha, beta);
+    multiply<T>(
+        ctx, A_cosma, B_cosma, C_cosma, strategy, reordered_comm, alpha, beta);
     PE(transform_reordering_comm);
     if (reordered) {
         MPI_Comm_free(&reordered_comm);
@@ -224,7 +227,7 @@ void multiply(cosma_context<Scalar> *ctx,
     // register context to be deleted at MPI_Finalize
     ctx->register_to_destroy_at_finalize();
 
-    // check if all the local matrices belong to 
+    // check if all the local matrices belong to
     // the current rank
     assert(matrixA.rank() == matrixB.rank());
     assert(matrixB.rank() == matrixC.rank());
