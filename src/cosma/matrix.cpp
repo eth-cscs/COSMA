@@ -8,7 +8,7 @@ extern template class Buffer<double>;
 
 // using a pointer to cosma_context
 template <typename T>
-CosmaMatrix<T>::CosmaMatrix(cosma_context<T>* ctxt,
+CosmaMatrix<T>::CosmaMatrix(cosma_context<T> *ctxt,
                             char label,
                             const Strategy &strategy,
                             int rank,
@@ -27,23 +27,24 @@ CosmaMatrix<T>::CosmaMatrix(cosma_context<T>* ctxt,
     }
 
     layout_ = Layout(label_, m_, n_, P_, rank_, &mapper_);
-    buffer_ = buffer_t(ctxt, label_, strategy_, rank_, &mapper_, &layout_, dry_run);
+    buffer_ =
+        buffer_t(ctxt, label_, strategy_, rank_, &mapper_, &layout_, dry_run);
 }
 
 // with given mapper
 template <typename T>
-CosmaMatrix<T>::CosmaMatrix(cosma_context<T>* ctxt,
-                            Mapper&& mapper,
+CosmaMatrix<T>::CosmaMatrix(cosma_context<T> *ctxt,
+                            Mapper &&mapper,
                             int rank,
                             bool dry_run)
-        : ctxt_(ctxt)
-        , mapper_(std::forward<Mapper>(mapper))
-        , rank_(rank)
-        , strategy_(mapper_.strategy())
-        , label_(mapper_.label())
-        , m_(mapper_.m())
-        , n_(mapper_.n())
-        , P_(mapper_.P()) {
+    : ctxt_(ctxt)
+    , mapper_(std::forward<Mapper>(mapper))
+    , rank_(rank)
+    , strategy_(mapper_.strategy())
+    , label_(mapper_.label())
+    , m_(mapper_.m())
+    , n_(mapper_.n())
+    , P_(mapper_.P()) {
 
     if (rank_ >= P_) {
         return;
@@ -51,25 +52,26 @@ CosmaMatrix<T>::CosmaMatrix(cosma_context<T>* ctxt,
 
     mapper_.reorder_rank(rank);
     layout_ = Layout(label_, m_, n_, P_, rank_, &mapper_);
-    buffer_ = buffer_t(ctxt_, label_, strategy_, rank_, &mapper_, &layout_, dry_run);
+    buffer_ =
+        buffer_t(ctxt_, label_, strategy_, rank_, &mapper_, &layout_, dry_run);
 }
 
 // using custom context
 template <typename T>
-CosmaMatrix<T>::CosmaMatrix(std::unique_ptr<cosma_context<T>>& ctxt,
+CosmaMatrix<T>::CosmaMatrix(std::unique_ptr<cosma_context<T>> &ctxt,
                             char label,
                             const Strategy &strategy,
                             int rank,
                             bool dry_run)
-    : CosmaMatrix(ctxt.get(), label, strategy, rank, dry_run)
-{}
+    : CosmaMatrix(ctxt.get(), label, strategy, rank, dry_run) {}
 
 // with given mapper
 template <typename T>
-CosmaMatrix<T>::CosmaMatrix(std::unique_ptr<cosma_context<T>>& ctxt,
-            Mapper&& mapper, int rank, bool dry_run)
-    : CosmaMatrix(ctxt.get(), std::forward<Mapper&&>(mapper), rank, dry_run) 
-{}
+CosmaMatrix<T>::CosmaMatrix(std::unique_ptr<cosma_context<T>> &ctxt,
+                            Mapper &&mapper,
+                            int rank,
+                            bool dry_run)
+    : CosmaMatrix(ctxt.get(), std::forward<Mapper &&>(mapper), rank, dry_run) {}
 
 // using global (singleton) context
 template <typename T>
@@ -77,14 +79,15 @@ CosmaMatrix<T>::CosmaMatrix(char label,
                             const Strategy &strategy,
                             int rank,
                             bool dry_run)
-    : CosmaMatrix(get_context_instance<T>(), label, strategy, rank, dry_run)
-{}
+    : CosmaMatrix(get_context_instance<T>(), label, strategy, rank, dry_run) {}
 
 // with given mapper
 template <typename T>
-CosmaMatrix<T>::CosmaMatrix(Mapper&& mapper, int rank, bool dry_run)
-    : CosmaMatrix(get_context_instance<T>(), std::forward<Mapper&&>(mapper), rank, dry_run)
-{}
+CosmaMatrix<T>::CosmaMatrix(Mapper &&mapper, int rank, bool dry_run)
+    : CosmaMatrix(get_context_instance<T>(),
+                  std::forward<Mapper &&>(mapper),
+                  rank,
+                  dry_run) {}
 
 template <typename T>
 int CosmaMatrix<T>::m() {
@@ -114,6 +117,11 @@ void CosmaMatrix<T>::set_buffer_index(int idx) {
 template <typename T>
 typename CosmaMatrix<T>::scalar_t *CosmaMatrix<T>::buffer_ptr() {
     return buffer_.buffer_ptr();
+}
+
+template <typename T>
+size_t CosmaMatrix<T>::buffer_size() {
+    return buffer_.buffer_size();
 }
 
 template <typename T>
@@ -156,8 +164,7 @@ std::pair<int, int> CosmaMatrix<T>::global_coordinates(int local_index,
 
 // local_id -> (gi, gj) for local elements on the current rank
 template <typename T>
-std::pair<int, int>
-CosmaMatrix<T>::global_coordinates(int local_index) {
+std::pair<int, int> CosmaMatrix<T>::global_coordinates(int local_index) {
     return mapper_.global_coordinates(local_index);
 }
 
@@ -167,7 +174,8 @@ typename CosmaMatrix<T>::scalar_t *CosmaMatrix<T>::matrix_pointer() {
 }
 
 template <typename T>
-const typename CosmaMatrix<T>::scalar_t*CosmaMatrix<T>::matrix_pointer() const {
+const typename CosmaMatrix<T>::scalar_t *
+CosmaMatrix<T>::matrix_pointer() const {
     return buffer_.initial_buffer_ptr();
 }
 
@@ -363,7 +371,7 @@ void CosmaMatrix<T>::free_communication_buffers() {
 }
 
 template <typename T>
-cosma_context<T>* CosmaMatrix<T>::get_context() {
+cosma_context<T> *CosmaMatrix<T>::get_context() {
     return ctxt_;
 }
 
