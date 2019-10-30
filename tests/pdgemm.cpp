@@ -158,7 +158,12 @@ INSTANTIATE_TEST_CASE_P(
         pdgemm_state{8, 4, 8, 2, 2, 2, 3, 2, 'N', 'N', 1.0, 0.0},
         pdgemm_state{8, 4, 8, 2, 2, 2, 3, 2, 'T', 'N', 1.0, 0.0},
 
+        // different values of alpha and beta
         pdgemm_state{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 1.0, 0.0},
+        pdgemm_state{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 1.0, 1.0},
+        pdgemm_state{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 0.0, 0.0},
+        pdgemm_state{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 0.0, 1.0},
+        pdgemm_state{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 0.5, 0.5},
 
         // alpha = 0.5, beta = 0.0
         pdgemm_state{10, 10, 10, 2, 2, 2, 2, 2, 'N', 'N', 0.5, 0.0},

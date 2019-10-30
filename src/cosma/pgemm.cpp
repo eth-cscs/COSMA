@@ -179,9 +179,11 @@ void pgemm(const char trans_a,
     // get abstract layout descriptions for COSMA layout
     auto cosma_layout_a = A.get_grid_layout();
     auto cosma_layout_b = B.get_grid_layout();
+    auto cosma_layout_c = C.get_grid_layout();
 
     cosma_layout_a.reorder_ranks(rank_permutation);
     cosma_layout_b.reorder_ranks(rank_permutation);
+    cosma_layout_c.reorder_ranks(rank_permutation);
 
     // if (rank == 0) {
     //     std::cout << "COSMA grid for A after reordering: " << cosma_layout_a.grid << std::endl;
@@ -194,17 +196,13 @@ void pgemm(const char trans_a,
     grid2grid::transformer<T> transf(comm);
     transf.schedule(scalapack_layout_a, cosma_layout_a);
     transf.schedule(scalapack_layout_b, cosma_layout_b);
-    // grid2grid::transform<T>(scalapack_layout_a, cosma_layout_a, comm);
-    // grid2grid::transform<T>(scalapack_layout_b, cosma_layout_b, comm);
 
     // transform C from scalapack to cosma only if beta > 0
     if (std::abs(beta) > 0) {
-        auto cosma_layout_c = C.get_grid_layout();
-        cosma_layout_c.reorder_ranks(rank_permutation);
-        // grid2grid::transform<T>(scalapack_layout_c, cosma_layout_c, comm);
         transf.schedule(scalapack_layout_c, cosma_layout_c);
     }
 
+    // transform all scheduled transformations together
     transf.transform();
 
 #ifdef DEBUG
@@ -230,7 +228,7 @@ void pgemm(const char trans_a,
     // construct cosma layout again, to avoid outdated
     // pointers when the memory pool has been used
     // in case it resized during multiply
-    auto cosma_layout_c = C.get_grid_layout();
+    cosma_layout_c = C.get_grid_layout();
     cosma_layout_c.reorder_ranks(rank_permutation);
 
 #ifdef DEBUG

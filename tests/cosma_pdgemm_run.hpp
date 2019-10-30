@@ -149,7 +149,9 @@ bool test_pdgemm(int m, int n, int k, // matrix sizes
     fillInt(a);
     fillInt(b);
     fillInt(c_cosma);
-    fillInt(c_scalapack);
+    // in case beta > 0, this is important in order to get the same results
+    c_scalapack = c_cosma;
+
 
     // ***********************************
     //          run COSMA PDGEMM

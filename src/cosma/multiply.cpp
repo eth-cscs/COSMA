@@ -119,19 +119,21 @@ void multiply_using_layout(cosma_context<T> *ctx,
     // get abstract layouts for COSMA layout
     auto cosma_layout_a = A_cosma.get_grid_layout();
     auto cosma_layout_b = B_cosma.get_grid_layout();
+    auto cosma_layout_c = C_cosma.get_grid_layout();
 
     cosma_layout_a.reorder_ranks(rank_permutation);
     cosma_layout_b.reorder_ranks(rank_permutation);
+    cosma_layout_c.reorder_ranks(rank_permutation);
 
     // schedule A and B transforms together from given layout to cosma layout
     grid2grid::transformer<T> transf(comm);
     transf.schedule(A, cosma_layout_a);
     transf.schedule(B, cosma_layout_b);
+    // grid2grid::transform<T>(B, cosma_layout_b, comm);
+    // transform all scheduled transformations together
 
     // transform C (if needed) from scalapack to cosma only if beta > 0
     if (std::abs(beta) > 0) {
-        auto cosma_layout_c = C_cosma.get_grid_layout();
-        cosma_layout_c.reorder_ranks(rank_permutation);
         // grid2grid::transform<T>(C, cosma_layout_c, comm);
         transf.schedule(C, cosma_layout_c);
     }
@@ -161,7 +163,7 @@ void multiply_using_layout(cosma_context<T> *ctx,
     // construct cosma layout again, to avoid outdated
     // pointers when the memory pool has been used
     // in case it resized during multiply
-    auto cosma_layout_c = C_cosma.get_grid_layout();
+    cosma_layout_c = C_cosma.get_grid_layout();
     cosma_layout_c.reorder_ranks(rank_permutation);
     // transform the result back
     transf.schedule(cosma_layout_c, C);
