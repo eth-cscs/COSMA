@@ -15,7 +15,7 @@ int get_num_ranks_per_gpu() {
     return ranks_per_gpu;
 }
 
-int get_gpu_mem_ratio() {
+double get_gpu_mem_ratio() {
     char* var;
     var = getenv ("COSMA_GPU_MEM_RATIO");
     double mem_ratio = 0.9;
