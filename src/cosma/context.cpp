@@ -15,6 +15,15 @@ int get_num_ranks_per_gpu() {
     return ranks_per_gpu;
 }
 
+int get_gpu_mem_ratio() {
+    char* var;
+    var = getenv ("COSMA_GPU_MEM_RATIO");
+    double mem_ratio = 0.9;
+    if (var != nullptr)
+        mem_ratio = std::atof(var);
+    return mem_ratio;
+}
+
 #ifdef COSMA_HAVE_GPU
 template <typename Scalar>
 gpu::mm_handle<Scalar>* cosma_context<Scalar>::get_gpu_context() {
@@ -24,7 +33,7 @@ gpu::mm_handle<Scalar>* cosma_context<Scalar>::get_gpu_context() {
 template <typename Scalar>
 cosma_context<Scalar>::cosma_context() {
 #ifdef COSMA_HAVE_GPU
-    gpu_ctx_ = gpu::make_context<Scalar>(get_num_ranks_per_gpu());
+    gpu_ctx_ = gpu::make_context<Scalar>(get_num_ranks_per_gpu(), get_gpu_mem_ratio());
 #endif
 }
 
