@@ -35,6 +35,9 @@ option(COSMA_WITH_FOTRAN_BINDINGS "Make Fortran bindings to COSMA." OFF)
 
 project(cosma VERSION 0.1 LANGUAGES CXX)
 
+if (COSMA_WITH_FORTRAN_BINDINGS)
+    enable_language(Fortran)
+endif()
 
 # Dependencies
 #

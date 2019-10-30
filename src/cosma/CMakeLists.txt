@@ -40,24 +40,41 @@ if(COSMA_WITH_INSTALL)
 endif()
 
 if(ScaLAPACK_TARGET)
-    add_library(cosma_with_scalapack STATIC scalapack.cpp
-                                            pgemm.cpp
-                                            pxgemm.cpp
+    add_library(cosma_pxgemm STATIC scalapack.cpp
+                                    pgemm.cpp
+                                    pxgemm.cpp
     )
-    target_link_libraries(cosma_with_scalapack PUBLIC cosma 
-                                                      ${ScaLAPACK_TARGET}
+    target_link_libraries(cosma_pxgemm PUBLIC cosma 
+                                              ${ScaLAPACK_TARGET}
     )
 
-    if(COSMA_WITH_PROFILING)
-        target_link_libraries(cosma_with_scalapack PRIVATE semiprof)
-        target_compile_definitions(cosma_with_scalapack PRIVATE COSMA_WITH_PROFILING)
+    if (COSMA_WITH_FORTRAN_BINDINGS)
+        add_library(cosma_pxgemm_fortran STATIC pxgemm.f90)
+        target_link_libraries(cosma_pxgemm_fortran PUBLIC cosma_pxgemm)
     endif()
 
+    if(COSMA_WITH_PROFILING)
+        target_link_libraries(cosma_pxgemm PRIVATE semiprof)
+        target_compile_definitions(cosma_pxgemm PRIVATE COSMA_WITH_PROFILING)
+        if (COSMA_WITH_FORTRAN_BINDINGS)
+            target_link_libraries(cosma_pxgemm_fortran PRIVATE semiprof)
+            target_compile_definitions(cosma_pxgemm_fortran PRIVATE COSMA_WITH_PROFILING)
+        endif()
+    endif()
+
+
     if(COSMA_WITH_INSTALL)
-        install(TARGETS cosma_with_scalapack
+        install(TARGETS cosma_pxgemm
                 EXPORT cosma_targets
                 LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
                 ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
                 INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+        if (COSMA_WITH_FORTRAN_BINDINGS)
+            install(TARGETS cosma_pxgemm_fortran
+                    EXPORT cosma_targets
+                    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+                    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+                    INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+        endif()
     endif()
 endif()

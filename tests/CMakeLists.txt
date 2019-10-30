@@ -33,14 +33,14 @@ add_cosma_mpi_test(scalar_matmul 8 cosma)
 
 
 if(COSMA_WITH_MKL_ScaLAPACK OR COSMA_WITH_NETLIB_ScaLAPACK)
-    add_cosma_mpi_test(pdgemm 6 cosma_with_scalapack options)
+    add_cosma_mpi_test(pdgemm 6 cosma_pxgemm options)
 endif()
 
 # Functional tests
 #
 if(COSMA_WITH_MKL_ScaLAPACK OR COSMA_WITH_NETLIB_ScaLAPACK)
     add_executable(test.cosma_pdgemm cosma_pdgemm_test.cpp)
-    target_link_libraries(test.cosma_pdgemm PRIVATE cosma_with_scalapack options)
+    target_link_libraries(test.cosma_pdgemm PRIVATE cosma_pxgemm options)
     target_include_directories(test.cosma_pdgemm PRIVATE .)
 endif()
 
