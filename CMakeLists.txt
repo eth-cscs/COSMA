@@ -31,6 +31,8 @@ option(COSMA_WITH_NETLIB_BLAS "Use Netlib BLAS backend." OFF)
 option(COSMA_WITH_MKL_ScaLAPACK "Use MKL ScaLAPACK back end." OFF) 
 option(COSMA_WITH_NETLIB_ScaLAPACK "Use Netlib ScaLAPACK back end." OFF) 
 
+option(COSMA_WITH_FOTRAN_BINDINGS "Make Fortran bindings to COSMA." OFF) 
+
 project(cosma VERSION 0.1 LANGUAGES CXX)
 
 
