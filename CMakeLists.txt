@@ -19,10 +19,6 @@ option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT}
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
 option(COSMA_WITH_PROFILING "Enable profiling." OFF)
 
-if (COSMA_WITH_PROFILING)
-    option(SEMIPROF_WITH_INSTALL "" ON)
-endif()
-
 option(COSMA_WITH_GPU "Use CUDA cuBLAS GPU back end." OFF)
 option(COSMA_WITH_MKL_BLAS "Use MKL BLAS back end." OFF)
 option(COSMA_WITH_OPENBLAS "Use OpenBLAS backend." OFF)
@@ -46,8 +42,8 @@ adjust_mpiexec_flags()
 
 # Bundled dependencies
 #
-
 if (COSMA_WITH_PROFILING)
+    option(SEMIPROF_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
     add_subdirectory(libs/semiprof)
 endif ()
 
@@ -104,15 +100,9 @@ endif ()
 #
 add_subdirectory(src/cosma)
 
-
 if(COSMA_WITH_INSTALL)
     include(CMakePackageConfigHelpers)
     include(GNUInstallDirs)
-
-    install(EXPORT cosma_targets
-            FILE cosmaTargets.cmake
-            NAMESPACE cosma::
-            DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
 
     install(DIRECTORY "${cosma_SOURCE_DIR}/src/cosma" 
             DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
