@@ -54,6 +54,9 @@ if(ScaLAPACK_TARGET AND NOT TARGET cosma_pxgemm)
         add_library(cosma_pxgemm_fortran STATIC pxgemm.f90)
         target_link_libraries(cosma_pxgemm_fortran PUBLIC cosma_pxgemm)
         list(APPEND INSTALLED_TARGETS_LIST "cosma_pxgemm_fortran")
+        INSTALL ( CODE
+            "EXECUTE_PROCESS (COMMAND \"${CMAKE_COMMAND}\" -E copy_directory \"${PROJECT_BINARY_DIR}/src/cosma\" \"${CMAKE_INSTALL_PREFIX}/include/cosma/\")"
+            )
     endif()
 endif()
 
