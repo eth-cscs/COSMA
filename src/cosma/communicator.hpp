@@ -246,10 +246,10 @@ class communicator {
     void create_communicators(MPI_Comm comm);
     // same as create just uses MPI_Comm_split instead of MPI_Comm_create
     void split_communicators(MPI_Comm comm);
-    std::tuple<MPI_Group, MPI_Comm>
-    create_comm_ring(MPI_Comm comm, Interval &P, int offset, int div);
-    std::tuple<MPI_Group, MPI_Comm>
-    create_comm_subproblem(MPI_Comm comm, Interval &P, Interval &newP);
+
+    MPI_Comm create_comm_ring(MPI_Comm comm, Interval &P, int offset, int div);
+
+    MPI_Comm create_comm_subproblem(MPI_Comm comm, Interval &P, Interval &newP);
 
     void free_comms();
 };

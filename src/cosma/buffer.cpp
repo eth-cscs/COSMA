@@ -24,6 +24,18 @@ Buffer<T>::Buffer(cosma_context<T>* ctxt,
     , layout_(layout) {
     PE(preprocessing_matrices_buffer);
     compute_n_buckets();
+
+    max_base_buffer_size_ = 0;
+    max_reduce_buffer_size_ = 0;
+    max_reshuffle_buffer_size_ = 0;
+    current_buffer_ = 0;
+    max_send_buffer_size_ = (size_t)mapper_->initial_size();
+    max_recv_buffer_size_ = (size_t)mapper_->initial_size();
+
+    init_first_split_steps();
+
+    buff_sizes_ = compute_buffer_size();
+
     allocate_initial_buffers(dry_run);
     PL();
 }
@@ -87,19 +99,22 @@ void Buffer<T>::pin_for_gpu() {
 #endif
 }
 
+
+template <typename T>
+size_t Buffer<T>::total_size(bool dry_run) {
+    size_t total_size = 0;
+    if (!dry_run) {
+        for (int i = 0; i < buff_sizes_.size(); ++i) {
+            total_size += buff_sizes_[i];
+        }
+        total_size += (max_reduce_buffer_size_ ? max_reduce_buffer_size_ : 0);
+        total_size += (max_reshuffle_buffer_size_ ? max_reshuffle_buffer_size_ : 0);
+    }
+    return total_size;
+}
+
 template <typename T>
 void Buffer<T>::allocate_initial_buffers(bool dry_run) {
-    max_base_buffer_size_ = 0;
-    max_reduce_buffer_size_ = 0;
-    max_reshuffle_buffer_size_ = 0;
-    current_buffer_ = 0;
-    max_send_buffer_size_ = (size_t)mapper_->initial_size();
-    max_recv_buffer_size_ = (size_t)mapper_->initial_size();
-
-    init_first_split_steps();
-
-    buff_sizes_ = compute_buffer_size();
-
     if (!dry_run) {
         buffers_.reserve(buff_sizes_.size());
 

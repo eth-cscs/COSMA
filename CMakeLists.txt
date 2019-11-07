@@ -106,7 +106,8 @@ if(COSMA_WITH_INSTALL)
 
     install(DIRECTORY "${cosma_SOURCE_DIR}/src/cosma" 
             DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-            FILES_MATCHING PATTERN "*.hpp")
+            FILES_MATCHING 
+                PATTERN "*.hpp")
 
     write_basic_package_version_file(
         "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"

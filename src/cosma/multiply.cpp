@@ -211,7 +211,7 @@ void multiply(cosma_context<Scalar> *ctx,
     Interval ki = Interval(0, strategy.k - 1);
     Interval Pi = Interval(0, strategy.P - 1);
 
-    PE(preprocessing_communicators);
+    PE(preprocessing_allocation);
 
     // allocate buffers used for communication
     matrixA.allocate_communication_buffers();
@@ -233,7 +233,9 @@ void multiply(cosma_context<Scalar> *ctx,
     // the current rank
     assert(matrixA.rank() == matrixB.rank());
     assert(matrixB.rank() == matrixC.rank());
+    PL();
 
+    PE(preprocessing_communicators);
     communicator cosma_comm = communicator(&strategy, comm);
     PL();
 

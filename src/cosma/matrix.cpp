@@ -28,7 +28,7 @@ CosmaMatrix<T>::CosmaMatrix(cosma_context<T> *ctxt,
 
     layout_ = Layout(label_, m_, n_, P_, rank_, &mapper_);
     buffer_ =
-        buffer_t(ctxt, label_, strategy_, rank_, &mapper_, &layout_, dry_run);
+        buffer_t(ctxt_, label_, strategy_, rank_, &mapper_, &layout_, dry_run);
 }
 
 // with given mapper
@@ -378,6 +378,11 @@ cosma_context<T> *CosmaMatrix<T>::get_context() {
 template <typename T>
 int CosmaMatrix<T>::rank() const {
     return rank_;
+}
+
+template <typename T>
+size_t CosmaMatrix<T>::total_required_memory() {
+    return buffer_.total_size();
 }
 
 // Explicit instantiations

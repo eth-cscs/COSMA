@@ -11,6 +11,8 @@ public:
     memory_pool();
     memory_pool(size_t capacity);
 
+    ~memory_pool();
+
     // since vector can resize at some point,
     // we don't want to return pointer immediately
     // instead, when a new buffer is requested,
@@ -31,10 +33,13 @@ public:
 
     void turn_on_output();
 
+    size_t size();
+    void reserve(size_t size);
+
 private:
     mpi_buffer_t pool_;
     size_t pool_size_ = 0;
-    size_t pool_capacity_ = 100;
+    size_t pool_capacity_ = 0;
     size_t n_buffers_ = 0;
     bool output = false;
 };

@@ -175,6 +175,8 @@ class CosmaMatrix {
 
     int rank() const;
 
+    size_t total_required_memory();
+
   protected:
     cosma_context<scalar_t> *ctxt_;
     // mapper containing information

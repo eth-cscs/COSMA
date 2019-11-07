@@ -6,28 +6,29 @@
 
 template <typename T>
 cosma::memory_pool<T>::memory_pool() {
-    resize(pool_capacity_);
 }
 
 template <typename T>
 cosma::memory_pool<T>::memory_pool(size_t capacity) {
-    resize(capacity);
+    pool_.reserve(capacity);
+}
+
+template <typename T>
+cosma::memory_pool<T>::~memory_pool() {
 }
 
 template <typename T>
 size_t cosma::memory_pool<T>::get_buffer_id(size_t size) {
     assert(size > 0);
-    // T* ptr = pool_.data() + pool_size_;
     size_t offset = pool_size_;
     pool_size_ += size;
     ++n_buffers_;
-    // std::cout << "getting buffer of size " << size << ", current size =  " << pool_size_ << std::endl;
     return offset;
 }
 
 template <typename T>
 T* cosma::memory_pool<T>::get_buffer_pointer(size_t id) {
-    if (pool_size_  > pool_capacity_) {
+    if (pool_size_ > pool_capacity_) {
         resize(pool_size_);
     }
     assert(id < pool_capacity_);
@@ -46,9 +47,6 @@ void cosma::memory_pool<T>::free_buffer(T* ptr, size_t size) {
 
 template <typename T>
 void cosma::memory_pool<T>::resize(size_t capacity) {
-    if (output) {
-        std::cout << "Resizing from " << pool_capacity_  << " to " << capacity << std::endl;
-    }
     pool_.resize(capacity);
     pool_capacity_ = capacity;
 }
@@ -67,6 +65,18 @@ T* cosma::memory_pool<T>::get_pool_pointer() {
 template <typename T>
 void cosma::memory_pool<T>::turn_on_output() {
     output = true;
+}
+
+template <typename T>
+size_t cosma::memory_pool<T>::size() {
+    return pool_size_;
+}
+
+template <typename T>
+void cosma::memory_pool<T>::reserve(size_t size) {
+    if (size > pool_capacity_) {
+        pool_.reserve(size);
+    }
 }
 
 template class cosma::memory_pool<double>;

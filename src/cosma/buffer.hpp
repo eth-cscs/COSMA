@@ -71,6 +71,9 @@ public:
 
     void pin_for_gpu();
 
+    // total required memory
+    size_t total_size(bool dry_run = false);
+
     // increases the index of the current buffer
     void advance_buffer();
     // returns the index of the current buffer
