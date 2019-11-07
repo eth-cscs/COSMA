@@ -116,6 +116,13 @@ void multiply_using_layout(cosma_context<T> *ctx,
     CosmaMatrix<T> B_cosma(ctx, std::move(mapper_b), rank_permutation[rank]);
     CosmaMatrix<T> C_cosma(ctx, std::move(mapper_c), rank_permutation[rank]);
 
+    // avoid resizing of buffer by reserving immediately the total required memory
+    get_context_instance<T>()->get_memory_pool().reserve(
+            A_cosma.total_required_memory()
+          + B_cosma.total_required_memory()
+          + C_cosma.total_required_memory()
+    );
+
     // get abstract layouts for COSMA layout
     auto cosma_layout_a = A_cosma.get_grid_layout();
     auto cosma_layout_b = B_cosma.get_grid_layout();
