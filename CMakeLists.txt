@@ -18,6 +18,7 @@ option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
 option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT})
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
 option(COSMA_WITH_PROFILING "Enable profiling." OFF)
+option(COSMA_WITH_FOTRAN_BINDINGS "Make Fortran bindings to COSMA." OFF) 
 
 set(COSMA_BLAS_BACKEND "MKL" CACHE STRING 
   "Blas backend. Can be MKL, MKL_SCALAPACK, OPENBLAS, NETLIB, NETLIB_SCALAPACK, CUDA or ROCM.")
@@ -30,7 +31,8 @@ if(NOT COSMA_BLAS_BACKEND IN_LIST BACKEND_LIST)
   message(FATAL_ERROR "Invalid value for COSMA_BLAS_BACKEND!")
 endif()
 
-option(COSMA_WITH_FOTRAN_BINDINGS "Make Fortran bindings to COSMA." OFF) 
+message(STATUS "Selected backend for COSMA: ${COSMA_BLAS_BACKEND}")
+
 
 project(cosma VERSION 0.1 LANGUAGES CXX)
 
