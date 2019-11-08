@@ -32,7 +32,7 @@ add_cosma_mpi_test(multiply 16 cosma)
 add_cosma_mpi_test(scalar_matmul 8 cosma)
 
 
-if(${COSMA_BLAS_BACKEND} STREQUAL "NETLIB_SCALAPACK" OR ${COSMA_BLAS_BACKEND} STREQUAL "MKL_SCALAPACK")
+if(COSMA_SCALAPACK)
     add_cosma_mpi_test(pdgemm 6 cosma_pxgemm options)
 
     # Functional tests

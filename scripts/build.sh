@@ -35,7 +35,9 @@
 #
 # BLAS (select one of:)
 #
-# `COSMA_BLAS_BACKEND` := MKL|MKL_SCALAPACK|OPENBLAS|NETLIB|NETLIB_SCALAPACK|CUDA|ROCM (default: MKL)
+# `COSMA_BLAS` := MKL|OPENBLAS|NETLIB|CUDA|ROCM (default: MKL)
+#
+# `COSMA_SCALAPACK` := OFF|MKL|NETLIB (default: OFF)
 #
 #    Note: Mixing OpenMP runtimes results in performance issues. If you use 
 #          COSMA within a large application, make sure that a single OpenMP
