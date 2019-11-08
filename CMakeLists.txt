@@ -21,7 +21,7 @@ option(COSMA_WITH_PROFILING "Enable profiling." OFF)
 option(COSMA_WITH_FOTRAN_BINDINGS "Make Fortran bindings to COSMA." OFF) 
 
 set(COSMA_BLAS "MKL" CACHE STRING 
-  "Blas backend. Can be MKL, MKL_SCALAPACK, OPENBLAS, NETLIB, NETLIB_SCALAPACK, CUDA or ROCM.")
+  "Blas backend. Can be MKL, OPENBLAS, NETLIB, CUDA or ROCM.")
 set_property(CACHE COSMA_BLAS PROPERTY STRINGS 
   "MKL" "OPENBLAS" "NETLIB" "CUDA" "ROCM")
 
