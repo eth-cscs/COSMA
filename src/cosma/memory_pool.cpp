@@ -48,6 +48,7 @@ void cosma::memory_pool<T>::free_buffer(T* ptr, size_t size) {
 template <typename T>
 void cosma::memory_pool<T>::resize(size_t capacity) {
     pool_.resize(capacity);
+    pool_size_ = capacity;
     pool_capacity_ = capacity;
 }
 
@@ -75,7 +76,7 @@ size_t cosma::memory_pool<T>::size() {
 template <typename T>
 void cosma::memory_pool<T>::reserve(size_t size) {
     if (size > pool_capacity_) {
-        pool_.reserve(size);
+        pool_.reserve(1.2 * (pool_capacity_ + size));
     }
 }
 

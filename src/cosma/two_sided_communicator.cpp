@@ -206,7 +206,7 @@ void reduce(MPI_Comm comm,
     if (beta != Scalar{0}) {
         // sum up receiving_buffer with C
         for (int el = 0; el < recvcnts[gp]; ++el) {
-            C[el] += reduce_buffer[el];
+            C[el] = beta * C[el] + reduce_buffer[el];
         }
     }
     PL();

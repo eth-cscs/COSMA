@@ -127,8 +127,9 @@ void Buffer<T>::allocate_initial_buffers(bool dry_run) {
 
 template <typename T>
 void Buffer<T>::free_initial_buffers(bool dry_run) {
-    // if (dry_run || buff_sizes_.size() == 0) 
-    //     return;
+    // if (dry_run) return;
+    if (dry_run || buff_sizes_.size() == 0) 
+        return;
     // check if all the other buffers were deallocated previously
     assert(buffers_.size() == 1);
     assert(buff_sizes_.size() == 1);
@@ -164,10 +165,6 @@ void Buffer<T>::free_communication_buffers(bool dry_run) {
         pinned_ = false;
     }
 #endif
-    // if there are no communication buffers left, skip
-    if (buff_sizes_.size() == 1)
-        return;
-
     // deallocate reshuffle and reduce buffers separately
     if (max_reduce_buffer_size_ > 0) {
         auto ptr = ctxt_->get_memory_pool().get_buffer_pointer(reduce_buffer_);
@@ -178,6 +175,10 @@ void Buffer<T>::free_communication_buffers(bool dry_run) {
         auto ptr = ctxt_->get_memory_pool().get_buffer_pointer(reshuffle_buffer_);
         ctxt_->get_memory_pool().free_buffer(ptr, max_reshuffle_buffer_size_);
     }
+
+    // if there are no communication buffers left, skip
+    if (buff_sizes_.size() == 1)
+        return;
 
     int n_buffers = buff_sizes_.size();
     // i = 0 is the initial buffer storing the matrix, so we skip this one.
@@ -193,11 +194,6 @@ void Buffer<T>::free_communication_buffers(bool dry_run) {
 template <typename T>
 Buffer<T>::~Buffer() {
     // check if communication buffers are already deallocated
-    assert(buffers_.size() <= 1);
-    // assert(!reshuffle_buffer_);
-    // assert(!reduce_buffer_);
-
-    // free the initial buffers
     // buffers_.size() can also be 0 if the buffer was default constructed
     if (buffers_.size() > 0) {
         free_initial_buffers();
