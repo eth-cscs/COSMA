@@ -121,6 +121,7 @@ void Buffer<T>::allocate_initial_buffers(bool dry_run) {
         // allocate initial buffer (to store the matrix)
         buff_sizes_[0] = std::max((size_t) buff_sizes_[0], mapper_->initial_size());
         auto id = ctxt_->get_memory_pool().get_buffer_id(buff_sizes_[0]);
+        assert(buffers_.size() == 0);
         buffers_.push_back(id);
     }
 }
@@ -131,8 +132,9 @@ void Buffer<T>::free_initial_buffers(bool dry_run) {
     if (dry_run || buff_sizes_.size() == 0) 
         return;
     // check if all the other buffers were deallocated previously
+    // buff_sizes_ is equal to n_buffers throughout the lifetime of the class
+    // but buffers_ size is decreased whenever some buffer is freed
     assert(buffers_.size() == 1);
-    assert(buff_sizes_.size() == 1);
 
     // deallocate initial buffer (that are storing the matrix)
     auto ptr = ctxt_->get_memory_pool().get_buffer_pointer(buffers_[0]);
@@ -182,12 +184,11 @@ void Buffer<T>::free_communication_buffers(bool dry_run) {
 
     int n_buffers = buff_sizes_.size();
     // i = 0 is the initial buffer storing the matrix, so we skip this one.
-    for (int i = 1; i < n_buffers; ++i) {
+    for (int i = n_buffers-1; i >= 1; --i) {
         auto ptr = ctxt_->get_memory_pool().get_buffer_pointer(buffers_.back());
-        ctxt_->get_memory_pool().free_buffer(ptr, buff_sizes_.back());
+        ctxt_->get_memory_pool().free_buffer(ptr, buff_sizes_[i]);
         // remove the pointers pointing to them
         buffers_.pop_back();
-        buff_sizes_.pop_back();
     }
 }
 
