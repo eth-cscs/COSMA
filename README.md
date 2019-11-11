@@ -44,40 +44,20 @@ The library supports both one-sided and two-sided MPI communication backends. It
 uses `dgemm` for the local computations, but also has a support for the `GPU`
 acceleration through our `Tiled-MM` library using `cublas` 
 
+## Features
+
+- `ScaLAPACK API Support`: it is enough to link to COSMA, without changing the code and all `p?gemm` calls will use ScaLAPACK wrappers provided by COSMA.
+- `C/Fortran Interface`: written in `C++`, but provides `C` and `Fortran` interfaces.
+- `Custom Types`: fully templatized types.
+- `GPU acceleration`: supports both NVIDIA and AMD GPU acceleration.
+- `Custom Data Layout Support`: natively uses its own blocked data layout of matrices, but supports arbitrary grid-like data layout of matrices.
+- `Tranposition/Conjugation Support`: matrices `A` and `B` can be transposed and/or conjugated.
+- `Communication and Computation Overlap`: supports overlapping of communication and computation.
+- `Spack Installation`: can be built and installed with `Spack`.
 
 ## Building COSMA
 
-The project uses submodules, to clone and build do:
-```bash
-# clone the repository
-git clone --recursive https://github.com/eth-cscs/COSMA.git
-cd COSMA
-
-# create a build directory within COSMA
-mkdir build
-cd bulid
-
-# choose which version of COSMA you want:
-# CPU-only or Hybrid (CPU+GPU)
-
-# CPU-ONLY VERSION OF COSMA
-# if on Piz Daint CPU (Cray XC40), run the following
-# to load the necessary modules:
-source ../scripts/piz_daint_cpu.sh
-# to build a CPU version
-cmake -DMKL_PARALLEL=ON ..
-
-# HYBRID VERSION OF COSMA (requires cublas)
-# if on Piz Daint GPU (Cray XC50), run the following
-# to load the necessary modules:
-source ../scripts/piz_daint_gpu.sh
-# to build a GPU version
-cmake -DMKL_PARALLEL=ON -DCOSMA_WITH_GPU=ON ..
-
-# to compile
-make -j 8
-```
-> !! Note the *--recursive* flag !! 
+See [Installation Instructions](INSTALL.md).
 
 ## COSMA Dependencies
 
@@ -88,7 +68,7 @@ External dependencies:
 - `MPI 3` (required)
 - `Intel MKL` (default) or `CUDA` depending on whether CPU or GPU back end is
   used.
-- `NVIDIA cublas (optional)`: only used in Hybrid version of COSMA with GPU.
+- `cublas (optional)`: only used in Hybrid version of COSMA with GPU.
 
 > Some dependencies are bundled as submodules and need not be installed
 > explicitly:
@@ -98,43 +78,6 @@ External dependencies:
 > - `options` - command line utlility
 > - `semiprof` - profiling utlility
 > - `gtest_mpi` - MPI utlility wrapper over GoogleTest(unit testing library)
-
-## Installing
-
-To install do `make install`. 
-
-> !! Note: To set custom installation directory use `CMAKE_INSTALL_PREFIX` when building. 
-
-COSMA is CMake friendly and provides a cosmaConfig.cmake module for easy
-integration into 3rd-party CMake projects with
-
-```
-find_package(cosma REQUIRED)
-target_link_libraries( ... cosma::cosma)
-```
-
-COSMA's dependencies are taken care of internally, nothing else needs to be
-linked. Make sure to set `CMAKE_PREFIX_PATH` to COSMA's installation directory
-when building.
-
-There is a rudimentary pkgconfig support; dependencies are handles explicitly by
-consumers.
-
-## Testing
-
-To build all test targets:
-
-```bash
-make tests
-```
-
-To run all tests:
-
-```bash
-ctest
-```
-
-> !! Note: `COSMA_WITH_OPENMPI=ON` has to be set if OpenMPI is used.
 
 ## Miniapps
 
