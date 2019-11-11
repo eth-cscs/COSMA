@@ -15,14 +15,27 @@ if(NOT TARGET cosma::cosma)
 
     find_package(MPI)
 
-    if ("@COSMA_WITH_GPU@")
-        find_dependency(Tiled-MM) # bundled
-    elseif ("@COSMA_WITH_MKL_BLAS@")
+    set(COSMA_BLAS "@COSMA_BLAS@")
+    set(COSMA_SCALAPACK "@COSMA_SCALAPACK@")
+
+    if (${COSMA_BLAS} STREQUAL "MKL")
         find_package(MKL COMPONENTS BLAS_32BIT_OMP)
+    elseif (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
+        set(TILEMM_GPU_BACKEND ${COSMA_BLAS} CACHE STRING FORCE "")
+        find_dependency(Tiled-MM) # bundled
+    elseif (${COSMA_BLAS} STREQUAL "OPENBLAS")
+        find_package(OpenBLAS)
+        set_target_properties(openblas PROPERTIES 
+                                       INTERFACE_INCLUDE_DIRECTORIES "${OpenBLAS_INCLUDE_DIRS}"
+                                       IMPORTED_LOCATION "${OpenBLAS_LIBRARIES}")
+    elseif (${COSMA_BLAS} STREQUAL "NETLIB")
+        find_package(cblas NO_MODULE)
     endif ()
 
-    if ("@COSMA_WITH_MKL_ScaLAPACK@")
+    if (${COSMA_SCALAPACK} STREQUAL "MKL_SCALAPACK")
         find_package(MKL COMPONENTS SCALAPACK_32BIT_OMP)
+    elseif (${COSMA_SCALAPACK} STREQUAL "NETLIB_SCALAPACK")
+        find_package(scalapack)
     endif ()
 
     if ("@COSMA_WITH_PROFILING@")

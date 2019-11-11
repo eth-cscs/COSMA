@@ -3,6 +3,10 @@
 #include <cosma/profiler.hpp>
 #include <complex>
 
+#ifdef COSMA_HAVE_GPU
+#include <Tiled-MM/gpu_runtime_api.hpp>
+#endif
+
 namespace cosma {
 
 template<typename T>
@@ -91,10 +95,11 @@ void Buffer<T>::pin_for_gpu() {
         // pin the buffer that will be used in gemm
         int buff_index_to_pin = buff_index_before_gemm();
         auto buffer_to_pin = ctxt_->get_memory_pool().get_buffer_pointer(buffers_[buff_index_to_pin]);
-        auto status = cudaHostRegister(buffer_to_pin,
-                                       buff_sizes_[buff_index_to_pin] * sizeof(T),
-                                       cudaHostRegisterDefault);
-        gpu::cuda_check_status(status);
+        auto status = gpu::runtime_api::host_register(
+            buffer_to_pin,
+            buff_sizes_[buff_index_to_pin] * sizeof(T),
+            gpu::runtime_api::flag::HostRegisterDefault);
+        gpu::check_runtime_status(status);
         pinned_ = true;
 #endif
 }
@@ -154,8 +159,8 @@ void Buffer<T>::free_communication_buffers(bool dry_run) {
         // if pinned buffer is the communication buffer
         if (buff_index_to_pin >= 0) {
             auto buffer_to_pin = ctxt_->get_memory_pool().get_buffer_pointer(buffers_[buff_index_to_pin]);
-            auto status = cudaHostUnregister(buffer_to_pin);
-            gpu::cuda_check_status(status);
+            auto status = gpu::runtime_api::host_unregister(buffer_to_pin);
+            gpu::check_runtime_status(status);
 
             // any cuda kernel call is asynchronous,
             // so make sure it is finished on GPU

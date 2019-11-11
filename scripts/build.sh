@@ -35,10 +35,9 @@
 #
 # BLAS (select one of:)
 #
-# `COSMA_WITH_GPU` := ON|OFF (default: OFF)
-#    If `ON` uses the TiledMM (submodule) GPU gemm back-end instead of MKL.
+# `COSMA_BLAS` := MKL|OPENBLAS|NETLIB|CUDA|ROCM (default: MKL)
 #
-# `COSMA_WITH_MKL_BLAS` := ON|OFF (default: OFF)
+# `COSMA_SCALAPACK` := OFF|MKL|NETLIB (default: OFF)
 #
 #    Note: Mixing OpenMP runtimes results in performance issues. If you use 
 #          COSMA within a large application, make sure that a single OpenMP
@@ -46,17 +45,6 @@
 #          on Mac. COSMA automically selects the right OpenMP runtime back end 
 #          based on platform and compiler.
 #
-# `COSMA_WITH_OPENBLAS := ON|OFF (default: OFF)`
-#
-# `COSMA_WITH_NETLIB_BLAS := ON|OFF (default: OFF)`
-#
-#
-# ScaLAPACK (optional)
-#
-# `COSMA_WITH_MKL_ScaLAPACK := ON|OFF (default: OFF)`
-#
-# `COSMA_WITH_NETLIB_ScaLAPACK := ON|OFF (default: OFF)`
-# 
 cmake <FIXME:cosma_source_dir> \
   -D CMAKE_INSTALL_PREFIX=<FIXME:cosma_install_dir> \
 

@@ -18,16 +18,38 @@ option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
 option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT})
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
 option(COSMA_WITH_PROFILING "Enable profiling." OFF)
-
-option(COSMA_WITH_GPU "Use CUDA cuBLAS GPU back end." OFF)
-option(COSMA_WITH_MKL_BLAS "Use MKL BLAS back end." OFF)
-option(COSMA_WITH_OPENBLAS "Use OpenBLAS backend." OFF)
-option(COSMA_WITH_NETLIB_BLAS "Use Netlib BLAS backend." OFF)
-
-option(COSMA_WITH_MKL_ScaLAPACK "Use MKL ScaLAPACK back end." OFF) 
-option(COSMA_WITH_NETLIB_ScaLAPACK "Use Netlib ScaLAPACK back end." OFF) 
-
 option(COSMA_WITH_FOTRAN_BINDINGS "Make Fortran bindings to COSMA." OFF) 
+
+set(COSMA_BLAS "MKL" CACHE STRING 
+  "Blas backend. Can be MKL, OPENBLAS, NETLIB, CUDA or ROCM.")
+set_property(CACHE COSMA_BLAS PROPERTY STRINGS 
+  "MKL" "OPENBLAS" "NETLIB" "CUDA" "ROCM")
+
+set(COSMA_SCALAPACK "OFF" CACHE STRING
+  "Blas backend. Can be MKL, NETLIB or OFF.")
+set_property(CACHE COSMA_SCALAPACK PROPERTY STRINGS
+  "OFF" "MKL" "NETLIB")
+
+# check if blas backend is valid
+message(STATUS "Selected BLAS backend for COSMA: ${COSMA_BLAS}")
+get_property(BACKEND_LIST CACHE COSMA_BLAS PROPERTY STRINGS)
+if(NOT COSMA_BLAS IN_LIST BACKEND_LIST)
+  message(FATAL_ERROR "Invalid value for COSMA_BLAS!")
+endif()
+
+# check if scalapack backend is valid
+message(STATUS "Selected ScaLAPACK backend for COSMA: ${COSMA_SCALAPACK}")
+unset(BACKEND_LIST)
+get_property(BACKEND_LIST CACHE COSMA_SCALAPACK PROPERTY STRINGS)
+if(COSMA_SCALAPACK AND NOT COSMA_SCALAPACK IN_LIST BACKEND_LIST)
+  message(FATAL_ERROR "Invalid value for COSMA_SCALAPACK!")
+endif()
+
+if (NOT ${COSMA_BLAS} STREQUAL "CUDA" AND NOT ${COSMA_BLAS} STREQUAL "ROCM")
+  if (COSMA_SCALAPACK AND NOT ${COSMA_BLAS} STREQUAL ${COSMA_SCALAPACK})
+    message(FATAL_ERROR "ScaLAPACK backend MUST match BLAS backend if no GPU backend is used!")
+  endif()
+endif()
 
 project(cosma VERSION 0.1 LANGUAGES CXX)
 
@@ -58,16 +80,18 @@ add_subdirectory(libs/grid2grid)
 #
 set(BLAS_TARGET "")
 set(BLAS_DEF "")
-if (COSMA_WITH_MKL_BLAS)
+
+if (${COSMA_BLAS} STREQUAL "MKL")
     find_package(MKL REQUIRED COMPONENTS BLAS_32BIT_OMP)
     set(BLAS_TARGET "mkl::blas_32bit_omp")
     set(BLAS_DEF "COSMA_WITH_MKL_BLAS")
-elseif (COSMA_WITH_GPU)
+elseif (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
     option(TILEDMM_WITH_INSTALL "" ${COSMA_WITH_INSTALL}) 
+    set(TILEMM_GPU_BACKEND ${COSMA_BLAS} CACHE STRING FORCE "")
     add_subdirectory(libs/Tiled-MM)
     set(BLAS_TARGET "Tiled-MM")
     set(BLAS_DEF "COSMA_HAVE_GPU")
-elseif (COSMA_WITH_OPENBLAS)
+elseif (${COSMA_BLAS} STREQUAL "OPENBLAS")
     find_package(OpenBLAS REQUIRED)
     add_library(openblas SHARED IMPORTED)
     set_target_properties(openblas PROPERTIES 
@@ -75,21 +99,19 @@ elseif (COSMA_WITH_OPENBLAS)
                                    IMPORTED_LOCATION "${OpenBLAS_LIBRARIES}")
     set(BLAS_TARGET "openblas")
     set(BLAS_DEF "COSMA_WITH_BLAS")
-elseif (COSMA_WITH_NETLIB_BLAS)
+elseif (${COSMA_BLAS} STREQUAL "NETLIB")
     find_package(cblas NO_MODULE REQUIRED)
     set(BLAS_TARGET "cblas")
     set(BLAS_DEF "COSMA_WITH_BLAS")
-else ()
-    message(FATAL_ERROR "No BLAS back end found! Select a back end and make sure it's installed with support for the cblas interface and CMake config files.")
 endif ()
 
 # (optional) ScaLAPACK providers 
 #
 set(ScaLAPACK_TARGET "")
-if (COSMA_WITH_MKL_ScaLAPACK)
+if (${COSMA_SCALAPACK} STREQUAL "MKL")
     find_package(MKL REQUIRED COMPONENTS SCALAPACK_32BIT_OMP)
     set(ScaLAPACK_TARGET "mkl::scalapack_32bit_omp")
-elseif (COSMA_WITH_NETLIB_ScaLAPACK) 
+  elseif (${COSMA_SCALAPACK} STREQUAL "NETLIB")
     find_package(scalapack REQUIRED)  
     set(ScaLAPACK_TARGET "scalapack")
 else  ()

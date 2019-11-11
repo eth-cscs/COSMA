@@ -12,7 +12,7 @@ foreach(exec ${executables})
     target_link_libraries(${exec} cosma ${cosma_deps})
 endforeach()
 
-if (COSMA_WITH_MKL_BLAS)
+if (${COSMA_BLAS} STREQUAL "MKL")
     add_executable(transpose "transpose.cpp")
     target_link_libraries(transpose cosma ${cosma_deps})
 endif()
