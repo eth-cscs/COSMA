@@ -42,7 +42,7 @@ higly-optimized to reduce the memory footprint in the following sense:
 
 The library supports both one-sided and two-sided MPI communication backends. It
 uses `dgemm` for the local computations, but also has a support for the `GPU`
-acceleration through our `Tiled-MM` library using `cublas` 
+acceleration through our `Tiled-MM` library using `cublas` or `rocBLAS` 
 
 ## Features
 
@@ -66,9 +66,10 @@ COSMA is a CMake project, a recent CMake(>=3.12) is needed.
 External dependencies: 
 
 - `MPI 3` (required)
-- `Intel MKL` (default) or `CUDA` depending on whether CPU or GPU back end is
+- `Intel MKL` (default) or `CUDA` or `ROCm` depending on whether CPU or GPU back end is
   used.
-- `cublas (optional)`: only used in Hybrid version of COSMA with GPU.
+- `cublas (optional)`: only used in Hybrid version of COSMA with CUDA.
+- `rocBLAS (optional)`: only used in Hybrid version of COSMA with ROCm.
 
 > Some dependencies are bundled as submodules and need not be installed
 > explicitly:
