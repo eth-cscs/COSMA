@@ -8,7 +8,7 @@ cd COSMA
 
 # create a build directory within COSMA
 mkdir build
-cd bulid
+cd build
 
 # Choose which BLAS and LAPACK backends to use (e.g. MKL)
 cmake -DCOSMA_BLAS=MKL -DCOSMA_LAPACK=MKL ..
