@@ -9,26 +9,28 @@ class Cosma(CMakePackage, CudaPackage):
             branch='master',
             submodules=True)
 
-    variant('build_type', default='Release',
-        description='CMake build type',
-        values=('Debug', 'Release', 'RelWithDebInfo', 'MinSizeRel'))
+    variant('blas', default='mkl',
+        values=('mkl', 'openblas', 'netlib', 'cuda', 'rocm'),
+        description='BLAS backend')
 
-    variant('gpu', default=False,
-            description='Use Tiled-MM GPU back end.')
+    variant('scalapack', default='none',
+            values=('mkl', 'netlib'),
+            description='Optional ScaLAPACK support.')
 
     depends_on('cmake@3.12:', type='build')
     depends_on('mpi@3:')
 
-    # FIXME: MKL need not be a required dependncy. 
-    #
-    depends_on('intel-mkl threads=openmp')
-    depends_on('scalapack')
-    depends_on('cuda', when='gpu=True')
+    depends_on('intel-mkl', when='blas=mkl')
+    depends_on('openblas', when='blas=openblas')
+    depends_on('netlib-lapack', when='blas=netlib')
+    depends_on('netlib-scalapack', when='scalapack=netlib')
+    depends_on('cuda', when='blas=cuda')
+    #TODO: rocm
+
 
     def setup_environment(self, spack_env, run_env):
-        if '+gpu' in self.spec:
+        if 'blas=cuda' in self.spec:
             spack_env.set('CUDA_PATH', self.spec['cuda'].prefix)
-
 
     def cmake_args(self):
         spec = self.spec
@@ -36,8 +38,21 @@ class Cosma(CMakePackage, CudaPackage):
                 '-DCOSMA_WITH_APPS=OFF',
                 '-DCOSMA_WITH_PROFILING=OFF',
                 '-DCOSMA_WITH_BENCHMARKS=OFF']
+        
+        if 'blas=mkl' in spec:
+            args += ['-DCOSMA_BLAS=MKL']
+        elif 'blas=netlib' in spec:
+            args += ['-DCOSMA_BLAS=NETLIB']
+        elif 'blas=openblas' in spec:
+            args += ['-DCOSMA_BLAS=OPENBLAS']
+        elif 'blas=cuda' in spec:
+            args += ['-DCOSMA_BLAS=CUDA']
+        else: # 'blas=rocm' in spec:
+            args += ['-DCOSMA_BLAS=ROCM']
 
-        if '+gpu' in spec:
-            args.append('-DCOSMA_WITH_GPU=ON')
+        if 'scalapack=mkl' in spec:
+            args += ['-DCOSMA_SCALAPACK=MKL']
+        elif 'scalapack=netlib' in spec:
+            args += ['-DCOSMA_SCALAPACK=NETLIB']
 
         return args
