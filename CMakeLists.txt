@@ -18,7 +18,6 @@ option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
 option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT})
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
 option(COSMA_WITH_PROFILING "Enable profiling." OFF)
-option(COSMA_WITH_FOTRAN_BINDINGS "Make Fortran bindings to COSMA." OFF) 
 
 set(COSMA_BLAS "MKL" CACHE STRING 
   "Blas backend. Can be MKL, OPENBLAS, NETLIB, CUDA or ROCM.")
@@ -52,10 +51,6 @@ if (NOT ${COSMA_BLAS} STREQUAL "CUDA" AND NOT ${COSMA_BLAS} STREQUAL "ROCM")
 endif()
 
 project(cosma VERSION 0.1 LANGUAGES CXX)
-
-if (COSMA_WITH_FORTRAN_BINDINGS)
-    enable_language(Fortran)
-endif()
 
 # Dependencies
 #
