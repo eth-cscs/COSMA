@@ -10,6 +10,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include "parse_strategy.hpp"
 
 using namespace cosma;
 
@@ -44,13 +45,8 @@ long run(Strategy &s, MPI_Comm comm = MPI_COMM_WORLD) {
     CosmaMatrix<double> B('B', s, rank);
     CosmaMatrix<double> C('C', s, rank);
 
-    // not necessary
-    // A.initialize();
-    // B.initialize();
-    // C.initialize();
-
-    double beta = 0;
     double alpha = 1;
+    double beta = 0;
 
     // fill the matrices with random data
     srand48(rank);
@@ -74,7 +70,7 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &P);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    Strategy strategy(argc, argv);
+    Strategy strategy = parse_strategy(argc, argv);
 
     if (rank == 0) {
         std::cout << "Strategy = " << strategy << std::endl;

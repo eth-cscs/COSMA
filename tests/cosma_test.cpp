@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "../miniapp/parse_strategy.hpp"
 
 using namespace cosma;
 
@@ -17,7 +18,7 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &P);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    Strategy strategy(argc, argv);
+    Strategy strategy = parse_strategy(argc, argv);
     auto ctx = cosma::make_context<double>();
 
     if (rank == 0) {

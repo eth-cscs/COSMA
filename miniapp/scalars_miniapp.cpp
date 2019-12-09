@@ -1,3 +1,4 @@
+#include "parse_strategy.hpp"
 #include <cosma/multiply.hpp>
 
 #include <algorithm>
@@ -75,7 +76,7 @@ int main(int argc, char **argv) {
 
     MPI_Init(&argc, &argv);
 
-    cosma::Strategy strategy(argc, argv);
+    cosma::Strategy strategy = parse_strategy(argc, argv);
 
     auto cxt_f = cosma::make_context<float>();
     run<float>(strategy, "Float");

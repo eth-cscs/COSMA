@@ -102,12 +102,6 @@ class Strategy {
              bool overlap = false,
              bool busy_waiting = true);
 
-    // parses the command line options and initializes the varialbes
-    void initialize(const std::string &cmd_line);
-
-    // parses steps if defined manually by the user
-    void process_steps(size_t start, const std::string &line);
-
     // default strategy dividing always the largest dimension in that step
     // if there is enough memory uses a parallel step, if not uses a sequential
     // step
@@ -121,9 +115,6 @@ class Strategy {
     void square_strategy();
 
     void spartition_strategy();
-
-    // token is a triplet e.g. pm3 (denoting parallel (m / 3) step)
-    void process_token(const std::string &step_triplet);
 
     void throw_exception(const std::string &message);
 

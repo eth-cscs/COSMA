@@ -23,7 +23,6 @@ if(NOT TARGET cosma)
     target_link_libraries(cosma PUBLIC MPI::MPI_CXX
                                        grid2grid
                                 PRIVATE ${BLAS_TARGET}
-                                        options
     )
     target_compile_definitions(cosma PRIVATE ${BLAS_DEF}
     )
@@ -50,15 +49,6 @@ if(ScaLAPACK_TARGET AND NOT TARGET cosma_pxgemm)
         target_compile_definitions(cosma_pxgemm PRIVATE COSMA_WITH_PROFILING)
     endif()
     list(APPEND INSTALLED_TARGETS_LIST "cosma_pxgemm")
-
-    if (COSMA_WITH_FORTRAN_BINDINGS)
-        add_library(cosma_pxgemm_fortran STATIC pxgemm.f90)
-        target_link_libraries(cosma_pxgemm_fortran PUBLIC cosma_pxgemm)
-        list(APPEND INSTALLED_TARGETS_LIST "cosma_pxgemm_fortran")
-        INSTALL ( CODE
-            "EXECUTE_PROCESS (COMMAND \"${CMAKE_COMMAND}\" -E copy_directory \"${PROJECT_BINARY_DIR}/src/cosma\" \"${CMAKE_INSTALL_PREFIX}/include/cosma/\")"
-            )
-    endif()
 endif()
 
 if(COSMA_WITH_INSTALL AND INSTALLED_TARGETS_LIST)

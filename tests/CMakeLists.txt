@@ -31,7 +31,6 @@ add_cosma_mpi_test(multiply_using_layout 4 cosma)
 add_cosma_mpi_test(multiply 16 cosma)
 add_cosma_mpi_test(scalar_matmul 8 cosma)
 
-
 if(COSMA_SCALAPACK)
     add_cosma_mpi_test(pdgemm 6 cosma_pxgemm options)
 
@@ -43,5 +42,5 @@ if(COSMA_SCALAPACK)
 endif()
 
 add_executable(test.cosma cosma_test.cpp)
-target_link_libraries(test.cosma PRIVATE cosma)
+target_link_libraries(test.cosma PRIVATE cosma options)
 target_include_directories(test.cosma PRIVATE .)

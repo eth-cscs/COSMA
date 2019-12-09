@@ -14,8 +14,7 @@
 #include <cosma/context.hpp>
 #include <cosma/profiler.hpp>
 
-// from options
-#include <options.hpp>
+#include "parse_strategy.hpp"
 
 using namespace cosma;
 

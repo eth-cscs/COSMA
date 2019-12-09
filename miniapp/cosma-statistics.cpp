@@ -3,6 +3,7 @@ Simulates the algorithm (without actually computing the matrix multiplication)
  * in order to get the total volume of the communication, the maximum volume of computation
  * done in a single branch and the maximum required buffer size that the algorithm requires.
  */
+#include "parse_strategy.hpp"
 #include <cosma/statistics.hpp>
 
 #include <iostream>
@@ -10,7 +11,7 @@ Simulates the algorithm (without actually computing the matrix multiplication)
 using namespace cosma;
 
 int main( int argc, char **argv ) {
-    Strategy strategy(argc, argv);
+    Strategy strategy = parse_strategy(argc, argv);
 
     std::cout << strategy << std::endl;
 

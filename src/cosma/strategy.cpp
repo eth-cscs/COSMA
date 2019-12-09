@@ -1,5 +1,4 @@
 #include <cosma/strategy.hpp>
-#include <options.hpp>
 
 namespace cosma {
 // constructors
@@ -8,26 +7,6 @@ Strategy::Strategy() = default;
 // Strategy::Strategy(Strategy& other) = default;
 // move constructor
 Strategy::Strategy(Strategy &&other) = default;
-
-// constructs the Strategy from the command line
-Strategy::Strategy(const std::string &cmd_line) {
-    initialize(cmd_line);
-    n_steps = divisors.size();
-    check_if_valid();
-    compute_min_sizes();
-}
-
-// constructs the Strategy form the command line
-Strategy::Strategy(int argc, char **argv) {
-    std::string input;
-    for (auto i = 1; i < argc; ++i) {
-        input += std::string(argv[i]) + " ";
-    }
-    initialize(input);
-    n_steps = divisors.size();
-    check_if_valid();
-    compute_min_sizes();
-}
 
 Strategy::Strategy(int mm,
                    int nn,
@@ -78,14 +57,7 @@ Strategy::Strategy(int mm,
     , topology(top)
     , overlap_comm_and_comp(overlap)
     , use_busy_waiting(busy_waiting) {
-    bool steps_predefined = options::flag_exists("-s", "--steps", steps);
-    if (steps_predefined) {
-        auto steps_it = options::find_flag(
-            "-s", "--steps", "Division steps have to be defined.", steps);
-        process_steps(steps_it, steps);
-    } else {
-        square_strategy();
-    }
+    square_strategy();
     n_steps = divisors.size();
     check_if_valid();
     compute_min_sizes();
@@ -116,106 +88,6 @@ Strategy::Strategy(int mm,
     n_steps = divisors.size();
     check_if_valid();
     compute_min_sizes();
-}
-
-void Strategy::initialize(const std::string &cmd_line) {
-    auto m_it = options::find_flag(
-        "-m", "--m_dimension", "Dimension m has to be defined.", cmd_line);
-    auto n_it = options::find_flag(
-        "-n", "--n_dimension", "Dimension n has to be defined.", cmd_line);
-    auto k_it = options::find_flag(
-        "-k", "--k_dimension", "Dimension k has to be defined.", cmd_line);
-    auto P_it = options::find_flag("-P",
-                                   "--processors",
-                                   "Number of processors has to be defined.",
-                                   cmd_line);
-    auto M_it = options::find_flag(
-        "-L",
-        "--memory",
-        "Memory limit: maximum number of elements each rank can own.",
-        cmd_line,
-        false);
-    m = options::next_int(m_it, cmd_line);
-    n = options::next_int(n_it, cmd_line);
-    k = options::next_int(k_it, cmd_line);
-    P = options::next_int(P_it, cmd_line);
-    memory_limit = options::next_long_long(M_it, cmd_line);
-
-    // if memory limit not given, assume we have infinity
-    // (i.e. assume that each rank can store all 3 matrices)
-    if (memory_limit < 0) {
-        memory_limit = std::numeric_limits<long long>::max();
-    }
-    topology = options::flag_exists("-t", "--topology", cmd_line);
-
-    overlap_comm_and_comp = options::flag_exists("-o", "--overlap", cmd_line);
-
-    if (options::flag_exists("-w", "--busy_waiting", cmd_line)) {
-        use_busy_waiting = true;
-    } else if (options::flag_exists("-l", "--polling", cmd_line)) {
-        use_busy_waiting = false;
-    } else {
-        use_busy_waiting = true;
-    }
-
-    bool beta_predefined = options::flag_exists("-b", "--beta", cmd_line);
-    if (beta_predefined) {
-        auto beta_it =
-            options::find_flag("-b",
-                               "--beta",
-                               "Beta parameter of gemm should be predefined.",
-                               cmd_line);
-        beta = options::next_double(beta_it, cmd_line);
-    } else {
-        beta = false;
-    }
-
-    bool steps_predefined = options::flag_exists("-s", "--steps", cmd_line);
-
-    if (steps_predefined) {
-        auto steps_it = options::find_flag(
-            "-s", "--steps", "Division steps have to be defined.", cmd_line);
-        process_steps(steps_it, cmd_line);
-    } else {
-        bool square_str = options::flag_exists("-q", "--square", cmd_line);
-        bool spartition_str =
-            options::flag_exists("-p", "--spartition", cmd_line);
-        bool default_str = options::flag_exists("-d", "--default", cmd_line);
-
-        bool compress_strategy =
-            options::flag_exists("-c", "--compress", cmd_line);
-
-        // default_strategy();
-        // spartition_strategy();
-        if (square_str) {
-            square_strategy();
-        } else if (spartition_str) {
-            spartition_strategy();
-        } else if (default_str) {
-            default_strategy();
-        } else {
-            square_strategy();
-        }
-
-        if (compress_strategy) {
-            compress_steps();
-        }
-    }
-}
-
-void Strategy::process_steps(size_t start, const std::string &line) {
-    // go to the end of the string or space
-    auto end = line.find(start, ' ');
-    if (end == std::string::npos) {
-        end = line.length();
-    }
-    std::string substring = line.substr(start, end);
-    std::istringstream stream(substring);
-    std::string token;
-
-    while (std::getline(stream, token, ',')) {
-        process_token(token);
-    }
 }
 
 long long
@@ -738,15 +610,6 @@ void Strategy::spartition_strategy() {
     }
 
     P = n_tiles_m * n_tiles_n * n_tiles_k;
-}
-
-// token is a triplet e.g. pm3 (denoting parallel (m / 3) step)
-void Strategy::process_token(const std::string &step_triplet) {
-    if (step_triplet.length() < 3)
-        return;
-    step_type += step_triplet[0];
-    split_dimension += step_triplet[1];
-    divisors.push_back(options::next_int(2, step_triplet));
 }
 
 void Strategy::throw_exception(const std::string &message) {
