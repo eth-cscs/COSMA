@@ -1,7 +1,5 @@
 #include <cosma/pgemm.hpp>
 #include <cosma/pxgemm.h>
-#include <mpi.h>
-#include <stdio.h>
 
 extern "C" {
 // Reimplement ScaLAPACK signatures functions
@@ -24,15 +22,6 @@ void pdgemm(const char* trans_a,
             const int* ic,
             const int* jc,
             const int* descc) {
-
-    // int rank;
-    // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    // if (rank == 0) {
-    //     printf("m = %d, n = %d, k = %d", *m, *n, *k);
-    //     fflush(stdout);
-    // }
-    // MPI_Barrier(MPI_COMM_WORLD);
-
     cosma::pgemm<double>(*trans_a,
                   *trans_b,
                   *m,

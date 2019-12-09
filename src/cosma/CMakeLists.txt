@@ -22,12 +22,12 @@ if(NOT TARGET cosma)
     target_compile_features(cosma PUBLIC cxx_std_14)
     target_link_libraries(cosma PUBLIC MPI::MPI_CXX
                                        grid2grid
-                                       ${BLAS_TARGET}
-                                PRIVATE options
+                                PRIVATE ${BLAS_TARGET}
+                                        options
     )
     target_compile_definitions(cosma PRIVATE ${BLAS_DEF}
     )
-    
+
     if(COSMA_WITH_PROFILING)
         target_link_libraries(cosma PRIVATE semiprof)
         target_compile_definitions(cosma PRIVATE COSMA_WITH_PROFILING)
@@ -42,6 +42,7 @@ if(ScaLAPACK_TARGET AND NOT TARGET cosma_pxgemm)
                                     pxgemm.cpp
     )
     target_link_libraries(cosma_pxgemm PUBLIC cosma 
+                                              ${BLAS_TARET}
                                               ${ScaLAPACK_TARGET}
     )
     if(COSMA_WITH_PROFILING)
