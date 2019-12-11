@@ -10,11 +10,11 @@ class Cosma(CMakePackage, CudaPackage):
             submodules=True)
 
     variant('blas', default='mkl',
-        values=('mkl', 'openblas', 'netlib', 'cuda', 'rocm'),
+        values=('mkl', 'openblas', 'cray-libsci', 'custom', 'cuda', 'rocm'),
         description='BLAS backend')
 
     variant('scalapack', default='none',
-            values=('mkl', 'netlib'),
+            values=('mkl', 'cray-libsci', 'custom'),
             description='Optional ScaLAPACK support.')
 
     depends_on('cmake@3.12:', type='build')
@@ -22,8 +22,9 @@ class Cosma(CMakePackage, CudaPackage):
 
     depends_on('intel-mkl', when='blas=mkl')
     depends_on('openblas', when='blas=openblas')
-    depends_on('netlib-lapack', when='blas=netlib')
-    depends_on('netlib-scalapack', when='scalapack=netlib')
+    depends_on('netlib-lapack', when='blas=custom')
+    depends_on('netlib-scalapack', when='scalapack=custom')
+    depends_on('cray-libsci', when='scalapack=cray-libsci')
     depends_on('cuda', when='blas=cuda')
     #TODO: rocm
 
@@ -38,13 +39,15 @@ class Cosma(CMakePackage, CudaPackage):
                 '-DCOSMA_WITH_APPS=OFF',
                 '-DCOSMA_WITH_PROFILING=OFF',
                 '-DCOSMA_WITH_BENCHMARKS=OFF']
-        
+
         if 'blas=mkl' in spec:
             args += ['-DCOSMA_BLAS=MKL']
-        elif 'blas=netlib' in spec:
-            args += ['-DCOSMA_BLAS=NETLIB']
+        elif 'blas=cray-libsci' in spec:
+            args += ['-DCOSMA_BLAS=CRAY_LIBSCI']
         elif 'blas=openblas' in spec:
             args += ['-DCOSMA_BLAS=OPENBLAS']
+        elif 'blas=custom' in spec:
+            args += ['-DCOSMA_BLAS=CUSTOM']
         elif 'blas=cuda' in spec:
             args += ['-DCOSMA_BLAS=CUDA']
         else: # 'blas=rocm' in spec:
@@ -52,7 +55,9 @@ class Cosma(CMakePackage, CudaPackage):
 
         if 'scalapack=mkl' in spec:
             args += ['-DCOSMA_SCALAPACK=MKL']
-        elif 'scalapack=netlib' in spec:
-            args += ['-DCOSMA_SCALAPACK=NETLIB']
+        elif 'scalapack=cray-libsci' in spec:
+            args += ['-DCOSMA_SCALAPACK=CRAY_LIBSCI']
+        elif 'scalapack=custom' in spec:
+            args += ['-DCOSMA_SCALAPACK=CUSTOM']
 
         return args

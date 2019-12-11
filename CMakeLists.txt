@@ -20,14 +20,14 @@ option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
 option(COSMA_WITH_PROFILING "Enable profiling." OFF)
 
 set(COSMA_BLAS "MKL" CACHE STRING 
-  "Blas backend. Can be MKL, OPENBLAS, NETLIB, CUDA or ROCM.")
+    "Blas backend. Can be MKL, OPENBLAS, CRAY_LIBSCI, CUSTOM, CUDA or ROCM.")
 set_property(CACHE COSMA_BLAS PROPERTY STRINGS 
-  "MKL" "OPENBLAS" "NETLIB" "CUDA" "ROCM")
+    "MKL" "OPENBLAS" "CRAY_LIBSCI" "CUSTOM" "CUDA" "ROCM")
 
 set(COSMA_SCALAPACK "OFF" CACHE STRING
-  "Blas backend. Can be MKL, NETLIB or OFF.")
+    "Blas backend. Can be MKL, CRAY_LIBSCI, CUSTOM or OFF.")
 set_property(CACHE COSMA_SCALAPACK PROPERTY STRINGS
-  "OFF" "MKL" "NETLIB")
+    "OFF" "MKL" "CRAY_LIBSCI" "CUSTOM")
 
 # check if blas backend is valid
 message(STATUS "Selected BLAS backend for COSMA: ${COSMA_BLAS}")
@@ -88,15 +88,19 @@ elseif (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
     set(BLAS_DEF "COSMA_HAVE_GPU")
 elseif (${COSMA_BLAS} STREQUAL "OPENBLAS")
     find_package(OpenBLAS REQUIRED)
-    add_library(openblas SHARED IMPORTED)
+    add_library(openblas IMPORTED)
     set_target_properties(openblas PROPERTIES 
                                    INTERFACE_INCLUDE_DIRECTORIES "${OpenBLAS_INCLUDE_DIRS}"
                                    IMPORTED_LOCATION "${OpenBLAS_LIBRARIES}")
     set(BLAS_TARGET "openblas")
     set(BLAS_DEF "COSMA_WITH_BLAS")
-elseif (${COSMA_BLAS} STREQUAL "NETLIB")
-    find_package(cblas NO_MODULE REQUIRED)
-    set(BLAS_TARGET "cblas")
+elseif (${COSMA_BLAS} STREQUAL "CRAY_LIBSCI")
+    find_package(CRAY_LIBSCI REQUIRED)
+    set(BLAS_TARGET "${CRAY_LIBSCI_LIBRARIES}")
+    set(BLAS_DEF "COSMA_WITH_BLAS")
+elseif (${COSMA_BLAS} STREQUAL "CUSTOM")
+    find_package(BLAS REQUIRED)
+    set(BLAS_TARGET "${BLAS_LIBRARIES}")
     set(BLAS_DEF "COSMA_WITH_BLAS")
 endif ()
 
@@ -106,9 +110,12 @@ set(ScaLAPACK_TARGET "")
 if (${COSMA_SCALAPACK} STREQUAL "MKL")
     find_package(MKL REQUIRED COMPONENTS SCALAPACK_32BIT_OMP)
     set(ScaLAPACK_TARGET "mkl::scalapack_32bit_omp")
-  elseif (${COSMA_SCALAPACK} STREQUAL "NETLIB")
-    find_package(scalapack REQUIRED)  
-    set(ScaLAPACK_TARGET "scalapack")
+elseif (${COSMA_SCALAPACK} STREQUAL "CRAY_LIBSCI")
+    find_package(CRAY_LIBSCI REQUIRED)
+    set(ScaLAPACK_TARGET "${CRAY_LIBSCI_LIBRARIES}")
+elseif (${COSMA_SCALAPACK} STREQUAL "CUSTOM")
+    find_package(SCALAPACK REQUIRED)
+    set(ScaLAPACK_TARGET "${SCALAPACK_LIBRARIES}")
 else  ()
     message(STATUS "Building with no ScaLAPACK interface support.")
 endif ()

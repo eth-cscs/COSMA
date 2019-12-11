@@ -6,6 +6,9 @@
 
 #ifdef COSMA_WITH_BLAS
 #include <cblas.h>
+// this is for backward compatibility,
+// in case CLBAS_LAYOUT is not defined
+typedef CBLAS_ORDER CBLAS_LAYOUT;
 #endif
 
 // The file is not needed if GPU is used

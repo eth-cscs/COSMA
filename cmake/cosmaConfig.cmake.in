@@ -26,16 +26,20 @@ if(NOT TARGET cosma::cosma)
     elseif (${COSMA_BLAS} STREQUAL "OPENBLAS")
         find_package(OpenBLAS)
         set_target_properties(openblas PROPERTIES 
-                                       INTERFACE_INCLUDE_DIRECTORIES "${OpenBLAS_INCLUDE_DIRS}"
-                                       IMPORTED_LOCATION "${OpenBLAS_LIBRARIES}")
-    elseif (${COSMA_BLAS} STREQUAL "NETLIB")
-        find_package(cblas NO_MODULE)
+            INTERFACE_INCLUDE_DIRECTORIES "${OpenBLAS_INCLUDE_DIRS}"
+            IMPORTED_LOCATION "${OpenBLAS_LIBRARIES}")
+    elseif (${COSMA_BLAS} STREQUAL "CRAY_LIBSCI")
+        find_package(CRAY_LIBSCI REQUIRED)
+    elseif (${COSMA_BLAS} STREQUAL "CUSTOM")
+        find_package(BLAS)
     endif ()
 
-    if (${COSMA_SCALAPACK} STREQUAL "MKL_SCALAPACK")
+    if (${COSMA_SCALAPACK} STREQUAL "MKL")
         find_package(MKL COMPONENTS SCALAPACK_32BIT_OMP)
-    elseif (${COSMA_SCALAPACK} STREQUAL "NETLIB_SCALAPACK")
-        find_package(scalapack)
+    elseif (${COSMA_SCALAPACK} STREQUAL "CRAY_LIBSCI")
+        find_package(CRAY_LIBSCI REQUIRED)
+    elseif (${COSMA_SCALAPACK} STREQUAL "CUSTOM")
+        find_package(SCALAPACK)
     endif ()
 
     if ("@COSMA_WITH_PROFILING@")
@@ -49,7 +53,6 @@ if(NOT TARGET cosma::cosma)
     # These are bundled with cosma
     #
     find_dependency(grid2grid)
-    find_dependency(options)
 
     include("${CMAKE_CURRENT_LIST_DIR}/cosmaTargets.cmake")
     cmake_policy(POP) # Restore project's policies
