@@ -1,7 +1,8 @@
 #include <cosma/pgemm.hpp>
-#include <cosma/pxgemm.h>
 
 extern "C" {
+#include <cosma/pxgemm.h>
+
 // Reimplement ScaLAPACK signatures functions
 void pdgemm(const char* trans_a,
             const char* trans_b,

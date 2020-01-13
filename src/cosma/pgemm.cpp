@@ -12,8 +12,8 @@
 
 namespace cosma {
 template <typename T>
-void pgemm(const char trans_a,
-           const char trans_b,
+void pgemm(const char transa,
+           const char transb,
            const int m,
            const int n,
            const int k,
@@ -31,6 +31,9 @@ void pgemm(const char trans_a,
            const int ic,
            const int jc,
            const int *descc) {
+    char trans_a = std::toupper(transa);
+    char trans_b = std::toupper(transb);
+
     // blas context
     int ctxt = scalapack::get_grid_context(desca, descb, descc);
 

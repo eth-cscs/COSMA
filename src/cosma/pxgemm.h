@@ -1,9 +1,9 @@
 #pragma once
-#include <complex.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
 // ScaLAPACK API (override)
+#include <complex.h>
 void psgemm(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
         const float* alpha, const float* a, const int* ia, const int* ja, const int* desca,
         const float* b, const int* ib, const int* jb, const int* descb, const float* beta,
