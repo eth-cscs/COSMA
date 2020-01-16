@@ -80,6 +80,8 @@ public:
     int buffer_index();
     // sets the index of the current buffer to idx
     void set_buffer_index(int idx);
+    // swaps ids of current_buffer and reduce buffer
+    void swap_reduce_buffer_with(size_t buffer_idx);
 
     // returns the pointer to the current buffer
     scalar_t* buffer_ptr();
@@ -119,6 +121,7 @@ public:
     Mapper *mapper_;
     // used to get the sizes of buffers needed in each step
     Layout *layout_;
+
 
 protected:
     // computes the buffer sizes that is needed for this matrix (where

@@ -130,7 +130,7 @@ void reduce(MPI_Comm comm,
 
     // initilize C to 0 if beta = 0 since accumulate will do additions over
     // this array
-    if (beta == 0) {
+    if (beta == Scalar{0}) {
         memset(out, 0, local_size * sizeof(Scalar));
     }
 

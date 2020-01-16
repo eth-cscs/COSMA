@@ -653,6 +653,7 @@ void parallel(cosma_context<Scalar> *ctx,
 
     int buffer_idx = expanded_mat.buffer_index();
     expanded_mat.advance_buffer();
+    int buffer_idx_expanded = expanded_mat.buffer_index();
 
     Scalar *original_matrix = expanded_mat.current_matrix();
     Scalar *expanded_matrix = expanded_mat.buffer_ptr();
@@ -685,7 +686,79 @@ void parallel(cosma_context<Scalar> *ctx,
     // substeps.
     auto new_beta = beta;
     if (strategy.split_k(step) && beta != Scalar{0}) {
-        new_beta = 0;
+        new_beta = Scalar{0};
+
+        //*******************************************
+        // swaping reduce_buffer and original_matrix
+        //*******************************************
+        /* Why this is necessary:
+           Assume the case: (m, n, k, P) = (4, 4, 8, 4),
+           with strategy being: -s pk2,pk2 and beta = 1.0
+
+           In this case, matrix C will only allocate 3 buffers: 
+           1) initial buffer (send buffer)
+           2) communication buffer (receive buffer)
+           3) reduce_buffer (temporary buffer)
+
+           In the first parallel step, the following will happen:
+           1) beta = 1.0, but new_beta = 0.0;
+           2) buffer_index will point to communication buffer
+
+           In the second parallel step:
+           1) beta = 0.0
+           2) initial and communication buffers will swap:
+           the communication buffer will become the new send buffer
+           and the initial buffer will become the new receive buffer
+
+           This means that the initial buffer will be overwritten
+           with partial results of the nested parallel k/2 step.
+
+           Then, when the outer parallel step wants to accumulate: 
+           C = beta * C + sum(partial results)
+           However, the values in C are not anymore the initial values, 
+           but the values of the inner reduction which overwrote C.
+
+           This happens when all following conditions are met:
+           1) beta > 0:
+                When beta == 0, then we can easily overwite C with
+                intermediate results, without worring about loosing the data.
+           2) There are no sequential m or n divisions before parallel k steps:
+                When sequential m or n divisions occur, then they
+                enforce new buffers to be used in subsequent communications
+                and thus the initial values in C stay preserved.
+           3) Parallel k division occurs more than once:
+                If parallel k step occurs only once, then
+                buffer swapping never occurs, since we only
+                have one communication round of matrix C,
+                so the initial buffer only serves as the send buffer.
+
+           When none of these conditions are met, we have to:
+           - either: 
+             1) allocate an additional communication buffer
+                so that the initial buffer never gets written to
+                during communication rounds
+           - or:
+             2) preserve the initial content of C temporarily
+                in a temporary buffer (e.g. in a reduce_buffer)
+                given that the temp buffer is not used 
+                in any subsequent step.
+
+           Here we chose to take the option 2).
+
+           We temporarily swap the original_matrix
+           (possibly containing the initial values of C)
+           with the reduce buffer that is not used in nested steps.
+
+           We can do this, because the following is guaranteed:
+           1) if beta > 0 in some parallel step where k is divided
+              then all nested steps (both parallel and sequential) 
+              will have beta = 0 (since we set new_beta = 0).
+           2) size(reduce_buffer) >= size(initial C buffer)
+           3) Even if there is only 1 parallel k step
+              (and thus the stated problem is not present)
+              swapping these buffers will not hurt.
+        */
+        expanded_mat.swap_reduce_buffer_with(buffer_idx);
     }
 
     multiply(ctx,
@@ -701,6 +774,13 @@ void parallel(cosma_context<Scalar> *ctx,
              comm,
              alpha,
              new_beta);
+
+    // revert changes after the recurrsion
+    if (strategy.split_k(step) && beta != Scalar{0}) {
+        // swap reduce_buffer with original matrix C
+        expanded_mat.swap_reduce_buffer_with(buffer_idx);
+    }
+
     // revert the current matrix
     expanded_mat.set_buffer_index(buffer_idx);
     expanded_mat.set_current_matrix(original_matrix);

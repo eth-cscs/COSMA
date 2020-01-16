@@ -310,6 +310,11 @@ void Buffer<T>::set_buffer_index(int idx) {
 }
 
 template <typename T>
+void Buffer<T>::swap_reduce_buffer_with(size_t buffer_idx) {
+    std::swap(buffers_[buffer_idx], reduce_buffer_);
+}
+
+template <typename T>
 typename Buffer<T>::scalar_t *Buffer<T>::reshuffle_buffer_ptr() {
     if (max_reshuffle_buffer_size_ > 0)
         return ctxt_->get_memory_pool().get_buffer_pointer(reshuffle_buffer_);
@@ -549,7 +554,6 @@ std::vector<size_t> Buffer<T>::compute_buffer_size(Interval &m,
 
             // if C was expanded, then reduce was invoked
             if (label_ == 'C' && beta != scalar_t{0}) {
-                // if (label_ == 'C') {
                 int subint_index, subint_offset;
                 std::tie(subint_index, subint_offset) =
                     P.locate_in_subinterval(div, rank);

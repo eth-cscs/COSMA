@@ -55,4 +55,8 @@ int get_comm_context(const int grid_context);
 MPI_Comm get_communicator(const int grid_context);
 
 int leading_dimension(const int* desc);
+
+int numroc(int n, int nb, int iproc, int isrcproc, int nprocs);
+
+int local_buffer_size(const int* desc);
 }}

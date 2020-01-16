@@ -9,9 +9,9 @@ using namespace cosma;
 
 template <typename T>
 void fill_matrix(T* ptr, size_t size) {
-    std::random_device dev;                        // seed
-    std::mt19937 rng(dev());                       // generator
-    std::uniform_real_distribution<T> dist(1.); // distribution
+    static std::random_device dev;                        // seed
+    static std::mt19937 rng(dev());                       // generator
+    static std::uniform_real_distribution<T> dist(10.0); // distribution
 
     for (unsigned i = 0; i < size; ++i) {
         ptr[i] = T{dist(rng)};
@@ -20,9 +20,9 @@ void fill_matrix(T* ptr, size_t size) {
 
 template <typename T>
 void fill_matrix(std::complex<T>* ptr, size_t size) {
-    std::random_device dev;                        // seed
-    std::mt19937 rng(dev());                       // generator
-    std::uniform_real_distribution<T> dist(1.); // distribution
+    static std::random_device dev;                        // seed
+    static std::mt19937 rng(dev());                       // generator
+    static std::uniform_real_distribution<T> dist(10.0); // distribution
 
     for (unsigned i = 0; i < size; ++i) {
         ptr[i] = std::complex<T>{dist(rng), dist(rng)};
@@ -35,6 +35,8 @@ bool run(Strategy &s,
          MPI_Comm comm = MPI_COMM_WORLD,
          bool overlap = false) {
     constexpr auto epsilon = std::numeric_limits<float>::epsilon();
+    auto alpha = Scalar{1};
+    auto beta = Scalar{1};
 
     int rank;
     int size;
@@ -67,9 +69,12 @@ bool run(Strategy &s,
     srand48(rank);
     fill_matrix(A.matrix_pointer(), sizeA);
     fill_matrix(B.matrix_pointer(), sizeB);
+    fill_matrix(C.matrix_pointer(), sizeC);
 
 #ifdef DEBUG
-    std::cout << "Initial data in A and B:" << std::endl;
+    if (rank == 0) {
+        std::cout << "Initial data in A and B:" << std::endl;
+    }
     for (int i = 0; i < P; i++) {
         if (rank == i) {
             printf("(%d) A: ", i);
@@ -81,6 +86,11 @@ bool run(Strategy &s,
             for (auto j = 0; j < sizeB; j++)
                 printf("%5.3f ", B.matrix_pointer()[j]);
             printf("\n");
+
+            printf("(%d) C: ", i);
+            for (auto j = 0; j < sizeC; j++)
+                printf("%5.3f ", C.matrix_pointer()[j]);
+            printf("\n");
         }
         MPI_Barrier(comm);
     }
@@ -89,19 +99,25 @@ bool run(Strategy &s,
     bool isOK;
 
     // Then rank0 ask for other ranks data
-    std::vector<Scalar> As, Bs;
+    std::vector<Scalar> As, Bs, Cs;
     if (rank == 0) {
         As = std::vector<Scalar>(m * k);
         std::memcpy(As.data(), A.matrix_pointer(), A.matrix_size()*sizeof(Scalar));
         Bs = std::vector<Scalar>(k * n);
         std::memcpy(Bs.data(), B.matrix_pointer(), B.matrix_size()*sizeof(Scalar));
+        // copy C in case beta > 0
+        Cs = std::vector<Scalar>(m * n);
+        std::memcpy(Cs.data(), C.matrix_pointer(), C.matrix_size()*sizeof(Scalar));
 
         int offsetA = sizeA;
         int offsetB = sizeB;
+        int offsetC = sizeC;
 
         for (int i = 1; i < P; i++) {
             int receive_size_A = A.matrix_size(i);
             int receive_size_B = B.matrix_size(i);
+            int receive_size_C = C.matrix_size(i);
+
             // Rank 0 receive data
             MPI_Recv(As.data() + offsetA,
                      receive_size_A,
@@ -117,15 +133,24 @@ bool run(Strategy &s,
                      0,
                      comm,
                      MPI_STATUSES_IGNORE);
+            MPI_Recv(Cs.data() + offsetC,
+                     receive_size_C,
+                     mpi_type,
+                     i,
+                     0,
+                     comm,
+                     MPI_STATUSES_IGNORE);
 
             offsetA += receive_size_A;
             offsetB += receive_size_B;
+            offsetC += receive_size_C;
         }
     }
     // Rank i send data
     if (rank > 0) {
         MPI_Send(A.matrix_pointer(), sizeA, mpi_type, 0, 0, comm);
         MPI_Send(B.matrix_pointer(), sizeB, mpi_type, 0, 0, comm);
+        MPI_Send(C.matrix_pointer(), sizeC, mpi_type, 0, 0, comm);
     }
 
     MPI_Barrier(comm);
@@ -140,10 +165,12 @@ bool run(Strategy &s,
         globCcheck.resize(m * n);
         int offsetA = 0;
         int offsetB = 0;
+        int offsetC = 0;
 
         for (int i = 0; i < P; i++) {
             int local_size_A = A.matrix_size(i);
             int local_size_B = B.matrix_size(i);
+            int local_size_C = C.matrix_size(i);
 
             for (int j = 0; j < local_size_A; j++) {
                 int y, x;
@@ -162,9 +189,20 @@ bool run(Strategy &s,
                     globB.at(x * k + y) = Bs.at(offsetB + j);
                 }
             }
+            for (int j = 0; j < local_size_C; j++) {
+                int y, x;
+                std::tie(y, x) = C.global_coordinates(j, i);
+                // std::cout << "Mapped successfully!\n";
+                if (y >= 0 && x >= 0) {
+                    // globB.at(x*n+y)=Bs.at(i*sizeB+j);
+                    // std::cout << "Retrieved Bs value successfully!\n";
+                    globCcheck.at(x * m + y) = Cs.at(offsetC + j);
+                }
+            }
 
             offsetA += local_size_A;
             offsetB += local_size_B;
+            offsetC += local_size_C;
         }
         // Now compute the result
         cosma::local_multiply(globA.data(),
@@ -173,8 +211,8 @@ bool run(Strategy &s,
                               m,
                               n,
                               k,
-                              Scalar{1.0},
-                              Scalar{0.0});
+                              alpha,
+                              beta);
 #ifdef DEBUG
         std::cout << "Complete matrix A: " << std::endl;
         for (int i = 0; i < m; i++) {
@@ -204,12 +242,10 @@ bool run(Strategy &s,
 #endif
     }
 
-    multiply(A, B, C, s, comm, Scalar{1}, Scalar{0});
+    multiply(A, B, C, s, comm, alpha, beta);
 
-    // Then rank0 ask for other ranks data
-    std::vector<Scalar> Cs;
+    // Then rank0 asks for other ranks data
     if (rank == 0) {
-        Cs = std::vector<Scalar>(m * n);
         std::memcpy(Cs.data(), C.matrix_pointer(), C.matrix_size()*sizeof(Scalar));
 
         int offsetC = sizeC;

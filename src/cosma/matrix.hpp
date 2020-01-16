@@ -133,6 +133,8 @@ class CosmaMatrix {
     // temporary buffer in parallel-reduce (two-sided) communicator
     // in case when beta > 0 in that step
     scalar_t *reduce_buffer_ptr();
+    // swaps current and reduce buffers
+    void swap_reduce_buffer_with(size_t buffer_idx);
 
     // **********************************************
     // NEW METHODS

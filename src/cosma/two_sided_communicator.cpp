@@ -135,8 +135,8 @@ void reduce(MPI_Comm comm,
             int rank,
             int div,
             Interval &P,
-            Scalar *LC,
-            Scalar *C,
+            Scalar *LC, // expanded_matrix
+            Scalar *C,  // original matrix
             Scalar *reshuffle_buffer,
             Scalar *reduce_buffer,
             std::vector<std::vector<int>> &c_current,

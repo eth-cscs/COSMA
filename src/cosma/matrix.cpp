@@ -135,6 +135,11 @@ typename CosmaMatrix<T>::scalar_t *CosmaMatrix<T>::reduce_buffer_ptr() {
 }
 
 template <typename T>
+void CosmaMatrix<T>::swap_reduce_buffer_with(size_t buffer_idx) {
+    buffer_.swap_reduce_buffer_with(buffer_idx);
+}
+
+template <typename T>
 void CosmaMatrix<T>::advance_buffer() {
     buffer_.advance_buffer();
 }
