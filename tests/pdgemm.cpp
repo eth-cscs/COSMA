@@ -32,63 +32,16 @@ MPI_Comm subcommunicator(int new_P, MPI_Comm comm = MPI_COMM_WORLD) {
     return newcomm;
 }
 
-struct pdgemm_state {
-    int m = 10;
-    int n = 10;
-    int k = 10;
-    int bm = 2;
-    int bn = 2;
-    int bk = 2;
-    int p_rows = 2;
-    int p_cols = 1;
-    int P = 2;
-    char trans_a = 'N';
-    char trans_b = 'N';
-    double alpha = 1.0;
-    double beta = 0.0;
-
-    pdgemm_state() = default;
-
-    pdgemm_state(int m, int n, int k,
-                   int bm, int bn, int bk,
-                   int p_rows, int p_cols,
-                   char trans_a, char trans_b):
-        m(m), n(n), k(k), bm(bm), bn(bn), bk(bk),
-        p_rows(p_rows), p_cols(p_cols), P(p_rows*p_cols),
-        trans_a(trans_a), trans_b(trans_b) {}
-
-    pdgemm_state(int m, int n, int k,
-                   int bm, int bn, int bk,
-                   int p_rows, int p_cols,
-                   char trans_a, char trans_b,
-                   double alpha, double beta):
-        m(m), n(n), k(k), bm(bm), bn(bn), bk(bk),
-        p_rows(p_rows), p_cols(p_cols), P(p_rows*p_cols),
-        trans_a(trans_a), trans_b(trans_b),
-        alpha(alpha), beta(beta) {}
-
-    friend std::ostream &operator<<(std::ostream &os,
-                                    const pdgemm_state &obj) {
-        return os << "(m, n, k) = (" << obj.m << ", " << obj.n << ", " << obj.k
-                  << ")\n"
-                  << "(alpha, beta) = (" << obj.alpha << ", " << obj.beta << ")\n"
-                  << "Number of ranks: " << obj.P << "\n"
-                  << "Process grid: (" << obj.p_rows << ", " << obj.p_cols << ")" << "\n"
-                  << "Block sizes = (" << obj.bm << ", " << obj.bn << ", " << obj.bk << ")" << "\n"
-                  << "Transpose flags = (" << obj.trans_a << ", " << obj.trans_b << ")\n";
-    }
-};
-
 struct PdgemmTest : testing::Test {
-    std::unique_ptr<pdgemm_state> state;
+    std::unique_ptr<pdgemm_params> state;
 
     PdgemmTest() {
-        state = std::make_unique<pdgemm_state>();
+        state = std::make_unique<pdgemm_params>();
     }
 };
 
 struct PdgemmTestWithParams : PdgemmTest,
-                                testing::WithParamInterface<pdgemm_state> {
+                                testing::WithParamInterface<pdgemm_params> {
     PdgemmTestWithParams() = default;
 };
 
@@ -101,42 +54,13 @@ TEST_P(PdgemmTestWithParams, pdgemm) {
     MPI_Comm_size(MPI_COMM_WORLD, &total_P);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int m = state.m;
-    int n = state.n;
-    int k = state.k;
-    int p = state.p_rows;
-    int q = state.p_cols;
-    int P = p * q;
-    int bm = state.bm;
-    int bn = state.bn;
-    int bk = state.bk;
-    double alpha = state.alpha;
-    double beta = state.beta;
-
-    MPI_Comm comm = subcommunicator(P, MPI_COMM_WORLD);
-    if (rank < P) {
+    MPI_Comm comm = subcommunicator(state.P, MPI_COMM_WORLD);
+    if (rank < state.P) {
         if (rank == 0) {
             std::cout << state << std::endl;
         }
 
-        std::pair<int, int> block_a;
-        std::pair<int, int> block_b;
-        std::pair<int, int> block_c;
-        if (state.trans_a)
-            block_a = std::make_pair(bk, bm);
-        else 
-            block_a = std::make_pair(bm, bk);
-
-        if (state.trans_b)
-            block_b = std::make_pair(bn, bk);
-        else 
-            block_a = std::make_pair(bk, bn);
-        block_c = std::make_pair(bm, bn);
-
-        bool correct = test_pdgemm(m, n, k, block_a, block_b, block_c,
-            1, 1, 1, state.trans_a, state.trans_b, p, q,
-            alpha, beta,
-            rank, comm);
+        bool correct = test_pdgemm(state, comm);
 
         EXPECT_TRUE(correct);
         MPI_Comm_free(&comm);
@@ -149,27 +73,66 @@ INSTANTIATE_TEST_CASE_P(
     testing::Values(
         // alpha = 1.0, beta = 0.0
         // single process
-        pdgemm_state{10, 10, 10, 2, 2, 2, 1, 1, 'N', 'N', 1.0, 0.0},
-        pdgemm_state{10, 11, 13, 2, 2, 2, 1, 1, 'N', 'N', 1.0, 0.0},
+        pdgemm_params{10, 10, 10, 2, 2, 2, 1, 1, 'N', 'N', 1.0, 0.0},
+        pdgemm_params{10, 11, 13, 2, 2, 2, 1, 1, 'N', 'N', 1.0, 0.0},
 
-        pdgemm_state{10, 10, 10, 2, 2, 2, 2, 2, 'N', 'N', 1.0, 0.0},
-        pdgemm_state{5, 5, 5, 2, 2, 2, 2, 2, 'N', 'N', 1.0, 0.0},
-        pdgemm_state{5, 5, 5, 2, 2, 2, 2, 2, 'T', 'N', 1.0, 0.0},
-        pdgemm_state{8, 4, 8, 2, 2, 2, 3, 2, 'N', 'N', 1.0, 0.0},
-        pdgemm_state{8, 4, 8, 2, 2, 2, 3, 2, 'T', 'N', 1.0, 0.0},
+
+        pdgemm_params{10, 10, 10, 2, 2, 2, 2, 2, 'N', 'N', 1.0, 0.0},
+        pdgemm_params{5, 5, 5, 2, 2, 2, 2, 2, 'N', 'N', 1.0, 0.0},
+        pdgemm_params{5, 5, 5, 2, 2, 2, 2, 2, 'T', 'N', 1.0, 0.0},
+        pdgemm_params{8, 4, 8, 2, 2, 2, 3, 2, 'N', 'N', 1.0, 0.0},
+        pdgemm_params{8, 4, 8, 2, 2, 2, 3, 2, 'T', 'N', 1.0, 0.0},
 
         // different values of alpha and beta
-        pdgemm_state{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 1.0, 0.0},
-        pdgemm_state{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 1.0, 1.0},
-        pdgemm_state{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 0.0, 0.0},
-        pdgemm_state{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 0.0, 1.0},
-        pdgemm_state{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 0.5, 0.5},
+        pdgemm_params{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 1.0, 0.0},
+        pdgemm_params{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 1.0, 1.0},
+        pdgemm_params{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 0.0, 0.0},
+        pdgemm_params{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 0.0, 1.0},
+        pdgemm_params{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 0.5, 0.5},
 
         // alpha = 0.5, beta = 0.0
-        pdgemm_state{10, 10, 10, 2, 2, 2, 2, 2, 'N', 'N', 0.5, 0.0},
-        pdgemm_state{5, 5, 5, 2, 2, 2, 2, 2, 'N', 'N', 0.5, 0.0},
-        pdgemm_state{5, 5, 5, 2, 2, 2, 2, 2, 'T', 'N', 0.5, 0.0},
-        pdgemm_state{8, 4, 8, 2, 2, 2, 3, 2, 'N', 'N', 0.5, 0.0},
-        pdgemm_state{8, 4, 8, 2, 2, 2, 3, 2, 'T', 'N', 0.5, 0.0}
+        pdgemm_params{10, 10, 10, 2, 2, 2, 2, 2, 'N', 'N', 0.5, 0.0},
+        pdgemm_params{5, 5, 5, 2, 2, 2, 2, 2, 'N', 'N', 0.5, 0.0},
+        pdgemm_params{5, 5, 5, 2, 2, 2, 2, 2, 'T', 'N', 0.5, 0.0},
+        pdgemm_params{8, 4, 8, 2, 2, 2, 3, 2, 'N', 'N', 0.5, 0.0},
+        pdgemm_params{8, 4, 8, 2, 2, 2, 3, 2, 'T', 'N', 0.5, 0.0},
+
+        // detailed pdgemm call
+        pdgemm_params{
+            // matrix dimensions
+            1280, 1280, // matrix A
+            1280, 1280, // matrix B
+            1280, 1280, // matrix C
+
+            // block sizes
+            32, 32, // matrix A
+            32, 32, // matrix B
+            32, 32, // matrix C
+
+            // submatrices ij
+            1, 545, // matrix A
+            513, 545, // matrix B
+            1, 513, // matrix C
+
+            // problem size
+            512, 32, 736,
+
+            // transpose flags
+            'N', 'T',
+
+            // scaling flags
+            1.0, 1.0,
+
+            // leading dims
+            640, 640, 640,
+
+            // proc grid
+            2, 4, 'R',
+
+            // proc srcs
+            0, 0, // matrix A
+            0, 0, // matrix B
+            0, 0  // matrix C
+        }
     ));
 

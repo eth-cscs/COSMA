@@ -61,32 +61,26 @@ int main(int argc, char **argv) {
     double alpha = 1.0;
     double beta = 0.0;
 
+    pdgemm_params params(m, n, k, 
+                         block_a.first, block_a.second,
+                         block_b.first, block_b.second,
+                         block_c.first, block_c.second,
+                         p, q,
+                         ta, tb,
+                         alpha, beta);
+
     // **************************************
     //    output the problem description
     // **************************************
     if (rank == 0) {
-        std::cout << "Running PDGEMM on the following problem size:" << std::endl;
-        std::cout << "Matrix sizes: (m, n, k) = (" << m << ", " << n << ", " << k << ")" << std::endl;
-        std::cout << "(alpha, beta) = (" << alpha << ", " << beta << ")" << std::endl;
-
-        std::cout << "Block sizes for A: (" << block_a.first << ", " << block_a.second << ")" << std::endl;
-        std::cout << "Block sizes for B: (" << block_b.first << ", " << block_b.second << ")" << std::endl;
-        std::cout << "Block sizes for C: (" << block_c.first << ", " << block_c.second << ")" << std::endl;
-
-        std::cout << "Transpose flags (TA, TB) = (" << ta << ", " << tb << ")" << std::endl;
-        std::cout << "Processor grid: (prows, pcols) = (" << p << ", " << q << ")" << std::endl;
+        std::cout << "Running PDGEMM on the following problem:" << std::endl;
+        std::cout << params << std::endl;
     }
 
     // *******************************
     //   multiply and validate
     // *******************************
-    bool ok = test_pdgemm(m, n, k,
-                          block_a, block_b, block_c,
-                          1, 1, 1,
-                          ta, tb,
-                          p, q,
-                          alpha, beta,
-                          rank, MPI_COMM_WORLD);
+    bool ok = test_pdgemm(params, MPI_COMM_WORLD);
 
     int result = ok ? 0 : 1;
     int global_result = 0;

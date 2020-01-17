@@ -1,7 +1,7 @@
 ################
 #  Build test  #
 ################
-set(executables "cosma-miniapp" "blocking_vs_non_blocking" "cosma-statistics" "scalars_miniapp")
+set(executables "cosma_miniapp" "blocking_vs_non_blocking" "cosma_statistics" "scalars_miniapp")
 
 foreach(exec ${executables})
     add_executable(${exec} "${exec}.cpp")
@@ -9,7 +9,7 @@ foreach(exec ${executables})
 endforeach()
 
 if(COSMA_SCALAPACK)
-    set(scalapack_executables "pdgemm-miniapp" "pdgemm-detailed-miniapp")
+    set(scalapack_executables "pdgemm_miniapp")
     foreach(exec ${scalapack_executables})
         add_executable(${exec} "${exec}.cpp")
         target_link_libraries(${exec} PRIVATE cosma_pxgemm options)
