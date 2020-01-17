@@ -1,4 +1,4 @@
-#include <cosma/pgemm.hpp>
+#include <cosma/cosma_pxgemm.hpp>
 
 extern "C" {
 #include <cosma/pxgemm.h>
@@ -23,7 +23,7 @@ void pdgemm(const char* trans_a,
             const int* ic,
             const int* jc,
             const int* descc) {
-    cosma::pgemm<double>(*trans_a,
+    cosma::pxgemm<double>(*trans_a,
                   *trans_b,
                   *m,
                   *n,
@@ -63,7 +63,7 @@ void psgemm(const char* trans_a,
              const int* ic,
              const int* jc,
              const int* descc) {
-    cosma::pgemm<float>(*trans_a,
+    cosma::pxgemm<float>(*trans_a,
                  *trans_b,
                  *m,
                  *n,
@@ -104,7 +104,7 @@ void pcgemm(const char* trans_a,
             const int* jc,
             const int *descc) {
 
-    cosma::pgemm<std::complex<float>>(*trans_a,
+    cosma::pxgemm<std::complex<float>>(*trans_a,
                     *trans_b,
                     *m,
                     *n,
@@ -145,7 +145,7 @@ void pzgemm(const char* trans_a,
             const int* jc,
             const int *descc) {
 
-    cosma::pgemm<std::complex<double>>(*trans_a,
+    cosma::pxgemm<std::complex<double>>(*trans_a,
                      *trans_b,
                      *m,
                      *n,

@@ -12,7 +12,7 @@ using zdouble_t = std::complex<double>;
 using zfloat_t = std::complex<float>;
 
 template <typename T>
-void pgemm(const char trans_a,
+void pxgemm(const char trans_a,
            const char trans_b,
            const int m,
            const int n,

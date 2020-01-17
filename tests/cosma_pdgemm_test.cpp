@@ -11,7 +11,7 @@
 // from cosma
 #include "cosma_pdgemm_run.hpp"
 #include <cosma/blacs.hpp>
-#include <cosma/pgemm.hpp>
+#include <cosma/cosma_pxgemm.hpp>
 
 // from options
 #include <options.hpp>
@@ -61,13 +61,13 @@ int main(int argc, char **argv) {
     double alpha = 1.0;
     double beta = 0.0;
 
-    pdgemm_params params(m, n, k, 
-                         block_a.first, block_a.second,
-                         block_b.first, block_b.second,
-                         block_c.first, block_c.second,
-                         p, q,
-                         ta, tb,
-                         alpha, beta);
+    pxgemm_params<double> params(m, n, k, 
+                                 block_a.first, block_a.second,
+                                 block_b.first, block_b.second,
+                                 block_c.first, block_c.second,
+                                 p, q,
+                                 ta, tb,
+                                 alpha, beta);
 
     // **************************************
     //    output the problem description

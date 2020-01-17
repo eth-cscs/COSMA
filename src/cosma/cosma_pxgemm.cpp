@@ -1,6 +1,6 @@
 #include <cosma/blacs.hpp>
 #include <cosma/multiply.hpp>
-#include <cosma/pgemm.hpp>
+#include <cosma/cosma_pxgemm.hpp>
 #include <cosma/profiler.hpp>
 #include <cosma/scalapack.hpp>
 #include <grid2grid/ranks_reordering.hpp>
@@ -12,7 +12,7 @@
 
 namespace cosma {
 template <typename T>
-void pgemm(const char transa,
+void pxgemm(const char transa,
            const char transb,
            const int m,
            const int n,
@@ -269,8 +269,8 @@ void pgemm(const char transa,
 #endif
 }
 
-// explicit instantiation for pgemm
-template void pgemm<double>(const char trans_a,
+// explicit instantiation for pxgemm
+template void pxgemm<double>(const char trans_a,
                             const char trans_b,
                             const int m,
                             const int n,
@@ -290,7 +290,7 @@ template void pgemm<double>(const char trans_a,
                             const int jc,
                             const int *descc);
 
-template void pgemm<float>(const char trans_a,
+template void pxgemm<float>(const char trans_a,
                            const char trans_b,
                            const int m,
                            const int n,
@@ -310,7 +310,7 @@ template void pgemm<float>(const char trans_a,
                            const int jc,
                            const int *descc);
 
-template void pgemm<zdouble_t>(const char trans_a,
+template void pxgemm<zdouble_t>(const char trans_a,
                                const char trans_b,
                                const int m,
                                const int n,
@@ -330,7 +330,7 @@ template void pgemm<zdouble_t>(const char trans_a,
                                const int jc,
                                const int *descc);
 
-template void pgemm<zfloat_t>(const char trans_a,
+template void pxgemm<zfloat_t>(const char trans_a,
                               const char trans_b,
                               const int m,
                               const int n,

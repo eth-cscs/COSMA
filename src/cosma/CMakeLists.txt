@@ -37,7 +37,8 @@ endif()
 
 if(ScaLAPACK_TARGET AND NOT TARGET cosma_pxgemm)
     add_library(cosma_pxgemm STATIC scalapack.cpp
-                                    pgemm.cpp
+                                    pxgemm_params.hpp
+                                    cosma_pxgemm.cpp
                                     pxgemm.cpp
     )
     target_link_libraries(cosma_pxgemm PUBLIC cosma 

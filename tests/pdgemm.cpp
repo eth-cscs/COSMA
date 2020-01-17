@@ -33,15 +33,15 @@ MPI_Comm subcommunicator(int new_P, MPI_Comm comm = MPI_COMM_WORLD) {
 }
 
 struct PdgemmTest : testing::Test {
-    std::unique_ptr<pdgemm_params> state;
+    std::unique_ptr<pxgemm_params<double>> state;
 
     PdgemmTest() {
-        state = std::make_unique<pdgemm_params>();
+        state = std::make_unique<pxgemm_params<double>>();
     }
 };
 
 struct PdgemmTestWithParams : PdgemmTest,
-                                testing::WithParamInterface<pdgemm_params> {
+                                testing::WithParamInterface<pxgemm_params<double>> {
     PdgemmTestWithParams() = default;
 };
 
@@ -73,32 +73,32 @@ INSTANTIATE_TEST_CASE_P(
     testing::Values(
         // alpha = 1.0, beta = 0.0
         // single process
-        pdgemm_params{10, 10, 10, 2, 2, 2, 1, 1, 'N', 'N', 1.0, 0.0},
-        pdgemm_params{10, 11, 13, 2, 2, 2, 1, 1, 'N', 'N', 1.0, 0.0},
+        pxgemm_params<double>{10, 10, 10, 2, 2, 2, 1, 1, 'N', 'N', 1.0, 0.0},
+        pxgemm_params<double>{10, 11, 13, 2, 2, 2, 1, 1, 'N', 'N', 1.0, 0.0},
 
-
-        pdgemm_params{10, 10, 10, 2, 2, 2, 2, 2, 'N', 'N', 1.0, 0.0},
-        pdgemm_params{5, 5, 5, 2, 2, 2, 2, 2, 'N', 'N', 1.0, 0.0},
-        pdgemm_params{5, 5, 5, 2, 2, 2, 2, 2, 'T', 'N', 1.0, 0.0},
-        pdgemm_params{8, 4, 8, 2, 2, 2, 3, 2, 'N', 'N', 1.0, 0.0},
-        pdgemm_params{8, 4, 8, 2, 2, 2, 3, 2, 'T', 'N', 1.0, 0.0},
+        // default values of alpha and beta
+        pxgemm_params<double>{10, 10, 10, 2, 2, 2, 2, 2, 'N', 'N', 1.0, 0.0},
+        pxgemm_params<double>{5, 5, 5, 2, 2, 2, 2, 2, 'N', 'N', 1.0, 0.0},
+        pxgemm_params<double>{5, 5, 5, 2, 2, 2, 2, 2, 'T', 'N', 1.0, 0.0},
+        pxgemm_params<double>{8, 4, 8, 2, 2, 2, 3, 2, 'N', 'N', 1.0, 0.0},
+        pxgemm_params<double>{8, 4, 8, 2, 2, 2, 3, 2, 'T', 'N', 1.0, 0.0},
 
         // different values of alpha and beta
-        pdgemm_params{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 1.0, 0.0},
-        pdgemm_params{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 1.0, 1.0},
-        pdgemm_params{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 0.0, 0.0},
-        pdgemm_params{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 0.0, 1.0},
-        pdgemm_params{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 0.5, 0.5},
+        pxgemm_params<double>{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 1.0, 0.0},
+        pxgemm_params<double>{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 1.0, 1.0},
+        pxgemm_params<double>{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 0.0, 0.0},
+        pxgemm_params<double>{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 0.0, 1.0},
+        pxgemm_params<double>{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 0.5, 0.5},
 
         // alpha = 0.5, beta = 0.0
-        pdgemm_params{10, 10, 10, 2, 2, 2, 2, 2, 'N', 'N', 0.5, 0.0},
-        pdgemm_params{5, 5, 5, 2, 2, 2, 2, 2, 'N', 'N', 0.5, 0.0},
-        pdgemm_params{5, 5, 5, 2, 2, 2, 2, 2, 'T', 'N', 0.5, 0.0},
-        pdgemm_params{8, 4, 8, 2, 2, 2, 3, 2, 'N', 'N', 0.5, 0.0},
-        pdgemm_params{8, 4, 8, 2, 2, 2, 3, 2, 'T', 'N', 0.5, 0.0},
+        pxgemm_params<double>{10, 10, 10, 2, 2, 2, 2, 2, 'N', 'N', 0.5, 0.0},
+        pxgemm_params<double>{5, 5, 5, 2, 2, 2, 2, 2, 'N', 'N', 0.5, 0.0},
+        pxgemm_params<double>{5, 5, 5, 2, 2, 2, 2, 2, 'T', 'N', 0.5, 0.0},
+        pxgemm_params<double>{8, 4, 8, 2, 2, 2, 3, 2, 'N', 'N', 0.5, 0.0},
+        pxgemm_params<double>{8, 4, 8, 2, 2, 2, 3, 2, 'T', 'N', 0.5, 0.0},
 
         // detailed pdgemm call
-        pdgemm_params{
+        pxgemm_params<double>{
             // matrix dimensions
             1280, 1280, // matrix A
             1280, 1280, // matrix B
