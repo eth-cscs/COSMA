@@ -3,7 +3,6 @@
 extern "C" {
 #endif
 // ScaLAPACK API (override)
-#include <complex.h>
 void psgemm(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
         const float* alpha, const float* a, const int* ia, const int* ja, const int* desca,
         const float* b, const int* ib, const int* jb, const int* descb, const float* beta,
@@ -15,16 +14,16 @@ void pdgemm(const char* trans_a, const char* transb, const int* m, const int* n,
         double* c, const int* ic, const int* jc, const int* descc);
 
 void pcgemm(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-        const float _Complex* alpha, const float _Complex* a, const int* ia,
-        const int* ja, const int* desca, const float _Complex* b, const int* ib,
-        const int* jb, const int* descb, const float _Complex* beta,
-        float _Complex* c, const int* ic, const int* jc, const int* descc);
+        const float * alpha, const float * a, const int* ia,
+        const int* ja, const int* desca, const float * b, const int* ib,
+        const int* jb, const int* descb, const float * beta,
+        float * c, const int* ic, const int* jc, const int* descc);
 
 void pzgemm(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-        const double _Complex* alpha, const double _Complex* a, const int* ia,
-        const int* ja, const int* desca, const double _Complex* b, const int* ib,
-        const int* jb, const int* descb, const double _Complex* beta,
-        double _Complex* c, const int* ic, const int* jc, const int* descc);
+        const double * alpha, const double * a, const int* ia,
+        const int* ja, const int* desca, const double * b, const int* ib,
+        const int* jb, const int* descb, const double * beta,
+        double * c, const int* ic, const int* jc, const int* descc);
 
 // *********************************************************************************
 // Same as previously, but with added underscore at the end.
@@ -42,16 +41,16 @@ void pdgemm_(const char* trans_a, const char* transb, const int* m, const int* n
         double* c, const int* ic, const int* jc, const int* descc);
 
 void pcgemm_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-        const float _Complex* alpha, const float _Complex* a, const int* ia,
-        const int* ja, const int* desca, const float _Complex* b, const int* ib,
-        const int* jb, const int* descb, const float _Complex* beta,
-        float _Complex* c, const int* ic, const int* jc, const int* descc);
+        const float * alpha, const float * a, const int* ia,
+        const int* ja, const int* desca, const float * b, const int* ib,
+        const int* jb, const int* descb, const float * beta,
+        float * c, const int* ic, const int* jc, const int* descc);
 
 void pzgemm_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-        const double _Complex* alpha, const double _Complex* a, const int* ia,
-        const int* ja, const int* desca, const double _Complex* b, const int* ib,
-        const int* jb, const int* descb, const double _Complex* beta,
-        double _Complex* c, const int* ic, const int* jc, const int* descc);
+        const double * alpha, const double * a, const int* ia,
+        const int* ja, const int* desca, const double * b, const int* ib,
+        const int* jb, const int* descb, const double * beta,
+        double * c, const int* ic, const int* jc, const int* descc);
 
 // *********************************************************************************
 // Same as previously, but with double underscore at the end.
@@ -69,16 +68,16 @@ void pdgemm__(const char* trans_a, const char* transb, const int* m, const int* 
         double* c, const int* ic, const int* jc, const int* descc);
 
 void pcgemm__(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-        const float _Complex* alpha, const float _Complex* a, const int* ia,
-        const int* ja, const int* desca, const float _Complex* b, const int* ib,
-        const int* jb, const int* descb, const float _Complex* beta,
-        float _Complex* c, const int* ic, const int* jc, const int* descc);
+        const float * alpha, const float * a, const int* ia,
+        const int* ja, const int* desca, const float * b, const int* ib,
+        const int* jb, const int* descb, const float * beta,
+        float * c, const int* ic, const int* jc, const int* descc);
 
 void pzgemm__(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-        const double _Complex* alpha, const double _Complex* a, const int* ia,
-        const int* ja, const int* desca, const double _Complex* b, const int* ib,
-        const int* jb, const int* descb, const double _Complex* beta,
-        double _Complex* c, const int* ic, const int* jc, const int* descc);
+        const double * alpha, const double * a, const int* ia,
+        const int* ja, const int* desca, const double * b, const int* ib,
+        const int* jb, const int* descb, const double * beta,
+        double * c, const int* ic, const int* jc, const int* descc);
 
 // *********************************************************************************
 // Same as previously, but CAPITALIZED.
@@ -96,16 +95,16 @@ void PDGEMM(const char* trans_a, const char* transb, const int* m, const int* n,
         double* c, const int* ic, const int* jc, const int* descc);
 
 void PCGEMM(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-        const float _Complex* alpha, const float _Complex* a, const int* ia,
-        const int* ja, const int* desca, const float _Complex* b, const int* ib,
-        const int* jb, const int* descb, const float _Complex* beta,
-        float _Complex* c, const int* ic, const int* jc, const int* descc);
+        const float * alpha, const float * a, const int* ia,
+        const int* ja, const int* desca, const float * b, const int* ib,
+        const int* jb, const int* descb, const float * beta,
+        float * c, const int* ic, const int* jc, const int* descc);
 
 void PZGEMM(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-        const double _Complex* alpha, const double _Complex* a, const int* ia,
-        const int* ja, const int* desca, const double _Complex* b, const int* ib,
-        const int* jb, const int* descb, const double _Complex* beta,
-        double _Complex* c, const int* ic, const int* jc, const int* descc);
+        const double * alpha, const double * a, const int* ia,
+        const int* ja, const int* desca, const double * b, const int* ib,
+        const int* jb, const int* descb, const double * beta,
+        double * c, const int* ic, const int* jc, const int* descc);
 
 #ifdef __cplusplus
 }

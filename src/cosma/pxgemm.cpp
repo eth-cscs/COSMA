@@ -89,17 +89,17 @@ void pcgemm(const char* trans_a,
             const int* m,
             const int* n,
             const int* k,
-            const float _Complex* alpha,
-            const float _Complex* a,
+            const float * alpha,
+            const float * a,
             const int* ia,
             const int* ja,
             const int *desca,
-            const float _Complex* b,
+            const float * b,
             const int* ib,
             const int* jb,
             const int *descb,
-            const float _Complex* beta,
-            float _Complex *c,
+            const float * beta,
+            float  *c,
             const int* ic,
             const int* jc,
             const int *descc) {
@@ -130,17 +130,17 @@ void pzgemm(const char* trans_a,
             const int* m,
             const int* n,
             const int* k,
-            const double _Complex* alpha,
-            const double _Complex* a,
+            const double * alpha,
+            const double * a,
             const int* ia,
             const int* ja,
             const int *desca,
-            const double _Complex *b,
+            const double  *b,
             const int* ib,
             const int* jb,
             const int* descb,
-            const double _Complex* beta,
-            double _Complex* c,
+            const double * beta,
+            double * c,
             const int* ic,
             const int* jc,
             const int *descc) {
@@ -192,10 +192,10 @@ void pdgemm_(const char* trans_a, const char* transb, const int* m, const int* n
 }
 
 void pcgemm_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-        const float _Complex* alpha, const float _Complex* a, const int* ia,
-        const int* ja, const int* desca, const float _Complex* b, const int* ib,
-        const int* jb, const int* descb, const float _Complex* beta,
-        float _Complex* c, const int* ic, const int* jc, const int* descc) {
+        const float * alpha, const float * a, const int* ia,
+        const int* ja, const int* desca, const float * b, const int* ib,
+        const int* jb, const int* descb, const float * beta,
+        float * c, const int* ic, const int* jc, const int* descc) {
     pcgemm(trans_a, transb, m, n, k,
            alpha, a, ia, ja, desca,
            b, ib, jb, descb,
@@ -203,10 +203,10 @@ void pcgemm_(const char* trans_a, const char* transb, const int* m, const int* n
 }
 
 void pzgemm_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-        const double _Complex* alpha, const double _Complex* a, const int* ia,
-        const int* ja, const int* desca, const double _Complex* b, const int* ib,
-        const int* jb, const int* descb, const double _Complex* beta,
-        double _Complex* c, const int* ic, const int* jc, const int* descc) {
+        const double * alpha, const double * a, const int* ia,
+        const int* ja, const int* desca, const double * b, const int* ib,
+        const int* jb, const int* descb, const double * beta,
+        double * c, const int* ic, const int* jc, const int* descc) {
     pzgemm(trans_a, transb, m, n, k,
            alpha, a, ia, ja, desca,
            b, ib, jb, descb,
@@ -239,10 +239,10 @@ void pdgemm__(const char* trans_a, const char* transb, const int* m, const int* 
 }
 
 void pcgemm__(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-        const float _Complex* alpha, const float _Complex* a, const int* ia,
-        const int* ja, const int* desca, const float _Complex* b, const int* ib,
-        const int* jb, const int* descb, const float _Complex* beta,
-        float _Complex* c, const int* ic, const int* jc, const int* descc) {
+        const float * alpha, const float * a, const int* ia,
+        const int* ja, const int* desca, const float * b, const int* ib,
+        const int* jb, const int* descb, const float * beta,
+        float * c, const int* ic, const int* jc, const int* descc) {
     pcgemm(trans_a, transb, m, n, k,
            alpha, a, ia, ja, desca,
            b, ib, jb, descb,
@@ -250,10 +250,10 @@ void pcgemm__(const char* trans_a, const char* transb, const int* m, const int* 
 }
 
 void pzgemm__(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-        const double _Complex* alpha, const double _Complex* a, const int* ia,
-        const int* ja, const int* desca, const double _Complex* b, const int* ib,
-        const int* jb, const int* descb, const double _Complex* beta,
-        double _Complex* c, const int* ic, const int* jc, const int* descc) {
+        const double * alpha, const double * a, const int* ia,
+        const int* ja, const int* desca, const double * b, const int* ib,
+        const int* jb, const int* descb, const double * beta,
+        double * c, const int* ic, const int* jc, const int* descc) {
     pzgemm(trans_a, transb, m, n, k,
            alpha, a, ia, ja, desca,
            b, ib, jb, descb,
@@ -286,10 +286,10 @@ void PDGEMM(const char* trans_a, const char* transb, const int* m, const int* n,
 }
 
 void PCGEMM(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-        const float _Complex* alpha, const float _Complex* a, const int* ia,
-        const int* ja, const int* desca, const float _Complex* b, const int* ib,
-        const int* jb, const int* descb, const float _Complex* beta,
-        float _Complex* c, const int* ic, const int* jc, const int* descc) {
+        const float * alpha, const float * a, const int* ia,
+        const int* ja, const int* desca, const float * b, const int* ib,
+        const int* jb, const int* descb, const float * beta,
+        float * c, const int* ic, const int* jc, const int* descc) {
     pcgemm(trans_a, transb, m, n, k,
            alpha, a, ia, ja, desca,
            b, ib, jb, descb,
@@ -297,10 +297,10 @@ void PCGEMM(const char* trans_a, const char* transb, const int* m, const int* n,
 }
 
 void PZGEMM(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
-        const double _Complex* alpha, const double _Complex* a, const int* ia,
-        const int* ja, const int* desca, const double _Complex* b, const int* ib,
-        const int* jb, const int* descb, const double _Complex* beta,
-        double _Complex* c, const int* ic, const int* jc, const int* descc) {
+        const double * alpha, const double * a, const int* ia,
+        const int* ja, const int* desca, const double * b, const int* ib,
+        const int* jb, const int* descb, const double * beta,
+        double * c, const int* ic, const int* jc, const int* descc) {
     pzgemm(trans_a, transb, m, n, k,
            alpha, a, ia, ja, desca,
            b, ib, jb, descb,
