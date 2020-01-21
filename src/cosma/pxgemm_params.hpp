@@ -1,4 +1,8 @@
 // a container class, containing all the parameters of pxgemm
+#include <algorithm>
+#include <cmath>
+#include <vector>
+
 template <typename T>
 struct pxgemm_params {
     // ****************************************
@@ -142,8 +146,8 @@ struct pxgemm_params {
         ic = 1; jc = 1;
 
         // transpose flags
-        trans_a = transa; 
-        trans_b = transb;
+        trans_a = std::toupper(transa);
+        trans_b = std::toupper(transb);
 
         // scaling parameters
         alpha = a;
@@ -264,13 +268,14 @@ struct pxgemm_params {
 
         m(m), n(n), k(k),
 
-        trans_a(trans_a), trans_b(trans_b),
+        trans_a(std::toupper(trans_a)),
+        trans_b(std::toupper(trans_b)),
 
         alpha(alpha), beta(beta),
 
         lld_a(lld_a), lld_b(lld_b), lld_c(lld_c),
 
-        order(order),
+        order(std::toupper(order)),
         p_rows(p_rows), p_cols(p_cols),
         P(p_rows * p_cols),
 
@@ -285,8 +290,197 @@ struct pxgemm_params {
         return result;
     }
 
-    // TODO: checks if all the parameters make sense
-    bool check_correctness() {
+    // if parameters are correct:
+    //     returns true is returned and info = "";
+    // else:
+    //     returns false and info = name of the incorrectly set variable;
+    bool check_correctness(std::string info) {
+        info = "";
+        // *************************************************
+        // check if transpose flags have proper values
+        // *************************************************
+        std::vector<char> t_flags = {'N', 'T', 'C'};
+        if (std::find(t_flags.begin(), t_flags.end(), trans_a) == t_flags.end()) {
+            info = "trans_a = " + std::string(trans_a);
+            return false;
+        }
+        if (std::find(t_flags.begin(), t_flags.end(), trans_b) == t_flags.end()) {
+            info = "trans_b = " + std::string(trans_b);
+            return false;
+        }
+        if (order != 'R' && order != 'C') {
+            info = "oder = " + std::string(order);
+            return false;
+        }
+
+        // *************************************************
+        // check the range of alpha and beta parameters
+        // *************************************************
+        if (std::abs(alpha) < 0 || std::abs(alpha) > 1) {
+            info = "alpha = " + std::string(alpha);
+            return false;
+        }
+        if (std::abs(beta) < 0 || std::abs(beta) > 1) {
+            info = "beta = " + std::string(beta);
+            return false;
+        }
+
+        // *************************************************
+        // check if the following values are all positive
+        // *************************************************
+        std::vector<int> positive = {
+             ma, na, mb, nb, mc, nc,
+             bma, bna, bmb, bnb, bmc, bnc,
+             m, n, k,
+             lld_a, lld_b, lld_c,
+             p_rows, p_cols, P,
+        };
+        std::vector<int> positive_labels = {
+             "ma", "na", "mb", "nb", "mc", "nc",
+             "bma", "bna", "bmb", "bnb", "bmc", "bnc",
+             "m", "n", "k",
+             "lld_a", "lld_b", "lld_c",
+             "p_rows", "p_cols", "P"
+        };
+        for (int i = 0; i < positive.size(); ++i) {
+            if (positive[i] < 0) {
+                info = std::to_string(positive_labels[i]) + " = " + std::to_string(positive[i]);
+                return false;
+            }
+        }
+
+        // *************************************************
+        // check if submatrix start index  
+        // is inside the global matrix
+        // *************************************************
+        // matrix A
+        if (ia < 1 || ia > ma) {
+            info = "ia = " + std::to_string(ia);
+            return false;
+        }
+        if (ja < 1 || ja > na) {
+            info = "ja = " + std::to_string(ja);
+            return false;
+        }
+
+        // matrix B
+        if (ib < 1 || ib > mb) {
+            info = "ib = " + std::to_string(ib);
+            return false;
+        }
+        if (jb < 1 || jb > nb) {
+            info = "jb = " + std::to_string(jb);
+            return false;
+        }
+
+        // matrix C
+        if (ic < 1 || ic > mc) {
+            info = "ic = " + std::to_string(ic);
+            return false;
+        }
+        if (jc < 1 || jc > nc) {
+            info = "jc = " + std::to_string(jc);
+            return false;
+        }
+
+        // *************************************************
+        // check if submatrix end index
+        // is inside the global matrix
+        // *************************************************
+        // matrix A
+        int ma_sub = transpose_if(trans_a, k, m);
+        // guaranteed to be >= ia 
+        // (since we previously checked ma_sub >= 1 and ia >= 1)
+        int ma_sub_end = ia - 1 + ma_sub;
+        if (ma_sub_end >= ma) {
+            info = "ia - 1 + (m or k) = " + std::to_string(ma_sub_end);
+            return false;
+        }
+        int na_sub = transpose_if(trans_a, m, k);
+        // guaranteed to be >= ja 
+        // (since we previously checked na_sub >= 1 and ja >= 1)
+        int na_sub_end = ja - 1 + na_sub;
+        if (na_sub_end >= na) {
+            info = "ja - 1 + (k or m) = " + std::to_string(na_sub_end);
+            return false;
+        }
+
+        // matrix B
+        int mb_sub = transpose_if(trans_b, n, k);
+        // guaranteed to be >= ib 
+        // (since we previously checked mb_sub >= 1 and ib >= 1)
+        int mb_sub_end = ib - 1 + mb_sub;
+        if (mb_sub_end >= mb) {
+            info = "ib - 1 + (k or n) = " + std::to_string(mb_sub_end);
+            return false;
+        }
+        int nb_sub = transpose_if(trans_b, k, n);
+        // guaranteed to be >= jb 
+        // (since we previously checked nb_sub >= 1 and jb >= 1)
+        int nb_sub_end = jb - 1 + nb_sub;
+        if (nb_sub_end >= nb) {
+            info = "jb - 1 + (n or k) = " + std::to_string(nb_sub_end);
+            return false;
+        }
+
+        // matrix C
+        int mc_sub = m;
+        // guaranteed to be >= ic 
+        // (since we previously checked mc_sub >= 1 and ic >= 1)
+        int mc_sub_end = ic - 1 + mc_sub;
+        if (mc_sub_end >= mc) {
+            info = "ic - 1 + m = " + std::to_string(mc_sub_end);
+            return false;
+        }
+        int nc_sub = n;
+        // guaranteed to be >= jc 
+        // (since we previously checked nc_sub >= 1 and jc >= 1)
+        int nc_sub_end = jc - 1 + nc_sub;
+        if (nc_sub_end >= nc) {
+            info = "jc - 1 + n = " + std::to_string(nc_sub_end);
+            return false;
+        }
+
+        // *************************************************
+        // check if row/col src elements are within the 
+        // global dimensions of matrices
+        // *************************************************
+        // matrix A
+        if (src_ma < 0 || src_ma >= ma) {
+            info = "src_ma = " + std::to_string(src_ma);
+            return false;
+        }
+        if (src_na < 0 || src_na >= na) {
+            info = "src_na = " + std::to_string(src_na);
+            return false;
+        }
+
+        // matrix B
+        if (src_mb < 0 || src_mb >= mb) {
+            info = "src_mb = " + std::to_string(src_mb);
+            return false;
+        }
+        if (src_nb < 0 || src_nb >= nb) {
+            info = "src_nb = " + std::to_string(src_nb);
+            return false;
+        }
+
+        // matrix C
+        if (src_mc < 0 || src_mc >= mc) {
+            info = "src_mc = " + std::to_string(src_mc);
+            return false;
+        }
+        if (src_nc < 0 || src_nc >= nc) {
+            info = "src_nc = " + std::to_string(src_nc);
+            return false;
+        }
+
+        // TODO: check lld parameters, implement minimum numroc
+        // so that it is independent of processor rank
+        // *************************************************
+        // check leading dimensions
+        // *************************************************
+
         return true;
     }
 
