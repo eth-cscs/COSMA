@@ -44,9 +44,9 @@ if(COSMA_SCALAPACK AND NOT COSMA_SCALAPACK IN_LIST BACKEND_LIST)
   message(FATAL_ERROR "Invalid value for COSMA_SCALAPACK!")
 endif()
 
-if (NOT ${COSMA_BLAS} STREQUAL "CUDA" AND NOT ${COSMA_BLAS} STREQUAL "ROCM")
+if (NOT ${COSMA_BLAS} STREQUAL "CUDA" AND NOT ${COSMA_BLAS} STREQUAL "ROCM" AND NOT ${COSMA_BLAS} STREQUAL "OPENBLAS")
   if (COSMA_SCALAPACK AND NOT ${COSMA_BLAS} STREQUAL ${COSMA_SCALAPACK})
-    message(FATAL_ERROR "ScaLAPACK backend MUST match BLAS backend if no GPU backend is used!")
+      message(FATAL_ERROR "ScaLAPACK backend MUST match BLAS backend if no GPU backend is used!")
   endif()
 endif()
 
@@ -88,7 +88,7 @@ elseif (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
     set(BLAS_DEF "COSMA_HAVE_GPU")
 elseif (${COSMA_BLAS} STREQUAL "OPENBLAS")
     find_package(OpenBLAS REQUIRED)
-    add_library(openblas IMPORTED)
+    add_library(openblas STATIC IMPORTED)
     set_target_properties(openblas PROPERTIES 
                                    INTERFACE_INCLUDE_DIRECTORIES "${OpenBLAS_INCLUDE_DIRS}"
                                    IMPORTED_LOCATION "${OpenBLAS_LIBRARIES}")
