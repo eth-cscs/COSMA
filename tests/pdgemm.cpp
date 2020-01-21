@@ -50,11 +50,10 @@ TEST_P(PdgemmTestWithParams, pdgemm) {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    int total_P, rank;
-    MPI_Comm_size(MPI_COMM_WORLD, &total_P);
+    int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
     MPI_Comm comm = subcommunicator(state.P, MPI_COMM_WORLD);
+
     if (rank < state.P) {
         if (rank == 0) {
             std::cout << state << std::endl;
@@ -84,6 +83,7 @@ INSTANTIATE_TEST_CASE_P(
         pxgemm_params<double>{8, 4, 8, 2, 2, 2, 3, 2, 'T', 'N', 1.0, 0.0},
 
         // different values of alpha and beta
+        pxgemm_params<double>{10, 12, 12, 2, 2, 2, 2, 2, 'T', 'N', 1.0, 0.0},
         pxgemm_params<double>{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 1.0, 0.0},
         pxgemm_params<double>{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 1.0, 1.0},
         pxgemm_params<double>{10, 11, 12, 3, 2, 3, 3, 2, 'T', 'N', 0.0, 0.0},

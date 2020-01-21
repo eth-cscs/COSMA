@@ -1,53 +1,119 @@
 // from std
-#include <array>
 #include <algorithm>
+#include <array>
 #include <iostream>
 #include <chrono>
 #include <complex>
-#include <tuple>
 #include <vector>
-#include <stdexcept>
 
 // from cosma
-#include <cosma/multiply.hpp>
 #include <cosma/blacs.hpp>
-#include <cosma/cosma_pxgemm.hpp>
 #include <cosma/scalapack.hpp>
+#include <cosma/cosma_pxgemm.hpp>
 #include <cosma/pxgemm_params.hpp>
-
-// from options
-#include <options.hpp>
+#include <cosma/random_generator.hpp>
+#include <cosma/context.hpp>
 
 // random number generator
 // we cast them to ints, so that we can more easily test them
 // but it's not necessary (they are anyway stored as double's)
 template <typename T>
-void fill_int(T &in) {
-    std::generate(in.begin(), in.end(), []() { return (int)(10 * drand48()); });
+void fill_randomly(std::vector<T> &in) {
+    std::generate(in.begin(), in.end(), []() { return cosma::random_generator<T>::sample();});
 }
 
 // **********************
 //   ScaLAPACK routines
 // **********************
 namespace scalapack {
+#ifdef __cplusplus
 extern "C" {
+#endif
     void descinit_(int* desc, const int* m, const int* n, const int* mb, const int* nb,
            const int* irsrc, const int* icsrc, const int* ictxt, const int* lld, int* info);
 
-    void pdgemm_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+    void psgemm_(const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
+            const float* alpha, const float* a, const int* ia, const int* ja, const int* desca,
+            const float* b, const int* ib, const int* jb, const int* descb, const float* beta,
+            float* c, const int* ic, const int* jc, const int* descc);
+
+    void pdgemm_(const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
             const double* alpha, const double* a, const int* ia, const int* ja, const int* desca,
             const double* b, const int* ib, const int* jb, const int* descb, const double* beta,
             double* c, const int* ic, const int* jc, const int* descc);
+#ifdef __cplusplus
 }
+#endif
+}
+
+// *************************************
+//    templated scalapack pxgemm calls
+// *************************************
+// this is just for the convenience
+template <typename T>
+struct scalapack_pxgemm {
+  static inline void pxgemm(
+              const char* trans_a, const char* trans_b, 
+              const int* m, const int* n, const int* k,
+              const T* alpha, const T* a, 
+              const int* ia, const int* ja, const int* desca,
+              const T* b, 
+              const int* ib, const int* jb, const int* descb, 
+              const T* beta, T* c, 
+              const int* ic, const int* jc, const int* descc);
+};
+
+template <>
+inline void scalapack_pxgemm<float>::pxgemm(
+              const char* trans_a, const char* trans_b, 
+              const int* m, const int* n, const int* k,
+              const float* alpha, const float* a, 
+              const int* ia, const int* ja, const int* desca,
+              const float* b, 
+              const int* ib, const int* jb, const int* descb, 
+              const float* beta, float* c, 
+              const int* ic, const int* jc, const int* descc) {
+    scalapack::psgemm_(trans_a, trans_b,
+                       m, n, k,
+                       alpha, a,
+                       ia, ja, desca,
+                       b,
+                       ib, jb, descb,
+                       beta, c,
+                       ic, jc, descc);
+}
+
+template <>
+inline void scalapack_pxgemm<double>::pxgemm(
+              const char* trans_a, const char* trans_b,
+              const int* m, const int* n, const int* k,
+              const double* alpha, const double* a, 
+              const int* ia, const int* ja, const int* desca,
+              const double* b, 
+              const int* ib, const int* jb, const int* descb,
+              const double* beta, double* c, 
+              const int* ic, const int* jc, const int* descc) {
+    scalapack::pdgemm_(trans_a, trans_b,
+                       m, n, k,
+                       alpha, a,
+                       ia, ja, desca,
+                       b,
+                       ib, jb, descb,
+                       beta, c,
+                       ic, jc, descc);
 }
 
 // compares two vectors up to eps precision, returns true if they are equal
-bool validate_results(std::vector<double>& v1, std::vector<double>& v2) {
-    constexpr auto epsilon = std::numeric_limits<double>::epsilon();
+template <typename T>
+bool validate_results(std::vector<T>& v1, std::vector<T>& v2) {
     if (v1.size() != v2.size())
         return false;
+    if (v1.size() == 0)
+        return true;
+    const double epsilon = 1e-8;
     for (size_t i = 0; i < v1.size(); ++i) {
         if (std::abs(v1[i] - v2[i]) > epsilon) {
+            std::cout << "epsilon = " << epsilon << ", v1 = " << v1[i] << ", which is != " << v2[i] << std::endl;
             return false;
         }
     }
@@ -56,16 +122,19 @@ bool validate_results(std::vector<double>& v1, std::vector<double>& v2) {
 
 // runs cosma or scalapack pdgemm wrapper for n_rep times and returns
 // a vector of timings (in milliseconds) of size n_rep
-bool test_pdgemm(pxgemm_params<double>& params, MPI_Comm comm) {
+template <typename T>
+bool test_pdgemm(pxgemm_params<T>& params, MPI_Comm comm) {
     // create the context here, so that
     // it doesn't have to be created later
     // (this is not necessary)
     int rank;
     MPI_Comm_rank(comm, &rank);
-    auto ctx = cosma::get_context_instance<double>();
+    auto cosma_ctx = cosma::get_context_instance<T>();
+#ifdef DEBUG
     if (rank == 0) {
-        ctx->turn_on_output();
+        cosma_ctx->turn_on_output();
     }
+#endif
 
     // ************************************
     // *    scalapack processor grid      *
@@ -86,7 +155,7 @@ bool test_pdgemm(pxgemm_params<double>& params, MPI_Comm comm) {
                          &ctxt,
                          &params.lld_a,
                          &info);
-    if (info != 0) {
+    if (rank == 0 && info != 0) {
         std::cout << "ERROR: descinit, argument: " << -info << " has an illegal value!" << std::endl;
     }
 
@@ -100,7 +169,7 @@ bool test_pdgemm(pxgemm_params<double>& params, MPI_Comm comm) {
                          &params.lld_b,
                          &info);
 
-    if (info != 0) {
+    if (rank == 0 && info != 0) {
         std::cout << "error: descinit, argument: " << -info << " has an illegal value!" << std::endl;
     }
 
@@ -113,7 +182,7 @@ bool test_pdgemm(pxgemm_params<double>& params, MPI_Comm comm) {
                          &ctxt,
                          &params.lld_c,
                          &info);
-    if (info != 0) {
+    if (rank == 0 && info != 0) {
         std::cout << "error: descinit, argument: " << -info << " has an illegal value!" << std::endl;
     }
 
@@ -124,52 +193,49 @@ bool test_pdgemm(pxgemm_params<double>& params, MPI_Comm comm) {
     int size_b = cosma::scalapack::local_buffer_size(&descb[0]);
     int size_c = cosma::scalapack::local_buffer_size(&descc[0]);
 
-    std::vector<double> a(size_a);
-    std::vector<double> b(size_b);
-    std::vector<double> c_cosma(size_c);
-    std::vector<double> c_scalapack(size_c);
+    std::vector<T> a(size_a);
+    std::vector<T> b(size_b);
+    std::vector<T> c_cosma(size_c);
+    std::vector<T> c_scalapack(size_c);
 
     // fill the matrices with random data
-    srand48(rank);
-
-    fill_int(a);
-    fill_int(b);
-    fill_int(c_cosma);
+    fill_randomly(a);
+    fill_randomly(b);
+    fill_randomly(c_cosma);
     // in case beta > 0, this is important in order to get the same results
     c_scalapack = c_cosma;
 
+    // ***********************************
+    //       run ScaLAPACK PDGEMM
+    // ***********************************
+    // running ScaLAPACK
+    scalapack_pxgemm<T>::pxgemm(
+           &params.trans_a, &params.trans_b,
+           &params.m, &params.n, &params.k,
+           &params.alpha, a.data(), &params.ia, &params.ja, &desca[0],
+           b.data(), &params.ib, &params.jb, &descb[0], &params.beta,
+           c_scalapack.data(), &params.ic, &params.jc, &descc[0]);
 
     // ***********************************
     //       run COSMA PDGEMM
     // ***********************************
     // running COSMA wrapper
-    cosma::pxgemm<double>(
+    cosma::pxgemm<T>(
            params.trans_a, params.trans_b, 
            params.m, params.n, params.k,
            params.alpha, a.data(), params.ia, params.ja, &desca[0],
            b.data(), params.ib, params.jb, &descb[0], params.beta,
            c_cosma.data(), params.ic, params.jc, &descc[0]);
 
-    // ***********************************
-    //       run ScaLAPACK PDGEMM
-    // ***********************************
-    // running ScaLAPACK
-    scalapack::pdgemm_(
-           &params.trans_a, &params.trans_b, 
-           &params.m, &params.n, &params.k,
-           &params.alpha, a.data(), &params.ia, &params.ja, &desca[0],
-           b.data(), &params.ib, &params.jb, &descb[0], &params.beta,
-           c_scalapack.data(), &params.ic, &params.jc, &descc[0]);
-
 #ifdef DEBUG
-    if (myrow == 0 && mycol == 0) {
+    if (rank == 0) {
         std::cout << "c(cosma) = ";
-        for (int i = 0; i < c_cosma.size(); ++i) {
+        for (int i = 0; i < std::min(c_cosma.size(), (std::size_t) 10); ++i) {
             std::cout << c_cosma[i] << ", ";
         }
         std::cout << std::endl;
         std::cout << "c(scalapack) = ";
-        for (int i = 0; i < c_scalapack.size(); ++i) {
+        for (int i = 0; i < std::min(c_scalapack.size(), (std::size_t) 10); ++i) {
             std::cout << c_scalapack[i] << ", ";
         }
         std::cout << std::endl;
