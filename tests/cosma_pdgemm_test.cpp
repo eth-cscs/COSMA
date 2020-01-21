@@ -8,10 +8,6 @@
 #include <vector>
 #include <stdexcept>
 
-// from cosma
-#include <cosma/blacs.hpp>
-#include <cosma/cosma_pxgemm.hpp>
-
 // from options
 #include <options.hpp>
 

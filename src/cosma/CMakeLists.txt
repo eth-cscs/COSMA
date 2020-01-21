@@ -41,8 +41,8 @@ endif()
 if(ScaLAPACK_TARGET AND NOT TARGET cosma_pxgemm)
     add_library(cosma_pxgemm STATIC scalapack.cpp
                                     pxgemm_params.hpp
-                                    cosma_pxgemm.cpp
                                     pxgemm.cpp
+                                    pxgemm.c
     )
     target_link_libraries(cosma_pxgemm PUBLIC cosma 
                                               ${BLAS_TARET}
@@ -61,8 +61,8 @@ endif()
 # and can still be compared to scalapack for correctness check
 if(ScaLAPACK_TARGET AND NOT TARGET cosma_pxgemm_cpp)
     add_library(cosma_pxgemm_cpp STATIC scalapack.cpp
-                                         pxgemm_params.hpp
-                                         cosma_pxgemm.cpp
+                                        pxgemm_params.hpp
+                                        pxgemm.cpp
     )
     target_link_libraries(cosma_pxgemm_cpp PUBLIC cosma 
                                               ${BLAS_TARET}
