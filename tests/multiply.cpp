@@ -1,4 +1,4 @@
-#include <cosma_run.hpp>
+#include "../utils/cosma_utils.hpp"
 
 #include <gtest/gtest.h>
 #include <gtest_mpi/gtest_mpi.hpp>
@@ -105,14 +105,14 @@ TEST_P(MultiplyTestWithParams, multiply) {
         }
 
         // first run without overlapping communication and computation
-        bool no_overlap = run<double>(strategy, ctx, comm, false);
+        bool no_overlap = test_cosma<double>(strategy, ctx, comm, false);
         EXPECT_TRUE(no_overlap);
 
         // wait for no-overlap to finish
         MPI_Barrier(comm);
 
         // then run with the overlap of communication and computation
-        bool with_overlap = run<double>(strategy, ctx, comm, true);
+        bool with_overlap = test_cosma<double>(strategy, ctx, comm, true);
         EXPECT_TRUE(with_overlap);
 
         MPI_Comm_free(&comm);

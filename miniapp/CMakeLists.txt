@@ -1,7 +1,7 @@
 ################
 #  Build test  #
 ################
-set(executables "cosma_miniapp" "blocking_vs_non_blocking" "cosma_statistics" "scalars_miniapp")
+set(executables "cosma_miniapp" "cosma_statistics" "scalars_miniapp")
 
 foreach(exec ${executables})
     add_executable(${exec} "${exec}.cpp")

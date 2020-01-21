@@ -1,9 +1,8 @@
-#include <cosma_run.hpp>
-
 #include <gtest/gtest.h>
 #include <gtest_mpi/gtest_mpi.hpp>
 
 #include <string>
+#include "../utils/cosma_utils.hpp"
 
 template <typename Scalar>
 void test_matmul() {
@@ -26,14 +25,14 @@ void test_matmul() {
     }
 
     // first run without overlapping communication and computation
-    bool no_overlap = run<Scalar>(strategy, ctx, comm, false);
+    bool no_overlap = test_cosma<Scalar>(strategy, ctx, comm, false);
     ASSERT_TRUE(no_overlap);
 
     // wait for no-overlap to finish
     MPI_Barrier(comm);
 
     // then run with the overlap of communication and computation
-    bool with_overlap = run<Scalar>(strategy, ctx, comm, true);
+    bool with_overlap = test_cosma<Scalar>(strategy, ctx, comm, true);
     ASSERT_TRUE(with_overlap);
 }
 

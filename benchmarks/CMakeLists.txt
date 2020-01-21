@@ -5,6 +5,7 @@ set(executables "ubench-allgather"
                 "allgather-volume"
                 "sendrecv"
                 "reduce-scatter"
+                "blocking_vs_non_blocking"
                 "dgemm_perf_model")
 
 foreach(exec ${executables})

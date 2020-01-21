@@ -1,9 +1,13 @@
-#include <cosma/local_multiply.hpp>
-#include <cosma/mpi_mapper.hpp>
-#include <cosma/multiply.hpp>
-
-#include <complex>
+#include <algorithm>
+#include <cctype>
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <vector>
 #include <random>
+#include <cosma/multiply.hpp>
+#include <cosma/mpi_mapper.hpp>
 
 using namespace cosma;
 
@@ -30,7 +34,7 @@ void fill_matrix(std::complex<T>* ptr, size_t size) {
 }
 
 template <typename Scalar>
-bool run(Strategy &s,
+bool test_cosma(Strategy &s,
          context<Scalar> &ctx,
          MPI_Comm comm = MPI_COMM_WORLD,
          bool overlap = false) {

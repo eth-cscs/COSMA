@@ -1,5 +1,3 @@
-#include <cosma_run.hpp>
-
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
@@ -7,10 +5,10 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "../miniapp/parse_strategy.hpp"
+#include "../utils/parse_strategy.hpp"
+#include "../utils/cosma_utils.hpp"
 
 using namespace cosma;
-
 int main(int argc, char **argv) {
     MPI_Init(&argc, &argv);
 
@@ -26,10 +24,10 @@ int main(int argc, char **argv) {
     }
 
     // first run without overlapping communication and computation
-    bool isOK = run<double>(strategy, ctx, MPI_COMM_WORLD, false);
+    bool isOK = test_cosma<double>(strategy, ctx, MPI_COMM_WORLD, false);
     MPI_Barrier(MPI_COMM_WORLD);
     // then run with the overlap of communication and computation
-    isOK = isOK && run<double>(strategy, ctx, MPI_COMM_WORLD, true);
+    isOK = isOK && test_cosma<double>(strategy, ctx, MPI_COMM_WORLD, true);
 
     MPI_Finalize();
 

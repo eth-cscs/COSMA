@@ -13,6 +13,7 @@
 #include <cosma/pxgemm_params.hpp>
 #include <cosma/random_generator.hpp>
 #include <cosma/context.hpp>
+#include <cosma/profiler.hpp>
 
 // random number generator
 // we cast them to ints, so that we can more easily test them
@@ -246,4 +247,141 @@ bool test_pdgemm(pxgemm_params<T>& params, MPI_Comm comm) {
     cosma::blacs::Cblacs_gridexit(ctxt);
 
     return validate_results(c_cosma, c_scalapack);
+}
+
+// runs cosma or scalapack pdgemm wrapper for n_rep times and returns
+// a vector of timings (in milliseconds) of size n_rep
+template <typename T>
+void benchmark_pxgemm(pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
+                    std::vector<long>& cosma_times, std::vector<long>& scalapack_times) {
+    cosma_times.resize(n_rep);
+    scalapack_times.resize(n_rep);
+
+    // create the context here, so that
+    // it doesn't have to be created later
+    // (this is not necessary)
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+    auto cosma_ctx = cosma::get_context_instance<T>();
+#ifdef DEBUG
+    if (rank == 0) {
+        cosma_ctx->turn_on_output();
+    }
+#endif
+
+    // ************************************
+    // *    scalapack processor grid      *
+    // ************************************
+    int ctxt = cosma::blacs::Csys2blacs_handle(comm);
+    cosma::blacs::Cblacs_gridinit(&ctxt, &params.order, params.p_rows, params.p_cols);
+
+    // ************************************
+    // *   scalapack array descriptors    *
+    // ************************************
+    int info;
+    // matrix A
+    std::array<int, 9> desca;
+    scalapack::descinit_(&desca[0],
+                         &params.ma, &params.na,
+                         &params.bma, &params.bna,
+                         &params.src_ma, &params.src_na,
+                         &ctxt,
+                         &params.lld_a,
+                         &info);
+    if (rank == 0 && info != 0) {
+        std::cout << "ERROR: descinit, argument: " << -info << " has an illegal value!" << std::endl;
+    }
+
+    // matrix B
+    std::array<int, 9> descb;
+    scalapack::descinit_(&descb[0],
+                         &params.mb, &params.nb,
+                         &params.bmb, &params.bnb,
+                         &params.src_mb, &params.src_nb,
+                         &ctxt,
+                         &params.lld_b,
+                         &info);
+
+    if (rank == 0 && info != 0) {
+        std::cout << "error: descinit, argument: " << -info << " has an illegal value!" << std::endl;
+    }
+
+    // matrix C
+    std::array<int, 9> descc;
+    scalapack::descinit_(&descc[0],
+                         &params.mc, &params.nc,
+                         &params.bmc, &params.bnc,
+                         &params.src_mc, &params.src_nc,
+                         &ctxt,
+                         &params.lld_c,
+                         &info);
+    if (rank == 0 && info != 0) {
+        std::cout << "error: descinit, argument: " << -info << " has an illegal value!" << std::endl;
+    }
+
+    // ************************************
+    // *   scalapack memory allocations   *
+    // ************************************
+    int size_a = cosma::scalapack::local_buffer_size(&desca[0]);
+    int size_b = cosma::scalapack::local_buffer_size(&descb[0]);
+    int size_c = cosma::scalapack::local_buffer_size(&descc[0]);
+
+    std::vector<T> a(size_a);
+    std::vector<T> b(size_b);
+    std::vector<T> c_cosma(size_c);
+    std::vector<T> c_scalapack(size_c);
+
+    for (int i = 0; i < n_rep; ++i) {
+        // clears the profiler
+        PC();
+        // refill the matrices with random data to avoid
+        // reusing the cache in subsequent iterations
+        fill_randomly(a);
+        fill_randomly(b);
+        fill_randomly(c_cosma);
+        // in case beta > 0, this is important in order to get the same results
+        c_scalapack = c_cosma;
+
+        // ***********************************
+        //       run COSMA PDGEMM
+        // ***********************************
+        // running COSMA wrapper
+        long time = 0;
+        MPI_Barrier(comm);
+        auto start = std::chrono::steady_clock::now();
+        cosma::pxgemm<T>(
+               params.trans_a, params.trans_b, 
+               params.m, params.n, params.k,
+               params.alpha, a.data(), params.ia, params.ja, &desca[0],
+               b.data(), params.ib, params.jb, &descb[0], params.beta,
+               c_cosma.data(), params.ic, params.jc, &descc[0]);
+        MPI_Barrier(comm);
+        auto end = std::chrono::steady_clock::now();
+        time = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+        cosma_times[i] = time;
+
+        // ***********************************
+        //       run ScaLAPACK PDGEMM
+        // ***********************************
+        // running ScaLAPACK
+        time = 0;
+        MPI_Barrier(comm);
+        start = std::chrono::steady_clock::now();
+        scalapack_pxgemm<T>::pxgemm(
+               &params.trans_a, &params.trans_b,
+               &params.m, &params.n, &params.k,
+               &params.alpha, a.data(), &params.ia, &params.ja, &desca[0],
+               b.data(), &params.ib, &params.jb, &descb[0], &params.beta,
+               c_scalapack.data(), &params.ic, &params.jc, &descc[0]);
+        MPI_Barrier(comm);
+        end = std::chrono::steady_clock::now();
+        time = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+        scalapack_times[i] = time;
+    }
+
+    std::sort(cosma_times.begin(), cosma_times.end());
+    std::sort(scalapack_times.begin(), scalapack_times.end());
+
+    // exit blacs context
+    cosma::blacs::Cblacs_gridexit(ctxt);
 }

@@ -9,12 +9,14 @@
 #include <stdexcept>
 
 // from cosma
-#include "cosma_pdgemm_run.hpp"
 #include <cosma/blacs.hpp>
 #include <cosma/cosma_pxgemm.hpp>
 
 // from options
 #include <options.hpp>
+
+// from utils
+#include "../utils/pxgemm_utils.hpp"
 
 using namespace cosma;
 

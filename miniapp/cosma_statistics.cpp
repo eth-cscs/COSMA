@@ -3,7 +3,7 @@ Simulates the algorithm (without actually computing the matrix multiplication)
  * in order to get the total volume of the communication, the maximum volume of computation
  * done in a single branch and the maximum required buffer size that the algorithm requires.
  */
-#include "parse_strategy.hpp"
+#include "../utils/parse_strategy.hpp"
 #include <cosma/statistics.hpp>
 
 #include <iostream>

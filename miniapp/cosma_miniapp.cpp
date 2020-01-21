@@ -10,7 +10,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include "parse_strategy.hpp"
+#include "../utils/parse_strategy.hpp"
 
 using namespace cosma;
 

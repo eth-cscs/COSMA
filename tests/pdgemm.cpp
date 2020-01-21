@@ -1,4 +1,4 @@
-#include <cosma_pdgemm_run.hpp>
+#include "../utils/pxgemm_utils.hpp"
 
 #include <gtest/gtest.h>
 #include <gtest_mpi/gtest_mpi.hpp>
