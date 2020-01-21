@@ -117,10 +117,12 @@ struct pxgemm_params {
         // m, n, k are just sizes that we want to multiply
         // starting from (ia-1, ja-1), (ib-1, jb-1) and (ic-1, jc-1)
         // this makes the global problem size m+ia-1, n+jb-1, k+ja-1
-        ma = transpose_if(trans_a, m, k);
-        na = transpose_if(trans_a, k, m);
-        mb = transpose_if(trans_b, k, n);
-        nb = transpose_if(trans_b, n, k);
+        // use transa instead of trans_a since trans_a is set afterwards
+        ma = transpose_if(transa, k, m);
+        na = transpose_if(transa, m, k);
+
+        mb = transpose_if(transb, n, k);
+        nb = transpose_if(transb, k, n);
         mc = m;
         nc = n;
 
@@ -148,8 +150,9 @@ struct pxgemm_params {
         beta = b;
 
         // leading dims
+        // TODO: divide by p_rows
         int max_n_rows_a = ((ma + bma - 1) / bma) * bma;
-        int max_n_rows_b = ((mb + bma - 1) / bmb) * bmb;
+        int max_n_rows_b = ((mb + bmb - 1) / bmb) * bmb;
         int max_n_rows_c = ((mc + bmc - 1) / bmc) * bmc;
 
         lld_a = std::max(1, max_n_rows_a);
@@ -174,14 +177,15 @@ struct pxgemm_params {
                   char transa, char transb,
                   T a, T b) {
         // block sizes
-        bma = transpose_if(trans_a, bk, bm);
-        bna = transpose_if(trans_a, bm, bk);
+        // blocks BEFORE transposing (if transposed)
+        bma = transpose_if(transa, bk, bm);
+        bna = transpose_if(transa, bm, bk);
 
-        bmb = transpose_if(trans_a, bn, bk);
-        bnb = transpose_if(trans_a, bk, bn);
+        bmb = transpose_if(transb, bn, bk);
+        bnb = transpose_if(transb, bk, bn);
 
-        bmc = transpose_if(trans_a, bn, bm);
-        bnc = transpose_if(trans_a, bm, bn);
+        bmc = bm;
+        bnc = bn;
 
         initialize(m, n, k,
                    bma, bna,
@@ -276,7 +280,9 @@ struct pxgemm_params {
     {}
 
     int transpose_if(char transpose_flag, int row, int col) {
-        return transpose_flag == 'N' ? row : col;
+        bool transposed = transpose_flag != 'N';
+        int result = transposed ? row : col;
+        return result;
     }
 
     // TODO: checks if all the parameters make sense
@@ -319,9 +325,9 @@ struct pxgemm_params {
         os << "=============================" << std::endl;
         os << "         PROC SRCS" << std::endl;
         os << "=============================" << std::endl;
-        os << "P_SRC(A) = (" << obj.src_ma << ", " << obj.src_na << std::endl;
-        os << "P_SRC(B) = (" << obj.src_mb << ", " << obj.src_nb << std::endl;
-        os << "P_SRC(C) = (" << obj.src_mc << ", " << obj.src_nc << std::endl;
+        os << "P_SRC(A) = (" << obj.src_ma << ", " << obj.src_na << ")" << std::endl;
+        os << "P_SRC(B) = (" << obj.src_mb << ", " << obj.src_nb << ")" << std::endl;
+        os << "P_SRC(C) = (" << obj.src_mc << ", " << obj.src_nc << ")" << std::endl;
         os << "=============================" << std::endl;
         os << "          BLOCK SIZES" << std::endl;
         os << "=============================" << std::endl;
