@@ -16,6 +16,7 @@ if(NOT TARGET cosma)
                         one_sided_communicator.cpp
                         strategy.cpp
                         two_sided_communicator.cpp
+                        random_generator.hpp
     )
     add_library(cosma STATIC ${cosma_src_files})
     target_include_directories(cosma PUBLIC $<BUILD_INTERFACE:${cosma_SOURCE_DIR}/src>)
@@ -35,6 +36,8 @@ if(NOT TARGET cosma)
     list(APPEND INSTALLED_TARGETS_LIST "cosma")
 endif()
 
+# if ScaLAPACK is found and cosma_pxgemm library is not already created
+# then create it here and link it to the profiler if needed
 if(ScaLAPACK_TARGET AND NOT TARGET cosma_pxgemm)
     add_library(cosma_pxgemm STATIC scalapack.cpp
                                     pxgemm_params.hpp
@@ -50,6 +53,26 @@ if(ScaLAPACK_TARGET AND NOT TARGET cosma_pxgemm)
         target_compile_definitions(cosma_pxgemm PRIVATE COSMA_WITH_PROFILING)
     endif()
     list(APPEND INSTALLED_TARGETS_LIST "cosma_pxgemm")
+endif()
+
+# the following library is aimed only for testing purposes
+# it provides templated cosma::pxgemm call without
+# pxgemm.h, so that pxgemm calls of scalapack are not overwritten
+# and can still be compared to scalapack for correctness check
+if(ScaLAPACK_TARGET AND NOT TARGET cosma_pxgemm_cpp)
+    add_library(cosma_pxgemm_cpp STATIC scalapack.cpp
+                                         pxgemm_params.hpp
+                                         cosma_pxgemm.cpp
+    )
+    target_link_libraries(cosma_pxgemm_cpp PUBLIC cosma 
+                                              ${BLAS_TARET}
+                                              ${ScaLAPACK_TARGET}
+    )
+    if(COSMA_WITH_PROFILING)
+        target_link_libraries(cosma_pxgemm_cpp PRIVATE semiprof)
+        target_compile_definitions(cosma_pxgemm_cpp PRIVATE COSMA_WITH_PROFILING)
+    endif()
+    list(APPEND INSTALLED_TARGETS_LIST "cosma_pxgemm_cpp")
 endif()
 
 if(COSMA_WITH_INSTALL AND INSTALLED_TARGETS_LIST)

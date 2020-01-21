@@ -32,12 +32,12 @@ add_cosma_mpi_test(multiply 16 cosma)
 add_cosma_mpi_test(scalar_matmul 8 cosma)
 
 if(COSMA_SCALAPACK)
-    add_cosma_mpi_test(pdgemm 8 cosma_pxgemm options)
+    add_cosma_mpi_test(pdgemm 8 cosma_pxgemm_cpp options)
 
     # Functional tests
     #
     add_executable(test.cosma_pdgemm cosma_pdgemm_test.cpp)
-    target_link_libraries(test.cosma_pdgemm PRIVATE cosma_pxgemm options)
+    target_link_libraries(test.cosma_pdgemm PRIVATE cosma_pxgemm_cpp options)
     target_include_directories(test.cosma_pdgemm PRIVATE .)
 endif()
 
