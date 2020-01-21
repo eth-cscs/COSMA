@@ -9,7 +9,7 @@
 // from cosma
 #include <cosma/blacs.hpp>
 #include <cosma/scalapack.hpp>
-#include <cosma/pxgemm.hpp>
+#include <cosma/cosma_pxgemm.hpp>
 #include <cosma/pxgemm_params.hpp>
 #include <cosma/random_generator.hpp>
 #include <cosma/context.hpp>
