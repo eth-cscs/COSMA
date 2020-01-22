@@ -156,21 +156,16 @@ struct pxgemm_params {
         alpha = a;
         beta = b;
 
-        // leading dims
-        // TODO: divide by p_rows
-        int max_n_rows_a = ((ma + bma - 1) / bma) * bma;
-        int max_n_rows_b = ((mb + bmb - 1) / bmb) * bmb;
-        int max_n_rows_c = ((mc + bmc - 1) / bmc) * bmc;
-
-        lld_a = std::max(1, max_n_rows_a);
-        lld_b = std::max(1, max_n_rows_b);
-        lld_c = std::max(1, max_n_rows_c);
-
         // proc grid
         order = 'R';
         p_rows = prows;
         p_cols = pcols;
         P = p_rows * p_cols;
+
+        // leading dims
+        lld_a = scalapack::max_leading_dimension(ma, bma, p_rows);
+        lld_b = scalapack::max_leading_dimension(mb, bmb, p_rows);
+        lld_c = scalapack::max_leading_dimension(mc, bmc, p_rows);
 
         // proc srcs
         src_ma = 0; src_na = 0;

@@ -82,7 +82,7 @@ int cosma::scalapack::numroc(int n, int nb, int proc_coord, int proc_src, int n_
     return n_rows_or_columns_total;
 }
 
-// computes the number of rows or columns that the specified rank owns
+// minimum lld: used mostly for correctness checking of pxgemm parameters
 int cosma::scalapack::min_leading_dimension(int n, int nb, int rank_grid_dim) {
     // Arguments:
     /*
@@ -102,6 +102,17 @@ int cosma::scalapack::min_leading_dimension(int n, int nb, int rank_grid_dim) {
     int min_n_rows_or_cols_per_process = n_blocks_per_process * nb;
 
     return min_n_rows_or_cols_per_process;
+}
+
+// maximum lld: used mostly for correctness checking of pxgemm parameters
+int cosma::scalapack::max_leading_dimension(int n, int nb, int rank_grid_dim) {
+    // Arguments:
+    /*
+      - n: global matrix dimension (rows or columns)
+      - nb: corresponding dimension of a block
+      - rank_grid_dim: total number of processes along this dimension
+     */
+    return nb + min_leading_dimension(n, nb, rank_grid_dim);
 }
 
 int cosma::scalapack::local_buffer_size(const int* desc) {
