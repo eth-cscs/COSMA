@@ -51,7 +51,7 @@ int cosma::scalapack::numroc(int n, int nb, int proc_coord, int proc_src, int n_
       - proc_src: process src
       - n_procs: total number of processes along this dimension
      */
-    // number of blocks along this dimension
+    // number of whole blocks along this dimension
     int n_blocks = n / nb;
 
     // the offset of given process to the source process
@@ -80,6 +80,28 @@ int cosma::scalapack::numroc(int n, int nb, int proc_coord, int proc_src, int n_
     n_rows_or_columns_total += proc_offset == remainder ? n % nb : 0;
 
     return n_rows_or_columns_total;
+}
+
+// computes the number of rows or columns that the specified rank owns
+int cosma::scalapack::min_leading_dimension(int n, int nb, int rank_grid_dim) {
+    // Arguments:
+    /*
+      - n: global matrix dimension (rows or columns)
+      - nb: corresponding dimension of a block
+      - rank_grid_dim: total number of processes along this dimension
+     */
+    // number of blocks along this dimension
+    int n_blocks = n / nb;
+
+    // number of blocks per process (at least)
+    // Can also be zero.
+    int n_blocks_per_process = n_blocks/rank_grid_dim;
+    // Number of rows or columns that each process has (at least).
+    // Can also be zero.
+    // each rank owns at least this many rows
+    int min_n_rows_or_cols_per_process = n_blocks_per_process * nb;
+
+    return min_n_rows_or_cols_per_process;
 }
 
 int cosma::scalapack::local_buffer_size(const int* desc) {

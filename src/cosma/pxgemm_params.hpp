@@ -2,7 +2,10 @@
 #include <algorithm>
 #include <cmath>
 #include <vector>
+#include <stdexcept>
+#include <cosma/scalapack.hpp>
 
+namespace cosma {
 template <typename T>
 struct pxgemm_params {
     // ****************************************
@@ -198,6 +201,10 @@ struct pxgemm_params {
                    prows, pcols,
                    transa, transb,
                    a, b);
+        std::string info;
+        if (!valid(info)) {
+            std::runtime_error("WRONG PXGEMM PARAMETER: " + info);
+        }
     }
 
 
@@ -215,6 +222,10 @@ struct pxgemm_params {
                    prows, pcols,
                    transa, transb,
                    a, b);
+        std::string info;
+        if (!valid(info)) {
+            std::runtime_error("WRONG PXGEMM PARAMETER: " + info);
+        }
     }
 
     pxgemm_params(
@@ -282,7 +293,12 @@ struct pxgemm_params {
         src_ma(src_ma), src_na(src_na),
         src_mb(src_mb), src_nb(src_nb),
         src_mc(src_mc), src_nc(src_nc)
-    {}
+    {
+        std::string info;
+        if (!valid(info)) {
+            std::runtime_error("WRONG PXGEMM PARAMETER: " + info);
+        }
+    }
 
     int transpose_if(char transpose_flag, int row, int col) {
         bool transposed = transpose_flag != 'N';
@@ -294,22 +310,22 @@ struct pxgemm_params {
     //     returns true is returned and info = "";
     // else:
     //     returns false and info = name of the incorrectly set variable;
-    bool check_correctness(std::string info) {
+    bool valid(std::string& info) {
         info = "";
         // *************************************************
         // check if transpose flags have proper values
         // *************************************************
         std::vector<char> t_flags = {'N', 'T', 'C'};
         if (std::find(t_flags.begin(), t_flags.end(), trans_a) == t_flags.end()) {
-            info = "trans_a = " + std::string(trans_a);
+            info = "trans_a = " + std::to_string(trans_a);
             return false;
         }
         if (std::find(t_flags.begin(), t_flags.end(), trans_b) == t_flags.end()) {
-            info = "trans_b = " + std::string(trans_b);
+            info = "trans_b = " + std::to_string(trans_b);
             return false;
         }
         if (order != 'R' && order != 'C') {
-            info = "oder = " + std::string(order);
+            info = "oder = " + std::to_string(order);
             return false;
         }
 
@@ -317,11 +333,11 @@ struct pxgemm_params {
         // check the range of alpha and beta parameters
         // *************************************************
         if (std::abs(alpha) < 0 || std::abs(alpha) > 1) {
-            info = "alpha = " + std::string(alpha);
+            info = "alpha = " + std::to_string(alpha);
             return false;
         }
         if (std::abs(beta) < 0 || std::abs(beta) > 1) {
-            info = "beta = " + std::string(beta);
+            info = "beta = " + std::to_string(beta);
             return false;
         }
 
@@ -335,7 +351,7 @@ struct pxgemm_params {
              lld_a, lld_b, lld_c,
              p_rows, p_cols, P,
         };
-        std::vector<int> positive_labels = {
+        std::vector<std::string> positive_labels = {
              "ma", "na", "mb", "nb", "mc", "nc",
              "bma", "bna", "bmb", "bnb", "bmc", "bnc",
              "m", "n", "k",
@@ -344,7 +360,7 @@ struct pxgemm_params {
         };
         for (int i = 0; i < positive.size(); ++i) {
             if (positive[i] < 0) {
-                info = std::to_string(positive_labels[i]) + " = " + std::to_string(positive[i]);
+                info = positive_labels[i] + " = " + std::to_string(positive[i]);
                 return false;
             }
         }
@@ -475,11 +491,25 @@ struct pxgemm_params {
             return false;
         }
 
-        // TODO: check lld parameters, implement minimum numroc
-        // so that it is independent of processor rank
         // *************************************************
         // check leading dimensions
         // *************************************************
+        int min_lld_a = scalapack::min_leading_dimension(ma, bma, p_rows);
+        int min_lld_b = scalapack::min_leading_dimension(mb, bmb, p_rows);
+        int min_lld_c = scalapack::min_leading_dimension(mc, bmc, p_rows);
+
+        if (lld_a < min_lld_a) {
+            info = "lld_a = " + std::to_string(min_lld_a);
+            return false;
+        }
+        if (lld_b < min_lld_b) {
+            info = "lld_b = " + std::to_string(min_lld_b);
+            return false;
+        }
+        if (lld_c < min_lld_c) {
+            info = "lld_c = " + std::to_string(min_lld_c);
+            return false;
+        }
 
         return true;
     }
@@ -538,3 +568,4 @@ struct pxgemm_params {
         return os;
     }
 };
+}

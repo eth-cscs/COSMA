@@ -54,6 +54,10 @@ int get_comm_context(const int grid_context);
 // gets the MPI communicator from the grid blacs context
 MPI_Comm get_communicator(const int grid_context);
 
+// minimum leading dimension (independent of current rank)
+// used mostly for checking the correctness of parameters
+int min_leading_dimension(int n, int nb, int rank_grid_dim);
+
 int leading_dimension(const int* desc);
 
 int numroc(int n, int nb, int iproc, int isrcproc, int nprocs);

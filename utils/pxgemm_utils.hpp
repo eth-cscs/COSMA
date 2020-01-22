@@ -124,7 +124,7 @@ bool validate_results(std::vector<T>& v1, std::vector<T>& v2) {
 // runs cosma or scalapack pdgemm wrapper for n_rep times and returns
 // a vector of timings (in milliseconds) of size n_rep
 template <typename T>
-bool test_pdgemm(pxgemm_params<T>& params, MPI_Comm comm) {
+bool test_pdgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm) {
     // create the context here, so that
     // it doesn't have to be created later
     // (this is not necessary)
@@ -252,7 +252,7 @@ bool test_pdgemm(pxgemm_params<T>& params, MPI_Comm comm) {
 // runs cosma or scalapack pdgemm wrapper for n_rep times and returns
 // a vector of timings (in milliseconds) of size n_rep
 template <typename T>
-void benchmark_pxgemm(pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
+void benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
                     std::vector<long>& cosma_times, std::vector<long>& scalapack_times) {
     cosma_times.resize(n_rep);
     scalapack_times.resize(n_rep);
