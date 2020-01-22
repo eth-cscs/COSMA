@@ -325,18 +325,6 @@ struct pxgemm_params {
         }
 
         // *************************************************
-        // check the range of alpha and beta parameters
-        // *************************************************
-        if (std::abs(alpha) < 0 || std::abs(alpha) > 1) {
-            info = "alpha = " + std::to_string(alpha);
-            return false;
-        }
-        if (std::abs(beta) < 0 || std::abs(beta) > 1) {
-            info = "beta = " + std::to_string(beta);
-            return false;
-        }
-
-        // *************************************************
         // check if the following values are all positive
         // *************************************************
         std::vector<int> positive = {

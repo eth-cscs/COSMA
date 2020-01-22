@@ -112,7 +112,11 @@ int cosma::scalapack::max_leading_dimension(int n, int nb, int rank_grid_dim) {
       - nb: corresponding dimension of a block
       - rank_grid_dim: total number of processes along this dimension
      */
-    return nb + min_leading_dimension(n, nb, rank_grid_dim);
+    int lld = min_leading_dimension(n, nb, rank_grid_dim);
+    int n_blocks = n / nb;
+    int remainder = n_blocks % rank_grid_dim;
+    lld += (remainder == 0) ? (n % nb) : nb;
+    return lld;
 }
 
 int cosma::scalapack::local_buffer_size(const int* desc) {
