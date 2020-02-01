@@ -11,9 +11,6 @@ Mapper::Mapper(char label,
     , n_(strategy.n_cols(label))
     , P_(strategy.P)
     , rank_(rank) {
-    if (rank_ >= P_) {
-        return;
-    }
     PE(preprocessing_matrices_mapper_sizes);
     skip_ranges_ = std::vector<int>(P_);
     rank_to_range_ =
@@ -57,6 +54,9 @@ Mapper::Mapper(char label,
     output_layout();
 #endif
     PL();
+    // if (rank_ >= P_) {
+    //     return;
+    // }
 }
 
 void Mapper::output_layout() {
@@ -210,7 +210,9 @@ size_t Mapper::initial_size(int rank) const {
     // if (ranks_reordered) {
     //     rank = ranks_reordering[rank];
     // }
-    return initial_buffer_size_[rank];
+    if (rank < P_)
+        return initial_buffer_size_[rank];
+    return 0;
 }
 
 size_t Mapper::initial_size() const { return initial_size(rank_); }
@@ -349,7 +351,9 @@ std::vector<int>& Mapper::local_blocks_offsets() {
 }
 
 std::vector<Interval2D> Mapper::local_blocks() {
-    return rank_to_range_[rank_];
+    if (rank_ < strategy_.P)
+        return rank_to_range_[rank_];
+    return {};
 }
 
 int Mapper::owner(Interval2D& block) {

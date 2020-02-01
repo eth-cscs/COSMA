@@ -2,6 +2,7 @@
 #include <cosma/context.hpp>
 #include <cosma/profiler.hpp>
 #include <complex>
+#include <mpi.h>
 
 #ifdef COSMA_HAVE_GPU
 #include <Tiled-MM/gpu_runtime_api.hpp>
@@ -26,6 +27,7 @@ Buffer<T>::Buffer(cosma_context<T>* ctxt,
     , rank_(rank)
     , mapper_(mapper)
     , layout_(layout) {
+
     PE(preprocessing_matrices_buffer);
     compute_n_buckets();
 
@@ -37,9 +39,7 @@ Buffer<T>::Buffer(cosma_context<T>* ctxt,
     max_recv_buffer_size_ = (size_t)mapper_->initial_size();
 
     init_first_split_steps();
-
     buff_sizes_ = compute_buffer_size();
-
     allocate_initial_buffers(dry_run);
     PL();
 }
@@ -55,7 +55,7 @@ Buffer<T>::Buffer(char label,
 
 template <typename T>
 void Buffer<T>::allocate_communication_buffers(bool dry_run) {
-    if (!dry_run) {
+    if (!dry_run && rank_ < strategy_->P) {
         // check if the initial buffer is already initialized
         assert(buffers_.size() == 1);
         // initial buffer is already allocated, so start from 1
@@ -108,7 +108,7 @@ void Buffer<T>::pin_for_gpu() {
 template <typename T>
 size_t Buffer<T>::total_size(bool dry_run) {
     size_t total_size = 0;
-    if (!dry_run) {
+    if (!dry_run && rank_ < strategy_->P) {
         for (int i = 0; i < buff_sizes_.size(); ++i) {
             total_size += buff_sizes_[i];
         }
@@ -120,7 +120,7 @@ size_t Buffer<T>::total_size(bool dry_run) {
 
 template <typename T>
 void Buffer<T>::allocate_initial_buffers(bool dry_run) {
-    if (!dry_run) {
+    if (!dry_run && rank_ < strategy_->P && buff_sizes_.size() > 0) {
         buffers_.reserve(buff_sizes_.size());
 
         // allocate initial buffer (to store the matrix)
@@ -133,25 +133,24 @@ void Buffer<T>::allocate_initial_buffers(bool dry_run) {
 
 template <typename T>
 void Buffer<T>::free_initial_buffers(bool dry_run) {
-    // if (dry_run) return;
-    if (dry_run || buff_sizes_.size() == 0) 
-        return;
-    // check if all the other buffers were deallocated previously
-    // buff_sizes_ is equal to n_buffers throughout the lifetime of the class
-    // but buffers_ size is decreased whenever some buffer is freed
-    assert(buffers_.size() == 1);
+    if (!dry_run && rank_ < strategy_->P && buff_sizes_.size() > 0) {
+        // check if all the other buffers were deallocated previously
+        // buff_sizes_ is equal to n_buffers throughout the lifetime of the class
+        // but buffers_ size is decreased whenever some buffer is freed
+        assert(buffers_.size() == 1);
 
-    // deallocate initial buffer (that are storing the matrix)
-    auto ptr = ctxt_->get_memory_pool().get_buffer_pointer(buffers_[0]);
-    ctxt_->get_memory_pool().free_buffer(ptr, buff_sizes_[0]);
-    // remove the pointers pointing to them
-    buffers_.pop_back();
-    buff_sizes_.pop_back();
+        // deallocate initial buffer (that are storing the matrix)
+        auto ptr = ctxt_->get_memory_pool().get_buffer_pointer(buffers_[0]);
+        ctxt_->get_memory_pool().free_buffer(ptr, buff_sizes_[0]);
+        // remove the pointers pointing to them
+        buffers_.pop_back();
+        buff_sizes_.pop_back();
+    }
 }
 
 template <typename T>
 void Buffer<T>::free_communication_buffers(bool dry_run) {
-    if (dry_run) return;
+    if (dry_run || rank_ >= strategy_->P) return;
 #ifdef COSMA_HAVE_GPU
     // unpin the buffer that was used in gemm
     if (pinned_) {

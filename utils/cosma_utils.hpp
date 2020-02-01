@@ -37,10 +37,13 @@ template <typename Scalar>
 bool test_cosma(Strategy &s,
          context<Scalar> &ctx,
          MPI_Comm comm = MPI_COMM_WORLD,
-         bool overlap = false) {
-    constexpr auto epsilon = std::numeric_limits<float>::epsilon();
+         bool overlap = false,
+         double epsilon = 1e-8,
+         int tag = 0) {
     auto alpha = Scalar{1};
     auto beta = Scalar{1};
+
+    int n_comm_rounds = 10;
 
     int rank;
     int size;
@@ -56,13 +59,9 @@ bool test_cosma(Strategy &s,
     int P = s.P;
 
     // Declare A,B and C COSMA matrices objects
-    // CosmaMatrix<Scalar> A(ctx, 'A', s, rank);
-    // CosmaMatrix<Scalar> B(ctx, 'B', s, rank);
-    // CosmaMatrix<Scalar> C(ctx, 'C', s, rank);
-
-    CosmaMatrix<Scalar> A('A', s, rank);
-    CosmaMatrix<Scalar> B('B', s, rank);
-    CosmaMatrix<Scalar> C('C', s, rank);
+    CosmaMatrix<Scalar> A(ctx, 'A', s, rank);
+    CosmaMatrix<Scalar> B(ctx, 'B', s, rank);
+    CosmaMatrix<Scalar> C(ctx, 'C', s, rank);
 
     // initial sizes
     auto sizeA = A.matrix_size();
@@ -70,7 +69,6 @@ bool test_cosma(Strategy &s,
     auto sizeC = C.matrix_size();
 
     // fill the matrices with random data
-    srand48(rank);
     fill_matrix(A.matrix_pointer(), sizeA);
     fill_matrix(B.matrix_pointer(), sizeB);
     fill_matrix(C.matrix_pointer(), sizeC);
@@ -79,7 +77,7 @@ bool test_cosma(Strategy &s,
     if (rank == 0) {
         std::cout << "Initial data in A and B:" << std::endl;
     }
-    for (int i = 0; i < P; i++) {
+    for (int i = 0; i < s.P; i++) {
         if (rank == i) {
             printf("(%d) A: ", i);
             for (auto j = 0; j < sizeA; j++)
@@ -117,33 +115,65 @@ bool test_cosma(Strategy &s,
         int offsetB = sizeB;
         int offsetC = sizeC;
 
-        for (int i = 1; i < P; i++) {
+        for (int i = 1; i < s.P; i++) {
             int receive_size_A = A.matrix_size(i);
             int receive_size_B = B.matrix_size(i);
             int receive_size_C = C.matrix_size(i);
 
+            MPI_Status status;
+            int amount;
+
             // Rank 0 receive data
-            MPI_Recv(As.data() + offsetA,
+            int info = MPI_Recv(As.data() + offsetA,
                      receive_size_A,
                      mpi_type,
                      i,
-                     0,
+                     tag*n_comm_rounds,
                      comm,
-                     MPI_STATUSES_IGNORE);
-            MPI_Recv(Bs.data() + offsetB,
+                     &status);
+            if (info != MPI_SUCCESS) {
+                // check if we received the right amount
+                MPI_Get_elements(&status, mpi_type, &amount);
+                if (amount != receive_size_A) {
+                    std::cout << "Error: Did not receive all data for matrix A!" << std::endl;
+                    std::cout << "Received " << amount << ", instead of " << receive_size_A << std::endl;
+                    std::cout << "Message source: " << status.MPI_SOURCE << ", tag = " << status.MPI_TAG << std::endl;
+                }
+            }
+
+            info = MPI_Recv(Bs.data() + offsetB,
                      receive_size_B,
                      mpi_type,
                      i,
-                     0,
+                     tag*n_comm_rounds + 1,
                      comm,
-                     MPI_STATUSES_IGNORE);
-            MPI_Recv(Cs.data() + offsetC,
+                     &status);
+            if (info != MPI_SUCCESS) {
+                // check if we received the right amount
+                MPI_Get_elements(&status, mpi_type, &amount);
+                if (amount != receive_size_B) {
+                    std::cout << "Error: Did not receive all data for matrix B!" << std::endl;
+                    std::cout << "Received " << amount << ", instead of " << receive_size_B << std::endl;
+                    std::cout << "Message source: " << status.MPI_SOURCE << ", tag = " << status.MPI_TAG << std::endl;
+                }
+            }
+
+            info = MPI_Recv(Cs.data() + offsetC,
                      receive_size_C,
                      mpi_type,
                      i,
-                     0,
+                     tag*n_comm_rounds + 2,
                      comm,
-                     MPI_STATUSES_IGNORE);
+                     &status);
+            if (info != MPI_SUCCESS) {
+                // check if we received the right amount
+                MPI_Get_elements(&status, mpi_type, &amount);
+                if (amount != receive_size_C) {
+                    std::cout << "Error: Did not receive all data for matrix C!" << std::endl;
+                    std::cout << "Received " << amount << ", instead of " << receive_size_C << std::endl;
+                    std::cout << "Message source: " << status.MPI_SOURCE << ", tag = " << status.MPI_TAG << std::endl;
+                }
+            }
 
             offsetA += receive_size_A;
             offsetB += receive_size_B;
@@ -151,13 +181,22 @@ bool test_cosma(Strategy &s,
         }
     }
     // Rank i send data
-    if (rank > 0) {
-        MPI_Send(A.matrix_pointer(), sizeA, mpi_type, 0, 0, comm);
-        MPI_Send(B.matrix_pointer(), sizeB, mpi_type, 0, 0, comm);
-        MPI_Send(C.matrix_pointer(), sizeC, mpi_type, 0, 0, comm);
+    if (rank > 0 && rank < s.P) {
+        int info = MPI_Ssend(A.matrix_pointer(), sizeA, mpi_type, 0, tag*n_comm_rounds, comm);
+        if (info != MPI_SUCCESS) {
+            std::cout << "MPI_Send was not successful on rank: " << rank << ", for matrix A" << std::endl;
+        }
+        info = MPI_Ssend(B.matrix_pointer(), sizeB, mpi_type, 0, tag*n_comm_rounds+1, comm);
+        if (info != MPI_SUCCESS) {
+            std::cout << "MPI_Send was not successful on rank: " << rank << ", for matrix B" << std::endl;
+        }
+        info = MPI_Ssend(C.matrix_pointer(), sizeC, mpi_type, 0, tag*n_comm_rounds+2, comm);
+        if (info != MPI_SUCCESS) {
+            std::cout << "MPI_Send was not successful on rank: " << rank << ", for matrix C" << std::endl;
+        }
     }
 
-    MPI_Barrier(comm);
+    // MPI_Barrier(comm);
 
     // Then rank 0 must reorder data locally
     std::vector<Scalar> globA;
@@ -171,7 +210,7 @@ bool test_cosma(Strategy &s,
         int offsetB = 0;
         int offsetC = 0;
 
-        for (int i = 0; i < P; i++) {
+        for (int i = 0; i < s.P; i++) {
             int local_size_A = A.matrix_size(i);
             int local_size_B = B.matrix_size(i);
             int local_size_C = C.matrix_size(i);
@@ -246,7 +285,7 @@ bool test_cosma(Strategy &s,
 #endif
     }
 
-    multiply(A, B, C, s, comm, alpha, beta);
+    multiply(ctx, A, B, C, s, comm, alpha, beta);
 
     // Then rank0 asks for other ranks data
     if (rank == 0) {
@@ -254,25 +293,23 @@ bool test_cosma(Strategy &s,
 
         int offsetC = sizeC;
 
-        for (int i = 1; i < P; i++) {
+        for (int i = 1; i < s.P; i++) {
             int receive_size_C = C.matrix_size(i);
             // Rank 0 receive data
             MPI_Recv(Cs.data() + offsetC,
                      receive_size_C,
                      mpi_type,
                      i,
-                     0,
+                     tag*n_comm_rounds + 4,
                      comm,
                      MPI_STATUSES_IGNORE);
             offsetC += receive_size_C;
         }
     }
-    // Rank i send data
-    if (rank > 0) {
-        MPI_Send(C.matrix_pointer(), sizeC, mpi_type, 0, 0, comm);
+    // Rank i sends data
+    if (rank > 0 && rank < s.P) {
+        MPI_Ssend(C.matrix_pointer(), sizeC, mpi_type, 0, tag*n_comm_rounds+4, comm);
     }
-
-    MPI_Barrier(comm);
 
     // Then rank 0 must reorder data locally
     std::vector<Scalar> globC;
@@ -280,7 +317,7 @@ bool test_cosma(Strategy &s,
         globC.resize(m * n);
         int offsetC = 0;
 
-        for (int i = 0; i < P; i++) {
+        for (int i = 0; i < s.P; i++) {
             int local_size_C = C.matrix_size(i);
 
             for (int j = 0; j < local_size_C; j++) {
@@ -319,7 +356,7 @@ bool test_cosma(Strategy &s,
         }
     }
 #ifdef DEBUG
-    for (int i = 0; i < P; i++) {
+    for (int i = 0; i < s.P; i++) {
         if (rank == i) {
             printf("(%d) A: ", i);
             for (auto j = 0; j < sizeA; j++)

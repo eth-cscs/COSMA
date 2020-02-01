@@ -32,7 +32,7 @@ add_cosma_mpi_test(multiply 16 cosma)
 add_cosma_mpi_test(scalar_matmul 8 cosma)
 
 if(COSMA_SCALAPACK)
-    add_cosma_mpi_test(pdgemm 8 cosma_pxgemm_cpp options)
+    add_cosma_mpi_test(pdgemm 16 cosma_pxgemm_cpp options)
 
     # Functional tests
     #

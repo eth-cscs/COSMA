@@ -1,6 +1,14 @@
 #include <cosma/strategy.hpp>
+#include <unordered_map>
+#include <mpi.h>
 
 namespace cosma {
+int Strategy::min_dim_size = 32;
+
+void Strategy::disable_optimization() {
+    min_dim_size = 0;
+}
+
 // constructors
 Strategy::Strategy() = default;
 // copy constructor
@@ -34,31 +42,12 @@ Strategy::Strategy(int mm,
     , overlap_comm_and_comp(overlap)
     , use_busy_waiting(busy_waiting) {
     n_steps = divisors.size();
-    check_if_valid();
-    compute_min_sizes();
-}
-
-Strategy::Strategy(int mm,
-                   int nn,
-                   int kk,
-                   size_t PP,
-                   std::string steps,
-                   long long mem_limit,
-                   double b,
-                   bool top,
-                   bool overlap,
-                   bool busy_waiting)
-    : m(mm)
-    , n(nn)
-    , k(kk)
-    , P(PP)
-    , memory_limit(mem_limit)
-    , beta(b)
-    , topology(top)
-    , overlap_comm_and_comp(overlap)
-    , use_busy_waiting(busy_waiting) {
-    square_strategy();
-    n_steps = divisors.size();
+    if (divisors.size() == 0) {
+        square_strategy();
+        optimize_strategy();
+    }
+    // since the strategy is specified,
+    // do not try to modify it by optimizing it
     check_if_valid();
     compute_min_sizes();
 }
@@ -86,6 +75,7 @@ Strategy::Strategy(int mm,
     square_strategy();
     // compress_steps();
     n_steps = divisors.size();
+    optimize_strategy();
     check_if_valid();
     compute_min_sizes();
 }
@@ -614,7 +604,7 @@ void Strategy::spartition_strategy() {
 
 void Strategy::throw_exception(const std::string &message) {
     std::cout << "Splitting strategy not well defined.\n";
-    // std::cout << *this << std::endl;
+    std::cout << message << std::endl;
     throw std::runtime_error(message);
 }
 
@@ -712,15 +702,77 @@ long long Strategy::required_memory(Strategy &strategy) {
     return initial_size;
 }
 
+void Strategy::optimize_strategy() {
+    // adjusted strategy
+    std::string new_step_type = "";
+    std::string new_split_dimension = "";
+    std::vector<int> new_divisors;
+
+    std::vector<int> dims = {m, n, k};
+    // the offsets in the previous vector
+    // we do this to avoid having 3 separate cases
+    // for each dimension in the following for-loop
+    std::unordered_map<char, size_t> offset;
+    offset['m'] = 0;
+    offset['n'] = 1;
+    offset['k'] = 2;
+
+    for (size_t i = 0; i < divisors.size(); ++i) {
+        int dim_i = offset[split_dimension[i]];
+        int& dim = dims[dim_i];
+        int d = divisors[i];
+        // if dimension becomes too small
+        // try to correct it (by finding the smaller divisor)
+        // or completely ignore this step 
+        // if such a divisor cannot be found
+        if (dim/d < min_dim_size) {
+            // try to find smaller divisor
+            int new_d = dim / min_dim_size;
+            // check if this divisor is feasible
+            if (new_d > 1 && dim / new_d >= min_dim_size) {
+                new_split_dimension += split_dimension[i];
+                new_step_type += step_type[i];
+                new_divisors.push_back(new_d);
+                dim /= new_d;
+                // decrease the number of processes
+                // by exchanging the divisor d with new_d
+                if (step_type[i] == 'p') {
+                    P = P / d * new_d;
+                }
+            } else {
+                // exclude this divisor
+                // ignore this step
+                if (step_type[i] == 'p') {
+                    P = P / d;
+                }
+            }
+        } else {
+            new_split_dimension += split_dimension[i];
+            new_step_type += step_type[i];
+            new_divisors.push_back(d);
+            dim /= d;
+        }
+    }
+
+    // set the current values
+    // to the adjusted strategy
+    split_dimension = new_split_dimension;
+    step_type = new_step_type;
+    divisors = new_divisors;
+
+    n_steps = divisors.size();
+}
+
 // checks if the strategy is well-defined
 void Strategy::check_if_valid() {
-    if (empty() && P != 1) {
-        throw_exception("Strategy empty but number of ranks P != 1");
-    }
 #ifdef DEBUG
     std::cout << "Checking if the following strategy is valid: " << std::endl;
     std::cout << *this << std::endl;
 #endif
+    if (empty() && P != 1) {
+        throw_exception("Strategy empty but number of ranks P != 1");
+    }
+
     int mi = m;
     int ni = n;
     int ki = k;
@@ -730,6 +782,10 @@ void Strategy::check_if_valid() {
     n_parallel_steps_before_gemm_a = 0;
     n_parallel_steps_before_gemm_b = 0;
     n_parallel_steps_before_gemm_c = 0;
+
+    int P_a = 1;
+    int P_b = 1;
+    int P_c = 1;
 
     for (size_t i = 0; i < n_steps; ++i) {
         if (divisors[i] <= 1) {
@@ -789,8 +845,26 @@ void Strategy::check_if_valid() {
             }
         }
 
+        if (step_type[i] == 'p') {
+            if (!split_A(i)) {
+                P_a *= divisors[i];
+            } else if (!split_B(i)) {
+                P_b *= divisors[i];
+            } else if (!split_C(i)) {
+                P_c *= divisors[i];
+            } else {
+                throw_exception("Invalid strategy: In each step, some matrix has to be split.");
+            }
+        }
+
         if (split_dimension[i] == 'm') {
             mi /= divisors[i];
+        } else if (split_dimension[i] == 'n') {
+            ni /= divisors[i];
+        } else if (split_dimension[i] == 'k') {
+            ki /= divisors[i];
+        } else {
+            throw_exception("Unknown splitting dimension, should be m, n or k");
         }
 
         // if last step, check if #columns >= #processors that share this block
@@ -801,27 +875,21 @@ void Strategy::check_if_valid() {
             // since we are using column major ordering, the #columns of each
             // matrix must be at least the number of processors left at that
             // step
-            if (split_dimension[i] == 'n') {
-                ni /= divisors[i];
-                if (ni < Pi) {
-                    throw_exception(std::string("Dimension n at step ") +
-                                    std::to_string(i) + " = " +
-                                    std::to_string(ni) +
-                                    ", which is less than the number of "
-                                    "processors left = " +
-                                    std::to_string(Pi));
-                }
+            if (ki < P_a) {
+                throw_exception(std::string("Dimension k at step ") +
+                                std::to_string(i) + " = " +
+                                std::to_string(ki) +
+                                ", which is less than the number of "
+                                "processors left = " +
+                                std::to_string(P_a));
             }
-
-            if (split_dimension[i] == 'k') {
-                ki /= divisors[i];
-                if (ki < Pi) {
-                    throw_exception(
-                        std::string("Dimension k at step ") +
-                        std::to_string(i) + " = " + std::to_string(ki) +
-                        ", which is less than the number " +
-                        "of processors left = " + std::to_string(Pi));
-                }
+            if (ni < std::min(P_b, P_c)) {
+                throw_exception(std::string("Dimension n at step ") +
+                                std::to_string(i) + " = " +
+                                std::to_string(ni) +
+                                ", which is less than the number of "
+                                "processors left = " +
+                                std::to_string(std::min(P_b, P_c)));
             }
         }
     }

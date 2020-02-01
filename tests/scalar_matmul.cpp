@@ -10,7 +10,9 @@ void test_matmul() {
     constexpr int n = 100;
     constexpr int k = 100;
     constexpr int P = 8;
-    std::string steps = "-s sm2,pn2,sk2,pm2,sn2,pk2";
+    std::string step_types = "spspsp";
+    std::string dims = "mnkmnk";
+    std::vector<int> divs = {2, 2, 2, 2, 2, 2};
 
     auto comm = MPI_COMM_WORLD;
     int rank;
@@ -18,21 +20,21 @@ void test_matmul() {
 
     auto ctx = cosma::make_context<Scalar>();
 
-    Strategy strategy(m, n, k, P, steps);
+    Strategy strategy(m, n, k, P, divs, dims, step_types);
 
     if (rank == 0) {
         std::cout << "Strategy = " << strategy << std::endl;
     }
 
     // first run without overlapping communication and computation
-    bool no_overlap = test_cosma<Scalar>(strategy, ctx, comm, false);
+    bool no_overlap = test_cosma<Scalar>(strategy, ctx, comm, false, 1e-2);
     ASSERT_TRUE(no_overlap);
 
     // wait for no-overlap to finish
     MPI_Barrier(comm);
 
     // then run with the overlap of communication and computation
-    bool with_overlap = test_cosma<Scalar>(strategy, ctx, comm, true);
+    bool with_overlap = test_cosma<Scalar>(strategy, ctx, comm, true, 1e-2);
     ASSERT_TRUE(with_overlap);
 }
 

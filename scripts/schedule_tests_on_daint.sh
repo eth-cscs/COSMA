@@ -37,5 +37,7 @@ make tests
 # Run tests
 #
 srun -n 1 tests/test.mapper
-srun -n 1 tests/test.strategy
+srun -n 4 tests/test.multiply_using_layout
+srun -n 8 tests/test.scalar_matmul
+srun -n 16 tests/test.pdgemm
 srun -n 16 tests/test.multiply

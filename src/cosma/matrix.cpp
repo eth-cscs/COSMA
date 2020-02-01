@@ -1,4 +1,5 @@
 #include <cosma/matrix.hpp>
+#include <mpi.h>
 
 #include <complex>
 
@@ -22,13 +23,12 @@ CosmaMatrix<T>::CosmaMatrix(cosma_context<T> *ctxt,
     , n_(strategy.n_cols(label))
     , P_(strategy.P) {
 
-    if (rank_ >= P_) {
-        return;
-    }
+    if (rank < strategy_.P) {
+        layout_ = Layout(label_, m_, n_, P_, rank_, &mapper_);
 
-    layout_ = Layout(label_, m_, n_, P_, rank_, &mapper_);
-    buffer_ =
-        buffer_t(ctxt_, label_, strategy_, rank_, &mapper_, &layout_, dry_run);
+        buffer_ =
+            buffer_t(ctxt_, label_, strategy_, rank_, &mapper_, &layout_, dry_run);
+    }
 }
 
 // with given mapper
@@ -46,14 +46,12 @@ CosmaMatrix<T>::CosmaMatrix(cosma_context<T> *ctxt,
     , n_(mapper_.n())
     , P_(mapper_.P()) {
 
-    if (rank_ >= P_) {
-        return;
-    }
-
     mapper_.reorder_rank(rank);
-    layout_ = Layout(label_, m_, n_, P_, rank_, &mapper_);
-    buffer_ =
-        buffer_t(ctxt_, label_, strategy_, rank_, &mapper_, &layout_, dry_run);
+    if (rank < mapper_.P()) {
+        layout_ = Layout(label_, m_, n_, P_, rank_, &mapper_);
+        buffer_ =
+            buffer_t(ctxt_, label_, strategy_, rank_, &mapper_, &layout_, dry_run);
+    }
 }
 
 // using custom context
@@ -106,42 +104,63 @@ char CosmaMatrix<T>::label() {
 
 template <typename T>
 int CosmaMatrix<T>::buffer_index() {
-    return buffer_.buffer_index();
+    if (rank_ < P_) {
+        return buffer_.buffer_index();
+    }
+    return -1;
 }
 
 template <typename T>
 void CosmaMatrix<T>::set_buffer_index(int idx) {
-    buffer_.set_buffer_index(idx);
+    if (rank_ < P_) {
+        buffer_.set_buffer_index(idx);
+    }
 }
 
 template <typename T>
 typename CosmaMatrix<T>::scalar_t *CosmaMatrix<T>::buffer_ptr() {
-    return buffer_.buffer_ptr();
+    if (rank_ < P_) {
+        return buffer_.buffer_ptr();
+    }
+    return nullptr;
 }
 
 template <typename T>
 size_t CosmaMatrix<T>::buffer_size() {
-    return buffer_.buffer_size();
+    if (rank_ < P_) {
+        return buffer_.buffer_size();
+    }
+    return 0;
 }
 
 template <typename T>
 typename CosmaMatrix<T>::scalar_t *CosmaMatrix<T>::reshuffle_buffer_ptr() {
-    return buffer_.reshuffle_buffer_ptr();
+    if (rank_ < P_) {
+        return buffer_.reshuffle_buffer_ptr();
+    }
+    return nullptr;
 }
 
 template <typename T>
 typename CosmaMatrix<T>::scalar_t *CosmaMatrix<T>::reduce_buffer_ptr() {
-    return buffer_.reduce_buffer_ptr();
+    if (rank_ < P_) {
+        return buffer_.reduce_buffer_ptr();
+    }
+    return nullptr;
 }
 
 template <typename T>
 void CosmaMatrix<T>::swap_reduce_buffer_with(size_t buffer_idx) {
-    buffer_.swap_reduce_buffer_with(buffer_idx);
+    if (rank_ < P_) {
+        buffer_.swap_reduce_buffer_with(buffer_idx);
+    }
 }
 
 template <typename T>
 void CosmaMatrix<T>::advance_buffer() {
-    buffer_.advance_buffer();
+    if (rank_ < P_) {
+        buffer_.advance_buffer();
+    }
 }
 
 template <typename T>
@@ -175,26 +194,28 @@ std::pair<int, int> CosmaMatrix<T>::global_coordinates(int local_index) {
 
 template <typename T>
 typename CosmaMatrix<T>::scalar_t *CosmaMatrix<T>::matrix_pointer() {
-    return buffer_.initial_buffer_ptr();
+    if (rank_ < P_) {
+        return buffer_.initial_buffer_ptr();
+    }
+    return nullptr;
 }
 
 template <typename T>
 const typename CosmaMatrix<T>::scalar_t *
 CosmaMatrix<T>::matrix_pointer() const {
-    return buffer_.initial_buffer_ptr();
+    if (rank_ < P_) {
+        return buffer_.initial_buffer_ptr();
+    }
+    return nullptr;
 }
 
 template <typename T>
 size_t CosmaMatrix<T>::matrix_size() const {
-    if (rank_ >= strategy_.P)
-        return 0;
     return mapper_.initial_size();
 }
 
 template <typename T>
 size_t CosmaMatrix<T>::matrix_size(int rank) const {
-    if (rank >= strategy_.P)
-        return 0;
     return mapper_.initial_size(rank);
 }
 
@@ -205,57 +226,84 @@ char CosmaMatrix<T>::which_matrix() {
 
 template <typename T>
 int CosmaMatrix<T>::shift(int rank, int seq_bucket) {
-    int offset = layout_.offset(rank, seq_bucket);
-    current_mat += offset;
-    return offset;
+    if (rank < P_) {
+        int offset = layout_.offset(rank, seq_bucket);
+        current_mat += offset;
+        return offset;
+    }
+    return -1;
 }
 
 template <typename T>
 int CosmaMatrix<T>::shift(int seq_bucket) {
-    int offset = layout_.offset(seq_bucket);
-    current_mat += offset;
-    return offset;
+    if (rank_ < P_) {
+        int offset = layout_.offset(seq_bucket);
+        current_mat += offset;
+        return offset;
+    }
+    return -1;
 }
 
 template <typename T>
 void CosmaMatrix<T>::unshift(int offset) {
-    current_mat -= offset;
+    if (rank_ < P_) {
+        current_mat -= offset;
+    }
 }
 
 template <typename T>
 int CosmaMatrix<T>::seq_bucket(int rank) {
-    return layout_.seq_bucket(rank);
+    if (rank < P_) {
+        return layout_.seq_bucket(rank);
+    }
+    return -1;
 }
 
 template <typename T>
 int CosmaMatrix<T>::seq_bucket() {
-    return layout_.seq_bucket();
+    if (rank_ < P_) {
+        return layout_.seq_bucket();
+    }
+    return -1;
 }
 
 template <typename T>
 void CosmaMatrix<T>::update_buckets(Interval &P, Interval2D &range) {
-    layout_.update_buckets(P, range);
+    if (rank_ < P_) {
+        layout_.update_buckets(P, range);
+    }
 }
 
 template <typename T>
 std::vector<int> CosmaMatrix<T>::seq_buckets(Interval &newP) {
-    return layout_.seq_buckets(newP);
+    if (rank_ < P_) {
+        return layout_.seq_buckets(newP);
+    }
+    return {};
 }
 
 template <typename T>
 void CosmaMatrix<T>::set_seq_buckets(Interval &newP,
                                      std::vector<int> &pointers) {
-    layout_.set_seq_buckets(newP, pointers);
+    if (rank_ < P_) {
+        layout_.set_seq_buckets(newP, pointers);
+    }
 }
 
 template <typename T>
 int CosmaMatrix<T>::size(int rank) {
-    return layout_.size(rank);
+    if (rank < P_) {
+        return layout_.size(rank);
+    }
+    return 0;
 }
 
 template <typename T>
 int CosmaMatrix<T>::size() {
-    return layout_.size();
+    if (rank_ < P_) {
+        return layout_.size();
+    }
+    return 0;
 }
 
 template <typename T>
@@ -264,8 +312,10 @@ void CosmaMatrix<T>::buffers_before_expansion(
     Interval2D &range,
     std::vector<std::vector<int>> &size_per_rank,
     std::vector<int> &total_size_per_rank) {
-    layout_.buffers_before_expansion(
-        P, range, size_per_rank, total_size_per_rank);
+    if (rank_ < P_) {
+        layout_.buffers_before_expansion(
+            P, range, size_per_rank, total_size_per_rank);
+    }
 }
 
 template <typename T>
@@ -276,37 +326,51 @@ void CosmaMatrix<T>::buffers_after_expansion(
     std::vector<int> &total_size_per_rank,
     std::vector<std::vector<int>> &new_size,
     std::vector<int> &new_total) {
-    layout_.buffers_after_expansion(
-        P, newP, size_per_rank, total_size_per_rank, new_size, new_total);
+    if (rank_ < P_) {
+        layout_.buffers_after_expansion(
+            P, newP, size_per_rank, total_size_per_rank, new_size, new_total);
+    }
 }
 
 template <typename T>
 void CosmaMatrix<T>::set_sizes(Interval &newP,
                                std::vector<std::vector<int>> &size_per_rank,
                                int offset) {
-    layout_.set_sizes(newP, size_per_rank, offset);
+    if (rank_ < P_) {
+        layout_.set_sizes(newP, size_per_rank, offset);
+    }
 }
 
 template <typename T>
 void CosmaMatrix<T>::set_sizes(Interval &newP,
                                std::vector<std::vector<int>> &size_per_rank) {
-    layout_.set_sizes(newP, size_per_rank);
+    if (rank_ < P_) {
+        layout_.set_sizes(newP, size_per_rank);
+    }
 }
 
 template <typename T>
 void CosmaMatrix<T>::set_sizes(int rank, std::vector<int> &sizes, int start) {
-    layout_.set_sizes(rank, sizes, start);
+    if (rank < P_) {
+        layout_.set_sizes(rank, sizes, start);
+    }
 }
 
 template <typename T>
 typename CosmaMatrix<T>::scalar_t &CosmaMatrix<T>::
 operator[](const typename std::vector<scalar_t>::size_type index) {
+    if (index < matrix_size()) {
+        std::runtime_error("Matrix index out of bounds.");
+    }
     return matrix_pointer()[index];
 }
 
 template <typename T>
 typename CosmaMatrix<T>::scalar_t CosmaMatrix<T>::
 operator[](const typename std::vector<scalar_t>::size_type index) const {
+    if (index < matrix_size()) {
+        std::runtime_error("Matrix index out of bounds.");
+    }
     return matrix_pointer()[index];
 }
 
@@ -318,7 +382,8 @@ typename CosmaMatrix<T>::scalar_t *CosmaMatrix<T>::current_matrix() {
 template <typename T>
 void CosmaMatrix<T>::initialize() {
     current_mat = matrix_pointer();
-    buffer_.pin_for_gpu();
+    if (rank_ < P_) 
+        buffer_.pin_for_gpu();
 }
 
 template <typename T>
@@ -367,12 +432,14 @@ grid2grid::grid_layout<T> CosmaMatrix<T>::get_grid_layout() {
 
 template <typename T>
 void CosmaMatrix<T>::allocate_communication_buffers() {
-    buffer_.allocate_communication_buffers();
+    if (rank_ < P_)
+        buffer_.allocate_communication_buffers();
 }
 
 template <typename T>
 void CosmaMatrix<T>::free_communication_buffers() {
-    buffer_.free_communication_buffers();
+    if (rank_ < P_)
+        buffer_.free_communication_buffers();
 }
 
 template <typename T>
@@ -387,7 +454,9 @@ int CosmaMatrix<T>::rank() const {
 
 template <typename T>
 size_t CosmaMatrix<T>::total_required_memory() {
-    return buffer_.total_size();
+    if (rank_ < P_)
+        return buffer_.total_size();
+    return 0;
 }
 
 // Explicit instantiations

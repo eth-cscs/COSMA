@@ -33,9 +33,15 @@ Layout::Layout(char label,
     PL();
 }
 
-int Layout::size() { return size(rank_); }
+int Layout::size() { 
+    return size(rank_); 
+}
 
-int Layout::size(int rank) { return bucket_size_[rank][pointer_[rank]]; }
+int Layout::size(int rank) { 
+    if (rank < P_)
+        return bucket_size_[rank][pointer_[rank]]; 
+    return 0;
+}
 
 // we cannot use the precomputed bucket_offset_ here, since
 // the buckets might have increased due to communication
@@ -158,6 +164,11 @@ void Layout::set_sizes(int rank, std::vector<int> &sizes, int start) {
 // get sizes of all ranges inside range of rank and remember the total_size
 std::vector<int>
 Layout::sizes_inside_range(Interval2D &range, int rank, int &total_size) {
+    if (rank >= P_) {
+        total_size = 0;
+        return {};
+    }
+
     std::vector<int> sizes;
     total_size = 0;
     int pointer = pointer_[rank];

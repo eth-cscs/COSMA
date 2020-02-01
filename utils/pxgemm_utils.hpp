@@ -106,12 +106,11 @@ inline void scalapack_pxgemm<double>::pxgemm(
 
 // compares two vectors up to eps precision, returns true if they are equal
 template <typename T>
-bool validate_results(std::vector<T>& v1, std::vector<T>& v2) {
+bool validate_results(std::vector<T>& v1, std::vector<T>& v2, double epsilon=1e-8) {
     if (v1.size() != v2.size())
         return false;
     if (v1.size() == 0)
         return true;
-    const double epsilon = 1e-8;
     for (size_t i = 0; i < v1.size(); ++i) {
         if (std::abs(v1[i] - v2[i]) > epsilon) {
             std::cout << "epsilon = " << epsilon << ", v1 = " << v1[i] << ", which is != " << v2[i] << std::endl;
@@ -124,7 +123,7 @@ bool validate_results(std::vector<T>& v1, std::vector<T>& v2) {
 // runs cosma or scalapack pdgemm wrapper for n_rep times and returns
 // a vector of timings (in milliseconds) of size n_rep
 template <typename T>
-bool test_pdgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm) {
+bool test_pdgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, double epsilon=1e-8) {
     // create the context here, so that
     // it doesn't have to be created later
     // (this is not necessary)
@@ -246,7 +245,7 @@ bool test_pdgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm) {
     // exit blacs context
     cosma::blacs::Cblacs_gridexit(ctxt);
 
-    return validate_results(c_cosma, c_scalapack);
+    return validate_results(c_cosma, c_scalapack, epsilon);
 }
 
 // runs cosma or scalapack pdgemm wrapper for n_rep times and returns

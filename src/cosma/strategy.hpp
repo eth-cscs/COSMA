@@ -18,14 +18,23 @@ class Strategy {
     int m;
     int n;
     int k;
+    // number of processors
+    size_t P;
 
+    long long memory_limit;
+
+    // minimum problem size per rank
+    // the total number of ranks will be reduced
+    // if the problem size per rank is too small
+    // by default = 32
+    static int min_dim_size;
+
+    // the actual minimum problem size
+    // that is induced by given strategy
     int min_m;
     int min_n;
     int min_k;
 
-    // number of processors
-    size_t P;
-    long long memory_limit;
     // beta parameter of gemm
     double beta = 0.0;
     // stores the divisor in each step of the algorithm
@@ -55,18 +64,14 @@ class Strategy {
     int n_parallel_steps_before_gemm_b;
     int n_parallel_steps_before_gemm_c;
 
+    static void disable_optimization();
+
     // constructors
     Strategy();
     // copy constructor
     // Strategy(Strategy &other);
     // move constructor
     Strategy(Strategy &&other);
-
-    // constructs the Strategy from the command line
-    Strategy(const std::string &cmd_line);
-
-    // constructs the Strategy form the command line
-    Strategy(int argc, char **argv);
 
     Strategy(int mm,
              int nn,
@@ -79,17 +84,6 @@ class Strategy {
              double b = 0.0,
              bool top = false,
              bool overlap = false,
-             bool busy_waiting = true);
-
-    Strategy(int mm,
-             int nn,
-             int kk,
-             size_t PP,
-             std::string steps,
-             long long mem_limit = std::numeric_limits<long long>::max(),
-             double b = 0.0,
-             bool top = false,
-             bool overlap = true,
              bool busy_waiting = true);
 
     Strategy(int mm,
@@ -145,6 +139,9 @@ class Strategy {
     initial_memory(long long m, long long n, long long k, int P);
     static long long required_memory(Strategy &strategy);
 
+    // reduces the number of processors if problem size
+    // gets smaller than min_dim_size
+    void optimize_strategy();
     // checks if the strategy is well-defined
     void check_if_valid();
     void check_if_overlap_possible();

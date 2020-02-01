@@ -1,4 +1,5 @@
 #include "../utils/pxgemm_utils.hpp"
+#include <cosma/strategy.hpp>
 
 #include <gtest/gtest.h>
 #include <gtest_mpi/gtest_mpi.hpp>
@@ -59,6 +60,9 @@ TEST_P(PdgemmTestWithParams, pdgemm) {
             std::cout << state << std::endl;
         }
 
+        // disable strategy optimization
+        // i.e do not modify the given strategy
+        // cosma::Strategy::disable_optimization();
         bool correct = test_pdgemm(state, comm);
 
         EXPECT_TRUE(correct);
@@ -96,6 +100,9 @@ INSTANTIATE_TEST_CASE_P(
         cosma::pxgemm_params<double>{5, 5, 5, 2, 2, 2, 2, 2, 'T', 'N', 0.5, 0.0},
         cosma::pxgemm_params<double>{8, 4, 8, 2, 2, 2, 3, 2, 'N', 'N', 0.5, 0.0},
         cosma::pxgemm_params<double>{8, 4, 8, 2, 2, 2, 3, 2, 'T', 'N', 0.5, 0.0},
+
+        // too many resources
+        cosma::pxgemm_params<double>{16, 16, 96, 32, 32, 32, 2, 8, 'T', 'N', 0.5, 0.5},
 
         // detailed pdgemm call
         cosma::pxgemm_params<double>{

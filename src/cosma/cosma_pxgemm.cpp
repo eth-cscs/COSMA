@@ -103,6 +103,7 @@ void pxgemm(const char transa,
     auto cosma_grid_b = mapper_b.get_layout_grid();
     auto cosma_grid_c = mapper_c.get_layout_grid();
 
+
     // if (rank == 0) {
     //     std::cout << "COSMA grid for A before reordering: " << cosma_grid_a << std::endl;
     // }
@@ -173,7 +174,6 @@ void pxgemm(const char transa,
         }
     }
 #endif
-
     CosmaMatrix<T> A(std::move(mapper_a), rank_permutation[rank]);
     CosmaMatrix<T> B(std::move(mapper_b), rank_permutation[rank]);
     CosmaMatrix<T> C(std::move(mapper_c), rank_permutation[rank]);
