@@ -2,24 +2,19 @@
 #include <cosma/profiler.hpp>
 
 namespace cosma {
-Layout::Layout(char label,
-               int m,
-               int n,
-               size_t P,
-               int rank,
-               Mapper* mapper):
-    label_(label),
-    m_(m),
-    n_(n),
-    P_(P),
-    rank_(rank),
+Layout::Layout(Mapper* mapper):
+    label_(mapper->label()),
+    m_(mapper->m()),
+    n_(mapper->n()),
+    P_(mapper->P()),
+    rank_(mapper->rank()),
     mapper_(mapper) {
     PE(preprocessing_matrices_layout);
-    initial_size_ = std::vector<int>(P);
-    bucket_size_ = std::vector<std::vector<int>>(P, std::vector<int>());
-    pointer_ = std::vector<int>(P);
+    initial_size_ = std::vector<int>(P_);
+    bucket_size_ = std::vector<std::vector<int>>(P_, std::vector<int>());
+    pointer_ = std::vector<int>(P_);
 
-    for (size_t p = 0; p < P; ++p) {
+    for (size_t p = 0; p < P_; ++p) {
         int sum = 0;
         auto ranges = mapper_->initial_layout(p);
 

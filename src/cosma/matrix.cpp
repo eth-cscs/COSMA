@@ -16,18 +16,18 @@ CosmaMatrix<T>::CosmaMatrix(cosma_context<T> *ctxt,
                             bool dry_run)
     : ctxt_(ctxt)
     , mapper_(Mapper(label, strategy, rank))
-    , rank_(rank)
-    , strategy_(strategy)
-    , label_(label)
-    , m_(strategy.n_rows(label))
-    , n_(strategy.n_cols(label))
-    , P_(strategy.P) {
+    , rank_(mapper_.rank())
+    , strategy_(mapper_.strategy())
+    , label_(mapper_.label())
+    , m_(mapper_.m())
+    , n_(mapper_.n())
+    , P_(mapper_.P()) {
 
-    if (rank < strategy_.P) {
-        layout_ = Layout(label_, m_, n_, P_, rank_, &mapper_);
+    if (rank < P_) {
+        layout_ = Layout(&mapper_);
 
         buffer_ =
-            buffer_t(ctxt_, label_, strategy_, rank_, &mapper_, &layout_, dry_run);
+            buffer_t(ctxt_, &mapper_, &layout_, dry_run);
     }
 }
 
@@ -47,10 +47,10 @@ CosmaMatrix<T>::CosmaMatrix(cosma_context<T> *ctxt,
     , P_(mapper_.P()) {
 
     mapper_.reorder_rank(rank);
-    if (rank < mapper_.P()) {
-        layout_ = Layout(label_, m_, n_, P_, rank_, &mapper_);
+    if (rank < P_) {
+        layout_ = Layout(&mapper_);
         buffer_ =
-            buffer_t(ctxt_, label_, strategy_, rank_, &mapper_, &layout_, dry_run);
+            buffer_t(ctxt_, &mapper_, &layout_, dry_run);
     }
 }
 

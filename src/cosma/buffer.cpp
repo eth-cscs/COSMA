@@ -15,16 +15,13 @@ Buffer<T>::Buffer(): ctxt_(nullptr) {}
 
 template <typename T>
 Buffer<T>::Buffer(cosma_context<T>* ctxt,
-                  char label,
-                  const Strategy &strategy,
-                  int rank,
                   Mapper *mapper,
                   Layout *layout,
                   bool dry_run)
     : ctxt_(ctxt)
-    , label_(label)
-    , strategy_(&strategy)
-    , rank_(rank)
+    , strategy_(&(mapper->strategy()))
+    , label_(mapper->label())
+    , rank_(mapper->rank())
     , mapper_(mapper)
     , layout_(layout) {
 
@@ -45,13 +42,10 @@ Buffer<T>::Buffer(cosma_context<T>* ctxt,
 }
 
 template <typename T>
-Buffer<T>::Buffer(char label,
-                  const Strategy &strategy,
-                  int rank,
-                  Mapper *mapper,
+Buffer<T>::Buffer(Mapper *mapper,
                   Layout *layout,
                   bool dry_run)
-    : Buffer(get_context_instance<T>(), label, strategy, rank, mapper, layout, dry_run) {}
+    : Buffer(get_context_instance<T>(), mapper, layout, dry_run) {}
 
 template <typename T>
 void Buffer<T>::allocate_communication_buffers(bool dry_run) {

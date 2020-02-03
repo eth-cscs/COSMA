@@ -91,6 +91,15 @@ void pxgemm(const char transa,
 #ifdef DEBUG
     if (rank == 0) {
         std::cout << strategy << std::endl;
+        std::cout << "m = " << m << ", n = " << n << ", k = " << k << std::endl;
+        std::cout << "A: bm = " << b_dim_a.rows << ", " << b_dim_a.cols << std::endl;
+        std::cout << "B: bm = " << b_dim_b.rows << ", " << b_dim_b.cols << std::endl;
+        std::cout << "C: bm = " << b_dim_c.rows << ", " << b_dim_c.cols << std::endl;
+        std::cout << "trans_a = " << trans_a << std::endl;
+        std::cout << "trans_b = " << trans_b << std::endl;
+        std::cout << "leading: " << lld_a << ", " << lld_b << ", " << lld_c << std::endl;
+        std::cout << "rank grid = " << procrows << ", " << proccols << std::endl;
+        std::cout << "alpha = " << alpha << ", beta = " << beta << std::endl;
     }
 #endif
 
@@ -102,7 +111,6 @@ void pxgemm(const char transa,
     auto cosma_grid_a = mapper_a.get_layout_grid();
     auto cosma_grid_b = mapper_b.get_layout_grid();
     auto cosma_grid_c = mapper_c.get_layout_grid();
-
 
     // if (rank == 0) {
     //     std::cout << "COSMA grid for A before reordering: " << cosma_grid_a << std::endl;
@@ -192,10 +200,6 @@ void pxgemm(const char transa,
     cosma_layout_b.reorder_ranks(rank_permutation);
     cosma_layout_c.reorder_ranks(rank_permutation);
 
-    // if (rank == 0) {
-    //     std::cout << "COSMA grid for A after reordering: " << cosma_layout_a.grid << std::endl;
-    // }
-
 #ifdef DEBUG
     std::cout << "Transforming the input matrices A and B from Scalapack -> COSMA" << std::endl;
 #endif
@@ -215,6 +219,7 @@ void pxgemm(const char transa,
 #ifdef DEBUG
     std::cout << "COSMA multiply" << std::endl;
 #endif
+
     // create reordered communicator, which has same ranks
     // but relabelled as given by the rank_permutation
     // (to avoid the communication during layout transformation)

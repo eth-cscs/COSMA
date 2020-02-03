@@ -41,18 +41,12 @@ public:
 
     // with cosma_context*
     Buffer(cosma_context<Scalar>* ctxt,
-           char label,
-           const Strategy &strategy,
-           int rank,
            Mapper *mapper,
            Layout *layout,
            bool dry_run = false);
 
     // without context (using global singleton context)
-    Buffer(char label,
-           const Strategy &strategy,
-           int rank,
-           Mapper *mapper,
+    Buffer(Mapper *mapper,
            Layout *layout,
            bool dry_run = false);
 
@@ -121,7 +115,6 @@ public:
     Mapper *mapper_;
     // used to get the sizes of buffers needed in each step
     Layout *layout_;
-
 
 protected:
     // computes the buffer sizes that is needed for this matrix (where

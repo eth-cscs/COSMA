@@ -20,12 +20,7 @@ class Layout {
 
   public:
     Layout() = default;
-    Layout(char label,
-           int m,
-           int n,
-           size_t P,
-           int rank,
-           Mapper* mapper);
+    Layout(Mapper* mapper);
 
     int size(int rank);
     int size();
