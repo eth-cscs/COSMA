@@ -4,6 +4,7 @@
 
 #ifdef COSMA_HAVE_GPU
 #include <Tiled-MM/tiled_mm.hpp>
+#include <Tiled-MM/util.hpp>
 #else
 #include <cosma/blas.hpp>
 #endif
@@ -86,7 +87,37 @@ void local_multiply(cosma_context<Scalar>* ctx,
 
 #ifdef COSMA_HAVE_GPU
     // std::cout << "local_multiply a = " << *matrixA << ", b = " << *matrixB << ", c = " << *matrixC << std::endl;
+    // pin the memory
+    // pin matrix A
+    auto status = gpu::runtime_api::host_register(
+            matrixA,
+            m * k * sizeof(Scalar),
+            gpu::runtime_api::flag::HostRegisterDefault);
+    gpu::check_runtime_status(status);
+    // pin matrix B
+    status = gpu::runtime_api::host_register(
+            matrixB,
+            k * n * sizeof(Scalar),
+            gpu::runtime_api::flag::HostRegisterDefault);
+    gpu::check_runtime_status(status);
+    // pin matrix C
+    status = gpu::runtime_api::host_register(
+            matrixC,
+            m * n * sizeof(Scalar),
+            gpu::runtime_api::flag::HostRegisterDefault);
+    gpu::check_runtime_status(status);
+
     gpu::gemm(*(ctx->get_gpu_context()), matrixA, matrixB, matrixC, m, n, k, alpha, beta);
+
+    // unpin matrix A
+    status = gpu::runtime_api::host_unregister(matrixA);
+    gpu::check_runtime_status(status);
+    // unpin matrix B
+    status = gpu::runtime_api::host_unregister(matrixB);
+    gpu::check_runtime_status(status);
+    // unpin matrix C
+    status = gpu::runtime_api::host_unregister(matrixC);
+    gpu::check_runtime_status(status);
 #else
     (void)ctx;
     gemm(m, n, k, alpha, matrixA, m, matrixB, k, beta, matrixC, m);

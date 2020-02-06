@@ -382,8 +382,6 @@ typename CosmaMatrix<T>::scalar_t *CosmaMatrix<T>::current_matrix() {
 template <typename T>
 void CosmaMatrix<T>::initialize() {
     current_mat = matrix_pointer();
-    if (rank_ < P_) 
-        buffer_.pin_for_gpu();
 }
 
 template <typename T>

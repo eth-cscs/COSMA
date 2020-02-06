@@ -24,6 +24,50 @@ double get_gpu_mem_ratio() {
     return mem_ratio;
 }
 
+int get_num_gpu_streams() {
+    char* var;
+    var = getenv ("COSMA_GPU_STREAMS");
+    int n_streams = 2;
+    if (var != nullptr)
+        n_streams = std::atoi(var);
+    return n_streams;
+}
+
+int get_gpu_tile_size_m() {
+    char* var;
+    var = getenv ("COSMA_GPU_TILE_M");
+    int tile = 4096;
+    bool defined = var != nullptr;
+    if (defined)
+        tile = std::atoi(var);
+    return tile;
+}
+
+int get_gpu_tile_size_n() {
+    char* var;
+    var = getenv ("COSMA_GPU_TILE_N");
+    int tile = 4096;
+    bool defined = var != nullptr;
+    if (defined)
+        tile = std::atoi(var);
+    return tile;
+}
+
+int get_gpu_tile_size_k() {
+    char* var;
+    var = getenv ("COSMA_GPU_TILE_K");
+    int tile = 4096;
+    bool defined = var != nullptr;
+    if (defined)
+        tile = std::atoi(var);
+    return tile;
+}
+
+bool env_var_defined(const char* var_name) {
+    char* var = getenv (var_name);
+    return var != nullptr;
+}
+
 #ifdef COSMA_HAVE_GPU
 template <typename Scalar>
 gpu::mm_handle<Scalar>* cosma_context<Scalar>::get_gpu_context() {
@@ -33,7 +77,16 @@ gpu::mm_handle<Scalar>* cosma_context<Scalar>::get_gpu_context() {
 template <typename Scalar>
 cosma_context<Scalar>::cosma_context() {
 #ifdef COSMA_HAVE_GPU
-    gpu_ctx_ = gpu::make_context<Scalar>(get_num_ranks_per_gpu(), get_gpu_mem_ratio());
+    if (env_var_defined("COSMA_GPU_TILE_M") || 
+        env_var_defined("COSMA_GPU_TILE_N") || 
+        env_var_defined("COSMA_GPU_TILE_K")) {
+        gpu_ctx_ = gpu::make_context<Scalar>(get_num_gpu_streams(),
+                                             get_gpu_tile_size_m(),
+                                             get_gpu_tile_size_n(),
+                                             get_gpu_tile_size_k());
+    } else {
+        gpu_ctx_ = gpu::make_context<Scalar>(get_num_ranks_per_gpu(), get_gpu_mem_ratio());
+    }
 #endif
 }
 

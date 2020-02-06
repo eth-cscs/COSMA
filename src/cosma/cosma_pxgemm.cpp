@@ -84,7 +84,6 @@ void pxgemm(const char transa,
     auto ordering = scalapack::rank_ordering(ctxt, P);
 
     PE(strategy);
-    // find an optimal strategy for this problem
     Strategy strategy(m, n, k, P);
     // strategy.overlap_comm_and_comp = true;
     PL();
@@ -174,6 +173,17 @@ void pxgemm(const char transa,
     std::vector<int> rank_permutation = grid2grid::optimal_reordering(comm_vol, P, reordered);
     PL();
 
+    // create reordered communicator, which has same ranks
+    // but relabelled as given by the rank_permutation
+    // (to avoid the communication during layout transformation)
+    PE(transform_reordering_comm);
+    MPI_Comm reordered_comm = comm;
+    if (reordered) {
+        MPI_Comm_split(comm, 0, rank_permutation[rank], &reordered_comm);
+    }
+    PL();
+
+
 #ifdef DEBUG
     if (rank == 0) {
         std::cout << "Optimal rank relabeling:" << std::endl;
@@ -220,23 +230,8 @@ void pxgemm(const char transa,
     std::cout << "COSMA multiply" << std::endl;
 #endif
 
-    // create reordered communicator, which has same ranks
-    // but relabelled as given by the rank_permutation
-    // (to avoid the communication during layout transformation)
-    PE(transform_reordering_comm);
-    MPI_Comm reordered_comm = comm;
-    if (reordered) {
-        MPI_Comm_split(comm, 0, rank_permutation[rank], &reordered_comm);
-    }
-    PL();
     // perform cosma multiplication
     multiply<T>(A, B, C, strategy, reordered_comm, alpha, beta);
-    PE(transform_reordering_comm);
-    if (reordered) {
-        MPI_Comm_free(&reordered_comm);
-    }
-    PL();
-
     // construct cosma layout again, to avoid outdated
     // pointers when the memory pool has been used
     // in case it resized during multiply
@@ -272,6 +267,12 @@ void pxgemm(const char transa,
 
     }
 #endif
+    PE(transform_reordering_comm);
+    if (reordered) {
+        MPI_Comm_free(&reordered_comm);
+    }
+    PL();
+
 }
 
 // explicit instantiation for pxgemm

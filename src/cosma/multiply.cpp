@@ -112,13 +112,22 @@ void multiply_using_layout(cosma_context<T> *ctx,
     bool reordered = false;
     std::vector<int> rank_permutation =
         grid2grid::optimal_reordering(comm_vol, P, reordered);
+    // create reordered communicator, which has same ranks
+    // but relabelled as given by the rank_permutation
+    // (to avoid the communication during layout transformation)
+    PE(transform_reordering_comm);
+    MPI_Comm reordered_comm = comm;
+    if (reordered) {
+        MPI_Comm_split(comm, 0, rank_permutation[rank], &reordered_comm);
+    }
+    PL();
 
     CosmaMatrix<T> A_cosma(ctx, std::move(mapper_a), rank_permutation[rank]);
     CosmaMatrix<T> B_cosma(ctx, std::move(mapper_b), rank_permutation[rank]);
     CosmaMatrix<T> C_cosma(ctx, std::move(mapper_c), rank_permutation[rank]);
 
     // avoid resizing of buffer by reserving immediately the total required memory
-    get_context_instance<T>()->get_memory_pool().reserve(
+    ctx->get_memory_pool().reserve(
             A_cosma.total_required_memory()
           + B_cosma.total_required_memory()
           + C_cosma.total_required_memory()
@@ -149,24 +158,10 @@ void multiply_using_layout(cosma_context<T> *ctx,
     // transform all scheduled transformations together
     transf.transform();
 
-    // create reordered communicator, which has same ranks
-    // but relabelled as given by the rank_permutation
-    // (to avoid the communication during layout transformation)
-    PE(transform_reordering_comm);
-    MPI_Comm reordered_comm = comm;
-    if (reordered) {
-        MPI_Comm_split(comm, 0, rank_permutation[rank], &reordered_comm);
-    }
-    PL();
     // perform cosma multiplication
     // auto ctx = cosma::make_context<T>();
     multiply<T>(
         ctx, A_cosma, B_cosma, C_cosma, strategy, reordered_comm, alpha, beta);
-    PE(transform_reordering_comm);
-    if (reordered) {
-        MPI_Comm_free(&reordered_comm);
-    }
-    PL();
 
     // construct cosma layout again, to avoid outdated
     // pointers when the memory pool has been used
@@ -176,6 +171,14 @@ void multiply_using_layout(cosma_context<T> *ctx,
     // transform the result back
     transf.schedule(cosma_layout_c, C);
     transf.transform();
+
+    // free up the reordered communicator
+    PE(transform_reordering_comm);
+    if (reordered) {
+        MPI_Comm_free(&reordered_comm);
+    }
+    PL();
+
 }
 
 /*

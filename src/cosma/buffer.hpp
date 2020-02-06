@@ -63,8 +63,6 @@ public:
     void free_initial_buffers(bool dry_run = false);
     void free_communication_buffers(bool dry_run = false);
 
-    void pin_for_gpu();
-
     // total required memory
     size_t total_size(bool dry_run = false);
 
