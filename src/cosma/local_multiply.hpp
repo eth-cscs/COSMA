@@ -34,4 +34,17 @@ void local_multiply(scalar *a,
                     int k,
                     scalar alpha,
                     scalar beta);
+
+#ifdef COSMA_HAVE_GPU
+template <typename scalar>
+void local_multiply(gpu::mm_handle<scalar>* gpu_ctx,
+                    scalar *a,
+                    scalar *b,
+                    scalar *c,
+                    int m,
+                    int n,
+                    int k,
+                    scalar alpha,
+                    scalar beta);
+#endif
 } // namespace cosma

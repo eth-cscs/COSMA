@@ -69,6 +69,22 @@ clock_t::time_point debug_gemm_end(Scalar *matrixA,
     return std::chrono::high_resolution_clock::now();
 }
 
+#ifdef COSMA_HAVE_GPU
+template <typename Scalar>
+void local_multiply(gpu::mm_handle<Scalar>* gpu_ctx,
+                    Scalar *matrixA,
+                    Scalar *matrixB,
+                    Scalar *matrixC,
+                    int m,
+                    int n,
+                    int k,
+                    Scalar alpha,
+                    Scalar beta) {
+    bool pin_host_buffers = true;
+    gpu::gemm(*(gpu_ctx), matrixA, matrixB, matrixC, m, n, k, alpha, beta, pin_host_buffers);
+}
+#endif
+
 template <typename Scalar>
 void local_multiply(cosma_context<Scalar>* ctx,
                     Scalar *matrixA,
@@ -86,44 +102,12 @@ void local_multiply(cosma_context<Scalar>* ctx,
 #endif
 
 #ifdef COSMA_HAVE_GPU
-    // std::cout << "local_multiply a = " << *matrixA << ", b = " << *matrixB << ", c = " << *matrixC << std::endl;
-    // pin the memory
-    // pin matrix A
-    auto status = gpu::runtime_api::host_register(
-            matrixA,
-            m * k * sizeof(Scalar),
-            gpu::runtime_api::flag::HostRegisterDefault);
-    gpu::check_runtime_status(status);
-    // pin matrix B
-    status = gpu::runtime_api::host_register(
-            matrixB,
-            k * n * sizeof(Scalar),
-            gpu::runtime_api::flag::HostRegisterDefault);
-    gpu::check_runtime_status(status);
-    // pin matrix C
-    status = gpu::runtime_api::host_register(
-            matrixC,
-            m * n * sizeof(Scalar),
-            gpu::runtime_api::flag::HostRegisterDefault);
-    gpu::check_runtime_status(status);
-
-    gpu::gemm(*(ctx->get_gpu_context()), matrixA, matrixB, matrixC, m, n, k, alpha, beta);
-
-    // unpin matrix A
-    status = gpu::runtime_api::host_unregister(matrixA);
-    gpu::check_runtime_status(status);
-    // unpin matrix B
-    status = gpu::runtime_api::host_unregister(matrixB);
-    gpu::check_runtime_status(status);
-    // unpin matrix C
-    status = gpu::runtime_api::host_unregister(matrixC);
-    gpu::check_runtime_status(status);
+    local_multiply(ctx->get_gpu_context(),
+                   matrixA, matrixB, matrixC,
+                   m, n, k, alpha, beta);
 #else
-    (void)ctx;
     gemm(m, n, k, alpha, matrixA, m, matrixB, k, beta, matrixC, m);
 #endif
-    // blas::dgemm(&N, &N, &m, &n, &k, &one, matrixA, &m, matrixB, &k, &beta,
-    // matrixC, &m);
     PL();
 
 #ifdef DEBUG
@@ -283,4 +267,49 @@ local_multiply<std::complex<float>>(std::complex<float> *matrixA,
                                     int k,
                                     std::complex<float> alpha,
                                     std::complex<float> beta);
+
+#ifdef COSMA_HAVE_GPU
+// explicit template instantiation using gpu context
+template void local_multiply<double>(gpu::mm_handle<double> *ctx,
+                                     double *matrixA,
+                                     double *matrixB,
+                                     double *matrixC,
+                                     int m,
+                                     int n,
+                                     int k,
+                                     double alpha,
+                                     double beta);
+
+template void local_multiply<float>(gpu::mm_handle<float> *ctx,
+                                    float *matrixA,
+                                    float *matrixB,
+                                    float *matrixC,
+                                    int m,
+                                    int n,
+                                    int k,
+                                    float alpha,
+                                    float beta);
+
+template void
+local_multiply<std::complex<double>>(gpu::mm_handle<std::complex<double>> *ctx,
+                                     std::complex<double> *matrixA,
+                                     std::complex<double> *matrixB,
+                                     std::complex<double> *matrixC,
+                                     int m,
+                                     int n,
+                                     int k,
+                                     std::complex<double> alpha,
+                                     std::complex<double> beta);
+
+template void
+local_multiply<std::complex<float>>(gpu::mm_handle<std::complex<float>> *ctx,
+                                    std::complex<float> *matrixA,
+                                    std::complex<float> *matrixB,
+                                    std::complex<float> *matrixC,
+                                    int m,
+                                    int n,
+                                    int k,
+                                    std::complex<float> alpha,
+                                    std::complex<float> beta);
+#endif
 } // namespace cosma
