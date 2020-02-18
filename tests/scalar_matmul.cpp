@@ -18,13 +18,16 @@ void test_matmul() {
     int rank;
     MPI_Comm_rank(comm, &rank);
 
-    auto ctx = cosma::make_context<Scalar>();
-
     Strategy strategy(m, n, k, P, divs, dims, step_types);
+
 
     if (rank == 0) {
         std::cout << "Strategy = " << strategy << std::endl;
     }
+
+    cosma::context<Scalar> ctx;
+
+    if (rank < P) ctx = cosma::make_context<Scalar>();
 
     // first run without overlapping communication and computation
     bool no_overlap = test_cosma<Scalar>(strategy, ctx, comm, false, 1e-2);

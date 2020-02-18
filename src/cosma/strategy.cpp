@@ -16,6 +16,10 @@ Strategy::Strategy() = default;
 // move constructor
 Strategy::Strategy(Strategy &&other) = default;
 
+// if the strategy proposed in divs, dims and types is not complete
+// (i.e. does not divide the problem completely), then
+// the strategy will try to use the proposed incomplete strategy
+// as the prefix and will try to complete it here.
 Strategy::Strategy(int mm,
                    int nn,
                    int kk,
@@ -42,12 +46,15 @@ Strategy::Strategy(int mm,
     , overlap_comm_and_comp(overlap)
     , use_busy_waiting(busy_waiting) {
     n_steps = divisors.size();
-    if (divisors.size() == 0) {
-        square_strategy();
+    // if divisors are non-empty,
+    // then take it as a prefix to this strategy
+    bool incomplete_strategy = false;
+    square_strategy(incomplete_strategy);
+    // if a complete strategy is specified,
+    // do not try to modify it by optimizing it
+    if (incomplete_strategy) {
         optimize_strategy();
     }
-    // since the strategy is specified,
-    // do not try to modify it by optimizing it
     check_if_valid();
     compute_min_sizes();
 }
@@ -72,7 +79,11 @@ Strategy::Strategy(int mm,
     , use_busy_waiting(busy_waiting) {
     // default_strategy();
     // spartition_strategy();
-    square_strategy();
+    divisors.clear();
+    step_type = "";
+    split_dimension = "";
+    bool incomplete_strategy;
+    square_strategy(incomplete_strategy);
     // compress_steps();
     n_steps = divisors.size();
     optimize_strategy();
@@ -277,16 +288,35 @@ bool Strategy::divide(std::vector<int> &div_factors,
     return did_parallel;
 }
 
-void Strategy::square_strategy() {
+void Strategy::square_strategy(bool& incomplete_strategy) {
     long long m = this->m;
     long long n = this->n;
     long long k = this->k;
     int P = this->P;
-    split_dimension = "";
-    step_type = "";
-    divisors.clear();
 
     long long needed_memory = initial_memory(m, n, k, P);
+
+    for (int i = 0; i < divisors.size(); ++i) {
+        int div = divisors[i];
+
+        if (step_type[i] == 'p') {
+            if (!split_A(i)) {
+                needed_memory +=
+                    math_utils::divide_and_round_up(m * k * div, P);
+            } else if (!split_B(i)) {
+                needed_memory +=
+                    math_utils::divide_and_round_up(k * n * div, P);
+            } else {
+                needed_memory +=
+                    math_utils::divide_and_round_up(m * n * div, P);
+            }
+            P /= div;
+        }
+
+        m /= divisor_m(i);
+        n /= divisor_n(i);
+        k /= divisor_k(i);
+    }
 
     if (memory_limit < needed_memory) {
         throw_exception(
@@ -295,6 +325,14 @@ void Strategy::square_strategy() {
             " units, but only " + std::to_string(memory_limit) +
             " units are allowed. Either increase the memory limit " +
             "or change the strategy by using more sequential " + "steps.");
+    }
+
+    // if P == 1 at this point, then it means that the complete strategy was already given
+    // at the beginning, so do not try to modify it further.
+    incomplete_strategy = P > 1;
+
+    if (!incomplete_strategy) {
+        return;
     }
 
     while (P > 1) {
@@ -605,6 +643,7 @@ void Strategy::spartition_strategy() {
 void Strategy::throw_exception(const std::string &message) {
     std::cout << "Splitting strategy not well defined.\n";
     std::cout << message << std::endl;
+    std::cout << *this << std::endl;
     throw std::runtime_error(message);
 }
 

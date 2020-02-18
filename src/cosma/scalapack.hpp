@@ -18,6 +18,8 @@ struct block_size {
         rows = desc[4];
         cols = desc[5];
     }
+
+
 };
 
 struct global_matrix_size {

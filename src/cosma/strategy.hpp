@@ -106,7 +106,7 @@ class Strategy {
     // n/divn = k/divk. if there is not enough memory in some step, then a
     // sequential step is performed and new divm, divn and divk are found that
     // correspond to the new subproblem.
-    void square_strategy();
+    void square_strategy(bool& should_optimize);
 
     void spartition_strategy();
 

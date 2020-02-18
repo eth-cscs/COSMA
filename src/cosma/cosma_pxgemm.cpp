@@ -2,7 +2,6 @@
 #include <cosma/multiply.hpp>
 #include <cosma/cosma_pxgemm.hpp>
 #include <cosma/profiler.hpp>
-#include <cosma/scalapack.hpp>
 #include <grid2grid/ranks_reordering.hpp>
 
 #include <grid2grid/transformer.hpp>
@@ -83,13 +82,34 @@ void pxgemm(const char transa,
     // check whether rank grid is row-major or col-major
     auto ordering = scalapack::rank_ordering(ctxt, P);
 
+    std::vector<int> divisors; 
+    std::string step_type = "";
+    std::string dimensions = "";
+
     PE(strategy);
-    Strategy strategy(m, n, k, P);
+    /*
+      If the matrix is very large, then its reshuffling is expensive.
+      For this reason, try to adapt the strategy to the scalapack layout
+      to minimize the need for reshuffling, even if it makes a 
+      suoptimal communication scheme in COSMA.
+      This method will add "prefix" to the strategy, i.e. some initial steps
+      that COSMA should start with and then continue with finding 
+      the communication-optimal strategy.
+    */
+    adapt_strategy_to_block_cyclic_grid(divisors, dimensions, step_type,
+                                        m, n, k, P,
+                                        mat_dim_a, mat_dim_b, mat_dim_c,
+                                        b_dim_a, b_dim_b, b_dim_c,
+                                        ia, ja, ib, jb, ic, jc,
+                                        trans_a, trans_b,
+                                        procrows, proccols
+                                        );
+    Strategy strategy(m, n, k, P, divisors, dimensions, step_type);
     // strategy.overlap_comm_and_comp = true;
     PL();
+
 #ifdef DEBUG
     if (rank == 0) {
-        std::cout << strategy << std::endl;
         std::cout << "m = " << m << ", n = " << n << ", k = " << k << std::endl;
         std::cout << "A: bm = " << b_dim_a.rows << ", " << b_dim_a.cols << std::endl;
         std::cout << "B: bm = " << b_dim_b.rows << ", " << b_dim_b.cols << std::endl;
@@ -99,6 +119,7 @@ void pxgemm(const char transa,
         std::cout << "leading: " << lld_a << ", " << lld_b << ", " << lld_c << std::endl;
         std::cout << "rank grid = " << procrows << ", " << proccols << std::endl;
         std::cout << "alpha = " << alpha << ", beta = " << beta << std::endl;
+        std::cout << strategy << std::endl;
     }
 #endif
 
@@ -272,8 +293,178 @@ void pxgemm(const char transa,
         MPI_Comm_free(&reordered_comm);
     }
     PL();
+}
+
+// returns A, B or C, depending on which flag was set to true.
+// used to minimize the number of if-else statements in adapt_strategy
+template <typename T>
+T& one_of(T &A,
+         T &B,
+         T &C,
+         bool first,
+         bool second,
+         bool third) {
+    if (first) return A;
+    if (second) return B;
+    return C;
+}
+
+// returns the largest of (first, second, third) and sets the corresponding
+// boolean flag of the largest element to true.
+// used to minimize the number of if-else statements in adapt_strategy
+template <typename T>
+T which_is_largest(T&& first, T&& second, T&& third,
+                      bool& first_largest, bool& second_largest, bool& third_largest) {
+    T largest = std::max(std::max(first, second), third);
+    first_largest = false;
+    second_largest = false;
+    third_largest = false;
+    if (largest == first) {
+        first_largest = true;
+        return std::forward<T>(first);
+    }
+    if (largest == second) {
+        second_largest = true;
+        return std::forward<T>(second);
+    }
+    if (largest == third) {
+        third_largest = true;
+        return std::forward<T>(third);
+    }
+    return T{};
+}
+
+void adapt_strategy_to_block_cyclic_grid(// these will contain the suggested strategy prefix
+                                         std::vector<int>& divisors, 
+                                         std::string& dimensions,
+                                         std::string& step_type,
+                                         // multiplication problem size
+                                         int m, int n, int k, int P,
+                                         // global matrix dimensions
+                                         scalapack::global_matrix_size& mat_dim_a,
+                                         scalapack::global_matrix_size& mat_dim_b,
+                                         scalapack::global_matrix_size& mat_dim_c,
+                                         // block sizes
+                                         scalapack::block_size& b_dim_a,
+                                         scalapack::block_size& b_dim_b,
+                                         scalapack::block_size& b_dim_c,
+                                         // (i, j) denoting the submatrix coordinates
+                                         int ia, int ja,
+                                         int ib, int jb,
+                                         int ic, int jc,
+                                         // transpose flags
+                                         char trans_a, char trans_b,
+                                         // processor grid
+                                         int procrows, int proccols
+                                         ) {
+    // If the matrix is very large, then its reshuffling is expensive.
+    // For this reason, try to adapt the strategy to the scalapack layout
+    // to minimize the need for reshuffling, even if it makes a 
+    // suoptimal communication scheme in COSMA.
+    // Here, we only do this optimization if the scalapack grid
+    // fills up the matrix completely (everything is perfectly divisible).
+    // Since there are 3 matrices, we only focus on the largest one.
+    bool first = false;
+    bool second = false;
+    bool third = false;
+
+    // sumatrix size to multiply
+    int a_subm = trans_a == 'N' ? m : k;
+    int a_subn = trans_a == 'N' ? k : m;
+
+    int b_subm = trans_b == 'N' ? k : n;
+    int b_subn = trans_b == 'N' ? n : k;
+
+    int c_subm = m;
+    int c_subn = n;
+
+    long long largest_matrix_local_size = 
+        which_is_largest(1LL * m * k, 
+                         1LL * k * n, 
+                         1LL * m * n, 
+                         first,
+                         second,
+                         third) / P;
+
+    // We only apply this optimization if the matrix is large enough,
+    // because adapting the strategy to the given initial grid
+    // might result in a communication-suboptimal strategy.
+    // However, when the reshuffling cost is too high, then it might be beneficial
+    // to make COSMA use a communication-suboptimal strategy
+    // to reduce the overall time.
+    if (largest_matrix_local_size > 1e8) {
+        auto b_dim = one_of(b_dim_a, b_dim_b, b_dim_c, first, second, third);
+        auto mat_dim = one_of(mat_dim_a, mat_dim_b, mat_dim_c, first, second, third);
+        auto subm = one_of(a_subm, b_subm, c_subm, first, second, third);
+        auto subn = one_of(a_subn, b_subn, c_subn, first, second, third);
+        auto i = one_of(ia, ib, ic, first, second, third);
+        auto j = one_of(ja, jb, jc, first, second, third);
+
+        // The whole matrix should take part in the multiplication,
+        // the blocks sizes should perfectly divide the matrix
+        // and processor grid must perfectly cover the matrix blocks grid.
+        if ((i == 1 && j == 1)  // no submatrix
+            && (subm == mat_dim.rows && subn == mat_dim.cols) // no submatrix
+            && (mat_dim.rows % b_dim.rows == 0) // blocks perfectly divide the matrix
+            && (mat_dim.cols % b_dim.cols == 0)  // blocks perfectly divide the matrix
+            && (mat_dim.rows / b_dim.rows % procrows == 0)
+            && (mat_dim.cols / b_dim.cols % proccols == 0)) // processor grid divides the matrix blocks grid
+        {
+            int divisor_rows = mat_dim.rows / b_dim.rows / procrows;
+            int divisor_cols = mat_dim.cols / b_dim.cols / proccols;
+
+            step_type += "ss";
+            divisors.push_back(divisor_rows);
+            divisors.push_back(divisor_cols);
+
+            if (first) {
+                dimensions += "mk";
+                // check if the third dimension, which was not split (in this case n)
+                // is equal to one of already split dimension.
+                // In case it is equal, split it with the same factor.
+                if (n == m) {
+                    dimensions += "n";
+                    divisors.push_back(divisor_rows);
+                    step_type += "s";
+                } else if (n == k) {
+                    dimensions += "n";
+                    divisors.push_back(divisor_cols);
+                    step_type += "s";
+                }
+            } else if (second) {
+                dimensions += "kn";
+                // check if the third dimension, which was not split (in this case m)
+                // is equal to one of already split dimension.
+                // In case it is equal, split it with the same factor.
+                if (m == k) {
+                    dimensions += "m";
+                    divisors.push_back(divisor_rows);
+                    step_type += "s";
+                } else if (m == n) {
+                    dimensions += "m";
+                    divisors.push_back(divisor_cols);
+                    step_type += "s";
+                }
+            } else {
+                dimensions += "mn";
+                // check if the third dimension, which was not split (in this case k)
+                // is equal to one of already split dimension.
+                // In case it is equal, split it with the same factor.
+                if (k == m) {
+                    dimensions += "k";
+                    divisors.push_back(divisor_rows);
+                    step_type += "s";
+                } else if (k == n) {
+                    dimensions += "k";
+                    divisors.push_back(divisor_cols);
+                    step_type += "s";
+                }
+            }
+        }
+    }
 
 }
+
 
 // explicit instantiation for pxgemm
 template void pxgemm<double>(const char trans_a,
