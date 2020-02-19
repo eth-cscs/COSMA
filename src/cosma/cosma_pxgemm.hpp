@@ -60,6 +60,7 @@ void adapt_strategy_to_block_cyclic_grid(// these will contain the suggested str
                                          // transpose flags
                                          char transa, char transb,
                                          // processor grid
-                                         int procrows, int proccols
+                                         int procrows, int proccols,
+                                         char order
                                          );
 } // namespace cosma

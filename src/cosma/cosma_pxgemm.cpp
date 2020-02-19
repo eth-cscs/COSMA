@@ -81,8 +81,10 @@ void pxgemm(const char transa,
 
     // check whether rank grid is row-major or col-major
     auto ordering = scalapack::rank_ordering(ctxt, P);
+    char grid_order = 
+        ordering == grid2grid::scalapack::ordering::column_major ? 'C' : 'R';
 
-    std::vector<int> divisors; 
+    std::vector<int> divisors;
     std::string step_type = "";
     std::string dimensions = "";
 
@@ -102,11 +104,14 @@ void pxgemm(const char transa,
                                         b_dim_a, b_dim_b, b_dim_c,
                                         ia, ja, ib, jb, ic, jc,
                                         trans_a, trans_b,
-                                        procrows, proccols
+                                        procrows, proccols,
+                                        grid_order
                                         );
     Strategy strategy(m, n, k, P, divisors, dimensions, step_type);
     // strategy.overlap_comm_and_comp = true;
     PL();
+    if (rank == 0)
+    std::cout << strategy << std::endl;
 
 #ifdef DEBUG
     if (rank == 0) {
@@ -334,6 +339,22 @@ T which_is_largest(T&& first, T&& second, T&& third,
     return T{};
 }
 
+char get_matrix_dimension(bool matrix_A, bool matrix_B, bool matrix_C,
+                                 char trans_a, char trans_b,
+                                 int index) {
+    std::string dimensions = "";
+    if (matrix_A) {
+        // if transposed
+        dimensions = trans_a != 'N' ? "km" : "mk";
+    } else if (matrix_B) {
+        dimensions = trans_b != 'N' ? "kn" : "nk";
+    } else {
+        dimensions = "mn";
+    }
+
+    return dimensions[index];
+}
+
 void adapt_strategy_to_block_cyclic_grid(// these will contain the suggested strategy prefix
                                          std::vector<int>& divisors, 
                                          std::string& dimensions,
@@ -355,7 +376,8 @@ void adapt_strategy_to_block_cyclic_grid(// these will contain the suggested str
                                          // transpose flags
                                          char trans_a, char trans_b,
                                          // processor grid
-                                         int procrows, int proccols
+                                         int procrows, int proccols,
+                                         char order
                                          ) {
     // If the matrix is very large, then its reshuffling is expensive.
     // For this reason, try to adapt the strategy to the scalapack layout
@@ -413,58 +435,60 @@ void adapt_strategy_to_block_cyclic_grid(// these will contain the suggested str
             int divisor_rows = mat_dim.rows / b_dim.rows / procrows;
             int divisor_cols = mat_dim.cols / b_dim.cols / proccols;
 
-            step_type += "ss";
-            divisors.push_back(divisor_rows);
-            divisors.push_back(divisor_cols);
+            // adding sequential steps
+            if (divisor_rows > 1) {
+                step_type += "s";
+                divisors.push_back(divisor_rows);
+                dimensions += get_matrix_dimension(first, second, third,
+                                                   trans_a, trans_b,
+                                                   0); // 0 means rows
+            }
 
-            if (first) {
-                dimensions += "mk";
-                // check if the third dimension, which was not split (in this case n)
-                // is equal to one of already split dimension.
-                // In case it is equal, split it with the same factor.
-                if (n == m) {
-                    dimensions += "n";
-                    divisors.push_back(divisor_rows);
-                    step_type += "s";
-                } else if (n == k) {
-                    dimensions += "n";
-                    divisors.push_back(divisor_cols);
-                    step_type += "s";
+            if (divisor_cols > 1) {
+                step_type += "s";
+                divisors.push_back(divisor_cols);
+                dimensions += get_matrix_dimension(first, second, third,
+                                                   trans_a, trans_b,
+                                                   1); // 1 means columns
+            }
+
+            // adding parallel steps
+            if (order == 'R') {
+                // first add rows split and then cols split if applicable
+                if (procrows > 1) {
+                    step_type += "p";
+                    divisors.push_back(procrows);
+                    dimensions += get_matrix_dimension(first, second, third,
+                                                       trans_a, trans_b,
+                                                       0); // 1 means columns
                 }
-            } else if (second) {
-                dimensions += "kn";
-                // check if the third dimension, which was not split (in this case m)
-                // is equal to one of already split dimension.
-                // In case it is equal, split it with the same factor.
-                if (m == k) {
-                    dimensions += "m";
-                    divisors.push_back(divisor_rows);
-                    step_type += "s";
-                } else if (m == n) {
-                    dimensions += "m";
-                    divisors.push_back(divisor_cols);
-                    step_type += "s";
+                if (proccols > 1) {
+                    step_type += "p";
+                    divisors.push_back(proccols);
+                    dimensions += get_matrix_dimension(first, second, third,
+                                                       trans_a, trans_b,
+                                                       1); // 1 means columns
                 }
             } else {
-                dimensions += "mn";
-                // check if the third dimension, which was not split (in this case k)
-                // is equal to one of already split dimension.
-                // In case it is equal, split it with the same factor.
-                if (k == m) {
-                    dimensions += "k";
-                    divisors.push_back(divisor_rows);
-                    step_type += "s";
-                } else if (k == n) {
-                    dimensions += "k";
-                    divisors.push_back(divisor_cols);
-                    step_type += "s";
+                // first add cols split and then rows split if applicable
+                if (proccols > 1) {
+                    step_type += "p";
+                    divisors.push_back(proccols);
+                    dimensions += get_matrix_dimension(first, second, third,
+                                                       trans_a, trans_b,
+                                                       1); // 1 means columns
+                }
+                if (procrows > 1) {
+                    step_type += "p";
+                    divisors.push_back(procrows);
+                    dimensions += get_matrix_dimension(first, second, third,
+                                                       trans_a, trans_b,
+                                                       0); // 1 means columns
                 }
             }
         }
     }
-
 }
-
 
 // explicit instantiation for pxgemm
 template void pxgemm<double>(const char trans_a,
