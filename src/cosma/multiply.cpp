@@ -282,9 +282,11 @@ void multiply(cosma_context<Scalar> *ctx,
     // deallocate buffers used for communication
     // since its a stack allocator, we deallocate
     // in the opposite order than when we allocated
+    PE(preprocessing_allocation);
     matrixC.free_communication_buffers();
     matrixB.free_communication_buffers();
     matrixA.free_communication_buffers();
+    PL();
 
     if (cosma_comm.rank() == 0) {
         PP();

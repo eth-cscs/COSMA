@@ -331,8 +331,6 @@ void benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
     std::vector<T> c_scalapack(size_c);
 
     for (int i = 0; i < n_rep; ++i) {
-        // clears the profiler
-        PC();
         // refill the matrices with random data to avoid
         // reusing the cache in subsequent iterations
         fill_randomly(a);

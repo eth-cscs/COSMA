@@ -170,11 +170,14 @@ void reduce(MPI_Comm comm,
 
     std::vector<int> recvcnts(div);
 
+    bool same_size = true;
     int index = 0;
     // go through the communication ring
     for (int i = 0; i < div; ++i) {
         int target = P.locate_in_interval(div, i, off);
         recvcnts[i] = c_total_current[target];
+
+        same_size = same_size && recvcnts[i] == recvcnts[0];
 
         if (n_blocks > 1) {
             for (int block = 0; block < n_blocks; ++block) {
@@ -194,12 +197,22 @@ void reduce(MPI_Comm comm,
 
     auto mpi_type = mpi_mapper<Scalar>::getType();
     PE(multiply_communication_reduce);
-    MPI_Reduce_scatter(send_pointer,
-                       receive_pointer,
-                       recvcnts.data(),
-                       mpi_type,
-                       MPI_SUM,
-                       comm);
+
+    if (same_size) {
+        MPI_Reduce_scatter_block(send_pointer,
+                           receive_pointer,
+                           recvcnts[0],
+                           mpi_type,
+                           MPI_SUM,
+                           comm);
+    } else {
+        MPI_Reduce_scatter(send_pointer,
+                           receive_pointer,
+                           recvcnts.data(),
+                           mpi_type,
+                           MPI_SUM,
+                           comm);
+    }
     PL();
 
     PE(multiply_communication_other);

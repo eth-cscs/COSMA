@@ -30,6 +30,10 @@ void pxgemm(const char transa,
            const int ic,
            const int jc,
            const int *descc) {
+    // clear the profiler
+    PC();
+    // start profiling
+    PE(init);
     char trans_a = std::toupper(transa);
     char trans_b = std::toupper(transb);
 
@@ -87,6 +91,7 @@ void pxgemm(const char transa,
     std::vector<int> divisors;
     std::string step_type = "";
     std::string dimensions = "";
+    PL();
 
     PE(strategy);
     /*
@@ -97,7 +102,7 @@ void pxgemm(const char transa,
       This method will add "prefix" to the strategy, i.e. some initial steps
       that COSMA should start with and then continue with finding 
       the communication-optimal strategy.
-    */
+      */
     adapt_strategy_to_block_cyclic_grid(divisors, dimensions, step_type,
                                         m, n, k, P,
                                         mat_dim_a, mat_dim_b, mat_dim_c,
@@ -107,10 +112,12 @@ void pxgemm(const char transa,
                                         procrows, proccols,
                                         grid_order
                                         );
+
     Strategy strategy(m, n, k, P, divisors, dimensions, step_type);
     // strategy.overlap_comm_and_comp = true;
     PL();
 
+    PE(init);
 #ifdef DEBUG
     if (rank == 0) {
         std::cout << "m = " << m << ", n = " << n << ", k = " << k << std::endl;
@@ -123,9 +130,11 @@ void pxgemm(const char transa,
         std::cout << "rank grid = " << procrows << ", " << proccols << std::endl;
         std::cout << "alpha = " << alpha << ", beta = " << beta << std::endl;
         std::cout << strategy << std::endl;
+        std::cout << "=================================================" << std::endl;
     }
 #endif
 
+    PL();
     // create COSMA mappers
     Mapper mapper_a('A', strategy, rank);
     Mapper mapper_b('B', strategy, rank);
