@@ -15,6 +15,7 @@ cosma::memory_pool<T>::memory_pool(size_t capacity) {
 
 template <typename T>
 cosma::memory_pool<T>::~memory_pool() {
+    this->unpin_all();
 }
 
 template <typename T>
@@ -47,6 +48,9 @@ void cosma::memory_pool<T>::free_buffer(T* ptr, size_t size) {
 
 template <typename T>
 void cosma::memory_pool<T>::resize(size_t capacity) {
+    this->unpin_all();
+    resized = true;
+    already_pinned = false;
     pool_.resize(capacity);
     pool_size_ = capacity;
     pool_capacity_ = capacity;
@@ -56,6 +60,9 @@ template <typename T>
 void cosma::memory_pool<T>::reset() {
     pool_size_ = 0;
     n_buffers_ = 0;
+    this->unpin_all();
+    resized = false;
+    already_pinned = false;
 }
 
 template <typename T>
@@ -78,6 +85,22 @@ void cosma::memory_pool<T>::reserve(size_t size) {
     if (size > pool_capacity_) {
         pool_.reserve(1.2 * (pool_capacity_ + size));
     }
+}
+
+template <typename T>
+void cosma::memory_pool<T>::pin(T* ptr, std::size_t size) {
+#ifdef COSMA_HAVE_GPU
+    if (!already_pinned) {
+        pinned_buffers_list.add(ptr, size);
+    }
+#endif
+}
+
+template <typename T>
+void cosma::memory_pool<T>::unpin_all() {
+#ifdef COSMA_HAVE_GPU
+    pinned_buffers_list.clear();
+#endif
 }
 
 template class cosma::memory_pool<double>;

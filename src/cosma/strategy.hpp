@@ -15,13 +15,13 @@ namespace cosma {
 class Strategy {
   public:
     // matrix dimensions
-    int m;
-    int n;
-    int k;
+    int m = 0;
+    int n = 0;
+    int k = 0;
     // number of processors
-    size_t P;
+    size_t P = 0;
 
-    long long memory_limit;
+    long long memory_limit = 0;
 
     // minimum problem size per rank
     // the total number of ranks will be reduced
@@ -31,47 +31,47 @@ class Strategy {
 
     // the actual minimum problem size
     // that is induced by given strategy
-    int min_m;
-    int min_n;
-    int min_k;
+    int min_m = 0;
+    int min_n = 0;
+    int min_k = 0;
 
     // beta parameter of gemm
     double beta = 0.0;
     // stores the divisor in each step of the algorithm
-    std::vector<int> divisors;
+    std::vector<int> divisors = {};
     // returns m, n or k character depending on
     // which dimension was split in each step
     std::string split_dimension = "";
     // describes whether a sequential step (s) or a parallel step (p) is used in
     // each step
     std::string step_type = "";
-    // number of steps of the algorithm
-    size_t n_steps = 0;
     // if true, MPI will try to relabel ranks such that
     // the ranks which communicate are physically close to each other
-    bool topology;
+    bool topology = false;
     // if true, the communication and computation will be overlapped
     bool overlap_comm_and_comp = false;
     // if true, uses busy waiting in the thread performing MPI communication
     // otherwise, uses polling to query if the communication request has
     // completed
     bool use_busy_waiting = true;
-    long long memory_used;
+    long long memory_used = 0;
     int n_parallel_steps = 0;
     int n_sequential_steps = 0;
 
-    int n_parallel_steps_before_gemm_a;
-    int n_parallel_steps_before_gemm_b;
-    int n_parallel_steps_before_gemm_c;
+    int n_parallel_steps_before_gemm_a = 0;
+    int n_parallel_steps_before_gemm_b = 0;
+    int n_parallel_steps_before_gemm_c = 0;
 
     static void disable_optimization();
 
     // constructors
     Strategy();
     // copy constructor
-    // Strategy(Strategy &other);
-    // move constructor
-    Strategy(Strategy &&other);
+    Strategy(Strategy &other);
+    Strategy(const Strategy &other);
+
+    // Strategy& operator=(const Strategy& other) = default;
+    // Strategy& operator=(Strategy& other) = default;
 
     Strategy(int mm,
              int nn,
@@ -95,6 +95,9 @@ class Strategy {
              bool top = false,
              bool overlap = false,
              bool busy_waiting = true);
+
+    // number of steps of the algorithm
+    size_t n_steps() const;
 
     // default strategy dividing always the largest dimension in that step
     // if there is enough memory uses a parallel step, if not uses a sequential
@@ -150,6 +153,9 @@ class Strategy {
     void compress_steps();
 
     bool should_overlap_comm_and_comp(int step) const;
+
+    bool operator==(const Strategy &other) const;
+    bool operator!=(const Strategy &other) const;
 
     friend std::ostream &operator<<(std::ostream &os, const Strategy &other);
 

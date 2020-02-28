@@ -37,7 +37,7 @@ void fill_matrix(std::complex<T>* ptr, size_t size) {
 }
 
 template <typename Scalar>
-void run(cosma::Strategy &strategy,
+void run(const cosma::Strategy &strategy,
          std::string scalar_str) {
     using seconds_t = std::chrono::duration<double>;
     using clock_t = std::chrono::high_resolution_clock;
@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
 
     MPI_Init(&argc, &argv);
 
-    cosma::Strategy strategy = parse_strategy(argc, argv);
+    const cosma::Strategy& strategy = parse_strategy(argc, argv);
 
     auto cxt_f = cosma::make_context<float>();
     run<float>(strategy, "Float");

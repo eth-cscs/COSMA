@@ -37,6 +37,8 @@ communicator::communicator(const Strategy *strategy,
                        &full_comm_group_);
         MPI_Comm_create_group(comm, full_comm_group_, 0, &full_comm_);
 
+        std::cout << "reduced comm in communicator = " << full_comm_ << std::endl;
+
         MPI_Group_free(&group);
     }
 
@@ -51,9 +53,9 @@ communicator::communicator(const Strategy *strategy,
     create_communicators(full_comm_);
     // split_communicators(full_comm_);
 
-    step_to_comm_index_ = std::vector<int>(strategy_->n_steps);
+    step_to_comm_index_ = std::vector<int>(strategy_->n_steps());
     int idx = 0;
-    for (int i = 0; i < strategy_->n_steps; ++i) {
+    for (int i = 0; i < strategy_->n_steps(); ++i) {
         step_to_comm_index_[i] = idx;
         if (strategy_->parallel_step(i))
             idx++;
@@ -78,7 +80,7 @@ void communicator::get_topology_edges(std::vector<int> &dest,
     int n = strategy_->n;
     int k = strategy_->k;
     Interval P(0, strategy_->P - 1);
-    int n_steps = strategy_->n_steps;
+    int n_steps = strategy_->n_steps();
 
     for (int step = 0; step < n_steps; ++step) {
         m /= strategy_->divisor_m(step);
@@ -151,6 +153,10 @@ void communicator::barrier(int step) {
     MPI_Barrier(comm_ring_[comm_index]);
 }
 
+MPI_Comm communicator::full_comm() {
+    return full_comm_;
+}
+
 MPI_Comm communicator::active_comm(int step) {
     int comm_index = step_to_comm_index_[step];
     return comm_ring_[comm_index];
@@ -206,7 +212,7 @@ void communicator::split_communicators(MPI_Comm comm) {
     Interval P(0, strategy_->P - 1);
     // iterate through all steps and for each parallel
     // step, create a suitable subcommunicator
-    for (int step = 0; step < strategy_->n_steps; ++step) {
+    for (int step = 0; step < strategy_->n_steps(); ++step) {
         if (strategy_->parallel_step(step)) {
             int div = strategy_->divisor(step);
             int partition_idx = P.subinterval_index(div, rank_);
@@ -247,7 +253,7 @@ void communicator::create_communicators(MPI_Comm comm) {
 
     // iterate through all steps and for each parallel
     // step, create a suitable subcommunicator
-    for (int step = 0; step < strategy_->n_steps; ++step) {
+    for (int step = 0; step < strategy_->n_steps(); ++step) {
         if (strategy_->parallel_step(step)) {
             int div = strategy_->divisor(step);
             int partition_idx = P.subinterval_index(div, rank_);

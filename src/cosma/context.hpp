@@ -3,6 +3,9 @@
 #include <memory>
 #include <cosma/memory_pool.hpp>
 #include <cosma/mpi_attribute.hpp>
+#include <cosma/strategy.hpp>
+
+#include <mpi.h>
 
 #ifdef COSMA_HAVE_GPU
 #include <Tiled-MM/tiled_mm.hpp>
@@ -16,6 +19,8 @@ public:
     cosma_context();
     cosma_context(size_t cpu_mem_limit, int streams, int tile_m, int tile_n, int tile_k);
     ~cosma_context();
+
+    void register_state(int rank, const Strategy& strategy);
 
     memory_pool<Scalar>& get_memory_pool();
 #ifdef COSMA_HAVE_GPU
@@ -34,6 +39,8 @@ private:
     // gpu::mm_handle<Scalar> gpu_ctx_;
 #endif
     bool output = false;
+    int prev_rank = -1;
+    Strategy prev_strategy;
 };
 
 template <typename Scalar>
@@ -56,8 +63,8 @@ context<Scalar> make_context(size_t cpu_mem_limit, int streams, int tile_m, int 
 //     for completion of the initialization
 template <typename Scalar>
 global_context<Scalar> get_context_instance() {
-    static cosma_context<Scalar> ctxt;
-    return &ctxt;
+    static context<Scalar> ctxt = make_context<Scalar>();
+    return ctxt.get();
 }
 
 } // namespace cosma

@@ -17,6 +17,7 @@ if(NOT TARGET cosma)
                         strategy.cpp
                         two_sided_communicator.cpp
                         random_generator.hpp
+                        pinned_buffers.cpp
     )
     add_library(cosma STATIC ${cosma_src_files})
     target_include_directories(cosma PUBLIC $<BUILD_INTERFACE:${cosma_SOURCE_DIR}/src>)

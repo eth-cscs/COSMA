@@ -161,13 +161,13 @@ template <typename T>
 void Buffer<T>::compute_n_buckets() {
     if (strategy_->empty()) 
         return ;
-    n_buckets_ = std::vector<int>(strategy_->n_steps);
-    expanded_after_ = std::vector<bool>(strategy_->n_steps);
+    n_buckets_ = std::vector<int>(strategy_->n_steps());
+    expanded_after_ = std::vector<bool>(strategy_->n_steps());
     int prod_n_seq = 1;
 
     bool expanded = false;
 
-    for (int step = strategy_->n_steps - 1; step >= 0; --step) {
+    for (int step = strategy_->n_steps() - 1; step >= 0; --step) {
         // if the current step is sequential and this matrix was split
         // then update the product of all seq steps in
         // which this matrix was split, which represents
@@ -194,7 +194,7 @@ void Buffer<T>::init_first_split_steps() {
     last_first_seq_split_step = -1;
     first_par_extend_step = -1;
 
-    while (step < strategy_->n_steps) {
+    while (step < strategy_->n_steps()) {
         if (strategy_->sequential_step(step) &&
             strategy_->split(label_, step)) {
             // split in seq

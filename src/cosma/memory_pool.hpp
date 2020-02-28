@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <cosma/mpi_allocator.hpp>
+#include <cosma/pinned_buffers.hpp>
 
 namespace cosma {
 template <typename T>
@@ -36,11 +37,21 @@ public:
     size_t size();
     void reserve(size_t size);
 
+    void pin(T* ptr, std::size_t size);
+    void unpin_all();
+
+    // if true, buffers for this strategy are already pinned
+    bool already_pinned = false;
+    bool resized = false;
+
 private:
     mpi_buffer_t pool_;
     size_t pool_size_ = 0;
     size_t pool_capacity_ = 0;
     size_t n_buffers_ = 0;
+#ifdef COSMA_HAVE_GPU
+    pinned_buffers<T> pinned_buffers_list;
+#endif
     bool output = false;
 };
 }

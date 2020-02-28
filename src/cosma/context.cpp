@@ -104,6 +104,7 @@ cosma_context<Scalar>::cosma_context(size_t cpu_mem_limit, int streams, int tile
 
 template <typename Scalar>
 cosma_context<Scalar>::~cosma_context() {
+    memory_pool_.unpin_all();
 #ifdef DEBUG
     if (output) {
         std::cout << "context destroyed" << std::endl;
@@ -126,6 +127,25 @@ void cosma_context<Scalar>::register_to_destroy_at_finalize() {
     // (through attribute destruction function that we provide: delete_fn) in case
     // no context destructor was invoked before MPI_Finalize.
     attr.update_attribute(memory_pool_.get_pool_pointer());
+}
+
+template <typename Scalar>
+void cosma_context<Scalar>::register_state(int rank, const Strategy& strategy) {
+#ifdef COSMA_HAVE_GPU
+    if (memory_pool_.resized 
+                || 
+            (prev_rank >= 0 && strategy != prev_strategy)
+                || 
+            rank != prev_rank) {
+        memory_pool_.unpin_all();
+        memory_pool_.already_pinned = false;
+        memory_pool_.resized = false;
+        prev_rank = rank;
+        prev_strategy = strategy;
+    } else {
+        memory_pool_.already_pinned = true;
+    }
+#endif
 }
 
 template <typename Scalar>

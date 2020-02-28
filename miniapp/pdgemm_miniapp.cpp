@@ -19,7 +19,9 @@ int main(int argc, char **argv) {
     // create the context here, so that
     // it doesn't have to be created later
     // (this is not necessary)
+    std::cout << "first context mentioning" << std::endl;
     auto ctx = cosma::get_context_instance<double>();
+    std::cout << "after first context mentioning" << std::endl;
     if (rank == 0) {
         ctx->turn_on_output();
     }

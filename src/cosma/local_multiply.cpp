@@ -80,7 +80,7 @@ void local_multiply(gpu::mm_handle<Scalar>* gpu_ctx,
                     int k,
                     Scalar alpha,
                     Scalar beta) {
-    bool pin_host_buffers = true;
+    bool pin_host_buffers = false;
     gpu::gemm(*(gpu_ctx), matrixA, matrixB, matrixC, m, n, k, alpha, beta, pin_host_buffers);
 }
 #endif
@@ -102,6 +102,9 @@ void local_multiply(cosma_context<Scalar>* ctx,
 #endif
 
 #ifdef COSMA_HAVE_GPU
+    ctx->get_memory_pool().pin(matrixA, m * k);
+    ctx->get_memory_pool().pin(matrixB, k * n);
+    ctx->get_memory_pool().pin(matrixC, m * n);
     local_multiply(ctx->get_gpu_context(),
                    matrixA, matrixB, matrixC,
                    m, n, k, alpha, beta);

@@ -264,6 +264,9 @@ void multiply(cosma_context<Scalar> *ctx,
     PL();
 
     if (!cosma_comm.is_idle()) {
+        // register strategy in the context
+        ctx->register_state(cosma_comm.rank(), strategy);
+
         multiply(ctx,
                  matrixA,
                  matrixB,
