@@ -50,24 +50,4 @@ void multiply(CosmaMatrix<Scalar> &A,
               MPI_Comm comm,
               Scalar alpha,
               Scalar beta);
-
-template <typename Scalar>
-void multiply(std::unique_ptr<cosma_context<Scalar>> &ctxt,
-              CosmaMatrix<Scalar> &matrixA,
-              CosmaMatrix<Scalar> &matrixB,
-              CosmaMatrix<Scalar> &matrixC,
-              const Strategy &strategy,
-              MPI_Comm comm,
-              Scalar alpha,
-              Scalar beta);
-
-template <typename Scalar>
-void multiply(cosma_context<Scalar> *ctx,
-              CosmaMatrix<Scalar> &matrixA,
-              CosmaMatrix<Scalar> &matrixB,
-              CosmaMatrix<Scalar> &matrixC,
-              const Strategy &strategy,
-              MPI_Comm comm,
-              Scalar alpha,
-              Scalar beta);
 } // namespace cosma

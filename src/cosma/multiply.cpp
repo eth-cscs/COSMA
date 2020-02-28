@@ -186,7 +186,7 @@ void multiply_using_layout(cosma_context<T> *ctx,
  Assumption: we assume that at each step only 1 dimension is split
 */
 
-// using the global singleton context
+// using the context from matrices
 template <typename Scalar>
 void multiply(CosmaMatrix<Scalar> &matrixA,
               CosmaMatrix<Scalar> &matrixB,
@@ -205,19 +205,6 @@ void multiply(CosmaMatrix<Scalar> &matrixA,
              comm,
              alpha,
              beta);
-}
-
-template <typename Scalar>
-void multiply(std::unique_ptr<cosma_context<Scalar>> &ctxt,
-              CosmaMatrix<Scalar> &matrixA,
-              CosmaMatrix<Scalar> &matrixB,
-              CosmaMatrix<Scalar> &matrixC,
-              const Strategy &strategy,
-              MPI_Comm comm,
-              Scalar alpha,
-              Scalar beta) {
-
-    multiply(ctxt.get(), matrixA, matrixB, matrixC, strategy, comm, alpha, beta);
 }
 
 // using the given context
@@ -923,43 +910,6 @@ template void multiply<zdouble_t>(cosma_context<zdouble_t> *ctx,
                                   zdouble_t beta);
 
 template void multiply<zfloat_t>(cosma_context<zfloat_t> *ctx,
-                                 CosmaMatrix<zfloat_t> &A,
-                                 CosmaMatrix<zfloat_t> &B,
-                                 CosmaMatrix<zfloat_t> &C,
-                                 const Strategy &strategy,
-                                 MPI_Comm comm,
-                                 zfloat_t alpha,
-                                 zfloat_t beta);
-
-// Explicit instantiations for short `multiply`
-template void multiply<double>(std::unique_ptr<cosma_context<double>> &ctx,
-                               CosmaMatrix<double> &A,
-                               CosmaMatrix<double> &B,
-                               CosmaMatrix<double> &C,
-                               const Strategy &strategy,
-                               MPI_Comm comm,
-                               double alpha,
-                               double beta);
-
-template void multiply<float>(std::unique_ptr<cosma_context<float>> &ctx,
-                              CosmaMatrix<float> &A,
-                              CosmaMatrix<float> &B,
-                              CosmaMatrix<float> &C,
-                              const Strategy &strategy,
-                              MPI_Comm comm,
-                              float alpha,
-                              float beta);
-
-template void multiply<zdouble_t>(std::unique_ptr<cosma_context<zdouble_t>> &ctx,
-                                  CosmaMatrix<zdouble_t> &A,
-                                  CosmaMatrix<zdouble_t> &B,
-                                  CosmaMatrix<zdouble_t> &C,
-                                  const Strategy &strategy,
-                                  MPI_Comm comm,
-                                  zdouble_t alpha,
-                                  zdouble_t beta);
-
-template void multiply<zfloat_t>(std::unique_ptr<cosma_context<zfloat_t>> &ctx,
                                  CosmaMatrix<zfloat_t> &A,
                                  CosmaMatrix<zfloat_t> &B,
                                  CosmaMatrix<zfloat_t> &C,

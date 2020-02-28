@@ -21,8 +21,6 @@ Strategy::Strategy(const Strategy& other) = default;
 
 // == operator
 bool Strategy::operator==(const Strategy &other) const {
-    if (this->empty()) return other.empty();
-    if (other.empty()) return this->empty();
     return 
         this->m == other.m
         &&
@@ -33,8 +31,6 @@ bool Strategy::operator==(const Strategy &other) const {
         this->P == other.P
         &&
         this->memory_limit == other.memory_limit
-        &&
-        this->min_dim_size == other.min_dim_size
         &&
         this->beta == other.beta
         &&

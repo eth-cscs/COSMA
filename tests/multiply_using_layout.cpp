@@ -97,7 +97,7 @@ TEST(MultiplyUsingLayout, ) {
         // throughout the whole execution of multiply_using_layout
         cosma::multiply_using_layout(A_grid, B_grid, C_grid, alpha, beta, comm);
 
-        cosma::multiply(ctx, A, B, C_act, strategy, comm, alpha, beta);
+        cosma::multiply(A, B, C_act, strategy, comm, alpha, beta);
 
         // ----- Checks for data integrity
 
