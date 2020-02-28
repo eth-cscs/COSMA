@@ -37,8 +37,6 @@ communicator::communicator(const Strategy *strategy,
                        &full_comm_group_);
         MPI_Comm_create_group(comm, full_comm_group_, 0, &full_comm_);
 
-        std::cout << "reduced comm in communicator = " << full_comm_ << std::endl;
-
         MPI_Group_free(&group);
     }
 

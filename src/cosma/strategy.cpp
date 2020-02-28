@@ -110,7 +110,6 @@ Strategy::Strategy(int mm,
     , topology(top)
     , overlap_comm_and_comp(overlap)
     , use_busy_waiting(busy_waiting) {
-    std::cout << "creating strategy = " << n_steps() << std::endl;
     // default_strategy();
     // spartition_strategy();
     divisors.clear();
@@ -122,7 +121,6 @@ Strategy::Strategy(int mm,
     optimize_strategy();
     check_if_valid();
     compute_min_sizes();
-    std::cout << "created strategy = " << n_steps() << std::endl;
 }
 
 long long
@@ -151,8 +149,6 @@ void Strategy::default_strategy() {
             " units are allowed. Either increase the memory limit " +
             "or change the strategy by using more sequential " + "steps.");
     }
-
-    std::cout << "Default strategy" << std::endl;
 
     for (int i = 0; i < factors.size(); ++i) {
         bool did_parallel = false;
@@ -1126,13 +1122,10 @@ int Strategy::n_cols(char label) const {
 std::ostream &operator<<(std::ostream &os, const Strategy &other) {
     os << "Matrix dimensions (m, n, k) = (" << other.m << ", " << other.n
        << ", " << other.k << ")\n";
-    std::cout << "m n k" << std::endl;
     os << "Number of processors: " << other.P << "\n";
-    std::cout << "P" << std::endl;
     if (other.topology) {
         os << "Communication-aware topology turned on.\n";
     }
-    std::cout << "topology" << std::endl;
     if (other.overlap_comm_and_comp) {
         os << "Overlap of communication and computation: ON.\n";
         if (other.use_busy_waiting) {
@@ -1145,7 +1138,6 @@ std::ostream &operator<<(std::ostream &os, const Strategy &other) {
     } else {
         os << "Overlap of communication and computation: OFF.\n";
     }
-    std::cout << "n_steps = " << other.n_steps() << std::endl;
     os << "Divisions strategy: \n";
     for (size_t i = 0; i < other.n_steps(); ++i) {
         if (other.step_type[i] == 'p') {

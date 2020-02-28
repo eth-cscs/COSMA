@@ -76,6 +76,7 @@ gpu::mm_handle<Scalar>* cosma_context<Scalar>::get_gpu_context() {
 #endif
 template <typename Scalar>
 cosma_context<Scalar>::cosma_context() {
+    std::cout << "context created" << std::endl;
 #ifdef COSMA_HAVE_GPU
     if (env_var_defined("COSMA_GPU_TILE_M") || 
         env_var_defined("COSMA_GPU_TILE_N") || 
@@ -104,6 +105,7 @@ cosma_context<Scalar>::cosma_context(size_t cpu_mem_limit, int streams, int tile
 
 template <typename Scalar>
 cosma_context<Scalar>::~cosma_context() {
+    std::cout << "context destroyed" << std::endl;
     memory_pool_.unpin_all();
 #ifdef DEBUG
     if (output) {
@@ -115,18 +117,6 @@ cosma_context<Scalar>::~cosma_context() {
 template <typename Scalar>
 memory_pool<Scalar>& cosma_context<Scalar>::get_memory_pool() {
     return memory_pool_;
-}
-
-
-template <typename Scalar>
-void cosma_context<Scalar>::register_to_destroy_at_finalize() {
-    // This function is called with each multiplication, because that's when 
-    // the memory pool might have been resized. This function updates the value of 
-    // the MPI buffer pointer (from the memory pool) through an attribute associated 
-    // with MPI_COMM_SELF, so that MPI_Finalize can deallocate the MPI buffer 
-    // (through attribute destruction function that we provide: delete_fn) in case
-    // no context destructor was invoked before MPI_Finalize.
-    attr.update_attribute(memory_pool_.get_pool_pointer());
 }
 
 template <typename Scalar>

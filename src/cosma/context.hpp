@@ -2,7 +2,6 @@
 #include <iostream>
 #include <memory>
 #include <cosma/memory_pool.hpp>
-#include <cosma/mpi_attribute.hpp>
 #include <cosma/strategy.hpp>
 
 #include <mpi.h>
@@ -27,13 +26,10 @@ public:
     gpu::mm_handle<Scalar>* get_gpu_context();
 #endif
 
-    void register_to_destroy_at_finalize();
-
     void turn_on_output();
 
 private:
     memory_pool<Scalar> memory_pool_;
-    mpi_attribute attr;
 #ifdef COSMA_HAVE_GPU
     std::unique_ptr<gpu::mm_handle<Scalar>> gpu_ctx_;
     // gpu::mm_handle<Scalar> gpu_ctx_;

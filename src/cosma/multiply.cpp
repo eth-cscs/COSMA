@@ -250,9 +250,6 @@ void multiply(cosma_context<Scalar> *ctx,
     matrixB.initialize();
     matrixC.initialize();
 
-    // register context to be deleted at MPI_Finalize
-    ctx->register_to_destroy_at_finalize();
-
     // check if all the local matrices belong to
     // the current rank
     assert(matrixA.rank() == matrixB.rank());

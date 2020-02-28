@@ -11,7 +11,6 @@ if(NOT TARGET cosma)
                         math_utils.cpp
                         matrix.cpp
                         memory_pool.cpp
-                        mpi_attribute.cpp
                         multiply.cpp
                         one_sided_communicator.cpp
                         strategy.cpp

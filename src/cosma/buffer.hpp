@@ -2,7 +2,6 @@
 #include <cosma/interval.hpp>
 #include <cosma/layout.hpp>
 #include <cosma/mapper.hpp>
-#include <cosma/mpi_allocator.hpp>
 #include <cosma/strategy.hpp>
 #include <cosma/context.hpp>
 
@@ -34,7 +33,6 @@ template <typename Scalar>
 class Buffer {
 public:
     using scalar_t = Scalar;
-    // using mpi_buffer_t = std::vector<scalar_t, mpi_allocator<scalar_t>>;
 
     // Buffer() = default;
     Buffer();
