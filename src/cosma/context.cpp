@@ -63,7 +63,6 @@ cosma_context<Scalar>::cosma_context() {
                                          get_gpu_tile_size_n(),
                                          get_gpu_tile_size_k());
 #endif
-    std::cout << "created the context" << std::endl;
 }
 
 template <typename Scalar>
@@ -80,7 +79,6 @@ cosma_context<Scalar>::cosma_context(size_t cpu_mem_limit, int streams, int tile
 
 template <typename Scalar>
 cosma_context<Scalar>::~cosma_context() {
-    std::cout << "context destroyed" << std::endl;
     memory_pool_.unpin_all();
 #ifdef DEBUG
     if (output) {
@@ -96,8 +94,6 @@ memory_pool<Scalar>& cosma_context<Scalar>::get_memory_pool() {
 
 template <typename Scalar>
 void cosma_context<Scalar>::register_state(int rank, const Strategy& strategy) {
-    std::cout << "rank = " << rank << std::endl;
-    std::cout << strategy << std::endl;
 #ifdef COSMA_HAVE_GPU
     if (memory_pool_.resized 
                 || 
@@ -105,14 +101,12 @@ void cosma_context<Scalar>::register_state(int rank, const Strategy& strategy) {
                 ||
             strategy != prev_strategy
         ) {
-        std::cout << "not reusing" << std::endl;
         memory_pool_.unpin_all();
         memory_pool_.already_pinned = false;
         memory_pool_.resized = false;
         prev_rank = rank;
         prev_strategy = strategy;
     } else {
-        std::cout << "reusing" << std::endl;
         memory_pool_.already_pinned = true;
     }
 #endif

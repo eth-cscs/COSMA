@@ -14,6 +14,17 @@ void local_multiply(cosma_context<Scalar>* ctx,
                     Scalar alpha,
                     Scalar beta);
 
+template <typename Scalar>
+void local_multiply_cpu(
+                    Scalar *a,
+                    Scalar *b,
+                    Scalar *c,
+                    int m,
+                    int n,
+                    int k,
+                    Scalar alpha,
+                    Scalar beta);
+
 template <typename scalar>
 void local_multiply(context<scalar>& ctx,
                     scalar *a,

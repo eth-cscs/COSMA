@@ -440,6 +440,9 @@ void sequential(cosma_context<Scalar> *ctx,
                      comm,
                      alpha,
                      beta);
+            if (strategy.irregular) {
+                ctx->get_memory_pool().unpin_all();
+            }
         }
         return;
     }
@@ -460,6 +463,9 @@ void sequential(cosma_context<Scalar> *ctx,
                      comm,
                      alpha,
                      beta);
+            if (strategy.irregular) {
+                ctx->get_memory_pool().unpin_all();
+            }
         }
         return;
     }
@@ -473,7 +479,7 @@ void sequential(cosma_context<Scalar> *ctx,
             Interval newk = k.subinterval(strategy.divisor(step), K);
             auto new_beta = beta;
             if (K != 0) {
-                new_beta = 1;
+                new_beta = Scalar{1};
             }
             multiply(ctx,
                      matrixA,
@@ -488,6 +494,9 @@ void sequential(cosma_context<Scalar> *ctx,
                      comm,
                      alpha,
                      new_beta);
+            if (strategy.irregular) {
+                ctx->get_memory_pool().unpin_all();
+            }
         }
         return;
     }

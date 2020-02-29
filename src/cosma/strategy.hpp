@@ -170,6 +170,10 @@ class Strategy {
     int n_rows(char label) const;
     int n_cols(char label) const;
 
+    void check_if_irregular();
+
+    bool irregular = true;
+
   private:
     bool divide(std::vector<int> &div_factors,
                 int &dim_i,

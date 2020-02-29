@@ -86,6 +86,7 @@ Strategy::Strategy(int mm,
     }
     check_if_valid();
     compute_min_sizes();
+    check_if_irregular();
 }
 
 Strategy::Strategy(int mm,
@@ -117,6 +118,7 @@ Strategy::Strategy(int mm,
     optimize_strategy();
     check_if_valid();
     compute_min_sizes();
+    check_if_irregular();
 }
 
 long long
@@ -1113,6 +1115,29 @@ int Strategy::n_cols(char label) const {
         return n;
 
     return -1;
+}
+
+void Strategy::check_if_irregular() {
+    int mm = m;
+    int nn = n;
+    int kk = k;
+    for (int i = 0; i < n_steps(); ++i) {
+        if (mm % divisor_m(i) != 0) {
+            irregular = true;
+            return;
+        }
+        if (nn % divisor_n(i) != 0) {
+            irregular = true;
+            return;
+        }
+        if (kk % divisor_k(i) != 0) {
+            irregular = true;
+            return;
+        }
+        mm /= divisor_m(i);
+        nn /= divisor_n(i);
+        kk /= divisor_k(i);
+    }
 }
 
 std::ostream &operator<<(std::ostream &os, const Strategy &other) {

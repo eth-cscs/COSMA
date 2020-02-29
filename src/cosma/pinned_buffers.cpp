@@ -4,21 +4,33 @@
 // container of pinned buffers
 template <typename T>
 void pinned_buffers<T>::add(T* ptr, std::size_t size) {
-    // if already pinned, check if the same size
     auto elem_iter = list.find(ptr);
+    // if already pinned
     if (elem_iter != list.end()) {
-        if (elem_iter->second != size) {
-            std::runtime_error("pinned_buffers.cpp: requested buffer \
-                                already pinned with a different size.");
+        // check if the requested size is > pinned size
+        // and in that case unpin the ptr
+        if (size > elem_iter->second) {
+            // unpin
+            auto status = gpu::runtime_api::host_unregister((void*) ptr);
+            gpu::check_runtime_status(status);
+
+            // pin with the new size
+            status = gpu::runtime_api::host_register(
+                    (void*) ptr,
+                    size * sizeof(T),
+                    gpu::runtime_api::flag::HostRegisterDefault);
+            gpu::check_runtime_status(status);
+            elem_iter->second = size;
         }
     } else {
+        // if not pinned previously
         // pin the buffer
         auto status = gpu::runtime_api::host_register(
-                ptr,
+                (void*) ptr,
                 size * sizeof(T),
                 gpu::runtime_api::flag::HostRegisterDefault);
         gpu::check_runtime_status(status);
-        list[ptr] = size;
+        list.emplace(ptr, size);
     }
 }
 
@@ -26,7 +38,7 @@ template <typename T>
 void pinned_buffers<T>::clear() {
     for (auto& elem : list) {
         // unpin the buffer
-        auto status = gpu::runtime_api::host_unregister(elem.first);
+        auto status = gpu::runtime_api::host_unregister((void*) elem.first);
         gpu::check_runtime_status(status);
     }
     list.clear();

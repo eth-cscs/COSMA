@@ -248,7 +248,7 @@ bool test_cosma(Strategy &s,
             offsetC += local_size_C;
         }
         // Now compute the result
-        cosma::local_multiply(ctx,
+        cosma::local_multiply_cpu(
                               globA.data(),
                               globB.data(),
                               globCcheck.data(),
