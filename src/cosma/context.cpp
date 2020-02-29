@@ -17,7 +17,7 @@ int get_num_gpu_streams() {
 int get_gpu_tile_size_m() {
     char* var;
     var = getenv ("COSMA_GPU_TILE_M");
-    int tile = 4096;
+    int tile = 5000;
     bool defined = var != nullptr;
     if (defined)
         tile = std::atoi(var);
@@ -27,7 +27,7 @@ int get_gpu_tile_size_m() {
 int get_gpu_tile_size_n() {
     char* var;
     var = getenv ("COSMA_GPU_TILE_N");
-    int tile = 4096;
+    int tile = 5000;
     bool defined = var != nullptr;
     if (defined)
         tile = std::atoi(var);
@@ -37,7 +37,7 @@ int get_gpu_tile_size_n() {
 int get_gpu_tile_size_k() {
     char* var;
     var = getenv ("COSMA_GPU_TILE_K");
-    int tile = 4096;
+    int tile = 5000;
     bool defined = var != nullptr;
     if (defined)
         tile = std::atoi(var);
