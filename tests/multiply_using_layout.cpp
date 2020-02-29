@@ -81,7 +81,7 @@ TEST(MultiplyUsingLayout, ) {
         fill_matrix(C);
 
         // important if beta > 0
-        cosma::CosmaMatrix<scalar_t> C_act('C', strategy, rank);
+        cosma::CosmaMatrix<scalar_t> C_act(ctx, 'C', strategy, rank);
         for (int idx = 0; idx < C_act.matrix_size(); ++idx) {
             C_act.matrix_pointer()[idx] = C.matrix_pointer()[idx];
         }
@@ -97,7 +97,7 @@ TEST(MultiplyUsingLayout, ) {
         // throughout the whole execution of multiply_using_layout
         cosma::multiply_using_layout(A_grid, B_grid, C_grid, alpha, beta, comm);
 
-        cosma::multiply(ctx, A, B, C_act, strategy, comm, alpha, beta);
+        cosma::multiply(A, B, C_act, strategy, comm, alpha, beta);
 
         // ----- Checks for data integrity
 

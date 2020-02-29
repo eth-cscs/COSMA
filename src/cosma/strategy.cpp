@@ -9,12 +9,43 @@ void Strategy::disable_optimization() {
     min_dim_size = 0;
 }
 
+std::size_t Strategy::n_steps() const {
+    return divisors.size();
+}
+
 // constructors
 Strategy::Strategy() = default;
 // copy constructor
-// Strategy::Strategy(Strategy& other) = default;
-// move constructor
-Strategy::Strategy(Strategy &&other) = default;
+Strategy::Strategy(Strategy& other) = default;
+Strategy::Strategy(const Strategy& other) = default;
+
+// == operator
+bool Strategy::operator==(const Strategy &other) const {
+    return 
+        this->m == other.m
+        &&
+        this->n == other.n
+        &&
+        this->k == other.k
+        &&
+        this->P == other.P
+        &&
+        this->memory_limit == other.memory_limit
+        &&
+        this->beta == other.beta
+        &&
+        this->divisors == other.divisors
+        &&
+        this->step_type == other.step_type
+        &&
+        this->split_dimension == other.split_dimension
+        &&
+        this->overlap_comm_and_comp == other.overlap_comm_and_comp;
+}
+
+bool Strategy::operator!=(const Strategy &other) const {
+    return !(*this == other);
+}
 
 // if the strategy proposed in divs, dims and types is not complete
 // (i.e. does not divide the problem completely), then
@@ -41,11 +72,9 @@ Strategy::Strategy(int mm,
     , divisors(divs)
     , split_dimension(dims)
     , step_type(types)
-    , n_steps(divisors.size())
     , topology(top)
     , overlap_comm_and_comp(overlap)
     , use_busy_waiting(busy_waiting) {
-    n_steps = divisors.size();
     // if divisors are non-empty,
     // then take it as a prefix to this strategy
     bool incomplete_strategy = false;
@@ -57,6 +86,7 @@ Strategy::Strategy(int mm,
     }
     check_if_valid();
     compute_min_sizes();
+    check_if_irregular();
 }
 
 Strategy::Strategy(int mm,
@@ -85,10 +115,10 @@ Strategy::Strategy(int mm,
     bool incomplete_strategy;
     square_strategy(incomplete_strategy);
     // compress_steps();
-    n_steps = divisors.size();
     optimize_strategy();
     check_if_valid();
     compute_min_sizes();
+    check_if_irregular();
 }
 
 long long
@@ -117,8 +147,6 @@ void Strategy::default_strategy() {
             " units are allowed. Either increase the memory limit " +
             "or change the strategy by using more sequential " + "steps.");
     }
-
-    std::cout << "Default strategy" << std::endl;
 
     for (int i = 0; i < factors.size(); ++i) {
         bool did_parallel = false;
@@ -700,7 +728,7 @@ int Strategy::divisor_col(char matrix, size_t i) const {
     return 1;
 }
 
-bool Strategy::final_step(size_t i) const { return i == n_steps; }
+bool Strategy::final_step(size_t i) const { return i == n_steps(); }
 
 int Strategy::parallel_steps_before_gemm(char label) const {
     if (label == 'A')
@@ -720,7 +748,7 @@ long long Strategy::required_memory(Strategy &strategy) {
 
     long long initial_size = initial_memory(m, n, k, P);
 
-    for (int step = 0; step < strategy.n_steps; ++step) {
+    for (int step = 0; step < strategy.n_steps(); ++step) {
         int div = strategy.divisor(step);
 
         if (strategy.parallel_step(step)) {
@@ -798,8 +826,6 @@ void Strategy::optimize_strategy() {
     split_dimension = new_split_dimension;
     step_type = new_step_type;
     divisors = new_divisors;
-
-    n_steps = divisors.size();
 }
 
 // checks if the strategy is well-defined
@@ -826,7 +852,7 @@ void Strategy::check_if_valid() {
     int P_b = 1;
     int P_c = 1;
 
-    for (size_t i = 0; i < n_steps; ++i) {
+    for (size_t i = 0; i < n_steps(); ++i) {
         if (divisors[i] <= 1) {
             throw_exception(
                 std::string("Divisors in each step must be larger than 1.") +
@@ -910,7 +936,7 @@ void Strategy::check_if_valid() {
         // of matrix we only check dimensions n and k, because these are the
         // dimensions defining the number of columns, i.e. dimension m does not
         // denote the #columns of any matrix
-        if (i == n_steps - 1) {
+        if (i == n_steps() - 1) {
             // since we are using column major ordering, the #columns of each
             // matrix must be at least the number of processors left at that
             // step
@@ -978,14 +1004,12 @@ void Strategy::compress_steps() {
 
     std::vector<int> divs = {p_divm, p_divn, p_divk, s_divm, s_divn, s_divk};
 
-    n_steps = 0;
     divisors = std::vector<int>();
     split_dimension = "";
     step_type = "";
 
     for (size_t i = 0; i < divs.size(); ++i) {
         if (divs[i] > 1) {
-            n_steps++;
             divisors.push_back(divs[i]);
 
             if (i < 3) {
@@ -1009,7 +1033,7 @@ void Strategy::compute_min_sizes() {
     min_m = m;
     min_n = n;
     min_k = k;
-    for (int step = 0; step < n_steps; ++step) {
+    for (int step = 0; step < n_steps(); ++step) {
         min_m /= divisor_m(step);
         min_n /= divisor_n(step);
         min_k /= divisor_k(step);
@@ -1017,7 +1041,7 @@ void Strategy::compute_min_sizes() {
 }
 
 bool Strategy::should_overlap_comm_and_comp(int step) const {
-    bool last_step = step == n_steps - 1;
+    bool last_step = step == n_steps() - 1;
     if (!last_step) {
         return false;
     }
@@ -1069,7 +1093,7 @@ bool Strategy::should_overlap_comm_and_comp(int step) const {
 }
 
 bool Strategy::empty() const {
-    return n_steps == 0;
+    return n_steps() == 0;
 }
 
 int Strategy::n_rows(char label) const {
@@ -1093,6 +1117,53 @@ int Strategy::n_cols(char label) const {
     return -1;
 }
 
+// enables overlapping and updates the value of the `irregular` variable
+void Strategy::enable_overlapping_comm_and_comp() {
+    overlap_comm_and_comp = true;
+    int last_step = n_steps() - 1;
+
+    // if comm and comp are overlapped, then in the last step
+    // the #columns of the matrix which was not split in that step
+    // are being split by the same divisor to allow the overlap
+    if (split_m(last_step)) {
+        // if m is split, then B is not split and thus min_n is also split
+        irregular = irregular || (min_n % divisor_m(last_step) != 0);
+    } else if (split_n(last_step)) {
+        // if n is split, then A is not split and thus min_k is also split
+        irregular = irregular || (min_k % divisor_n(last_step) != 0);
+    } else if (split_k(last_step)) {
+        // if k is split, then C is not split and thus min_n is also split
+        irregular = irregular || (min_n % divisor_k(last_step) != 0);
+    }
+}
+
+// the strategy is considered irregular if any dimension
+// (at any step) is divided by a divisor that does not perfectly
+// divide that dimension
+void Strategy::check_if_irregular() {
+    int mm = m;
+    int nn = n;
+    int kk = k;
+    for (int i = 0; i < n_steps(); ++i) {
+        if (mm % divisor_m(i) != 0) {
+            irregular = true;
+            return;
+        }
+        if (nn % divisor_n(i) != 0) {
+            irregular = true;
+            return;
+        }
+        if (kk % divisor_k(i) != 0) {
+            irregular = true;
+            return;
+        }
+        mm /= divisor_m(i);
+        nn /= divisor_n(i);
+        kk /= divisor_k(i);
+    }
+    irregular = false;
+}
+
 std::ostream &operator<<(std::ostream &os, const Strategy &other) {
     os << "Matrix dimensions (m, n, k) = (" << other.m << ", " << other.n
        << ", " << other.k << ")\n";
@@ -1113,7 +1184,7 @@ std::ostream &operator<<(std::ostream &os, const Strategy &other) {
         os << "Overlap of communication and computation: OFF.\n";
     }
     os << "Divisions strategy: \n";
-    for (size_t i = 0; i < other.n_steps; ++i) {
+    for (size_t i = 0; i < other.n_steps(); ++i) {
         if (other.step_type[i] == 'p') {
             os << "parallel (" << other.split_dimension[i] << " / "
                << other.divisors[i] << ")\n";

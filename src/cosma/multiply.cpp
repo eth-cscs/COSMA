@@ -186,7 +186,7 @@ void multiply_using_layout(cosma_context<T> *ctx,
  Assumption: we assume that at each step only 1 dimension is split
 */
 
-// using the global singleton context
+// using the context from matrices
 template <typename Scalar>
 void multiply(CosmaMatrix<Scalar> &matrixA,
               CosmaMatrix<Scalar> &matrixB,
@@ -205,19 +205,6 @@ void multiply(CosmaMatrix<Scalar> &matrixA,
              comm,
              alpha,
              beta);
-}
-
-template <typename Scalar>
-void multiply(std::unique_ptr<cosma_context<Scalar>> &ctxt,
-              CosmaMatrix<Scalar> &matrixA,
-              CosmaMatrix<Scalar> &matrixB,
-              CosmaMatrix<Scalar> &matrixC,
-              const Strategy &strategy,
-              MPI_Comm comm,
-              Scalar alpha,
-              Scalar beta) {
-
-    multiply(ctxt.get(), matrixA, matrixB, matrixC, strategy, comm, alpha, beta);
 }
 
 // using the given context
@@ -250,9 +237,6 @@ void multiply(cosma_context<Scalar> *ctx,
     matrixB.initialize();
     matrixC.initialize();
 
-    // register context to be deleted at MPI_Finalize
-    ctx->register_to_destroy_at_finalize();
-
     // check if all the local matrices belong to
     // the current rank
     assert(matrixA.rank() == matrixB.rank());
@@ -264,6 +248,9 @@ void multiply(cosma_context<Scalar> *ctx,
     PL();
 
     if (!cosma_comm.is_idle()) {
+        // register strategy in the context
+        ctx->register_state(cosma_comm.rank(), strategy);
+
         multiply(ctx,
                  matrixA,
                  matrixB,
@@ -453,6 +440,21 @@ void sequential(cosma_context<Scalar> *ctx,
                      comm,
                      alpha,
                      beta);
+            // this only affects the GPU backend.
+            // if sequential steps are used, then each sequential step 
+            // is reusing the same communication buffers. 
+            // However, if the strategy contains steps 
+            // which are not perfectly divisible then
+            // this might result in each sequential step requiring
+            // slightly different pointers to be pinned and thus
+            // we cannot reuse the already pinned buffers from
+            // the previous sequential step. We have to unpin
+            // all the buffers from the previous step, to avoid
+            // getting the GPU runtime error that 
+            // some part of the buffer is already pinned.
+            if (strategy.irregular) {
+                ctx->get_memory_pool().unpin_all();
+            }
         }
         return;
     }
@@ -473,6 +475,21 @@ void sequential(cosma_context<Scalar> *ctx,
                      comm,
                      alpha,
                      beta);
+            // this only affects the GPU backend.
+            // if sequential steps are used, then each sequential step 
+            // is reusing the same communication buffers. 
+            // However, if the strategy contains steps 
+            // which are not perfectly divisible then
+            // this might result in each sequential step requiring
+            // slightly different pointers to be pinned and thus
+            // we cannot reuse the already pinned buffers from
+            // the previous sequential step. We have to unpin
+            // all the buffers from the previous step, to avoid
+            // getting the GPU runtime error that 
+            // some part of the buffer is already pinned.
+            if (strategy.irregular) {
+                ctx->get_memory_pool().unpin_all();
+            }
         }
         return;
     }
@@ -486,7 +503,7 @@ void sequential(cosma_context<Scalar> *ctx,
             Interval newk = k.subinterval(strategy.divisor(step), K);
             auto new_beta = beta;
             if (K != 0) {
-                new_beta = 1;
+                new_beta = Scalar{1};
             }
             multiply(ctx,
                      matrixA,
@@ -501,6 +518,21 @@ void sequential(cosma_context<Scalar> *ctx,
                      comm,
                      alpha,
                      new_beta);
+            // this only affects the GPU backend.
+            // if sequential steps are used, then each sequential step 
+            // is reusing the same communication buffers. 
+            // However, if the strategy contains steps 
+            // which are not perfectly divisible then
+            // this might result in each sequential step requiring
+            // slightly different pointers to be pinned and thus
+            // we cannot reuse the already pinned buffers from
+            // the previous sequential step. We have to unpin
+            // all the buffers from the previous step, to avoid
+            // getting the GPU runtime error that 
+            // some part of the buffer is already pinned.
+            if (strategy.irregular) {
+                ctx->get_memory_pool().unpin_all();
+            }
         }
         return;
     }
@@ -923,43 +955,6 @@ template void multiply<zdouble_t>(cosma_context<zdouble_t> *ctx,
                                   zdouble_t beta);
 
 template void multiply<zfloat_t>(cosma_context<zfloat_t> *ctx,
-                                 CosmaMatrix<zfloat_t> &A,
-                                 CosmaMatrix<zfloat_t> &B,
-                                 CosmaMatrix<zfloat_t> &C,
-                                 const Strategy &strategy,
-                                 MPI_Comm comm,
-                                 zfloat_t alpha,
-                                 zfloat_t beta);
-
-// Explicit instantiations for short `multiply`
-template void multiply<double>(std::unique_ptr<cosma_context<double>> &ctx,
-                               CosmaMatrix<double> &A,
-                               CosmaMatrix<double> &B,
-                               CosmaMatrix<double> &C,
-                               const Strategy &strategy,
-                               MPI_Comm comm,
-                               double alpha,
-                               double beta);
-
-template void multiply<float>(std::unique_ptr<cosma_context<float>> &ctx,
-                              CosmaMatrix<float> &A,
-                              CosmaMatrix<float> &B,
-                              CosmaMatrix<float> &C,
-                              const Strategy &strategy,
-                              MPI_Comm comm,
-                              float alpha,
-                              float beta);
-
-template void multiply<zdouble_t>(std::unique_ptr<cosma_context<zdouble_t>> &ctx,
-                                  CosmaMatrix<zdouble_t> &A,
-                                  CosmaMatrix<zdouble_t> &B,
-                                  CosmaMatrix<zdouble_t> &C,
-                                  const Strategy &strategy,
-                                  MPI_Comm comm,
-                                  zdouble_t alpha,
-                                  zdouble_t beta);
-
-template void multiply<zfloat_t>(std::unique_ptr<cosma_context<zfloat_t>> &ctx,
                                  CosmaMatrix<zfloat_t> &A,
                                  CosmaMatrix<zfloat_t> &B,
                                  CosmaMatrix<zfloat_t> &C,

@@ -2,7 +2,9 @@
 #include <iostream>
 #include <memory>
 #include <cosma/memory_pool.hpp>
-#include <cosma/mpi_attribute.hpp>
+#include <cosma/strategy.hpp>
+
+#include <mpi.h>
 
 #ifdef COSMA_HAVE_GPU
 #include <Tiled-MM/tiled_mm.hpp>
@@ -17,23 +19,24 @@ public:
     cosma_context(size_t cpu_mem_limit, int streams, int tile_m, int tile_n, int tile_k);
     ~cosma_context();
 
+    void register_state(int rank, const Strategy& strategy);
+
     memory_pool<Scalar>& get_memory_pool();
 #ifdef COSMA_HAVE_GPU
     gpu::mm_handle<Scalar>* get_gpu_context();
 #endif
 
-    void register_to_destroy_at_finalize();
-
     void turn_on_output();
 
 private:
     memory_pool<Scalar> memory_pool_;
-    mpi_attribute attr;
 #ifdef COSMA_HAVE_GPU
     std::unique_ptr<gpu::mm_handle<Scalar>> gpu_ctx_;
     // gpu::mm_handle<Scalar> gpu_ctx_;
 #endif
     bool output = false;
+    int prev_rank = -1;
+    Strategy prev_strategy;
 };
 
 template <typename Scalar>
@@ -55,9 +58,5 @@ context<Scalar> make_context(size_t cpu_mem_limit, int streams, int tile_m, int 
 //     the concurrent execution shall wait
 //     for completion of the initialization
 template <typename Scalar>
-global_context<Scalar> get_context_instance() {
-    static cosma_context<Scalar> ctxt;
-    return &ctxt;
-}
-
+global_context<Scalar> get_context_instance();
 } // namespace cosma

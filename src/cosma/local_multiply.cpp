@@ -13,6 +13,8 @@
 #include <complex>
 #include <vector>
 
+#include <mpi.h>
+
 namespace cosma {
 
 using clock_t = std::chrono::high_resolution_clock;
@@ -80,10 +82,38 @@ void local_multiply(gpu::mm_handle<Scalar>* gpu_ctx,
                     int k,
                     Scalar alpha,
                     Scalar beta) {
-    bool pin_host_buffers = true;
+    bool pin_host_buffers = false;
     gpu::gemm(*(gpu_ctx), matrixA, matrixB, matrixC, m, n, k, alpha, beta, pin_host_buffers);
 }
 #endif
+
+template <typename Scalar> 
+Scalar& get_element(Scalar* mat, int m, int n, int i, int j) {
+    return mat[j * m + i];
+}
+
+template <typename Scalar>
+void local_multiply_cpu(
+                    Scalar *matrixA,
+                    Scalar *matrixB,
+                    Scalar *matrixC,
+                    int m,
+                    int n,
+                    int k,
+                    Scalar alpha,
+                    Scalar beta) {
+    for (int mi = 0; mi < m; ++mi) {
+        for (int ni = 0; ni < n; ++ni) {
+            Scalar& Cvalue = get_element(matrixC, m, n, mi, ni);
+            Cvalue *= beta;
+            for (int ki = 0; ki < k; ++ki) {
+                Scalar& Avalue = get_element(matrixA, m, k, mi, ki);
+                Scalar& Bvalue = get_element(matrixB, k, n, ki, ni);
+                Cvalue += alpha * Avalue * Bvalue;
+            }
+        }
+    }
+}
 
 template <typename Scalar>
 void local_multiply(cosma_context<Scalar>* ctx,
@@ -102,6 +132,9 @@ void local_multiply(cosma_context<Scalar>* ctx,
 #endif
 
 #ifdef COSMA_HAVE_GPU
+    ctx->get_memory_pool().pin(matrixA, m * k);
+    ctx->get_memory_pool().pin(matrixB, k * n);
+    ctx->get_memory_pool().pin(matrixC, m * n);
     local_multiply(ctx->get_gpu_context(),
                    matrixA, matrixB, matrixC,
                    m, n, k, alpha, beta);
@@ -177,6 +210,49 @@ local_multiply<std::complex<double>>(cosma_context<std::complex<double>> *ctx,
 
 template void
 local_multiply<std::complex<float>>(cosma_context<std::complex<float>> *ctx,
+                                    std::complex<float> *matrixA,
+                                    std::complex<float> *matrixB,
+                                    std::complex<float> *matrixC,
+                                    int m,
+                                    int n,
+                                    int k,
+                                    std::complex<float> alpha,
+                                    std::complex<float> beta);
+
+// explicit template instantiation using context - no pinning
+template void local_multiply_cpu<double>(
+                                     double *matrixA,
+                                     double *matrixB,
+                                     double *matrixC,
+                                     int m,
+                                     int n,
+                                     int k,
+                                     double alpha,
+                                     double beta);
+
+template void local_multiply_cpu<float>(
+                                    float *matrixA,
+                                    float *matrixB,
+                                    float *matrixC,
+                                    int m,
+                                    int n,
+                                    int k,
+                                    float alpha,
+                                    float beta);
+
+template void
+local_multiply_cpu<std::complex<double>>(
+                                     std::complex<double> *matrixA,
+                                     std::complex<double> *matrixB,
+                                     std::complex<double> *matrixC,
+                                     int m,
+                                     int n,
+                                     int k,
+                                     std::complex<double> alpha,
+                                     std::complex<double> beta);
+
+template void
+local_multiply_cpu<std::complex<float>>(
                                     std::complex<float> *matrixA,
                                     std::complex<float> *matrixB,
                                     std::complex<float> *matrixC,

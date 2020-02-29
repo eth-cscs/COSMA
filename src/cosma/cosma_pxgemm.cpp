@@ -102,7 +102,7 @@ void pxgemm(const char transa,
       This method will add "prefix" to the strategy, i.e. some initial steps
       that COSMA should start with and then continue with finding 
       the communication-optimal strategy.
-      */
+     */
     adapt_strategy_to_block_cyclic_grid(divisors, dimensions, step_type,
                                         m, n, k, P,
                                         mat_dim_a, mat_dim_b, mat_dim_c,
@@ -114,7 +114,7 @@ void pxgemm(const char transa,
                                         );
 
     Strategy strategy(m, n, k, P, divisors, dimensions, step_type);
-    // strategy.overlap_comm_and_comp = true;
+    // strategy.enable_overlapping_comm_and_comp();
     PL();
 
     PE(init);

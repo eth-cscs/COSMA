@@ -11,12 +11,12 @@ if(NOT TARGET cosma)
                         math_utils.cpp
                         matrix.cpp
                         memory_pool.cpp
-                        mpi_attribute.cpp
                         multiply.cpp
                         one_sided_communicator.cpp
                         strategy.cpp
                         two_sided_communicator.cpp
                         random_generator.hpp
+                        pinned_buffers.cpp
     )
     add_library(cosma STATIC ${cosma_src_files})
     target_include_directories(cosma PUBLIC $<BUILD_INTERFACE:${cosma_SOURCE_DIR}/src>)

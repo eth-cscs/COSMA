@@ -35,7 +35,7 @@ void output_matrix(CosmaMatrix<double> &M, int rank) {
     local_file.close();
 }
 
-long run(Strategy &s, MPI_Comm comm = MPI_COMM_WORLD) {
+long run(const Strategy &s, MPI_Comm comm = MPI_COMM_WORLD) {
     int rank, size;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &P);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    Strategy strategy = parse_strategy(argc, argv);
+    const Strategy& strategy = parse_strategy(argc, argv);
 
     if (rank == 0) {
         std::cout << "Strategy = " << strategy << std::endl;

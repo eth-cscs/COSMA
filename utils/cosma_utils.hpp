@@ -35,7 +35,7 @@ void fill_matrix(std::complex<T>* ptr, size_t size) {
 
 template <typename Scalar>
 bool test_cosma(Strategy &s,
-         context<Scalar> &ctx,
+         context<Scalar>& ctx,
          MPI_Comm comm = MPI_COMM_WORLD,
          bool overlap = false,
          double epsilon = 1e-8,
@@ -52,7 +52,10 @@ bool test_cosma(Strategy &s,
 
     auto mpi_type = cosma::mpi_mapper<Scalar>::getType();
 
-    s.overlap_comm_and_comp = overlap;
+    if (overlap) {
+        s.enable_overlapping_comm_and_comp();
+    }
+
     int m = s.m;
     int n = s.n;
     int k = s.k;
@@ -248,7 +251,8 @@ bool test_cosma(Strategy &s,
             offsetC += local_size_C;
         }
         // Now compute the result
-        cosma::local_multiply(globA.data(),
+        cosma::local_multiply_cpu(
+                              globA.data(),
                               globB.data(),
                               globCcheck.data(),
                               m,
@@ -285,7 +289,7 @@ bool test_cosma(Strategy &s,
 #endif
     }
 
-    multiply(ctx, A, B, C, s, comm, alpha, beta);
+    multiply(A, B, C, s, comm, alpha, beta);
 
     // Then rank0 asks for other ranks data
     if (rank == 0) {

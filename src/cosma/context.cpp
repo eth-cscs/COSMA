@@ -5,25 +5,6 @@
 #include <stdlib.h>
 
 namespace cosma {
-
-int get_num_ranks_per_gpu() {
-    char* var;
-    var = getenv ("COSMA_RANKS_PER_GPU");
-    int ranks_per_gpu = 1;
-    if (var != nullptr)
-        ranks_per_gpu = std::atoi(var);
-    return ranks_per_gpu;
-}
-
-double get_gpu_mem_ratio() {
-    char* var;
-    var = getenv ("COSMA_GPU_MEM_RATIO");
-    double mem_ratio = 0.9;
-    if (var != nullptr)
-        mem_ratio = std::atof(var);
-    return mem_ratio;
-}
-
 int get_num_gpu_streams() {
     char* var;
     var = getenv ("COSMA_GPU_STREAMS");
@@ -36,7 +17,7 @@ int get_num_gpu_streams() {
 int get_gpu_tile_size_m() {
     char* var;
     var = getenv ("COSMA_GPU_TILE_M");
-    int tile = 4096;
+    int tile = 5000;
     bool defined = var != nullptr;
     if (defined)
         tile = std::atoi(var);
@@ -46,7 +27,7 @@ int get_gpu_tile_size_m() {
 int get_gpu_tile_size_n() {
     char* var;
     var = getenv ("COSMA_GPU_TILE_N");
-    int tile = 4096;
+    int tile = 5000;
     bool defined = var != nullptr;
     if (defined)
         tile = std::atoi(var);
@@ -56,7 +37,7 @@ int get_gpu_tile_size_n() {
 int get_gpu_tile_size_k() {
     char* var;
     var = getenv ("COSMA_GPU_TILE_K");
-    int tile = 4096;
+    int tile = 5000;
     bool defined = var != nullptr;
     if (defined)
         tile = std::atoi(var);
@@ -77,16 +58,10 @@ gpu::mm_handle<Scalar>* cosma_context<Scalar>::get_gpu_context() {
 template <typename Scalar>
 cosma_context<Scalar>::cosma_context() {
 #ifdef COSMA_HAVE_GPU
-    if (env_var_defined("COSMA_GPU_TILE_M") || 
-        env_var_defined("COSMA_GPU_TILE_N") || 
-        env_var_defined("COSMA_GPU_TILE_K")) {
-        gpu_ctx_ = gpu::make_context<Scalar>(get_num_gpu_streams(),
-                                             get_gpu_tile_size_m(),
-                                             get_gpu_tile_size_n(),
-                                             get_gpu_tile_size_k());
-    } else {
-        gpu_ctx_ = gpu::make_context<Scalar>(get_num_ranks_per_gpu(), get_gpu_mem_ratio());
-    }
+    gpu_ctx_ = gpu::make_context<Scalar>(get_num_gpu_streams(),
+                                         get_gpu_tile_size_m(),
+                                         get_gpu_tile_size_n(),
+                                         get_gpu_tile_size_k());
 #endif
 }
 
@@ -104,6 +79,7 @@ cosma_context<Scalar>::cosma_context(size_t cpu_mem_limit, int streams, int tile
 
 template <typename Scalar>
 cosma_context<Scalar>::~cosma_context() {
+    memory_pool_.unpin_all();
 #ifdef DEBUG
     if (output) {
         std::cout << "context destroyed" << std::endl;
@@ -116,16 +92,24 @@ memory_pool<Scalar>& cosma_context<Scalar>::get_memory_pool() {
     return memory_pool_;
 }
 
-
 template <typename Scalar>
-void cosma_context<Scalar>::register_to_destroy_at_finalize() {
-    // This function is called with each multiplication, because that's when 
-    // the memory pool might have been resized. This function updates the value of 
-    // the MPI buffer pointer (from the memory pool) through an attribute associated 
-    // with MPI_COMM_SELF, so that MPI_Finalize can deallocate the MPI buffer 
-    // (through attribute destruction function that we provide: delete_fn) in case
-    // no context destructor was invoked before MPI_Finalize.
-    attr.update_attribute(memory_pool_.get_pool_pointer());
+void cosma_context<Scalar>::register_state(int rank, const Strategy& strategy) {
+#ifdef COSMA_HAVE_GPU
+    if (memory_pool_.resized 
+                || 
+            rank != prev_rank
+                ||
+            strategy != prev_strategy
+        ) {
+        memory_pool_.unpin_all();
+        memory_pool_.already_pinned = false;
+        memory_pool_.resized = false;
+        prev_rank = rank;
+        prev_strategy = strategy;
+    } else {
+        memory_pool_.already_pinned = true;
+    }
+#endif
 }
 
 template <typename Scalar>
@@ -142,6 +126,18 @@ context<Scalar> make_context() {
 template <typename Scalar>
 context<Scalar> make_context(size_t cpu_mem_limit, int streams, int tile_m, int tile_n, int tile_k) {
     return std::make_unique<cosma_context<Scalar>>(cpu_mem_limit, streams, tile_m, tile_n, tile_k);
+}
+
+// Meyer's singleton, thread-safe in C++11, but not in C++03.
+// The thread-safety is guaranteed by the standard in C++11:
+//     If control enters the declaration concurrently
+//     while the variable is being initialized,
+//     the concurrent execution shall wait
+//     for completion of the initialization
+template <typename Scalar>
+global_context<Scalar> get_context_instance() {
+    static context<Scalar> ctxt = make_context<Scalar>();
+    return ctxt.get();
 }
 
 using zfloat = std::complex<float>;

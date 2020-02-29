@@ -187,6 +187,7 @@ class communicator {
 
     // communicator active in step
     MPI_Comm active_comm(int step);
+    MPI_Comm full_comm();
 
     // size of the initial communicator
     int comm_size();
