@@ -1117,6 +1117,29 @@ int Strategy::n_cols(char label) const {
     return -1;
 }
 
+// enables overlapping and updates the value of the `irregular` variable
+void Strategy::enable_overlapping_comm_and_comp() {
+    overlap_comm_and_comp = true;
+    int last_step = n_steps() - 1;
+
+    // if comm and comp are overlapped, then in the last step
+    // the #columns of the matrix which was not split in that step
+    // are being split by the same divisor to allow the overlap
+    if (split_m(last_step)) {
+        // if m is split, then B is not split and thus min_n is also split
+        irregular = irregular || (min_n % divisor_m(last_step) != 0);
+    } else if (split_n(last_step)) {
+        // if n is split, then A is not split and thus min_k is also split
+        irregular = irregular || (min_k % divisor_n(last_step) != 0);
+    } else if (split_k(last_step)) {
+        // if k is split, then C is not split and thus min_n is also split
+        irregular = irregular || (min_n % divisor_k(last_step) != 0);
+    }
+}
+
+// the strategy is considered irregular if any dimension
+// (at any step) is divided by a divisor that does not perfectly
+// divide that dimension
 void Strategy::check_if_irregular() {
     int mm = m;
     int nn = n;
@@ -1138,6 +1161,7 @@ void Strategy::check_if_irregular() {
         nn /= divisor_n(i);
         kk /= divisor_k(i);
     }
+    irregular = false;
 }
 
 std::ostream &operator<<(std::ostream &os, const Strategy &other) {

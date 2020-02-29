@@ -83,11 +83,15 @@ cosma::Strategy parse_strategy(int argc, char** argv) {
         std::vector<int> divisors;
         process_steps(steps_it, cmd_line, step_type, split_dimension, divisors);
         cosma::Strategy strategy(m, n, k, P, divisors, split_dimension, step_type, memory_limit);
-        strategy.overlap_comm_and_comp = overlap_comm_and_comp;
+        if (overlap_comm_and_comp) {
+            strategy.enable_overlapping_comm_and_comp();
+        }
         return strategy;
     } else {
         cosma::Strategy strategy(m, n, k, P, memory_limit);
-        strategy.overlap_comm_and_comp = overlap_comm_and_comp;
+        if (overlap_comm_and_comp) {
+            strategy.enable_overlapping_comm_and_comp();
+        }
         return strategy;
     }
 }

@@ -81,7 +81,7 @@ TEST(MultiplyUsingLayout, ) {
         fill_matrix(C);
 
         // important if beta > 0
-        cosma::CosmaMatrix<scalar_t> C_act('C', strategy, rank);
+        cosma::CosmaMatrix<scalar_t> C_act(ctx, 'C', strategy, rank);
         for (int idx = 0; idx < C_act.matrix_size(); ++idx) {
             C_act.matrix_pointer()[idx] = C.matrix_pointer()[idx];
         }

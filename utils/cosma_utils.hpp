@@ -52,7 +52,10 @@ bool test_cosma(Strategy &s,
 
     auto mpi_type = cosma::mpi_mapper<Scalar>::getType();
 
-    s.overlap_comm_and_comp = overlap;
+    if (overlap) {
+        s.enable_overlapping_comm_and_comp();
+    }
+
     int m = s.m;
     int n = s.n;
     int k = s.k;

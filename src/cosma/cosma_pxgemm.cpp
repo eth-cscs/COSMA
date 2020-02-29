@@ -114,7 +114,7 @@ void pxgemm(const char transa,
                                         );
 
     Strategy strategy(m, n, k, P, divisors, dimensions, step_type);
-    // strategy.overlap_comm_and_comp = true;
+    // strategy.enable_overlapping_comm_and_comp();
     PL();
 
     PE(init);

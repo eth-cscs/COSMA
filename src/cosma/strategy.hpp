@@ -48,8 +48,6 @@ class Strategy {
     // if true, MPI will try to relabel ranks such that
     // the ranks which communicate are physically close to each other
     bool topology = false;
-    // if true, the communication and computation will be overlapped
-    bool overlap_comm_and_comp = false;
     // if true, uses busy waiting in the thread performing MPI communication
     // otherwise, uses polling to query if the communication request has
     // completed
@@ -170,11 +168,23 @@ class Strategy {
     int n_rows(char label) const;
     int n_cols(char label) const;
 
+    void enable_overlapping_comm_and_comp();
+
     void check_if_irregular();
 
+    // the strategy is considered irregular if any dimension
+    // (at any step) is divided by a divisor that does not perfectly
+    // divide that dimension
     bool irregular = true;
 
   private:
+    // if true, the communication and computation will be overlapped
+    // this variable should not be changed outside of the class but only
+    // through the function `enable_overlapping_comm_and_comp`.
+    // because this function also has to update the variable `irregular`
+    // when the overlap is turned on.
+    bool overlap_comm_and_comp = false;
+
     bool divide(std::vector<int> &div_factors,
                 int &dim_i,
                 long long &dim1,
