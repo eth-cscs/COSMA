@@ -440,6 +440,18 @@ void sequential(cosma_context<Scalar> *ctx,
                      comm,
                      alpha,
                      beta);
+            // this only affects the GPU backend.
+            // if sequential steps are used, then each sequential step 
+            // is reusing the same communication buffers. 
+            // However, if the strategy contains steps 
+            // which are not perfectly divisible then
+            // this might result in each sequential step requiring
+            // slightly different pointers to be pinned and thus
+            // we cannot reuse the already pinned buffers from
+            // the previous sequential step. We have to unpin
+            // all the buffers from the previous step, to avoid
+            // getting the GPU runtime error that 
+            // some part of the buffer is already pinned.
             if (strategy.irregular) {
                 ctx->get_memory_pool().unpin_all();
             }
@@ -463,6 +475,18 @@ void sequential(cosma_context<Scalar> *ctx,
                      comm,
                      alpha,
                      beta);
+            // this only affects the GPU backend.
+            // if sequential steps are used, then each sequential step 
+            // is reusing the same communication buffers. 
+            // However, if the strategy contains steps 
+            // which are not perfectly divisible then
+            // this might result in each sequential step requiring
+            // slightly different pointers to be pinned and thus
+            // we cannot reuse the already pinned buffers from
+            // the previous sequential step. We have to unpin
+            // all the buffers from the previous step, to avoid
+            // getting the GPU runtime error that 
+            // some part of the buffer is already pinned.
             if (strategy.irregular) {
                 ctx->get_memory_pool().unpin_all();
             }
@@ -494,6 +518,18 @@ void sequential(cosma_context<Scalar> *ctx,
                      comm,
                      alpha,
                      new_beta);
+            // this only affects the GPU backend.
+            // if sequential steps are used, then each sequential step 
+            // is reusing the same communication buffers. 
+            // However, if the strategy contains steps 
+            // which are not perfectly divisible then
+            // this might result in each sequential step requiring
+            // slightly different pointers to be pinned and thus
+            // we cannot reuse the already pinned buffers from
+            // the previous sequential step. We have to unpin
+            // all the buffers from the previous step, to avoid
+            // getting the GPU runtime error that 
+            // some part of the buffer is already pinned.
             if (strategy.irregular) {
                 ctx->get_memory_pool().unpin_all();
             }
