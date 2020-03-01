@@ -64,6 +64,67 @@ External dependencies:
 > - `semiprof` - profiling utlility
 > - `gtest_mpi` - MPI utlility wrapper over GoogleTest (unit testing library)
 
+## Using COSMA
+
+To allow easy integration, COSMA can be used in the following ways:
+- **without changing your code:** if your code already uses the `ScaLAPACK API`, then you can just link to COSMA, before linking to any other library providing `pxgemm` and all `pxgemm` calls will be using COSMA, without the need to change your code at all. To get a feeling of the performance you can expect to get, please have a look at the [pdgemm miniapp](#cosma-pdgemm-wrapper). To see how you can link your code to COSMA `pxgemm`, have a look at the [30 seconds tutorial](#using-cosma-in-30-seconds) on how to do this. In this way, we integrated COSMA into CP2K quantum chemistry simulator, which you can read more about in the [production example](#cosma-in-production).
+
+- **adapting your code:** if your code is not using ScaLAPACK, then there are two interfaces that can be used:
+    - **custom layout:** if you matrices are distributed in a custom way, then it is eanough to pass the descriptors of your data layout to `multiply_using_layout` function, which will then adapt COSMA to your own layout.
+    - **native COSMA layout:** to get the maximum performance, the native COSMA matrix layout should be used. To get an idea of the performance you can expect to get, please have a look at the [matrix multiplication miniapp](#matrix-multiplication).
+    
+The documentation for the latter option will soon be published here.
+
+## Using COSMA in 30 seconds
+
+For easy integration, it is enough to build COSMA with ScaLAPACK API and then link your code to COSMA before linking to any other library providing ScaLAPACK `pxgemm`. This way, all `pxgemm` calls will be using COSMA `pxgemm` wrappers. To achieve this, please follow these steps:
+
+1) Build COSMA with ScaLAPACK API:
+
+```bash
+###############
+# get COSMA
+###############
+git clone --recursive https://github.com/eth-cscs/COSMA cosma && cd cosma
+
+##############################
+# build and install COSMA
+##############################
+mkdir build && cd build
+# choose BLAS and SCALAPACK versions you want to use
+# COSMA_BLAS can be: MKL, OpenBLAS, CRAY_LIBSCI, CUDA, ROCM, CUSTOM
+# COSMA_SCALAPACK can be MKL, CRAY_LIBSCI, CUSTOM
+cmake -DCOSMA_BLAS=CUDA -DCOSMA_SCALAPACK=MKL -DCMAKE_INSTALL_PREFIX=<installation dir>/cosma ..
+make -j 8
+make install
+```
+
+2) Link your code to COSMA:
+    - **CPU-only** version of COSMA:
+       - link your code to:
+       > -L<installation dir>/cosma/lib64 -lcosma_pxgemm -lcosma -lgrid2grid 
+ 
+       - then link to the BLAS and ScaLAPACK you built COSMA with (see `COSMA_BLAS` and `COSMA_SCALAPACK` flags in cmake):
+       > -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_scalapack_lp64 -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lmkl_blacs_intelmpi_lp64 -lgomp -lpthread -lm
+ 
+    
+   - using **GPU-accelerated** version of COSMA: 
+       - link your code to:
+       >-L<installation dir>/cosma/lib64 -lcosma_pxgemm -lcosma -lgrid2grid -lTiled-MM
+       
+       - link to the GPU backend you build COSMA with (see `COSMA_BLAS` flag in cmake):
+       >-lcublas -lcudart -lrt
+       
+       - then link to the ScaLAPACK you built COSMA with (see `COSMA_SCALAPACK` flag in cmake):
+       >-L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_scalapack_lp64 -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lmkl_blacs_intelmpi_lp64 -lgomp -lpthread -lm
+       
+3) Include headers:
+>-I<installation dir>/cosma/include
+
+## COSMA in Production
+
+COSMA is integrated into the [CP2K](https://www.cp2k.org) quantum chemistry simulator. Here we will show some of the production runs of CP2K with COSMA.
+
 ## Miniapps
 
 ```bash
@@ -86,7 +147,7 @@ be run with the following command line (assuming we are in the root folder of
 the project):
 
 ```
-n_iter=1 mpirun --oversubscribe -np 4 ./build/miniapp/cosma-miniapp -m 1000 -n 1000 -k 1000 -P 4 -s pm2,sm2,pk2
+mpirun --oversubscribe -np 4 ./build/miniapp/cosma-miniapp -m 1000 -n 1000 -k 1000 -P 4 -s pm2,sm2,pk2 -r 2
 ```
 
 The flags have the following meaning:
@@ -108,8 +169,9 @@ The flags have the following meaning:
   relabelled such that the ranks which communicate are physically closer to each
   other. This flag therefore determines whether the topology is
   communication-aware.
+- `r (--n_rep, optional)`: the number of repetitions.
 
-### COSMA PDGEMM Wrapper
+### COSMA pdgemm wrapper
 
 COSMA also contains a wrapper for ScaLAPACK `pxgemm` calls which offers scalapack interface (pxgemm functions with exactly the same signatures as ScaLAPACK). Running these functions will take care of transforming the matrices between ScaLAPACK and COSMA data layout, perform the multiplication using COSMA algorithm and transform the result back to the specified ScaLAPACK data layout.
 
@@ -118,7 +180,7 @@ be run with the following command line on Piz Daint (assuming we are in the root
 the project):
 
 ```
-OMP_NUM_THREADS=18 MKL_NUM_THREADS=18 srun -C mc -N 8 -n 16 ./build/miniapp/pdgemm-miniapp -m 1000 -n 1000 -k 1000 --block_a 128x128 --block_b 128x128 --block_c 128x128 -p 4 -q 4 --trans_a
+OMP_NUM_THREADS=18 MKL_NUM_THREADS=18 srun -C mc -N 8 -n 16 ./build/miniapp/pdgemm-miniapp -m 1000 -n 1000 -k 1000 --block_a 128x128 --block_b 128x128 --block_c 128x128 -p 4 -q 4 --trans_a -r 2
 ```
 
 The flags have the following meaning:
@@ -133,6 +195,7 @@ The flags have the following meaning:
 - `-tb (--trans_b)` (optional, default: no transpose): transpose B before mutliplication
 - `-p (--p_row)` (optinal, default: 1): number of rows in a processor grid.
 - `-q (--q_row)` (optinal, default: P): number of cols in a processor grid.
+- `-r (--n_rep)` (optional, default: 2): number of repetitions.
 
 ## Profiling
 
@@ -180,9 +243,11 @@ Cite as:
 
 ## Questions?
 
-For questions, feel free to contact us:
+For questions, feel free to contact us, and we will soon get back to you:
 - For questions regarding the implementation, contact Marko Kabic (marko.kabic@cscs.ch).
 - For questions regarding the theory, contact Grzegorz Kwasniewski (gkwasnie@inf.ethz.ch).
+
+> If you need any help with the integration of COSMA into your library, we will be more than happy to help you!
 
 ## Ackowledgements
 
