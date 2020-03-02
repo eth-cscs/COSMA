@@ -265,5 +265,14 @@ For questions, feel free to contact us, and we will soon get back to you:
 
 ## Ackowledgements
 
+This work was funded in part by:  
+
+<img align="left" height="50" src="https://github.com/eth-cscs/COSMA/blob/master/docs/eth-logo.svg"> | [**ETH Zurich**](https://ethz.ch/en.html)**: Swiss Federal Institute of Technology in Zurich**
+| :------------------- | :------------------- |
+<img align="left" height="50" src="https://github.com/eth-cscs/COSMA/blob/master/docs/cscs-logo.jpg"> | [**CSCS**](https://www.cscs.ch)**: Swiss National Supercomputing Centre**
+<img align="left" height="50" src="https://github.com/eth-cscs/COSMA/blob/master/docs/pasc-logo.png"> | [**PASC**](https://www.pasc-ch.org/)**: Platform for Advanced Scientific Computing**
+<img align="left" height="50" src="https://github.com/eth-cscs/COSMA/blob/master/docs/erc-logo.png"> | [**ERC**](https://erc.europa.eu): **European Research Council** (Horizon2020, grant agreement DAPP, No.678880)
+<img align="left" height="50" src="https://github.com/eth-cscs/COSMA/blob/master/docs/max-logo.jpg"> | [**MaX**](http://www.max-centre.eu): **Materials design at the Exascale** (Horizon2020, grant agreement MaX CoE, No. 824143.)
+
 We thank Thibault Notargiacomo, Sam Yates, Benjamin Cumming and Simon Pintarelli for their generous contribution to the project: great ideas, useful advices and fruitful discussions.
 
