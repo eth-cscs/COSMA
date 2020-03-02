@@ -50,19 +50,19 @@ External dependencies:
 
 - `MPI 3`: (required)
 - `BLAS`: when the problem becomes local, COSMA uses provided `?gemm` backend, which can be one of the following:
-     - `Intel MKL` (default) 
-     - `OpenBLAS`
-     - `Cray-libsci` or `Cray-libsci_acc`
+     - `MKL` (default) 
+     - `OPENBLAS`
+     - `CRAY_LIBSCI`: `Cray-libsci` or `Cray-libsci_acc` (GPU-accelerated)
      - `CUDA`: `cublas` is used for NVIDIA GPUs
-     - `ROCm`: `rocBLAS` is used for AMD GPUs
-     - `custom`: user-provided BLAS API
+     - `ROCM`: `rocBLAS` is used for AMD GPUs
+     - `CUSTOM`: user-provided BLAS API
 
-> Some dependencies are bundled as submodules and need not be installed explicitly:
->
-> - `TiledMM` - cublasXt GEMM replacement, that is also ported to AMD GPUs.
-> - `grid2grid` - distributed matrix grid layout transformer.
-> - `semiprof` - profiling utlility
-> - `gtest_mpi` - MPI utlility wrapper over GoogleTest (unit testing library)
+Some dependencies are bundled as submodules and need not be installed explicitly:
+
+- `TiledMM` - cublasXt GEMM replacement, that is also ported to AMD GPUs.
+- `grid2grid` - distributed matrix grid layout transformer.
+- `semiprof` - profiling utlility
+- `gtest_mpi` - MPI utlility wrapper over GoogleTest (unit testing library)
 
 ## Using COSMA
 
@@ -123,7 +123,7 @@ make install
 
 ## COSMA in Production
 
-COSMA is integrated into the [CP2K](https://www.cp2k.org) quantum chemistry simulator. Since COSMA provides ScaLAPACK API, it is enough to link CP2K to COSMA, without changing CP2K code at all, which makes the integration trivial.
+COSMA is integrated into the [CP2K](https://www.cp2k.org) quantum chemistry simulator. Since COSMA provides ScaLAPACK API, it is enough to link CP2K to COSMA, without changing CP2K code at all, which makes the integration trivial even if (as in the case of CP2K) the simulation code is in written Fortran.
 
 In the production run, we ran *Random-Phase Approximation (RPA)* benchmark of 128 water molecules, using the *Resolution of Identity (RI)*. The benchmark was run on 128 nodes of the GPU partition on [Piz Daint supercomputer](https://www.cscs.ch/computers/piz-daint/) (Cray XC50). Computationally, the most dominant part of this benchmark consists of 46 **tall-and-skinny** dense matrix multiplications, with the parameters shown in the following table:
 
