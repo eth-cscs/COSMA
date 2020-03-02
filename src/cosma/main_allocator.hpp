@@ -6,16 +6,19 @@
 #include <iostream>
 #include <limits>
 #include <stdlib.h>
+
 #if defined (__unix__)
 #include <sys/mman.h>
-#define ENABLE_HUGE_PAGES(ptr, size) \
-{ \
-    madvise(ptr, size, MADV_HUGEPAGE); \
-}
-#else
-#define ENABLE_HUGE_PAGES(ptr, size)
+#define COSMA_HUGEPAGES_AVAILABLE
 #endif
 
+#if defined (__unix__) || (__APPLE__)
+#define COSMA_POSIX_MEMALIGN_AVAILABLE
+#endif
+
+#if defined _ISOC11_SOURCE
+#define COSMA_ALIGNED_ALLOC_AVAILABLE
+#endif
 
 /*
  * A custom allocator that:
@@ -26,7 +29,7 @@
 namespace cosma {
 template <typename T>
 class main_allocator {
-  public:
+public:
     using value_type = T;
     using pointer = value_type *;
     using const_pointer = const value_type *;
@@ -38,11 +41,9 @@ class main_allocator {
     // alignment corresponding to 2M page-size
     std::size_t alignment = (size_t) 2U * (size_t) 1024U * (size_t) 1024U;
 
-  public:
     template <typename U>
     using rebind = main_allocator<U>;
 
-  public:
     main_allocator() {}
     ~main_allocator() {}
 
@@ -52,14 +53,30 @@ class main_allocator {
 
     const_pointer address(const_reference r) { return &r; }
 
+    pointer allocate_aligned(size_type cnt) {
+        void* ptr;
+#ifdef COSMA_POSIX_MEMALIGN_AVAILABLE
+        posix_memalign(&ptr, alignment, cnt * sizeof(value_type));
+#elif COSMA_ALIGNED_ALLOC_AVAILABLE
+        ptr = aligned_alloc(alignment, cnt * sizeof(value_type));
+#else
+        // don't align
+        ptr = malloc(cnt * sizeof(value_type));
+#endif
+        return static_cast<pointer>(ptr);
+    }
+
+    void enable_huge_pages(pointer ptr, size_type cnt) {
+#ifdef COSMA_HUGEPAGES_AVAILABLE
+        madvise(ptr, cnt * sizeof(value_type)), MADV_HUGEPAGE);
+#endif
+    }
+
     pointer allocate(size_type cnt,
                      typename std::allocator<void>::const_pointer = 0) {
         if (cnt) {
-            pointer ptr = static_cast<pointer>(
-                              aligned_alloc(alignment, cnt * sizeof(T))
-                          );
-
-            ENABLE_HUGE_PAGES(ptr, cnt * sizeof(T));
+            pointer ptr = allocate_aligned(cnt);
+            enable_huge_pages(ptr, cnt);
             return ptr;
         }
         return nullptr;
