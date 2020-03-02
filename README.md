@@ -112,7 +112,7 @@ make install
        - link your code to:
        >-L<installation dir>/cosma/lib64 -lcosma_pxgemm -lcosma -lgrid2grid -lTiled-MM
        
-       - link to the GPU backend you build COSMA with (see `COSMA_BLAS` flag in cmake):
+       - link to the GPU backend you built COSMA with (see `COSMA_BLAS` flag in cmake):
        >-lcublas -lcudart -lrt
        
        - then link to the ScaLAPACK you built COSMA with (see `COSMA_SCALAPACK` flag in cmake):
@@ -125,13 +125,19 @@ make install
 
 COSMA is integrated into the [CP2K](https://www.cp2k.org) quantum chemistry simulator. Since COSMA provides ScaLAPACK API, it is enough to link CP2K to COSMA, without changing CP2K code at all, which makes the integration trivial.
 
-In the production run, we ran *Random-Phase Approximation (RPA)* benchmark of 128 water molecules, using the *Resolution of Identity (RI)*. The benchmark was run on 128 nodes of the GPU partition on Piz Daint supercomputer (Cray XC50). Computationally, the most dominant part of this benchmark consists of 46 tall-and-skinny dense matrix multiplications, with the parameters shown in the following table:
+In the production run, we ran *Random-Phase Approximation (RPA)* benchmark of 128 water molecules, using the *Resolution of Identity (RI)*. The benchmark was run on 128 nodes of the GPU partition on [Piz Daint supercomputer](https://www.cscs.ch/computers/piz-daint/) (Cray XC50). Computationally, the most dominant part of this benchmark consists of 46 **tall-and-skinny** dense matrix multiplications, with the parameters shown in the following table:
 
 <p align="center"><img src="https://github.com/eth-cscs/COSMA/blob/master/docs/cp2k-benchmark.svg" width="80%"></p>
 
-We compared the performance of CP2K using the following algorithms for multiplying matrices (`pdgemm` routine):  `MKL`, `Cray-libsci`, `Cray-libsci_acc` (GPU-accelerated) and `COSMA` (both CPU-only and GPU-accelerated versions) libraries. The version with COSMA was the fastest on both CPU and GPU. The CPU version of COSMA achieved the peak performance, whereas the GPU version achieved more than 65\% of the peak performance of GPUs. Keep in mind that the peak performance of GPUs assumes the data is already residing on GPUs which is not the case here, since matrices were initially residing on CPU. This is one of the reasons why the peak performance is not achieved with the GPU version. Still, the GPU version of COSMA was 25-27\% faster than the second best in this case. The results are summarized in the following table:
+We compared the performance of CP2K using the following algorithms for multiplying matrices (`pdgemm` routine):  `MKL` (version: 19.0.1.144), `Cray-libsci` (version: 19.06.1), `Cray-libsci_acc` (version: 19.10.1) (GPU-accelerated) and `COSMA` (both CPU-only and GPU-accelerated versions) libraries. The version with COSMA was the fastest on both CPU and GPU. The CPU version of COSMA achieved the peak performance, whereas the GPU version achieved more than 65\% of the peak performance of GPUs. Keep in mind that the peak performance of GPUs assumes the data is already residing on GPUs which is not the case here, since matrices were initially residing on CPU. This is one of the reasons why the peak performance is not achieved with the GPU version. Still, the GPU version of COSMA was 25-27\% faster than the second best in this case. The results are summarized in the following table:
 
 <p align="center"><img src="https://github.com/eth-cscs/COSMA/blob/master/docs/cp2k-results.svg" width="95%"></p>
+
+With COSMA, even higher speedups are possible, depending on matrix shapes. To illustrate possible performance gains, we also ran different *square matrices* multiplications on the same number of nodes (=128) of Piz Daint supercomputer. The block size is `128x128` and the processor grid is also square: `16x16`. The performance of COSMA is compared against Intel MKL ScaLAPACK (version: 19.0.1.144). The results on Cray XC50 (GPU-accelerated) and Cray XC40 (CPU-only) are summarized in the following table: 
+
+<p align="center"><img src="https://github.com/eth-cscs/COSMA/blob/master/docs/square-results.svg" width="80%"></p>
+
+All the results from this section assumed matrices given in (block-cyclic) ScaLAPACK data layout. However, if the native COSMA layout was used, even higher throughput is possible. 
 
 ## Miniapps
 
