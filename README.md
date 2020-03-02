@@ -133,11 +133,11 @@ We compared the performance of CP2K using the following algorithms for multiplyi
 
 <p align="center"><img src="https://github.com/eth-cscs/COSMA/blob/master/docs/cp2k-results.svg" width="95%"></p>
 
-With COSMA, even higher speedups are possible, depending on matrix shapes. To illustrate possible performance gains, we also ran different *square matrices* multiplications on the same number of nodes (=128) of Piz Daint supercomputer. The block size is `128x128` and the processor grid is also square: `16x16`. The performance of COSMA is compared against Intel MKL ScaLAPACK (version: 19.0.1.144). The results on Cray XC50 (GPU-accelerated) and Cray XC40 (CPU-only) are summarized in the following table: 
+With COSMA, even higher speedups are possible, depending on matrix shapes. To illustrate possible performance gains, we also ran different *square matrix* multiplications on the same number of nodes (=128) of [Piz Daint supercomputer](https://www.cscs.ch/computers/piz-daint/). The block size is `128x128` and the processor grid is also square: `16x16`. The performance of COSMA is compared against Intel MKL ScaLAPACK (version: 19.0.1.144). The results on Cray XC50 (GPU-accelerated) and Cray XC40 (CPU-only) are summarized in the following table: 
 
 <p align="center"><img src="https://github.com/eth-cscs/COSMA/blob/master/docs/square-results.svg" width="80%"></p>
 
-All the results from this section assumed matrices given in (block-cyclic) ScaLAPACK data layout. However, if the native COSMA layout was used, even higher throughput is possible. 
+All the results from this section assumed matrices given in (block-cyclic) ScaLAPACK data layout. However, if the native COSMA layout is used, even higher throughput is possible. 
 
 ## Miniapps
 
