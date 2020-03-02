@@ -10,8 +10,8 @@ cd COSMA
 mkdir build
 cd build
 
-# Choose which BLAS and LAPACK backends to use (e.g. MKL)
-cmake -DCOSMA_BLAS=MKL -DCOSMA_LAPACK=MKL ..
+# Choose which BLAS and SCALAPACK backends to use (e.g. MKL)
+cmake -DCOSMA_BLAS=MKL -DCOSMA_SCALAPACK=MKL ..
 
 # compile
 make -j 8
@@ -20,7 +20,7 @@ make -j 8
 
 Other important options that can be passed to `cmake` are the following:
 - `COSMA_BLAS:` `MKL` (default), `OPENBLAS`, `CRAY_LIBSCI`, `CUSTOM`, `CUDA` or `ROCM`. Determines which backend will be used for the local matrix multiplication calls.
-- `COSMA_SCALAPACK:` OFF (default), MKL, `CRAY_LIBSCI`, `CUSTOM`. If specified, `COSMA` will also provide ScaLAPACK wrappers, thus offering `pdgemm`, `psgemm`, `pzgemm` and `pcgemm` functions, which completely match the ScaLAPACK API.
+- `COSMA_SCALAPACK:` OFF (default), `MKL`, `CRAY_LIBSCI`, `CUSTOM`. If specified, `COSMA` will also provide ScaLAPACK wrappers, thus offering `pdgemm`, `psgemm`, `pzgemm` and `pcgemm` functions, which completely match the ScaLAPACK API.
 
 ## Building COSMA on Cray Systems
 
