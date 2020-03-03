@@ -1,3 +1,5 @@
+<p align="center"><img src="https://github.com/eth-cscs/COSMA/blob/master/docs/cosma-logo.svg" width="70%"></p>
+
 # COSMA: Communication-Optimal, S-partition based, Matrix-Multiplication Algorithm
 
 ## Overview
