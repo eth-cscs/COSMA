@@ -1,10 +1,25 @@
 <p align="center"><img src="https://github.com/eth-cscs/COSMA/blob/master/docs/cosma-logo.svg" width="70%"></p>
 
-# COSMA: Communication-Optimal, S-partition based, Matrix-Multiplication Algorithm
+## Table of Contents
+- [Overview](#overview)
+- [COSMA Literature](#cosma-literature)
+- [Features](#features)
+- [Building COSMA](#building-cosma)
+- [COSMA Dependencies](#cosma-dependencies)
+- [Using COSMA](#using-cosma)
+    - [30 seconds Tutorial](#using-cosma-in-30-seconds)
+- [COSMA in production](#cosma-in-production)
+- [Examples - Miniapps](#miniapps)
+    - [Matrix Multiplication with COSMA](#matrix-multiplication)
+    - [COSMA pdgemm wrapper](#cosma-pdgemm-wrapper)
+- [Performance Profiling](#profiling)
+- [Authors](#authors)
+- [Questions?](#questions)
+- [Acknowledgements](#acknowledgements)
 
 ## Overview
 
-COSMA is a parallel, high-performance, GPU-accelerated, matrix-matrix mutliplication algorithm that is communication-optimal for all combinations of matrix dimensions, number of processes and memory sizes, without the need of any parameter tuning. The key idea behind COSMA is to first derive a tight optimal sequential schedule and only then parallelize it, preserving I/O optimality between processes. This stands in contrast with the 2D and 3D algorithms, which fix process domain decomposition upfront and then map it to the matrix dimensions, which may result in asymptotically more communication. The final design of COSMA facilitates the overlap of computation and communication, ensuring speedups and applicability of modern mechanisms such as RDMA. COSMA allows to not utilize some processors in order to optimize the processor grid, which reduces the communication volume even further and increases the computation volume per processor.
+COSMA is a parallel, high-performance, GPU-accelerated, matrix-matrix mutliplication algorithm that is communication-optimal for all combinations of matrix dimensions, number of processors and memory sizes, without the need for any parameter tuning. The key idea behind COSMA is to first derive a tight optimal sequential schedule and only then parallelize it, preserving I/O optimality between processes. This stands in contrast with the 2D and 3D algorithms, which fix process domain decomposition upfront and then map it to the matrix dimensions, which may result in asymptotically more communication. The final design of COSMA facilitates the overlap of computation and communication, ensuring speedups and applicability of modern mechanisms such as RDMA. COSMA allows to not utilize some processors in order to optimize the processor grid, which reduces the communication volume even further and increases the computation volume per processor.
 
 COSMA got the **Best Student Paper Award** at the prestigious **Supercomputing 2019** conference in Denver, US.
 
@@ -265,7 +280,7 @@ For questions, feel free to contact us, and we will soon get back to you:
 
 > If you need any help with the integration of COSMA into your library, we will be more than happy to help you!
 
-## Ackowledgements
+## Acknowledgements
 
 This work was funded in part by:  
 
