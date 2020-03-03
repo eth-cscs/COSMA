@@ -68,7 +68,7 @@ public:
 
     void enable_huge_pages(pointer ptr, size_type cnt) {
 #ifdef COSMA_HUGEPAGES_AVAILABLE
-        madvise(ptr, cnt * sizeof(value_type)), MADV_HUGEPAGE);
+        madvise(ptr, cnt * sizeof(value_type), MADV_HUGEPAGE);
 #endif
     }
 

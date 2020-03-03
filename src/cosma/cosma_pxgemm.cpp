@@ -1,13 +1,14 @@
+#include <cassert>
+#include <mpi.h>
+
 #include <cosma/blacs.hpp>
 #include <cosma/multiply.hpp>
 #include <cosma/cosma_pxgemm.hpp>
 #include <cosma/profiler.hpp>
+#include <cosma/pxgemm_params.hpp>
+
 #include <grid2grid/ranks_reordering.hpp>
-
 #include <grid2grid/transformer.hpp>
-
-#include <cassert>
-#include <mpi.h>
 
 namespace cosma {
 template <typename T>
@@ -118,19 +119,42 @@ void pxgemm(const char transa,
     PL();
 
     PE(init);
+
 #ifdef DEBUG
     if (rank == 0) {
-        std::cout << "m = " << m << ", n = " << n << ", k = " << k << std::endl;
-        std::cout << "A: bm = " << b_dim_a.rows << ", " << b_dim_a.cols << std::endl;
-        std::cout << "B: bm = " << b_dim_b.rows << ", " << b_dim_b.cols << std::endl;
-        std::cout << "C: bm = " << b_dim_c.rows << ", " << b_dim_c.cols << std::endl;
-        std::cout << "trans_a = " << trans_a << std::endl;
-        std::cout << "trans_b = " << trans_b << std::endl;
-        std::cout << "leading: " << lld_a << ", " << lld_b << ", " << lld_c << std::endl;
-        std::cout << "rank grid = " << procrows << ", " << proccols << std::endl;
-        std::cout << "alpha = " << alpha << ", beta = " << beta << std::endl;
+        pxgemm_params<T> params(
+                             // global dimensions
+                             mat_dim_a.rows, mat_dim_a.cols,
+                             mat_dim_b.rows, mat_dim_b.cols,
+                             mat_dim_c.rows, mat_dim_c.cols,
+                             // block dimensions
+                             b_dim_a.rows, b_dim_a.cols,
+                             b_dim_b.rows, b_dim_b.cols,
+                             b_dim_c.rows, b_dim_c.cols,
+                             // submatrix start
+                             ia, ja,
+                             ib, jb,
+                             ic, jc,
+                             // problem size
+                             m, n, k,
+                             // transpose flags
+                             trans_a, trans_b,
+                             // alpha, beta
+                             alpha, beta,
+                             // leading dimensinons
+                             lld_a, lld_b, lld_c,
+                             // processor grid
+                             procrows, proccols,
+                             // processor grid ordering
+                             ordering,
+                             // ranks containing first rows
+                             rank_src_a.row_src, rank_src_a.col_src,
+                             rank_src_b.row_src, rank_src_b.col_src,
+                             rank_src_c.row_src, rank_src_c.col_src
+                         );
+        std::cout << params << std::endl;
         std::cout << strategy << std::endl;
-        std::cout << "=================================================" << std::endl;
+        std::cout << "============================================" << std::endl;
     }
 #endif
 

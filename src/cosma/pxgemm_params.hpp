@@ -1,4 +1,5 @@
 // a container class, containing all the parameters of pxgemm
+#pragma once
 #include <algorithm>
 #include <cmath>
 #include <vector>
