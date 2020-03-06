@@ -1,13 +1,7 @@
 #include <cosma/strategy.hpp>
-#include <unordered_map>
-#include <mpi.h>
 
 namespace cosma {
 int Strategy::min_dim_size = 32;
-
-void Strategy::disable_optimization() {
-    min_dim_size = 0;
-}
 
 std::size_t Strategy::n_steps() const {
     return divisors.size();
@@ -75,6 +69,7 @@ Strategy::Strategy(int mm,
     , topology(top)
     , overlap_comm_and_comp(overlap)
     , use_busy_waiting(busy_waiting) {
+
     // if divisors are non-empty,
     // then take it as a prefix to this strategy
     bool incomplete_strategy = false;
@@ -82,7 +77,7 @@ Strategy::Strategy(int mm,
     // if a complete strategy is specified,
     // do not try to modify it by optimizing it
     if (incomplete_strategy) {
-        optimize_strategy();
+        // optimize_strategy();
     }
     check_if_valid();
     compute_min_sizes();
@@ -115,7 +110,7 @@ Strategy::Strategy(int mm,
     bool incomplete_strategy;
     square_strategy(incomplete_strategy);
     // compress_steps();
-    optimize_strategy();
+    // optimize_strategy();
     check_if_valid();
     compute_min_sizes();
     check_if_irregular();
@@ -261,14 +256,100 @@ void Strategy::default_strategy() {
     }
 }
 
+bool Strategy::add_step(long long& prev_m, long long& prev_n, long long& prev_k, 
+                        int& prev_P, long long& needed_memory,
+                        char step, char dim_label, int divisor) {
+    long long *dim1, *dim2, *dim3;
+    if (dim_label == 'm') {
+        dim1 = &prev_m;
+        dim2 = &prev_n;
+        dim3 = &prev_k;
+    } else if (dim_label == 'n') {
+        dim1 = &prev_n;
+        dim2 = &prev_m;
+        dim3 = &prev_k;
+    } else {
+        dim1 = &prev_k;
+        dim2 = &prev_m;
+        dim3 = &prev_n;
+    }
+    // if dimension becomes too small
+    // try to correct it (by finding the smaller divisor)
+    // or completely ignore this step 
+    // if such a divisor cannot be found
+    if (*dim1/divisor < min_dim_size) {
+        // try to find smaller divisor
+        int new_d = *dim1 / min_dim_size;
+        // check if this divisor is feasible
+        if (new_d > 1 && *dim1 / new_d >= min_dim_size) {
+            split_dimension += dim_label;
+            step_type += step;
+            divisors.push_back(new_d);
+            *dim1 /= new_d;
+            // decrease the number of processes
+            // by exchanging the divisor d with new_d
+            if (step == 'p') {
+                needed_memory +=
+                    math_utils::divide_and_round_up((*dim2) * (*dim3) * new_d, prev_P);
+                // change the global P as well, because the global
+                // number of processors has to be decreased as well
+                P = P / divisor * new_d;
+                // let it look like we performed this step
+                prev_P = prev_P / divisor * new_d;
+            }
+            return true;
+        } else {
+            // exclude this divisor
+            // ignore this step
+            if (step == 'p') {
+                // change the global P as well, because the global
+                // number of processors has to be decreased as well
+                P = P / divisor;
+                // let it look like we performed this step
+                prev_P = prev_P / divisor;
+            }
+            return false;
+        }
+    } else {
+        split_dimension += dim_label;
+        step_type += step;
+        divisors.push_back(divisor);
+        *dim1 /= divisor;
+        // decrease the number of processes
+        // by exchanging the divisor d with new_d
+        if (step == 'p') {
+            // do not change the global number of processors in this case
+            needed_memory +=
+                math_utils::divide_and_round_up((*dim2) * (*dim3) * divisor, prev_P);
+            prev_P = prev_P / divisor;
+        }
+        return true;
+    }
+}
+
+
 bool Strategy::divide(std::vector<int> &div_factors,
                       int &dim_i,
-                      long long &dim1,
-                      long long &dim2,
-                      long long &dim3,
+                      long long &m,
+                      long long &n,
+                      long long &k,
                       int &P,
                       long long &needed_memory,
-                      const std::string label) {
+                      const char label) {
+    long long dim1, dim2, dim3;
+    if (label == 'm') {
+        dim1 = m;
+        dim2 = n;
+        dim3 = k;
+    } else if (label == 'n') {
+        dim1 = n;
+        dim2 = m;
+        dim3 = k;
+    } else {
+        dim1 = k;
+        dim2 = m;
+        dim3 = n;
+    }
 
     int next_div = 1;
     int accumulated_div = 1;
@@ -303,17 +384,34 @@ bool Strategy::divide(std::vector<int> &div_factors,
 
     if (did_parallel) {
         // i--;
-        needed_memory +=
-            math_utils::divide_and_round_up(dim2 * dim3 * accumulated_div, P);
-        split_dimension += label;
-        step_type += "p";
-        divisors.push_back(accumulated_div);
-        dim1 /= accumulated_div;
-        P /= accumulated_div;
-        // std::cout << "divided parallel m" << std::endl;
+        bool successful = add_step(m, n, k, P, needed_memory, 'p', label, accumulated_div);
     }
 
     return did_parallel;
+}
+
+long long maximum_memory(long long m, long long n, long long k, 
+                         int divm, int divn, int divk, int P) {
+    using dim_pair = std::pair<long long, int>;
+    std::vector<dim_pair> dims = {{m, divm}, {n, divn}, {k, divk}};
+    std::sort(dims.begin(), dims.end(),
+              [](const dim_pair& a, const dim_pair& b) -> bool {
+                  return a.first > b.first ||
+                         a.first == b.first && a.second < b.second;
+              }
+    );
+    long long memory = 0;
+    for (std::size_t i = 0; i < dims.size(); ++i) {
+        auto& dim = dims[i];
+        auto div = dim.second;
+        auto& next_dim = dims[(i+1) % 3];
+        auto& next_next_dim = dims[(i+2) % 3];
+        auto copied_matrix_size = next_dim.first * next_next_dim.first;
+        memory += math_utils::divide_and_round_up(copied_matrix_size * div, P);
+        P /= div;
+        dim.first /= div;
+    }
+    return memory;
 }
 
 void Strategy::square_strategy(bool& incomplete_strategy) {
@@ -363,99 +461,102 @@ void Strategy::square_strategy(bool& incomplete_strategy) {
         return;
     }
 
-    while (P > 1) {
-        int divm, divn, divk;
-        std::tie(divm, divn, divk) = math_utils::balanced_divisors(m, n, k, P);
+    int divm, divn, divk;
+    std::tie(divm, divn, divk) = 
+        math_utils::balanced_divisors(m, n, k, P, min_dim_size);
 
-        // find prime factors of divm, divn, divk
-        std::vector<int> divm_factors = math_utils::decompose(divm);
-        std::vector<int> divn_factors = math_utils::decompose(divn);
-        std::vector<int> divk_factors = math_utils::decompose(divk);
+    // if not enough memory for all of the proposed parallel steps
+    // then perform a single sequential step and recompute again
+    // best divm, divn, divk for the smaller problem
+    while (needed_memory + maximum_memory(m, n, k, divm, divn, divk, P) > memory_limit) {
+        int div = 2;
+        bool success = false;
 
-        int mi, ni, ki;
-        mi = ni = ki = 0;
+        if (m >= std::max(k, n)) {
+            // if m largest => split it
+            success = add_step(m, n, k, P, needed_memory, 's', 'm', div);
+        } else if (n >= std::max(m, k)) {
+            // if n largest => split it
+            success = add_step(m, n, k, P, needed_memory, 's', 'n', div);
+        } else {
+            // if k largest => split it
+            success = add_step(m, n, k, P, needed_memory, 's', 'k', div);
+        }
 
-        int total_divisors =
-            divm_factors.size() + divn_factors.size() + divk_factors.size();
+        if (!success) {
+            throw_exception("Not enough memory for this strategy. \
+                  Either decrease the min_dim_size in the strategy \
+                  to allow dimensions to be further split OR \
+                  increase the memory limit in the strategy \
+                  to allow COSMA to use more memory.");
+        }
 
-        // Iterate through all prime factors of divm, divn and divk and
-        // divide each dimensions with corresponding prime factors as long
-        // as that dimension is the largest one.
-        // Instead of dividing immediately m/divm, n/divn and k/divk,
-        // it's always better to divide the dimension with smaller factors first
-        // that are large enough to make that dimension NOT be the largest one
-        // after division
-        while (mi + ni + ki < total_divisors) {
-            int i = mi + ni + ki;
-            // std::cout << "i = " << i << ", m = " << m << ", n = " << n << ",
-            // k = " << k << std::endl; std::cout << "mi = " << mi << ", ni = "
-            // << ni << ", ki = " << ki << ", P = " << P << std::endl; std::cout
-            // << "needed mem = " << needed_memory << ", mem limit = " <<
-            // memory_limit << std::endl;
-            bool did_parallel = false;
+        std::tie(divm, divn, divk) = 
+            math_utils::balanced_divisors(m, n, k, P, min_dim_size);
+    }
 
-            long long mm = mi >= divm_factors.size() ? 1 : m;
-            long long nn = ni >= divn_factors.size() ? 1 : n;
-            long long kk = ki >= divk_factors.size() ? 1 : k;
+    P = divm * divn * divk;
 
-            if (mm >= std::max(nn, kk)) {
-                did_parallel =
-                    divide(divm_factors, mi, m, n, k, P, needed_memory, "m");
-                if (did_parallel)
-                    continue;
-            }
+    // find prime factors of divm, divn, divk
+    std::vector<int> divm_factors = math_utils::decompose(divm);
+    std::vector<int> divn_factors = math_utils::decompose(divn);
+    std::vector<int> divk_factors = math_utils::decompose(divk);
 
-            if (nn >= std::max(mm, kk)) {
-                did_parallel =
-                    divide(divn_factors, ni, n, m, k, P, needed_memory, "n");
-                if (did_parallel)
-                    continue;
-            }
+    int mi, ni, ki;
+    mi = ni = ki = 0;
 
-            if (kk >= std::max(mm, nn)) {
-                did_parallel =
-                    divide(divk_factors, ki, k, m, n, P, needed_memory, "k");
-                if (did_parallel)
-                    continue;
-            }
+    int total_divisors =
+        divm_factors.size() + divn_factors.size() + divk_factors.size();
 
-            // if not enough memory for any of the proposed parallel steps
-            // then perform a single sequential step and recompute again
-            // best divm, divn, divk for the smaller problem
-            if (!did_parallel) {
-                // don't count this iteration
-                // i--;
-                step_type += "s";
-                int div = 2;
-                divisors.push_back(div);
+    // Iterate through all prime factors of divm, divn and divk and
+    // divide each dimension with corresponding prime factors as long
+    // as that dimension is the largest one.
+    // Instead of dividing immediately m/divm, n/divn and k/divk,
+    // it's always better to divide the dimension with smaller factors first
+    // that are large enough to make that dimension NOT be the largest one
+    // after division
+    while (mi + ni + ki < total_divisors) {
+        int i = mi + ni + ki;
+        bool did_parallel = false;
 
-                // if m largest => split it
-                if (m >= std::max(k, n)) {
-                    split_dimension += "m";
-                    m /= div;
-                    break;
-                }
+        long long mm = mi >= divm_factors.size() ? 1 : m;
+        long long nn = ni >= divn_factors.size() ? 1 : n;
+        long long kk = ki >= divk_factors.size() ? 1 : k;
 
-                // if n largest => split it
-                if (n >= std::max(m, k)) {
-                    split_dimension += "n";
-                    n /= div;
-                    break;
-                }
+        if (mm >= std::max(nn, kk)) {
+            did_parallel =
+                divide(divm_factors, mi, m, n, k, P, needed_memory, 'm');
+            if (did_parallel)
+                continue;
+        }
 
-                // if k largest => split it
-                if (k >= std::max(m, n)) {
-                    split_dimension += "k";
-                    k /= div;
-                    break;
-                }
-            }
+        if (nn >= std::max(mm, kk)) {
+            did_parallel =
+                divide(divn_factors, ni, m, n, k, P, needed_memory, 'n');
+            if (did_parallel)
+                continue;
+        }
+
+        if (kk >= std::max(mm, nn)) {
+            did_parallel =
+                divide(divk_factors, ki, m, n, k, P, needed_memory, 'k');
+            if (did_parallel)
+                continue;
+        }
+
+        if (!did_parallel) {
+            throw_exception("Not enough memory for this strategy. \
+                  Either decrease the min_dim_size in the strategy \
+                  to allow dimensions to be further split OR \
+                  increase the memory limit in the strategy \
+                  to allow COSMA to use more memory.");
         }
     }
 
     std::string step_type_shorter = "";
     std::string split_dimension_shorter = "";
     std::vector<int> divisors_shorter;
+    this->P = 1;
 
     for (int i = 0; i < divisors.size(); ++i) {
         if (step_type[i] == 'p') {
@@ -468,6 +569,7 @@ void Strategy::square_strategy(bool& incomplete_strategy) {
             step_type_shorter += "p";
             split_dimension_shorter += split_dimension[i];
             divisors_shorter.push_back(div);
+            this->P *= div;
             continue;
         }
 
@@ -545,7 +647,7 @@ void processor_grid(unsigned p,
         for (unsigned i = 0; i < p * maxCompLoss; i++) {
             if (1.0 * curCommCost / optCommCost > 1 + maxCommLoss) {
                 std::tie(gridMcurrent, gridNcurrent, gridKcurrent) =
-                    math_utils::balanced_divisors(M, N, K, p - i);
+                    math_utils::balanced_divisors(M, N, K, p - i, Strategy::min_dim_size);
                 curCommCost = communication_cost(
                     M, N, K, gridMcurrent, gridNcurrent, gridKcurrent);
             } else {
@@ -769,65 +871,6 @@ long long Strategy::required_memory(Strategy &strategy) {
     return initial_size;
 }
 
-void Strategy::optimize_strategy() {
-    // adjusted strategy
-    std::string new_step_type = "";
-    std::string new_split_dimension = "";
-    std::vector<int> new_divisors;
-
-    std::vector<int> dims = {m, n, k};
-    // the offsets in the previous vector
-    // we do this to avoid having 3 separate cases
-    // for each dimension in the following for-loop
-    std::unordered_map<char, size_t> offset;
-    offset['m'] = 0;
-    offset['n'] = 1;
-    offset['k'] = 2;
-
-    for (size_t i = 0; i < divisors.size(); ++i) {
-        int dim_i = offset[split_dimension[i]];
-        int& dim = dims[dim_i];
-        int d = divisors[i];
-        // if dimension becomes too small
-        // try to correct it (by finding the smaller divisor)
-        // or completely ignore this step 
-        // if such a divisor cannot be found
-        if (dim/d < min_dim_size) {
-            // try to find smaller divisor
-            int new_d = dim / min_dim_size;
-            // check if this divisor is feasible
-            if (new_d > 1 && dim / new_d >= min_dim_size) {
-                new_split_dimension += split_dimension[i];
-                new_step_type += step_type[i];
-                new_divisors.push_back(new_d);
-                dim /= new_d;
-                // decrease the number of processes
-                // by exchanging the divisor d with new_d
-                if (step_type[i] == 'p') {
-                    P = P / d * new_d;
-                }
-            } else {
-                // exclude this divisor
-                // ignore this step
-                if (step_type[i] == 'p') {
-                    P = P / d;
-                }
-            }
-        } else {
-            new_split_dimension += split_dimension[i];
-            new_step_type += step_type[i];
-            new_divisors.push_back(d);
-            dim /= d;
-        }
-    }
-
-    // set the current values
-    // to the adjusted strategy
-    split_dimension = new_split_dimension;
-    step_type = new_step_type;
-    divisors = new_divisors;
-}
-
 // checks if the strategy is well-defined
 void Strategy::check_if_valid() {
 #ifdef DEBUG
@@ -948,7 +991,7 @@ void Strategy::check_if_valid() {
                                 "processors left = " +
                                 std::to_string(P_a));
             }
-            if (ni < std::min(P_b, P_c)) {
+            if (ni < std::max(P_b, P_c)) {
                 throw_exception(std::string("Dimension n at step ") +
                                 std::to_string(i) + " = " +
                                 std::to_string(ni) +
@@ -966,18 +1009,14 @@ void Strategy::check_if_valid() {
     }
 
     memory_used = required_memory(*this);
-    // check if we have enough memory for this splitting strategy
     /*
+    // check if we have enough memory for this splitting strategy
     if (memory_limit < memory_used) {
-        throw_exception(std::string("The splitting strategy requires memory for
-    roughly ")
-                + std::to_string(memory_used) + " elements, but the memory limit
-    is only "
-                + std::to_string(memory_limit) + " elements. Either increase the
-    memory limit "
-                + "or change the strategy. (Hint: you could use some sequential
-    "
-                + "steps to decrease the required memory.)");
+        throw_exception("The splitting strategy requires memory \
+                         for roughly " + std::to_string(memory_used) + " elements, \
+                         but the memory limit is only " + std::to_string(memory_limit) + " elements. \
+                         Either increase the memory limit or change the strategy. \
+                         (Hint: you could use some sequential steps to spare some memory!)");
     }
     */
 }

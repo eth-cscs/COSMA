@@ -60,9 +60,7 @@ TEST_P(PdgemmTestWithParams, pdgemm) {
             std::cout << state << std::endl;
         }
 
-        // disable strategy optimization
-        // i.e do not modify the given strategy
-        // cosma::Strategy::disable_optimization();
+        cosma::Strategy::min_dim_size = 32;
         bool correct = test_pdgemm(state, comm);
 
         EXPECT_TRUE(correct);
@@ -103,7 +101,10 @@ INSTANTIATE_TEST_CASE_P(
 
         // too many resources
         cosma::pxgemm_params<double>{16, 16, 96, 32, 32, 32, 2, 8, 'T', 'N', 0.5, 0.5},
+        cosma::pxgemm_params<double>{13, 13, 448, 13, 13, 13, 2, 7, 'T', 'N', 0.5, 0.5},
+        cosma::pxgemm_params<double>{13, 13, 448, 13, 13, 13, 2, 7, 'N', 'N', 1.0, 0.5},
 
+        cosma::pxgemm_params<double>{26, 13, 448, 13, 13, 13, 2, 7, 'T', 'N', 1.0, 0.5},
         // detailed pdgemm call
         cosma::pxgemm_params<double>{
             // matrix dimensions

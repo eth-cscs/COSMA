@@ -20,11 +20,24 @@ int next_multiple_of(int n_to_round, int multiple);
 
 // find all divisors of n
 std::vector<int> find_divisors(int n);
-// finds divm, divn and divk such that m/divm = n/divn = k/divk =
-// cubic_root(mnk/P) or at least as close as possible to this such that
-// divm*divn*divk = P
+// Finds the divisors dm, dn and dk for m, n and k respectively, such that
+// 1. dm * dn * dk <= P
+// 2. dm <= min(m, n, m/local_problem_size)
+// 3. dn <= min(n, k, n/local_problem_size)
+// 5. dk <= min(k, n, k/local_problem_size)
+// 6. balanced: m/dm approx= n/dn approx= k/dk
+//
+// For the upper bound on divisors, the following conditions are taken into account:
+//     - layout-conditions: the matrix that is not split, i.e. which does not
+//                          contain the split dimension, must have #columns
+//                          at least as large as the divisor of that dimension
+//     - min-problem-size: the minimum size of the corresponding dimension
+//                         after splitting should be at least min_problem_size
+//     - mathematical: divisor or some dimension should be at least 1 (i.e.
+// 
 std::tuple<int, int, int>
-balanced_divisors(long long m, long long n, long long k, int P);
+balanced_divisors(long long m, long long n, long long k, 
+                          int P, int min_problem_size);
 
 // prime decomposition of n
 std::vector<int> decompose(int n);

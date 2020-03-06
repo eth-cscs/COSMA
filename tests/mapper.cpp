@@ -15,7 +15,6 @@ TEST(strategy, spartition) {
     int P = nodes * ranks_per_node;
     // memory_limit /= ranks_per_node;
 
-    Strategy::disable_optimization();
     Strategy strategy(m, n, k, P, memory_limit);
 
     std::cout << "Strategy = " << strategy << std::endl;
@@ -34,7 +33,6 @@ TEST(strategy, nested_sequential_parallel) {
     int P = nodes * ranks_per_node;
     // memory_limit /= ranks_per_node;
 
-    Strategy::disable_optimization();
     Strategy strategy(m, n, k, P, memory_limit);
 
     std::cout << "Strategy = " << strategy << std::endl;
@@ -51,7 +49,6 @@ TEST(mapper, bdb) {
     std::string dims = "mmn";
     auto P = 4u;
 
-    Strategy::disable_optimization();
     Strategy strategy(m, n, k, P, divisors, dims, types);
 
     // the last element is rank = 0, but regardless of this parameter

@@ -262,6 +262,7 @@ void benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
     int rank;
     MPI_Comm_rank(comm, &rank);
     auto cosma_ctx = cosma::get_context_instance<T>();
+
 #ifdef DEBUG
     if (rank == 0) {
         cosma_ctx->turn_on_output();
@@ -302,7 +303,7 @@ void benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
                          &info);
 
     if (rank == 0 && info != 0) {
-        std::cout << "error: descinit, argument: " << -info << " has an illegal value!" << std::endl;
+        std::cout << "ERROR: descinit, argument: " << -info << " has an illegal value!" << std::endl;
     }
 
     // matrix C
@@ -315,7 +316,7 @@ void benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
                          &params.lld_c,
                          &info);
     if (rank == 0 && info != 0) {
-        std::cout << "error: descinit, argument: " << -info << " has an illegal value!" << std::endl;
+        std::cout << "ERROR: descinit, argument: " << -info << " has an illegal value!" << std::endl;
     }
 
     // ************************************

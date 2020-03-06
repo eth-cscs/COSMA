@@ -60,8 +60,6 @@ TEST(MultiplyUsingLayout, ) {
     MPI_Comm comm = subcommunicator(nprocs, MPI_COMM_WORLD);
 
     if (rank < nprocs) {
-        // do not modify the strategy
-        cosma::Strategy::disable_optimization();
         cosma::Strategy strategy(m, n, k, nprocs);
 
         // create a separate context

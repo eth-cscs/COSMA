@@ -29,15 +29,55 @@ std::vector<int> math_utils::find_divisors(int n) {
     return divs;
 }
 
+// Finds the divisors dm, dn and dk for m, n and k respectively, such that
+// 1. dm * dn * dk <= P
+// 2. dm <= min(m, n, m/local_problem_size)
+// 3. dn <= min(n, k, n/local_problem_size)
+// 5. dk <= min(k, n, k/local_problem_size)
+// 6. balanced: m/dm approx= n/dn approx= k/dk
+//
+// For the upper bound on divisors, the following conditions are taken into account:
+//     - layout-conditions: the matrix that is not split, i.e. which does not
+//                          contain the split dimension, must have #columns
+//                          at least as large as the divisor of that dimension
+//     - min-problem-size: the minimum size of the corresponding dimension
+//                         after splitting should be at least min_problem_size
+//     - mathematical: divisor or some dimension should be at least 1 (i.e.
+// 
 std::tuple<int, int, int>
-math_utils::balanced_divisors(long long m, long long n, long long k, int P) {
-    // sort the dimensions
-    std::vector<int> dimensions = {(int)m, (int)n, (int)k};
-    std::sort(dimensions.begin(), dimensions.end());
+math_utils::balanced_divisors(long long m, long long n, long long k,
+                              int P, int min_local_problem_size) {
+    // each divisor can be at most the value of the dimension
+    auto max_divm = (int) std::min(
+                                   // layout condition + mathematical
+                                   // the matrix that is not split here (i.e. B)
+                                   // must have #colums >= divm
+                                   std::min(m, n), 
+                                   // min_problem_size condition
+                                   m/min_local_problem_size); // min_prob_size condition
+    max_divm = std::max(1, max_divm);
+    auto max_divn = (int) std::min(std::min(k, n),
+                                   n/min_local_problem_size);
+    max_divn = std::max(1, max_divn);
+    auto max_divk = (int) std::min(std::min(k, n),
+                                   k/min_local_problem_size);
+    max_divk = std::max(1, max_divk);
 
-    double target_tile_size =
-        std::cbrt(1.0 * dimensions[1] * dimensions[2] / P * dimensions[0]);
-    // std::cout << "target size = " << target_tile_size << std::endl;
+    P = std::min(P, max_divm * max_divn * max_divk);
+
+    // sort the dimensions
+    std::vector<int> dims = {(int)m, (int)n, (int)k};
+    std::sort(dims.begin(), dims.end());
+
+    double target_tile_size = 0.0;
+    // avoid overflow
+    if (dims[2] >= P) {
+        target_tile_size = std::cbrt(1.0 * dims[2]/ P * dims[0] * dims[1]);
+    } else if (dims[1] * dims[2] >= P) {
+        target_tile_size = std::cbrt(1.0 * dims[1] * dims[2] / P * dims[0]);
+    } else {
+        target_tile_size = std::cbrt(1.0 * dims[0] * dims[1] * dims[2] / P);
+    }
 
     int error = std::numeric_limits<int>::max();
     int divm = 1;
@@ -45,23 +85,22 @@ math_utils::balanced_divisors(long long m, long long n, long long k, int P) {
     int divk = 1;
 
     for (const int &div1 : find_divisors(P)) {
+        if (div1 > max_divm) break;
+
         int error_lower_bound = std::abs(m / div1 - target_tile_size);
         if (error_lower_bound > error) {
-            // std::cout << "skipping " << error_lower_bound << std::endl;
             continue;
         }
         for (const int &div2 : find_divisors(P / div1)) {
-            int div3 = (P / div1) / div2;
-            // std::cout << "div1 = " << div1 << ", div2 = " << div2 << ", div3
-            // = " << div3 << std::endl;
-
+            if (div2 > max_divn) break;
+            int div3 = std::min((P / div1) / div2, max_divk);
             int current_error = std::abs(m / div1 - target_tile_size) +
                                 std::abs(n / div2 - target_tile_size) +
                                 std::abs(k / div3 - target_tile_size);
-
-            // std::cout << "error = " << current_error << std::endl;
-
-            if (current_error < error) {
+            // prefer new divisors if they make tile size closer to the target size
+            // or if they utilize more processors
+            if (div1 * div2 * div3 > divm * divn * divk ||
+                div1 * div2 * div3 == divm * divn * divk && current_error < error) {
                 divm = div1;
                 divn = div2;
                 divk = div3;
@@ -70,64 +109,8 @@ math_utils::balanced_divisors(long long m, long long n, long long k, int P) {
             }
         }
     }
-    // std::cout << "balanced divisors of " << m << ", " << n << ", " << k << "
-    // are " << divm << ", " << divn << ", " << divk << std::endl;
     return std::make_tuple(divm, divn, divk);
 }
-
-/*
-std::tuple<int, int, int> math_utils::balanced_divisors(long long m, long long
-n, long long k, int P) {
-    // sort the dimensions
-    std::vector<int> dimensions = {(int)m, (int)n, (int)k};
-    std::sort(dimensions.begin(), dimensions.end());
-
-    int orig_P = P;
-
-    // find divm, divn, divk such that m/divm = n/divn = k/divk (as close as
-possible)
-    // be careful when dividing, since the product mnk can be very large
-    double target_tile_size = std::cbrt(1.0*dimensions[1]*dimensions[2] / P *
-dimensions[0]);
-    // std::cout << "target tile dimension = " << target_tile_size << std::endl;
-    //
-    std::cout << "target_size = " << target_tile_size << std::endl;
-
-    int div2 = closest_divisor(P, dimensions[2], target_tile_size);
-    P /= div2;
-
-    target_tile_size = std::sqrt(1.0*dimensions[0]*dimensions[1] / P);
-
-    std::cout << "target_size = " << target_tile_size << std::endl;
-
-    int div1 = closest_divisor(P, dimensions[1], target_tile_size);
-    P /= div1;
-    int div0 = P;
-
-    std::cout << "div0 = " << div0 << ", div1 = " << div1 << ", div2 = " << div2
-<< std::endl;
-
-    std::vector<int> divisors = {div0, div1, div2};
-
-    auto m_iter = std::find(dimensions.begin(), dimensions.end(), m);
-    int m_diff = m_iter - dimensions.begin();
-    int divm = divisors[m_diff];
-    dimensions.erase(m_iter);
-    divisors.erase(divisors.begin() + m_diff);
-
-    auto n_iter = std::find(dimensions.begin(), dimensions.end(), n);
-    int n_diff = n_iter - dimensions.begin();
-    int divn = divisors[n_diff];
-    dimensions.erase(n_iter);
-    divisors.erase(divisors.begin() + n_diff);
-
-    int divk = divisors[0];
-
-    std::cout << "balanced divisors of " << m << ", " << n << ", " << k << ", "
-<< orig_P << " are " << divm << ", " << divn << ", " << divk << std::endl;
-    return std::make_tuple(divm, divn, divk);
-}
-*/
 
 // find all prime factors of a given number n
 std::vector<int> math_utils::decompose(int n) {
@@ -178,8 +161,6 @@ int math_utils::closest_divisor(int P, int dimension, double target) {
         }
     }
 
-    std::cout << "closest divisor of " << dimension << " is " << best_div
-              << std::endl;
     return best_div;
 }
 

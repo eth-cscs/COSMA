@@ -116,6 +116,7 @@ TEST_P(MultiplyTestWithParams, multiply) {
     }
 
     if (rank < P) {
+        Strategy::min_dim_size = 32;
         Strategy strategy(m, n, k, P, state.divs, state.dims, state.step_types);
         if (rank == 0) {
             std::cout << "Strategy = " << strategy << std::endl;
@@ -254,6 +255,19 @@ std::vector<multiply_state> generate_tests() {
                        "spspsp" // step types
         ),
         multiply_state(100, 100, 100, 8),
+
+        // strategy: pm2,pk2
+        multiply_state(100, 100, 100, 4,
+                       {2, 2}, // divisors
+                       "mk", // split dimensions
+                       "pp" // step types
+        ),
+        // strategy: pm2,pk2,pn2
+        multiply_state(100, 100, 100, 8,
+                       {2, 2}, // divisors
+                       "mk", // split dimensions
+                       "pp" // step types
+        ),
 
         // strategy: sm2,sk2,sn2,pn2,pm2,pk2
         multiply_state(100, 100, 100, 8,

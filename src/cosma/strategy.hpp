@@ -1,7 +1,6 @@
 #pragma once
 
-#include <cosma/math_utils.hpp>
-
+#include <unordered_map>
 #include <iostream>
 #include <limits>
 #include <math.h>
@@ -10,6 +9,8 @@
 #include <string>
 #include <tuple>
 #include <vector>
+
+#include <cosma/math_utils.hpp>
 
 namespace cosma {
 class Strategy {
@@ -60,8 +61,6 @@ class Strategy {
     int n_parallel_steps_before_gemm_b = 0;
     int n_parallel_steps_before_gemm_c = 0;
 
-    static void disable_optimization();
-
     // constructors
     Strategy();
     // copy constructor
@@ -111,6 +110,10 @@ class Strategy {
 
     void spartition_strategy();
 
+    bool add_step(long long& prev_m, long long& prev_n, long long& prev_k,
+                  int& prev_P, long long& needed_memory,
+                  char step, char dim_label, int divisor);
+
     void throw_exception(const std::string &message);
 
     bool split_m(size_t i) const;
@@ -140,9 +143,6 @@ class Strategy {
     initial_memory(long long m, long long n, long long k, int P);
     static long long required_memory(Strategy &strategy);
 
-    // reduces the number of processors if problem size
-    // gets smaller than min_dim_size
-    void optimize_strategy();
     // checks if the strategy is well-defined
     void check_if_valid();
     void check_if_overlap_possible();
@@ -192,6 +192,6 @@ class Strategy {
                 long long &dim3,
                 int &P,
                 long long &needed_memory,
-                const std::string label);
+                const char label);
 };
 } // namespace cosma
