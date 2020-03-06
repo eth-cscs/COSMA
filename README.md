@@ -1,4 +1,4 @@
-<p align="center"><img src="https://github.com/eth-cscs/COSMA/blob/master/docs/cosma-logo.svg" width="70%"></p>
+<p align="center"><img src="./docs/cosma-logo.svg" width="70%"></p>
 
 ## Table of Contents
 - [Overview](#overview)
@@ -144,15 +144,15 @@ COSMA is integrated into the [CP2K](https://www.cp2k.org) quantum chemistry simu
 
 In the production run, we ran *Random-Phase Approximation (RPA)* benchmark of 128 water molecules, using the *Resolution of Identity (RI)*. The benchmark was run on 128 nodes of the GPU partition on [Piz Daint supercomputer](https://www.cscs.ch/computers/piz-daint/) (Cray XC50). Computationally, the most dominant part of this benchmark consists of 46 **tall-and-skinny** dense matrix multiplications, with the parameters shown in the following table:
 
-<p align="center"><img src="https://github.com/eth-cscs/COSMA/blob/master/docs/cp2k-benchmark.svg" width="80%"></p>
+<p align="center"><img src="./docs/cp2k-benchmark.svg" width="80%"></p>
 
 We compared the performance of CP2K using the following algorithms for multiplying matrices (`pdgemm` routine):  `MKL` (version: 19.0.1.144), `Cray-libsci` (version: 19.06.1), `Cray-libsci_acc` (version: 19.10.1) (GPU-accelerated) and `COSMA` (both CPU-only and GPU-accelerated versions) libraries. The version with COSMA was the fastest on both CPU and GPU. The CPU version of COSMA achieved the peak performance, whereas the GPU version achieved more than 65\% of the peak performance of GPUs. Keep in mind that the peak performance of GPUs assumes the data is already residing on GPUs which is not the case here, since matrices were initially residing on CPU. This is one of the reasons why the peak performance is not achieved with the GPU version. Still, the GPU version of COSMA was 25-27\% faster than the second best in this case. The results are summarized in the following table:
 
-<p align="center"><img src="https://github.com/eth-cscs/COSMA/blob/master/docs/cp2k-results.svg" width="95%"></p>
+<p align="center"><img src="./docs/cp2k-results.svg" width="95%"></p>
 
 With COSMA, even higher speedups are possible, depending on matrix shapes. To illustrate possible performance gains, we also ran different *square matrix* multiplications on the same number of nodes (=128) of [Piz Daint supercomputer](https://www.cscs.ch/computers/piz-daint/). The block size is `128x128` and the processor grid is also square: `16x16`. The performance of COSMA is compared against Intel MKL ScaLAPACK (version: 19.0.1.144). The results on Cray XC50 (GPU-accelerated) and Cray XC40 (CPU-only) are summarized in the following table: 
 
-<p align="center"><img src="https://github.com/eth-cscs/COSMA/blob/master/docs/square-results.svg" width="80%"></p>
+<p align="center"><img src="./docs/square-results.svg" width="80%"></p>
 
 All the results from this section assumed matrices given in (block-cyclic) ScaLAPACK data layout. However, if the native COSMA layout is used, even higher throughput is possible. 
 
@@ -284,12 +284,12 @@ For questions, feel free to contact us, and we will soon get back to you:
 
 This work was funded in part by:  
 
-<img align="left" height="50" src="https://github.com/eth-cscs/COSMA/blob/master/docs/eth-logo.svg"> | [**ETH Zurich**](https://ethz.ch/en.html)**: Swiss Federal Institute of Technology in Zurich**
+<img align="left" height="50" src="./docs/eth-logo.svg"> | [**ETH Zurich**](https://ethz.ch/en.html)**: Swiss Federal Institute of Technology in Zurich**
 | :------------------- | :------------------- |
-<img align="left" height="50" src="https://github.com/eth-cscs/COSMA/blob/master/docs/cscs-logo.jpg"> | [**CSCS**](https://www.cscs.ch)**: Swiss National Supercomputing Centre**
-<img align="left" height="50" src="https://github.com/eth-cscs/COSMA/blob/master/docs/pasc-logo.png"> | [**PASC**](https://www.pasc-ch.org/)**: Platform for Advanced Scientific Computing**
-<img align="left" height="50" src="https://github.com/eth-cscs/COSMA/blob/master/docs/erc-logo.png"> | [**ERC**](https://erc.europa.eu): **European Research Council** (Horizon2020, grant agreement DAPP, No.678880)
-<img align="left" height="50" src="https://github.com/eth-cscs/COSMA/blob/master/docs/max-logo.jpg"> | [**MaX**](http://www.max-centre.eu): **Materials design at the Exascale** (Horizon2020, grant agreement MaX CoE, No. 824143.)
+<img align="left" height="50" src="./docs/cscs-logo.jpg"> | [**CSCS**](https://www.cscs.ch)**: Swiss National Supercomputing Centre**
+<img align="left" height="50" src="./docs/pasc-logo.png"> | [**PASC**](https://www.pasc-ch.org/)**: Platform for Advanced Scientific Computing**
+<img align="left" height="50" src="./docs/erc-logo.png"> | [**ERC**](https://erc.europa.eu): **European Research Council** (Horizon2020, grant agreement DAPP, No.678880)
+<img align="left" height="50" src="./docs/max-logo.jpg"> | [**MaX**](http://www.max-centre.eu): **Materials design at the Exascale** (Horizon2020, grant agreement MaX CoE, No. 824143.)
 
 We thank Thibault Notargiacomo, Sam Yates, Benjamin Cumming and Simon Pintarelli for their generous contribution to the project: great ideas, useful advices and fruitful discussions.
 
