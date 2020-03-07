@@ -1,4 +1,3 @@
-#ifdef COSMA_HAVE_GPU
 #include <cosma/pinned_buffers.hpp>
 
 // container of pinned buffers
@@ -49,4 +48,3 @@ template struct pinned_buffers<float>;
 template struct pinned_buffers<double>;
 template struct pinned_buffers<std::complex<float>>;
 template struct pinned_buffers<std::complex<double>>;
-#endif

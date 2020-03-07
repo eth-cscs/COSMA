@@ -330,7 +330,8 @@ std::vector<size_t> Buffer<T>::compute_buffer_size() {
     Interval k(0, strategy_->k - 1);
     Interval P(0, strategy_->P - 1);
 
-    return compute_buffer_size(m, n, k, P, 0, rank_, strategy_->beta);
+    // assume most memory-consuming case when beta=T{1}
+    return compute_buffer_size(m, n, k, P, 0, rank_, T{1});
 }
 
 template <typename T>

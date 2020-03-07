@@ -27,7 +27,7 @@ class Strategy {
     // minimum problem size per rank
     // the total number of ranks will be reduced
     // if the problem size per rank is too small
-    // by default = 32
+    // by default = 1000
     static int min_dim_size;
 
     // the actual minimum problem size
@@ -36,8 +36,6 @@ class Strategy {
     int min_n = 0;
     int min_k = 0;
 
-    // beta parameter of gemm
-    double beta = 0.0;
     // stores the divisor in each step of the algorithm
     std::vector<int> divisors = {};
     // returns m, n or k character depending on
@@ -78,7 +76,6 @@ class Strategy {
              std::string &dims,
              std::string &types,
              long long mem_limit = std::numeric_limits<long long>::max(),
-             double b = 0.0,
              bool top = false,
              bool overlap = false,
              bool busy_waiting = true);
@@ -88,7 +85,6 @@ class Strategy {
              int kk,
              size_t PP,
              long long mem_limit = std::numeric_limits<long long>::max(),
-             double b = 0.0,
              bool top = false,
              bool overlap = false,
              bool busy_waiting = true);
@@ -111,8 +107,7 @@ class Strategy {
     void spartition_strategy();
 
     bool add_step(long long& prev_m, long long& prev_n, long long& prev_k,
-                  int& prev_P, long long& needed_memory,
-                  char step, char dim_label, int divisor);
+                  int& prev_P, char step, char dim_label, int divisor);
 
     void throw_exception(const std::string &message);
 
@@ -191,7 +186,6 @@ class Strategy {
                 long long &dim2,
                 long long &dim3,
                 int &P,
-                long long &needed_memory,
                 const char label);
 };
 } // namespace cosma

@@ -1,7 +1,7 @@
 #include <cosma/strategy.hpp>
 
 namespace cosma {
-int Strategy::min_dim_size = 32;
+int Strategy::min_dim_size = 1000;
 
 std::size_t Strategy::n_steps() const {
     return divisors.size();
@@ -25,8 +25,6 @@ bool Strategy::operator==(const Strategy &other) const {
         this->P == other.P
         &&
         this->memory_limit == other.memory_limit
-        &&
-        this->beta == other.beta
         &&
         this->divisors == other.divisors
         &&
@@ -53,7 +51,6 @@ Strategy::Strategy(int mm,
                    std::string &dims,
                    std::string &types,
                    long long mem_limit,
-                   double b,
                    bool top,
                    bool overlap,
                    bool busy_waiting)
@@ -62,7 +59,6 @@ Strategy::Strategy(int mm,
     , k(kk)
     , P(PP)
     , memory_limit(mem_limit)
-    , beta(b)
     , divisors(divs)
     , split_dimension(dims)
     , step_type(types)
@@ -80,8 +76,8 @@ Strategy::Strategy(int mm,
         // optimize_strategy();
     }
     check_if_valid();
-    compute_min_sizes();
     check_if_irregular();
+    compute_min_sizes();
 }
 
 Strategy::Strategy(int mm,
@@ -89,7 +85,6 @@ Strategy::Strategy(int mm,
                    int kk,
                    size_t PP,
                    long long mem_limit,
-                   double b,
                    bool top,
                    bool overlap,
                    bool busy_waiting)
@@ -98,7 +93,6 @@ Strategy::Strategy(int mm,
     , k(kk)
     , P(PP)
     , memory_limit(mem_limit)
-    , beta(b)
     , topology(top)
     , overlap_comm_and_comp(overlap)
     , use_busy_waiting(busy_waiting) {
@@ -112,8 +106,8 @@ Strategy::Strategy(int mm,
     // compress_steps();
     // optimize_strategy();
     check_if_valid();
-    compute_min_sizes();
     check_if_irregular();
+    compute_min_sizes();
 }
 
 long long
@@ -257,8 +251,7 @@ void Strategy::default_strategy() {
 }
 
 bool Strategy::add_step(long long& prev_m, long long& prev_n, long long& prev_k, 
-                        int& prev_P, long long& needed_memory,
-                        char step, char dim_label, int divisor) {
+                        int& prev_P, char step, char dim_label, int divisor) {
     long long *dim1, *dim2, *dim3;
     if (dim_label == 'm') {
         dim1 = &prev_m;
@@ -289,8 +282,6 @@ bool Strategy::add_step(long long& prev_m, long long& prev_n, long long& prev_k,
             // decrease the number of processes
             // by exchanging the divisor d with new_d
             if (step == 'p') {
-                needed_memory +=
-                    math_utils::divide_and_round_up((*dim2) * (*dim3) * new_d, prev_P);
                 // change the global P as well, because the global
                 // number of processors has to be decreased as well
                 P = P / divisor * new_d;
@@ -319,8 +310,6 @@ bool Strategy::add_step(long long& prev_m, long long& prev_n, long long& prev_k,
         // by exchanging the divisor d with new_d
         if (step == 'p') {
             // do not change the global number of processors in this case
-            needed_memory +=
-                math_utils::divide_and_round_up((*dim2) * (*dim3) * divisor, prev_P);
             prev_P = prev_P / divisor;
         }
         return true;
@@ -334,7 +323,6 @@ bool Strategy::divide(std::vector<int> &div_factors,
                       long long &n,
                       long long &k,
                       int &P,
-                      long long &needed_memory,
                       const char label) {
     long long dim1, dim2, dim3;
     if (label == 'm') {
@@ -366,10 +354,7 @@ bool Strategy::divide(std::vector<int> &div_factors,
     // math_utils::divide_and_round_up(k * n * next_div, P) << std::endl;
     // std::cout << "m / acc_div = " << m/accumulated_div << std::endl;
     // if m largest => split it
-    while (dim_i < div_factors.size() && (largest || first_run) &&
-           needed_memory +
-                   math_utils::divide_and_round_up(dim2 * dim3 * next_div, P) <=
-               memory_limit) {
+    while (dim_i < div_factors.size() && (largest || first_run)) {
         accumulated_div = next_div;
         did_parallel = true;
         dim_i++;
@@ -384,7 +369,7 @@ bool Strategy::divide(std::vector<int> &div_factors,
 
     if (did_parallel) {
         // i--;
-        bool successful = add_step(m, n, k, P, needed_memory, 'p', label, accumulated_div);
+        return add_step(m, n, k, P, 'p', label, accumulated_div);
     }
 
     return did_parallel;
@@ -465,34 +450,36 @@ void Strategy::square_strategy(bool& incomplete_strategy) {
     std::tie(divm, divn, divk) = 
         math_utils::balanced_divisors(m, n, k, P, min_dim_size);
 
+    auto additional_memory = maximum_memory(m, n, k, divm, divn, divk, P);
     // if not enough memory for all of the proposed parallel steps
     // then perform a single sequential step and recompute again
     // best divm, divn, divk for the smaller problem
-    while (needed_memory + maximum_memory(m, n, k, divm, divn, divk, P) > memory_limit) {
+    while (needed_memory + additional_memory > memory_limit) {
         int div = 2;
         bool success = false;
 
         if (m >= std::max(k, n)) {
             // if m largest => split it
-            success = add_step(m, n, k, P, needed_memory, 's', 'm', div);
+            success = add_step(m, n, k, P, 's', 'm', div);
         } else if (n >= std::max(m, k)) {
             // if n largest => split it
-            success = add_step(m, n, k, P, needed_memory, 's', 'n', div);
+            success = add_step(m, n, k, P, 's', 'n', div);
         } else {
             // if k largest => split it
-            success = add_step(m, n, k, P, needed_memory, 's', 'k', div);
+            success = add_step(m, n, k, P, 's', 'k', div);
         }
 
         if (!success) {
-            throw_exception("Not enough memory for this strategy. \
-                  Either decrease the min_dim_size in the strategy \
-                  to allow dimensions to be further split OR \
-                  increase the memory limit in the strategy \
-                  to allow COSMA to use more memory.");
+            throw_exception(std::string("Not enough memory for this strategy. ")
+                  + "Either decrease the min_dim_size in the strategy "
+                  + "to allow dimensions to be further split OR "
+                  + "increase the memory limit in the strategy "
+                  + "to allow COSMA to use more memory.");
         }
 
         std::tie(divm, divn, divk) = 
             math_utils::balanced_divisors(m, n, k, P, min_dim_size);
+        additional_memory = maximum_memory(m, n, k, divm, divn, divk, P);
     }
 
     P = divm * divn * divk;
@@ -525,31 +512,31 @@ void Strategy::square_strategy(bool& incomplete_strategy) {
 
         if (mm >= std::max(nn, kk)) {
             did_parallel =
-                divide(divm_factors, mi, m, n, k, P, needed_memory, 'm');
+                divide(divm_factors, mi, m, n, k, P, 'm');
             if (did_parallel)
                 continue;
         }
 
         if (nn >= std::max(mm, kk)) {
             did_parallel =
-                divide(divn_factors, ni, m, n, k, P, needed_memory, 'n');
+                divide(divn_factors, ni, m, n, k, P, 'n');
             if (did_parallel)
                 continue;
         }
 
         if (kk >= std::max(mm, nn)) {
             did_parallel =
-                divide(divk_factors, ki, m, n, k, P, needed_memory, 'k');
+                divide(divk_factors, ki, m, n, k, P, 'k');
             if (did_parallel)
                 continue;
         }
 
         if (!did_parallel) {
-            throw_exception("Not enough memory for this strategy. \
-                  Either decrease the min_dim_size in the strategy \
-                  to allow dimensions to be further split OR \
-                  increase the memory limit in the strategy \
-                  to allow COSMA to use more memory.");
+            throw_exception(std::string("Not enough memory for this strategy. ")
+                  + "Either decrease the min_dim_size in the strategy "
+                  + "to allow dimensions to be further split OR "
+                  + "increase the memory limit in the strategy "
+                  + "to allow COSMA to use more memory.");
         }
     }
 

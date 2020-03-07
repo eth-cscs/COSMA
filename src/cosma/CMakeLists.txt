@@ -16,8 +16,12 @@ if(NOT TARGET cosma)
                         strategy.cpp
                         two_sided_communicator.cpp
                         random_generator.hpp
-                        pinned_buffers.cpp
     )
+
+    if (${BLAS_DEF} STREQUAL "COSMA_HAVE_GPU")
+        list(APPEND cosma_src_files "pinned_buffers.cpp")
+    endif()
+
     add_library(cosma STATIC ${cosma_src_files})
     target_include_directories(cosma PUBLIC $<BUILD_INTERFACE:${cosma_SOURCE_DIR}/src>)
     target_compile_features(cosma PUBLIC cxx_std_14)

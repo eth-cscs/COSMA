@@ -48,22 +48,27 @@ std::tuple<int, int, int>
 math_utils::balanced_divisors(long long m, long long n, long long k,
                               int P, int min_local_problem_size) {
     // each divisor can be at most the value of the dimension
-    auto max_divm = (int) std::min(
-                                   // layout condition + mathematical
-                                   // the matrix that is not split here (i.e. B)
-                                   // must have #colums >= divm
-                                   std::min(m, n), 
-                                   // min_problem_size condition
-                                   m/min_local_problem_size); // min_prob_size condition
-    max_divm = std::max(1, max_divm);
-    auto max_divn = (int) std::min(std::min(k, n),
-                                   n/min_local_problem_size);
-    max_divn = std::max(1, max_divn);
-    auto max_divk = (int) std::min(std::min(k, n),
-                                   k/min_local_problem_size);
-    max_divk = std::max(1, max_divk);
+    auto max_divm = std::min(
+                            // layout condition + mathematical
+                            // the matrix that is not split here (i.e. B)
+                            // must have #colums >= divm
+                            std::min(m, n), 
+                            // min_problem_size condition
+                            m/min_local_problem_size); // min_prob_size condition
+    max_divm = std::max(1LL, max_divm);
+    auto max_divn = std::min(std::min(k, n),
+                             n/min_local_problem_size);
+    max_divn = std::max(1LL, max_divn);
+    auto max_divk = std::min(std::min(k, n),
+                             k/min_local_problem_size);
+    max_divk = std::max(1LL, max_divk);
 
-    P = std::min(P, max_divm * max_divn * max_divk);
+    // protect from overflow by adding redundant checks
+    if (max_divm < P && max_divn < P && max_divk < P
+            && max_divm * max_divn < P
+            && max_divm * max_divn * max_divk < P) {
+        P = (int) (max_divm * max_divn * max_divk);
+    }
 
     // sort the dimensions
     std::vector<int> dims = {(int)m, (int)n, (int)k};
@@ -93,7 +98,7 @@ math_utils::balanced_divisors(long long m, long long n, long long k,
         }
         for (const int &div2 : find_divisors(P / div1)) {
             if (div2 > max_divn) break;
-            int div3 = std::min((P / div1) / div2, max_divk);
+            int div3 = std::min((P / div1) / div2, (int) max_divk);
             int current_error = std::abs(m / div1 - target_tile_size) +
                                 std::abs(n / div2 - target_tile_size) +
                                 std::abs(k / div3 - target_tile_size);

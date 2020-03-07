@@ -7,19 +7,27 @@ using namespace cosma;
 TEST(strategy, spartition) {
     int m = 17408;
     int n = 17408;
-    int k = 3735552;
-    long long memory_limit =
-        80000000; // #elements, per node, corresponding to 50GB
-    int nodes = 64;
+    int k = 3473408;
+    long long memory_limit = 52428800; // #elements per rank
+    int nodes = 128;
     int ranks_per_node = 36;
     int P = nodes * ranks_per_node;
     // memory_limit /= ranks_per_node;
 
+    Strategy::min_dim_size = 32;
     Strategy strategy(m, n, k, P, memory_limit);
 
     std::cout << "Strategy = " << strategy << std::endl;
     std::cout << "n seq steps = " << strategy.n_sequential_steps << std::endl;
+
     EXPECT_TRUE(strategy.n_sequential_steps > 0);
+
+    EXPECT_EQ(strategy.split_dimension, "kkmnkmnkn");
+
+    EXPECT_EQ(strategy.step_type, "spppppppp");
+
+    std::vector<int> target_divisors = {16, 16, 2, 2, 2, 3, 2, 3, 2};
+    EXPECT_EQ(strategy.divisors, target_divisors);
 }
 
 TEST(strategy, nested_sequential_parallel) {
@@ -33,6 +41,7 @@ TEST(strategy, nested_sequential_parallel) {
     int P = nodes * ranks_per_node;
     // memory_limit /= ranks_per_node;
 
+    Strategy::min_dim_size = 32;
     Strategy strategy(m, n, k, P, memory_limit);
 
     std::cout << "Strategy = " << strategy << std::endl;
