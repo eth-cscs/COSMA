@@ -685,7 +685,6 @@ void comm_task_k_split(int divisor,
         packages = std::min(packages, divisor);
 
         int diff = packages - i;
-        auto start = std::chrono::high_resolution_clock::now();
         while (i < packages) {
             int idx = (gp + i) % divisor;
             Scalar *pointer_c =
@@ -797,6 +796,10 @@ void overlap_k_split(cosma_context<Scalar> *ctx,
 
     int local_size = m.length() * n.subinterval(divisor, gp).length();
 
+    auto accumulate_buffer = 
+        (beta != Scalar{0}) ? expanded_mat.reduce_buffer_ptr() : original_matrix;
+    std::fill(accumulate_buffer, accumulate_buffer + local_size, Scalar{0});
+
     Interval newk = k.subinterval(divisor, gp);
 
     std::vector<int> displacements_n(divisor);
@@ -822,7 +825,7 @@ void overlap_k_split(cosma_context<Scalar> *ctx,
                           off,
                           target_jump_size,
                           expanded_matrix,
-                          original_matrix,
+                          accumulate_buffer,
                           m,
                           n,
                           P,
@@ -831,12 +834,6 @@ void overlap_k_split(cosma_context<Scalar> *ctx,
                           std::ref(mtx),
                           std::ref(cv),
                           comm);
-
-    // initilize C to 0 if beta = 0 since accumulate will do additions over
-    // this array
-    if (beta == Scalar{0}) {
-        memset(original_matrix, 0, local_size * sizeof(Scalar));
-    }
 
     Scalar *prev_a = matrixA.current_matrix();
     Scalar *prev_b = matrixB.current_matrix();
@@ -856,7 +853,7 @@ void overlap_k_split(cosma_context<Scalar> *ctx,
                 newk,
                 std::ref(displacements_n),
                 alpha,
-                beta,
+                Scalar{0},
                 0,
                 divisor);
 
@@ -889,7 +886,7 @@ void overlap_k_split(cosma_context<Scalar> *ctx,
                         newk,
                         std::ref(displacements_n),
                         alpha,
-                        beta,
+                        Scalar{0},
                         start,
                         end);
 
@@ -913,7 +910,7 @@ void overlap_k_split(cosma_context<Scalar> *ctx,
                                 newk,
                                 std::ref(displacements_n),
                                 alpha,
-                                beta,
+                                Scalar{0},
                                 end,
                                 next_end);
                         processed++;
@@ -941,7 +938,7 @@ void overlap_k_split(cosma_context<Scalar> *ctx,
                         newk,
                         std::ref(displacements_n),
                         alpha,
-                        beta,
+                        Scalar{0},
                         start,
                         divisor);
                 compute(ctx,
@@ -955,7 +952,7 @@ void overlap_k_split(cosma_context<Scalar> *ctx,
                         newk,
                         std::ref(displacements_n),
                         alpha,
-                        beta,
+                        Scalar{0},
                         0,
                         end);
 
@@ -981,7 +978,7 @@ void overlap_k_split(cosma_context<Scalar> *ctx,
                                 newk,
                                 std::ref(displacements_n),
                                 alpha,
-                                beta,
+                                Scalar{0},
                                 end,
                                 next_end);
                         processed++;
@@ -1003,6 +1000,13 @@ void overlap_k_split(cosma_context<Scalar> *ctx,
     }
 
     comm_task.join();
+
+    if (beta != Scalar{0}) {
+        for (unsigned i = 0u; i < local_size; ++i) {
+            original_matrix[i] = original_matrix[i] * beta + accumulate_buffer[i];
+        }
+    }
+
     PL();
 }
 

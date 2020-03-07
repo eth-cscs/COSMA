@@ -274,8 +274,9 @@ typename Buffer<T>::scalar_t *Buffer<T>::reshuffle_buffer_ptr() {
 
 template <typename T>
 typename Buffer<T>::scalar_t *Buffer<T>::reduce_buffer_ptr() {
-    if (max_reduce_buffer_size_ > 0)
+    if (max_reduce_buffer_size_ > 0) {
         return ctxt_->get_memory_pool().get_buffer_pointer(reduce_buffer_);
+    }
     return nullptr;
 }
 

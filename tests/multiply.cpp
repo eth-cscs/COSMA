@@ -257,6 +257,12 @@ std::vector<multiply_state> generate_tests() {
         multiply_state(100, 100, 100, 8),
 
         // strategy: pm2,pk2
+        multiply_state(31, 32, 33, 4,
+                       {2, 2}, // divisors
+                       "mk", // split dimensions
+                       "pp" // step types
+        ),
+        // strategy: pm2,pk2
         multiply_state(100, 100, 100, 4,
                        {2, 2}, // divisors
                        "mk", // split dimensions

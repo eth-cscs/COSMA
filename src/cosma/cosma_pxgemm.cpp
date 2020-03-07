@@ -120,7 +120,7 @@ void pxgemm(const char transa,
 
     PE(init);
 
-// #ifdef DEBUG
+#ifdef DEBUG
     if (rank == 0) {
         pxgemm_params<T> params(
                              // global dimensions
@@ -156,7 +156,7 @@ void pxgemm(const char transa,
         std::cout << strategy << std::endl;
         std::cout << "============================================" << std::endl;
     }
-// #endif
+#endif
 
     PL();
     // create COSMA mappers

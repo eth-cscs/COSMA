@@ -25,7 +25,6 @@ int main(int argc, char **argv) {
 
     // first run without overlapping communication and computation
     bool isOK = test_cosma<double>(strategy, ctx, MPI_COMM_WORLD, false);
-    MPI_Barrier(MPI_COMM_WORLD);
     // then run with the overlap of communication and computation
     isOK = isOK && test_cosma<double>(strategy, ctx, MPI_COMM_WORLD, true);
 

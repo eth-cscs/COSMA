@@ -1158,21 +1158,30 @@ int Strategy::n_cols(char label) const {
 
 // enables overlapping and updates the value of the `irregular` variable
 void Strategy::enable_overlapping_comm_and_comp() {
-    overlap_comm_and_comp = true;
     int last_step = n_steps() - 1;
 
     // if comm and comp are overlapped, then in the last step
     // the #columns of the matrix which was not split in that step
     // are being split by the same divisor to allow the overlap
-    if (split_m(last_step)) {
-        // if m is split, then B is not split and thus min_n is also split
-        irregular = irregular || (min_n % divisor_m(last_step) != 0);
-    } else if (split_n(last_step)) {
-        // if n is split, then A is not split and thus min_k is also split
-        irregular = irregular || (min_k % divisor_n(last_step) != 0);
-    } else if (split_k(last_step)) {
-        // if k is split, then C is not split and thus min_n is also split
-        irregular = irregular || (min_n % divisor_k(last_step) != 0);
+    if (split_m(last_step) && min_n >= divisor_m(last_step)) {
+        // overlap only possible if min_n >= divisor_m(last_step)
+        overlap_comm_and_comp = true;
+        if (overlap_comm_and_comp) {
+            // if m is split, then B is not split and thus min_n is also split
+            irregular = irregular || (min_n % divisor_m(last_step) != 0);
+        }
+    } else if (split_n(last_step) && min_k >= divisor_n(last_step)) {
+        overlap_comm_and_comp = true;
+        if (overlap_comm_and_comp) {
+            // if n is split, then A is not split and thus min_k is also split
+            irregular = irregular || (min_k % divisor_n(last_step) != 0);
+        }
+    } else if (split_k(last_step) && min_n >= divisor_k(last_step)) {
+        overlap_comm_and_comp = true;
+        if (overlap_comm_and_comp) {
+            // if k is split, then C is not split and thus min_n is also split
+            irregular = irregular || (min_n % divisor_k(last_step) != 0);
+        }
     }
 }
 

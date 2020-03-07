@@ -44,6 +44,7 @@ void cosma::memory_pool<T>::free_buffer(T* ptr, size_t size) {
     --n_buffers_;
     // check if this buffer was on top of the memory pool
     assert(pool_.data() + pool_size_ == ptr);
+    // std::fill(ptr, ptr + size, T{});
 }
 
 template <typename T>

@@ -34,7 +34,7 @@ void fill_matrix(std::complex<T>* ptr, size_t size) {
 }
 
 template <typename Scalar>
-bool test_cosma(Strategy &s,
+bool test_cosma(Strategy s,
          context<Scalar>& ctx,
          MPI_Comm comm = MPI_COMM_WORLD,
          bool overlap = false,

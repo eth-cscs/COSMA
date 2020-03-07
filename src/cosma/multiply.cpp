@@ -333,7 +333,7 @@ void multiply(cosma_context<Scalar> *ctx,
     int offsetC = matrixC.shift(bucketC[comm.relative_rank(P)]);
     PL();
 
-    if (strategy.final_step(step) || strategy.empty())
+    if (strategy.final_step(step) || strategy.empty()) {
         local_multiply(ctx,
                        matrixA.current_matrix(),
                        matrixB.current_matrix(),
@@ -343,7 +343,7 @@ void multiply(cosma_context<Scalar> *ctx,
                        k.length(),
                        alpha,
                        beta);
-    else {
+    } else {
         if (strategy.parallel_step(step)) {
             if (strategy.should_overlap_comm_and_comp(step)) {
                 comm.overlap_comm_and_comp(ctx,
@@ -610,7 +610,6 @@ void parallel(cosma_context<Scalar> *ctx,
               Scalar alpha,
               Scalar beta) {
     PE(multiply_other);
-
     int divisor = strategy.divisor(step);
     int divisor_m = strategy.divisor_m(step);
     int divisor_n = strategy.divisor_n(step);
@@ -690,7 +689,6 @@ void parallel(cosma_context<Scalar> *ctx,
 
     int buffer_idx = expanded_mat.buffer_index();
     expanded_mat.advance_buffer();
-    int buffer_idx_expanded = expanded_mat.buffer_index();
 
     Scalar *original_matrix = expanded_mat.current_matrix();
     Scalar *expanded_matrix = expanded_mat.buffer_ptr();
@@ -812,6 +810,19 @@ void parallel(cosma_context<Scalar> *ctx,
              alpha,
              new_beta);
 
+#ifdef DEBUG
+    std::cout << "rank = " << comm.rank() << ", label = " << expanded_mat.label() << std::endl;
+    if (comm.rank() == 0 && expanded_mat.label() == 'C') {
+        std::cout << "expanded matrix after multiply: " << std::endl;
+        int local_size = size_before_expansion[comm.rank() - P.first()][0];
+        for (int i = 0; i < local_size; ++i) {
+            std::cout << *(expanded_mat.current_matrix() + i) << ", ";
+        }
+        std::cout << std::endl;
+        std::cout << "buff_idx = " << buffer_idx << std::endl;
+    }
+#endif
+
     // revert changes after the recurrsion
     if (strategy.split_k(step) && beta != Scalar{0}) {
         // swap reduce_buffer with original matrix C
@@ -821,16 +832,6 @@ void parallel(cosma_context<Scalar> *ctx,
     // revert the current matrix
     expanded_mat.set_buffer_index(buffer_idx);
     expanded_mat.set_current_matrix(original_matrix);
-
-#ifdef DEBUG
-    std::cout << "expanded matrix after multiply: " << std::endl;
-    int local_size = size_before_expansion[comm.rank() - P.first()][0];
-    for (int i = 0; i < local_size; ++i) {
-        std::cout << *(expanded_mat.current_matrix() + i) << ", ";
-    }
-    std::cout << std::endl;
-    std::cout << "buff_idx = " << buffer_idx << std::endl;
-#endif
 
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
