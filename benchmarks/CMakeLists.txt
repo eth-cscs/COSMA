@@ -1,3 +1,5 @@
+include(${CMAKE_MODULE_PATH}/find_cuda_version.cmake)
+
 ################
 #  Build test  #
 ################
@@ -12,16 +14,19 @@ if (${COSMA_BLAS} STREQUAL "MKL")
     list(APPEND executables "transpose")
 endif()
 
-if (${COSMA_BLAS} STREQUAL "CUDA")
-    list(APPEND executables "gpu_gemm_cublas")
-endif()
-
 foreach(exec ${executables})
     add_executable(${exec} "${exec}.cpp")
     target_link_libraries(${exec} cosma ${cosma_deps})
 endforeach()
 
 if (${COSMA_BLAS} STREQUAL "CUDA")
-    target_link_libraries(gpu_gemm_cublas ${BLAS_TARGET} cublasLt cublas)
-    target_compile_definitions(gpu_gemm_cublas PRIVATE ${BLAS_DEF})
+    find_cuda_version()
+    # check if cuda toolkit version >= 10.1
+    # which is needed for cublasLt (used in the benchmark)
+    if (CUDA_TOOLKIT_MAJOR_VERSION GREATER 10 OR 
+            (CUDA_TOOLKIT_MAJOR_VERSION EQUAL 10 AND CUDA_TOOLKIT_MINOR_VERSION GREATER_EQUAL 1))
+        add_executable(gpu_gemm_cublas "gpu_gemm_cublas.cpp")
+        target_link_libraries(gpu_gemm_cublas cosma ${cosma_deps} ${BLAS_TARGET} cublasLt cublas)
+        target_compile_definitions(gpu_gemm_cublas PRIVATE ${BLAS_DEF})
+    endif()
 endif()
