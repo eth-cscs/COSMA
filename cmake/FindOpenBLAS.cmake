@@ -4,8 +4,8 @@
 include(FindPackageHandleStandardArgs)
 
 find_path(OPENBLAS_INCLUDE_DIR
-  NAMES lapack.h
-  PATH_SUFFIXES include
+  NAMES cblas.h
+  PATH_SUFFIXES include include/openblas
   HINTS
   ENV OPENBLAS_DIR
   ENV OPENBLASDIR
