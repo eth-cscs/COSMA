@@ -8,6 +8,8 @@ find_path(OPENBLAS_INCLUDE_DIR
   PATH_SUFFIXES include
   HINTS
   ENV OPENBLAS_DIR
+  ENV OPENBLASDIR
+  ENV OPENBLAS_ROOT
   ENV OPENBLASROOT
   DOC "openblas include directory")
 
