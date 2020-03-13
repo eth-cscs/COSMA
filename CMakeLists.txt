@@ -19,9 +19,9 @@ option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT}
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
 option(COSMA_WITH_PROFILING "Enable profiling." OFF)
 
-set(COSMA_BLAS "MKL" CACHE STRING 
+set(COSMA_BLAS "MKL" CACHE STRING
     "Blas backend. Can be MKL, OPENBLAS, CRAY_LIBSCI, CUSTOM, CUDA or ROCM.")
-set_property(CACHE COSMA_BLAS PROPERTY STRINGS 
+set_property(CACHE COSMA_BLAS PROPERTY STRINGS
     "MKL" "OPENBLAS" "CRAY_LIBSCI" "CUSTOM" "CUDA" "ROCM")
 
 set(COSMA_SCALAPACK "OFF" CACHE STRING
@@ -81,17 +81,13 @@ if (${COSMA_BLAS} STREQUAL "MKL")
     set(BLAS_TARGET "mkl::blas_32bit_omp")
     set(BLAS_DEF "COSMA_WITH_MKL_BLAS")
 elseif (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
-    option(TILEDMM_WITH_INSTALL "" ${COSMA_WITH_INSTALL}) 
+    option(TILEDMM_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
     set(TILEMM_GPU_BACKEND ${COSMA_BLAS} CACHE STRING FORCE "")
     add_subdirectory(libs/Tiled-MM)
     set(BLAS_TARGET "Tiled-MM")
     set(BLAS_DEF "COSMA_HAVE_GPU")
 elseif (${COSMA_BLAS} STREQUAL "OPENBLAS")
     find_package(OpenBLAS REQUIRED)
-    add_library(openblas STATIC IMPORTED)
-    set_target_properties(openblas PROPERTIES 
-                                   INTERFACE_INCLUDE_DIRECTORIES "${OpenBLAS_INCLUDE_DIRS}"
-                                   IMPORTED_LOCATION "${OpenBLAS_LIBRARIES}")
     set(BLAS_TARGET "openblas")
     set(BLAS_DEF "COSMA_WITH_BLAS")
 elseif (${COSMA_BLAS} STREQUAL "CRAY_LIBSCI")
@@ -104,7 +100,7 @@ elseif (${COSMA_BLAS} STREQUAL "CUSTOM")
     set(BLAS_DEF "COSMA_WITH_BLAS")
 endif ()
 
-# (optional) ScaLAPACK providers 
+# (optional) ScaLAPACK providers
 #
 set(ScaLAPACK_TARGET "")
 if (${COSMA_SCALAPACK} STREQUAL "MKL")
@@ -128,9 +124,9 @@ if(COSMA_WITH_INSTALL)
     include(CMakePackageConfigHelpers)
     include(GNUInstallDirs)
 
-    install(DIRECTORY "${cosma_SOURCE_DIR}/src/cosma" 
+    install(DIRECTORY "${cosma_SOURCE_DIR}/src/cosma"
             DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-            FILES_MATCHING 
+            FILES_MATCHING
                 PATTERN "*.hpp")
 
     write_basic_package_version_file(
