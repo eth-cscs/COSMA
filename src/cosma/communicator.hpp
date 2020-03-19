@@ -223,10 +223,6 @@ class communicator {
     static int rank_outside_ring(Interval &P, int div, int off, int gp);
 
   protected:
-    // groups corresponding to the hierarchy of communicators
-    std::vector<MPI_Group> comm_ring_group_;
-    std::vector<MPI_Group> comm_subproblem_group_;
-
     // hierarchy of communicators used throughout the algorithm
     std::vector<MPI_Comm> comm_ring_;
     std::vector<MPI_Comm> comm_subproblem_;
@@ -234,7 +230,6 @@ class communicator {
     const Strategy *strategy_;
     std::vector<int> step_to_comm_index_;
     MPI_Comm full_comm_;
-    MPI_Group full_comm_group_;
     int comm_size_;
     // if true then not all processors were used
     // this usually happens if given number of processors

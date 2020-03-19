@@ -123,7 +123,7 @@ bool validate_results(std::vector<T>& v1, std::vector<T>& v2, double epsilon=1e-
 // runs cosma or scalapack pdgemm wrapper for n_rep times and returns
 // a vector of timings (in milliseconds) of size n_rep
 template <typename T>
-bool test_pdgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, double epsilon=1e-8) {
+bool test_pdgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, double epsilon=1e-8, bool exit_blacs=false) {
     // create the context here, so that
     // it doesn't have to be created later
     // (this is not necessary)
@@ -245,6 +245,11 @@ bool test_pdgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, double epsilon=
     // exit blacs context
     cosma::blacs::Cblacs_gridexit(ctxt);
 
+    if (exit_blacs) {
+        int dont_finalize_mpi = 1;
+        cosma::blacs::Cblacs_exit(dont_finalize_mpi);
+    }
+
     return validate_results(c_cosma, c_scalapack, epsilon);
 }
 
@@ -252,7 +257,7 @@ bool test_pdgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, double epsilon=
 // a vector of timings (in milliseconds) of size n_rep
 template <typename T>
 void benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
-                    std::vector<long>& cosma_times, std::vector<long>& scalapack_times) {
+                    std::vector<long>& cosma_times, std::vector<long>& scalapack_times, bool exit_blacs = false) {
     cosma_times.resize(n_rep);
     scalapack_times.resize(n_rep);
 
@@ -382,4 +387,8 @@ void benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
 
     // exit blacs context
     cosma::blacs::Cblacs_gridexit(ctxt);
+    if (exit_blacs) {
+        int dont_finalize_mpi;
+        cosma::blacs::Cblacs_exit(dont_finalize_mpi);
+    }
 }

@@ -42,7 +42,7 @@ struct PdgemmTest : testing::Test {
 };
 
 struct PdgemmTestWithParams : PdgemmTest,
-                                testing::WithParamInterface<cosma::pxgemm_params<double>> {
+                              testing::WithParamInterface<cosma::pxgemm_params<double>> {
     PdgemmTestWithParams() = default;
 };
 

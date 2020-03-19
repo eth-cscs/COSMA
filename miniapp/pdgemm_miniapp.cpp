@@ -88,8 +88,10 @@ int main(int argc, char **argv) {
     // *******************************
     //   perform the multiplication
     // ******************************
+    // no blacs functions will be invoked afterwards
+    bool exit_blacs = true;
     benchmark_pxgemm<double>(params, MPI_COMM_WORLD, n_rep,
-                           cosma_times, scalapack_times);
+                           cosma_times, scalapack_times, exit_blacs);
 
     // *****************
     //   output times

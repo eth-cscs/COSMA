@@ -9,14 +9,14 @@ bool communicator::use_busy_waiting = true;
 
 communicator::communicator(const Strategy *strategy, 
                            MPI_Comm comm)
-    : strategy_(strategy)
-    , full_comm_(comm) {
+    : strategy_(strategy) {
+
     use_busy_waiting = strategy_->use_busy_waiting;
     MPI_Group group;
 
-    MPI_Comm_rank(full_comm_, &rank_);
+    MPI_Comm_rank(comm, &rank_);
     // rank_ = reordered_rank(rank_);
-    MPI_Comm_size(full_comm_, &comm_size_);
+    MPI_Comm_size(comm, &comm_size_);
     // check if the reordered rank belongs 
     // to this communicator
     assert(rank_ < comm_size_);
@@ -31,13 +31,18 @@ communicator::communicator(const Strategy *strategy,
             exclude_ranks.push_back(i);
         }
 
+        MPI_Group reduced_group;
+
         MPI_Group_excl(group,
                        exclude_ranks.size(),
                        exclude_ranks.data(),
-                       &full_comm_group_);
-        MPI_Comm_create_group(comm, full_comm_group_, 0, &full_comm_);
+                       &reduced_group);
+        MPI_Comm_create_group(comm, reduced_group, 0, &full_comm_);
 
         MPI_Group_free(&group);
+        MPI_Group_free(&reduced_group);
+    } else {
+        full_comm_ = comm;
     }
 
     if (is_idle_) {
@@ -260,10 +265,10 @@ void communicator::create_communicators(MPI_Comm comm) {
             std::tie(group, offset) = group_and_offset(P, div, rank_);
 
             MPI_Comm ring_comm = create_comm_ring(comm, P, offset, div);
-            comm_ring_.push_back(ring_comm);
+            comm_ring_.emplace_back(ring_comm);
 
             MPI_Comm subproblem_comm = create_comm_subproblem(comm, P, newP);
-            comm_subproblem_.push_back(subproblem_comm);
+            comm_subproblem_.emplace_back(subproblem_comm);
 
             comm = subproblem_comm;
             P = newP;
