@@ -53,7 +53,7 @@ The paper and other materials on COSMA are available under the following link:
 - **Custom Data Layout Support:** natively uses its own blocked data layout of matrices, but supports arbitrary grid-like data layout of matrices.
 - **Tranposition/Conjugation Support:** matrices `A` and `B` can be transposed and/or conjugated.
 - **Communication and Computation Overlap:** supports overlapping of communication and computation.
-- **Spack Installation:** can be built and installed with `Spack`.
+- **Spack Installation:** can be built and installed with `Spack` since v14.1
 
 ## Building COSMA
 
