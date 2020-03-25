@@ -80,6 +80,8 @@ void multiply_using_layout(cosma_context<T> *ctx,
     int n = B.num_cols();
     int k = A.num_cols();
 
+    if (m == 0 || n == 0 || k == 0) return;
+
     int rank, P;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &P);
@@ -217,6 +219,11 @@ void multiply(cosma_context<Scalar> *ctx,
               MPI_Comm comm,
               Scalar alpha,
               Scalar beta) {
+    // edge cases, which are allowed by the standard (m, n or k can be 0)
+    if (strategy.m == 0 || strategy.n == 0 || strategy.k == 0) {
+        return;
+    }
+
     Interval mi = Interval(0, strategy.m - 1);
     Interval ni = Interval(0, strategy.n - 1);
     Interval ki = Interval(0, strategy.k - 1);

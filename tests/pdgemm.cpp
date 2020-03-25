@@ -72,6 +72,155 @@ INSTANTIATE_TEST_CASE_P(
     Default,
     PdgemmTestWithParams,
     testing::Values(
+        // edge cases, which are allowed by the standard (m, n or k can be 0)
+        cosma::pxgemm_params<double>{
+            // matrix dimensions
+            10, 10, // matrix A
+            10, 10, // matrix B
+            10, 10, // matrix C
+
+            // block sizes
+            2, 2, // matrix A
+            2, 2, // matrix B
+            2, 2, // matrix C
+
+            // submatrices ij
+            1, 1, // matrix A
+            1, 1, // matrix B
+            1, 1, // matrix C
+
+            // problem size
+            0, 5, 5,
+
+            // transpose flags
+            'N', 'T',
+
+            // scaling flags
+            1.0, 1.0,
+
+            // leading dims
+            10, 10, 10,
+
+            // proc grid
+            2, 2, 'R',
+
+            // proc srcs
+            0, 0, // matrix A
+            0, 0, // matrix B
+            0, 0  // matrix C
+        },
+
+        cosma::pxgemm_params<double>{
+            // matrix dimensions
+            10, 10, // matrix A
+            10, 10, // matrix B
+            10, 10, // matrix C
+
+            // block sizes
+            2, 2, // matrix A
+            2, 2, // matrix B
+            2, 2, // matrix C
+
+            // submatrices ij
+            1, 1, // matrix A
+            1, 1, // matrix B
+            1, 1, // matrix C
+
+            // problem size
+            5, 0, 5,
+
+            // transpose flags
+            'N', 'T',
+
+            // scaling flags
+            1.0, 1.0,
+
+            // leading dims
+            10, 10, 10,
+
+            // proc grid
+            2, 2, 'R',
+
+            // proc srcs
+            0, 0, // matrix A
+            0, 0, // matrix B
+            0, 0  // matrix C
+        },
+
+        cosma::pxgemm_params<double>{
+            // matrix dimensions
+            10, 10, // matrix A
+            10, 10, // matrix B
+            10, 10, // matrix C
+
+            // block sizes
+            2, 2, // matrix A
+            2, 2, // matrix B
+            2, 2, // matrix C
+
+            // submatrices ij
+            1, 1, // matrix A
+            1, 1, // matrix B
+            1, 1, // matrix C
+
+            // problem size
+            0, 0, 0,
+
+            // transpose flags
+            'N', 'T',
+
+            // scaling flags
+            1.0, 1.0,
+
+            // leading dims
+            10, 10, 10,
+
+            // proc grid
+            2, 2, 'R',
+
+            // proc srcs
+            0, 0, // matrix A
+            0, 0, // matrix B
+            0, 0  // matrix C
+        },
+
+        cosma::pxgemm_params<double>{
+            // matrix dimensions
+            10, 10, // matrix A
+            10, 10, // matrix B
+            10, 10, // matrix C
+
+            // block sizes
+            2, 2, // matrix A
+            2, 2, // matrix B
+            2, 2, // matrix C
+
+            // submatrices ij
+            1, 1, // matrix A
+            1, 1, // matrix B
+            1, 1, // matrix C
+
+            // problem size
+            10, 0, 0,
+
+            // transpose flags
+            'N', 'T',
+
+            // scaling flags
+            1.0, 1.0,
+
+            // leading dims
+            10, 10, 10,
+
+            // proc grid
+            2, 2, 'R',
+
+            // proc srcs
+            0, 0, // matrix A
+            0, 0, // matrix B
+            0, 0  // matrix C
+        },
+
         // alpha = 1.0, beta = 0.0
         // single process
         cosma::pxgemm_params<double>{10, 10, 10, 2, 2, 2, 1, 1, 'N', 'N', 1.0, 0.0},

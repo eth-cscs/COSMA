@@ -31,6 +31,8 @@ void pxgemm(const char transa,
            const int ic,
            const int jc,
            const int *descc) {
+    // edge cases, which are allowed by the standard
+    if (m == 0 || n == 0 || k == 0) return;
     // clear the profiler
     PC();
     // start profiling
