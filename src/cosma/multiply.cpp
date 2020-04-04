@@ -80,7 +80,18 @@ void multiply_using_layout(cosma_context<T> *ctx,
     int n = B.num_cols();
     int k = A.num_cols();
 
-    if (m == 0 || n == 0 || k == 0) return;
+    // **********************************
+    //           CORNER CASES
+    // **********************************
+    // edge cases, which are allowed by the standard
+    if (m == 0 || n == 0) return;
+    // afterwards we are sure m != 0 and n != 0
+    if (k == 0 || alpha == T{0}) {
+        // scale matrix C by beta
+        // starting from (ic-1, jc-1)
+        C.scale_by(beta);
+        return;
+    }
 
     int rank, P;
     MPI_Comm_rank(comm, &rank);

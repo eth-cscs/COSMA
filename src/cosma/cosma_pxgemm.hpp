@@ -63,4 +63,12 @@ void adapt_strategy_to_block_cyclic_grid(// these will contain the suggested str
                                          int procrows, int proccols,
                                          char order
                                          );
+
+// scales the submatrix of C by beta
+// The submatrix is defined by (ic-1, jc-1) and (ic-1+m, jc-1+n)
+template <typename T>
+void scale_matrix(const int* descc, T* c,
+                  const int ic, const int jc,
+                  const int m, const int n,
+                  const T beta);
 } // namespace cosma

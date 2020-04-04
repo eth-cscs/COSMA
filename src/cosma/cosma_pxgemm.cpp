@@ -31,8 +31,24 @@ void pxgemm(const char transa,
            const int ic,
            const int jc,
            const int *descc) {
+    // **********************************
+    //           CORNER CASES
+    // **********************************
     // edge cases, which are allowed by the standard
-    if (m == 0 || n == 0 || k == 0) return;
+    if (m == 0 || n == 0) return;
+    // afterwards we are sure m != 0 and n != 0
+    if (k == 0 || alpha == T{0}) {
+        // scale matrix C by beta
+        // starting from (ic-1, jc-1)
+        scale_matrix(descc, c, ic, jc, m, n, beta);
+        return;
+    }
+    // afterwards we are sure k != 0 and alpha != 0
+    // case beta == 0 is already handled by the code below
+
+    // **********************************
+    //           MAIN CODE
+    // **********************************
     // clear the profiler
     PC();
     // start profiling
@@ -242,7 +258,6 @@ void pxgemm(const char transa,
     }
     PL();
 
-
 #ifdef DEBUG
     if (rank == 0) {
         std::cout << "Optimal rank relabeling:" << std::endl;
@@ -330,6 +345,78 @@ void pxgemm(const char transa,
     if (reordered) {
         MPI_Comm_free(&reordered_comm);
     }
+    PL();
+}
+
+// scales the submatrix of C by beta
+// The submatrix is defined by (ic-1, jc-1) and (ic-1+m, jc-1+n)
+template <typename T>
+void scale_matrix(const int* descc, T* c,
+                  const int ic, const int jc,
+                  const int m, const int n,
+                  const T beta) {
+    if (beta == T{1}) return;
+    // clear the profiler
+    PC();
+
+    // start profiling
+    PE(init);
+
+    // blas context
+    int ctxt = scalapack::get_grid_context(descc);
+
+    // scalapack rank grid decomposition
+    int procrows, proccols;
+    int myrow, mycol;
+    blacs::Cblacs_gridinfo(ctxt, &procrows, &proccols, &myrow, &mycol);
+
+    // get MPI communicator
+    MPI_Comm comm = scalapack::get_communicator(ctxt);
+
+    // communicator size and rank
+    int rank, P;
+    MPI_Comm_size(comm, &P);
+    MPI_Comm_rank(comm, &rank);
+
+    // block sizes
+    scalapack::block_size b_dim_c(descc);
+
+    // global matrix sizes
+    scalapack::global_matrix_size mat_dim_c(descc);
+
+    // sumatrix size to multiply
+    int c_subm = m;
+    int c_subn = n;
+
+    // rank sources (rank coordinates that own first row and column of a matrix)
+    scalapack::rank_src rank_src_c(descc);
+
+    // leading dimensions
+    int lld_c = scalapack::leading_dimension(descc);
+
+    // check whether rank grid is row-major or col-major
+    auto ordering = scalapack::rank_ordering(ctxt, P);
+    char grid_order = 
+        ordering == grid2grid::scalapack::ordering::column_major ? 'C' : 'R';
+
+    // create grid2grid object describing the given scalapack layout
+    auto layout = grid2grid::get_scalapack_grid<T>(
+        lld_c,
+        {mat_dim_c.rows, mat_dim_c.cols},
+        {ic, jc},
+        {c_subm, c_subn},
+        {b_dim_c.rows, b_dim_c.cols},
+        {procrows, proccols},
+        ordering,
+        'N',
+        {rank_src_c.row_src, rank_src_c.col_src},
+        c,
+        rank);
+    PL();
+
+    PE(multiply_computation);
+    // scale the elements in the submatrix given by the layout
+    layout.scale_by(beta);
     PL();
 }
 
@@ -447,7 +534,7 @@ void adapt_strategy_to_block_cyclic_grid(// these will contain the suggested str
     // However, when the reshuffling cost is too high, then it might be beneficial
     // to make COSMA use a communication-suboptimal strategy
     // to reduce the overall time.
-    if (largest_matrix_local_size > 1e8) {
+    if (largest_matrix_local_size > 1e5) {
         auto b_dim = one_of(b_dim_a, b_dim_b, b_dim_c, first, second, third);
         auto mat_dim = one_of(mat_dim_a, mat_dim_b, mat_dim_c, first, second, third);
         auto subm = one_of(a_subm, b_subm, c_subm, first, second, third);
