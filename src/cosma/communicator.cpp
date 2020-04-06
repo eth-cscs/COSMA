@@ -277,12 +277,6 @@ MPI_Comm communicator::create_comm_ring(MPI_Comm comm,
                                        Interval &P,
                                        int offset,
                                        int div) {
-    MPI_Comm newcomm;
-    MPI_Group subgroup;
-    MPI_Group comm_group;
-
-    MPI_Comm_group(comm, &comm_group);
-
     std::vector<int> ranks(div);
     for (int i = 0; i < div; ++i) {
         ranks[i] = rank_outside_ring(P, div, offset, i);
