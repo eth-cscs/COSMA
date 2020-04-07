@@ -12,10 +12,10 @@ ENV MPICH_VERSION ${MPICH_VERSION}
 ENV MKL_VERSION ${MKL_VERSION}
 
 # Install basic tools
-RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends apt-utils gcc g++ gfortran git make unzip \
-    vim wget pkg-config python3-pip curl environment-modules tcl \
-    apt-transport-https ca-certificates gnupg software-properties-common \
-    libhdf5-dev libgsl-dev imagemagick && \
+RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
+    software-properties-common \
+    build-essential \
+    git tar wget curl && \
     rm -rf /var/lib/apt/lists/*
 
 # Install cmake
@@ -25,7 +25,7 @@ RUN wget -qO- "https://cmake.org/files/v3.17/cmake-3.17.0-Linux-x86_64.tar.gz" |
 RUN wget -q https://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPICH_VERSION}.tar.gz && \
     tar -xzf mpich-${MPICH_VERSION}.tar.gz && \
     cd mpich-${MPICH_VERSION} && \
-    ./configure && \
+    ./configure --disable-fortran && \
     make install -j$(nproc) && \
     rm -rf /root/mpich-${MPICH_VERSION}.tar.gz /root/mpich-${MPICH_VERSION}
 
