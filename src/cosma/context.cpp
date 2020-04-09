@@ -16,7 +16,7 @@ int get_num_gpu_streams() {
 
 int get_gpu_tile_size_m() {
     char* var;
-    var = getenv ("COSMA_GPU_TILE_M");
+    var = getenv("COSMA_GPU_MAX_TILE_M");
     int tile = 5000;
     bool defined = var != nullptr;
     if (defined)
@@ -26,7 +26,7 @@ int get_gpu_tile_size_m() {
 
 int get_gpu_tile_size_n() {
     char* var;
-    var = getenv ("COSMA_GPU_TILE_N");
+    var = getenv("COSMA_GPU_MAX_TILE_N");
     int tile = 5000;
     bool defined = var != nullptr;
     if (defined)
@@ -36,7 +36,7 @@ int get_gpu_tile_size_n() {
 
 int get_gpu_tile_size_k() {
     char* var;
-    var = getenv ("COSMA_GPU_TILE_K");
+    var = getenv("COSMA_GPU_MAX_TILE_K");
     int tile = 5000;
     bool defined = var != nullptr;
     if (defined)
