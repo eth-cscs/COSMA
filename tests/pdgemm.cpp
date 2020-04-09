@@ -406,6 +406,7 @@ INSTANTIATE_TEST_CASE_P(
         cosma::pxgemm_params<double>{13, 13, 448, 13, 13, 13, 2, 7, 'N', 'N', 1.0, 0.5},
 
         cosma::pxgemm_params<double>{26, 13, 448, 13, 13, 13, 2, 7, 'T', 'N', 1.0, 0.5},
+
         // detailed pdgemm call
         cosma::pxgemm_params<double>{
             // matrix dimensions

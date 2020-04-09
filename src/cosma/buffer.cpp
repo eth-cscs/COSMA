@@ -84,8 +84,8 @@ size_t Buffer<T>::total_size(bool dry_run) {
         for (int i = 0; i < buff_sizes_.size(); ++i) {
             total_size += buff_sizes_[i];
         }
-        total_size += (max_reduce_buffer_size_ ? max_reduce_buffer_size_ : 0);
-        total_size += (max_reshuffle_buffer_size_ ? max_reshuffle_buffer_size_ : 0);
+        total_size += (max_reduce_buffer_size_ > 0 ? max_reduce_buffer_size_ : 0);
+        total_size += (max_reshuffle_buffer_size_ > 0 ? max_reshuffle_buffer_size_ : 0);
     }
     return total_size;
 }

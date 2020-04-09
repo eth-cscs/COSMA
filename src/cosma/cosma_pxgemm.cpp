@@ -270,7 +270,7 @@ void pxgemm(const char transa,
     CosmaMatrix<T> B(std::move(mapper_b), rank_permutation[rank]);
     CosmaMatrix<T> C(std::move(mapper_c), rank_permutation[rank]);
 
-    // avoid resizing of buffer by reserving immediately the total required memory
+    // avoid resizing the buffer by reserving immediately the total required memory
     get_context_instance<T>()->get_memory_pool().reserve(A.total_required_memory()
                                                        + B.total_required_memory()
                                                        + C.total_required_memory());
