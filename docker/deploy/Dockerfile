@@ -5,7 +5,7 @@ FROM $BUILD_ENV as builder
 ARG BLAS
 
 # Add deployment tooling
-RUN wget -q https://github.com/haampie/bundler/releases/download/v0.1.3/bundler_x86_64.tar.gz && \
+RUN wget -q https://github.com/haampie/bundler/releases/download/v0.1.5/bundler_x86_64.tar.gz && \
     tar -xzf bundler_x86_64.tar.gz && \
     rm bundler_x86_64.tar.gz
 
