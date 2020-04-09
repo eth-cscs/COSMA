@@ -14,7 +14,7 @@ COPY . /COSMA
 
 RUN COMPILERVARS_ARCHITECTURE=intel64 /opt/intel/bin/compilervars.sh intel64 && \
     mkdir /COSMA/build && cd /COSMA/build && \
-    CC=mpicc CXX=mpicxx FC=mpif90 FCCPP=cpp cmake .. \
+    CC=mpicc CXX=mpicxx cmake .. \
       -DCOSMA_WITH_TESTS=ON \
       -DCUDA_PATH=/usr/local/cuda \
       -DCOSMA_BLAS=${BLAS} \
