@@ -12,6 +12,7 @@
 - [Examples - Miniapps](#miniapps)
     - [Matrix Multiplication with COSMA](#matrix-multiplication)
     - [COSMA pdgemm wrapper](#cosma-pdgemm-wrapper)
+- [Tunable Parameters](#tunable-parameters)
 - [Performance Profiling](#profiling)
 - [Authors](#authors)
 - [Questions?](#questions)
@@ -231,6 +232,34 @@ The flags have the following meaning:
 - `-p (--p_row)` (optional, default: 1): number of rows in a processor grid.
 - `-q (--q_row)` (optional, default: P): number of cols in a processor grid.
 - `-r (--n_rep)` (optional, default: 2): number of repetitions.
+
+## Tunable Parameters
+
+Controlling how much GPU memory COSMA is allowed to use can be done by specifying the tile dimensions as:
+```bash
+export COSMA_GPU_MAX_TILE_M=5000
+export COSMA_GPU_MAX_TILE_N=5000
+export COSMA_GPU_MAX_TILE_K=5000
+```
+where `K` refers to the shared dimension and `MxN` refer to the dimensions of matrix `C`. By default, all tiles are square and have dimensions `5000x5000`.
+
+These are only the maximum tiles and the actual tile sizes that will be used might be less, depending on the problem size. These variables are only used in the GPU backend for pipelining the local matrices to GPUs. 
+
+It is also possible to specify the number of GPU streams:
+```bash
+export COSMA_GPU_STREAMS=2
+```
+
+The values given here are the default values.
+
+The algorithm will then require device memory for at most this many elements:
+```cpp
+num_streams * (tile_m * tile_k + tile_k * tile_n + tile_m * tile_n)
+```
+
+Therefore, by changing the values of these variables, it is possible to control the usage of GPU memory.
+
+It is also possible to control the CPU memory usage, which will soon be added.
 
 ## Profiling
 
