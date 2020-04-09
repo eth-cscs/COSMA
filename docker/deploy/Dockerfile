@@ -2,6 +2,8 @@ ARG BUILD_ENV
 
 FROM $BUILD_ENV as builder
 
+ARG BLAS
+
 # Add deployment tooling
 RUN wget -q https://github.com/haampie/bundler/releases/download/v0.1.3/bundler_x86_64.tar.gz && \
     tar -xzf bundler_x86_64.tar.gz && \
@@ -10,11 +12,12 @@ RUN wget -q https://github.com/haampie/bundler/releases/download/v0.1.3/bundler_
 # Build COSMA
 COPY . /COSMA
 
-RUN mkdir /COSMA/build && cd /COSMA/build && \
+RUN COMPILERVARS_ARCHITECTURE=intel64 /opt/intel/bin/compilervars.sh intel64 && \
+    mkdir /COSMA/build && cd /COSMA/build && \
     CC=mpicc CXX=mpicxx FC=mpif90 FCCPP=cpp cmake .. \
       -DCOSMA_WITH_TESTS=ON \
       -DCUDA_PATH=/usr/local/cuda \
-      -DCOSMA_BLAS=CUDA \
+      -DCOSMA_BLAS=${BLAS} \
       -DCOSMA_SCALAPACK=MKL \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INSTALL_PREFIX=/usr && \
