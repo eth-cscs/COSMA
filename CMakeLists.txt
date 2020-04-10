@@ -18,6 +18,7 @@ option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
 option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT})
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
 option(COSMA_WITH_PROFILING "Enable profiling." OFF)
+option(BUILD_SHARED_LIBS "Build shared libraries." OFF)
 
 set(COSMA_BLAS "MKL" CACHE STRING
     "Blas backend. Can be MKL, OPENBLAS, CRAY_LIBSCI, CUSTOM, CUDA or ROCM.")
