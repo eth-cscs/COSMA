@@ -52,25 +52,23 @@ endif()
 
 project(cosma VERSION 0.1 LANGUAGES CXX)
 
-# Enable RPATH for installs
-# use, i.e. don't skip the full RPATH for the build tree
-set(CMAKE_SKIP_BUILD_RPATH FALSE)
-
-# when building, don't use the install RPATH already
-# (but later on when installing)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-
-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-
-# add the automatically determined parts of the RPATH
-# which point to directories outside the build tree to the install RPATH
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
-# the RPATH to be used when installing, but only if it's not a system directory
-list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
-if("${isSystemDir}" STREQUAL "-1")
-    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-endif("${isSystemDir}" STREQUAL "-1")
+# preserve rpaths when installing and make the install folder relocatable
+# use `CMAKE_SKIP_INSTALL_RPATH` to skip this
+# https://spack.readthedocs.io/en/latest/workflows.html#write-the-cmake-build
+list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES 
+          "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" isSystemDir)
+# skip RPATH if SIRIUS is installed to system directories
+if(isSystemDir STREQUAL "-1")
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+  if(APPLE)
+    set(basePoint @loader_path)
+  else()
+    set(basePoint $ORIGIN)
+  endif()
+  file(RELATIVE_PATH relDir ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
+                            ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+  set(CMAKE_INSTALL_RPATH ${basePoint} ${basePoint}/${relDir})
+endif()
 
 # Dependencies
 #
