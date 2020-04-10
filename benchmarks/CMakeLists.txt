@@ -16,7 +16,7 @@ endif()
 
 foreach(exec ${executables})
     add_executable(${exec} "${exec}.cpp")
-    target_link_libraries(${exec} cosma ${cosma_deps})
+    target_link_libraries(${exec} cosma ${BLAS_TARGET})
 endforeach()
 
 if (${COSMA_BLAS} STREQUAL "CUDA")
@@ -26,7 +26,7 @@ if (${COSMA_BLAS} STREQUAL "CUDA")
     if (CUDA_TOOLKIT_MAJOR_VERSION GREATER 10 OR 
             (CUDA_TOOLKIT_MAJOR_VERSION EQUAL 10 AND CUDA_TOOLKIT_MINOR_VERSION GREATER_EQUAL 1))
         add_executable(gpu_gemm_cublas "gpu_gemm_cublas.cpp")
-        target_link_libraries(gpu_gemm_cublas cosma ${cosma_deps} ${BLAS_TARGET} cublasLt cublas)
+        target_link_libraries(gpu_gemm_cublas cosma ${BLAS_TARGET} cublasLt cublas)
         target_compile_definitions(gpu_gemm_cublas PRIVATE ${BLAS_DEF})
     endif()
 endif()

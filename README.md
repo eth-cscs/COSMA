@@ -1,3 +1,5 @@
+[![pipeline status](https://gitlab.com/cscs-ci/eth-cscs/COSMA/badges/master/pipeline.svg)](https://gitlab.com/cscs-ci/eth-cscs/COSMA/-/commits/master)
+
 <p align="center"><img src="./docs/cosma-logo.svg" width="70%"></p>
 
 ## Table of Contents

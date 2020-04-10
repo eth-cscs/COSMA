@@ -52,6 +52,24 @@ endif()
 
 project(cosma VERSION 0.1 LANGUAGES CXX)
 
+# preserve rpaths when installing and make the install folder relocatable
+# use `CMAKE_SKIP_INSTALL_RPATH` to skip this
+# https://spack.readthedocs.io/en/latest/workflows.html#write-the-cmake-build
+list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES 
+          "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" isSystemDir)
+# skip RPATH if SIRIUS is installed to system directories
+if(isSystemDir STREQUAL "-1")
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+  if(APPLE)
+    set(basePoint @loader_path)
+  else()
+    set(basePoint $ORIGIN)
+  endif()
+  file(RELATIVE_PATH relDir ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
+                            ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+  set(CMAKE_INSTALL_RPATH ${basePoint} ${basePoint}/${relDir})
+endif()
+
 # Dependencies
 #
 find_package(MPI REQUIRED)

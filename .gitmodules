@@ -13,3 +13,6 @@
 [submodule "libs/options"]
 	path = libs/options
 	url = https://github.com/kabicm/options
+[submodule "ci"]
+	path = ci
+	url = https://gitlab.com/cscs-ci/eth-cscs/cosma-ci.git
