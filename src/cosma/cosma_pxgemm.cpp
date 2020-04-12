@@ -122,15 +122,17 @@ void pxgemm(const char transa,
       that COSMA should start with and then continue with finding 
       the communication-optimal strategy.
      */
-    adapt_strategy_to_block_cyclic_grid(divisors, dimensions, step_type,
-                                        m, n, k, P,
-                                        mat_dim_a, mat_dim_b, mat_dim_c,
-                                        b_dim_a, b_dim_b, b_dim_c,
-                                        ia, ja, ib, jb, ic, jc,
-                                        trans_a, trans_b,
-                                        procrows, proccols,
-                                        grid_order
-                                        );
+    if (P > 1) {
+        adapt_strategy_to_block_cyclic_grid(divisors, dimensions, step_type,
+                                            m, n, k, P,
+                                            mat_dim_a, mat_dim_b, mat_dim_c,
+                                            b_dim_a, b_dim_b, b_dim_c,
+                                            ia, ja, ib, jb, ic, jc,
+                                            trans_a, trans_b,
+                                            procrows, proccols,
+                                            grid_order
+                                            );
+    }
 
     Strategy strategy(m, n, k, P, divisors, dimensions, step_type);
     // strategy.enable_overlapping_comm_and_comp();
@@ -534,7 +536,7 @@ void adapt_strategy_to_block_cyclic_grid(// these will contain the suggested str
     // However, when the reshuffling cost is too high, then it might be beneficial
     // to make COSMA use a communication-suboptimal strategy
     // to reduce the overall time.
-    if (largest_matrix_local_size > 1e5) {
+    if (largest_matrix_local_size > 1e7) {
         auto b_dim = one_of(b_dim_a, b_dim_b, b_dim_c, first, second, third);
         auto mat_dim = one_of(mat_dim_a, mat_dim_b, mat_dim_c, first, second, third);
         auto subm = one_of(a_subm, b_subm, c_subm, first, second, third);

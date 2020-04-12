@@ -443,6 +443,44 @@ INSTANTIATE_TEST_CASE_P(
             0, 0, // matrix A
             0, 0, // matrix B
             0, 0  // matrix C
+        },
+
+        // adapt strategy to scalapack grid when P = 1
+        cosma::pxgemm_params<double>{
+            // matrix dimensions
+            1280, 128, // matrix A
+            1280, 128, // matrix B
+            128, 128, // matrix C
+
+            // block sizes
+            32, 32, // matrix A
+            32, 32, // matrix B
+            32, 32, // matrix C
+
+            // submatrices ij
+            1, 1, // matrix A
+            1, 1, // matrix B
+            1, 1, // matrix C
+
+            // problem size
+            128, 128, 1280,
+
+            // transpose flags
+            'T', 'N',
+
+            // scaling flags
+            1.0, 0.0,
+
+            // leading dims
+            1280, 1280, 128,
+
+            // proc grid
+            1, 1, 'C',
+
+            // proc srcs
+            0, 0, // matrix A
+            0, 0, // matrix B
+            0, 0  // matrix C
         }
     ));
 
