@@ -91,7 +91,7 @@ void cosma::memory_pool<T>::reserve(size_t size) {
         // function from this allocator might actually allocate
         // a bit more (due to the alignment) bytes than instructed to, 
         // so we have to take that into account.
-        std::size_t size_with_alignment = (pool_capacity_ + size) + main_allocator<T>::alignment;
+        std::size_t size_with_alignment = (pool_size_ + size) + main_allocator<T>::alignment;
         pool_.reserve(size_with_alignment);
     }
 }
