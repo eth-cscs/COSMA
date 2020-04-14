@@ -4,15 +4,10 @@ FROM $BUILD_ENV as builder
 
 ARG BLAS
 
-# Add deployment tooling
-RUN wget -q https://github.com/haampie/bundler/releases/download/v0.1.5/bundler_x86_64.tar.gz && \
-    tar -xzf bundler_x86_64.tar.gz && \
-    rm bundler_x86_64.tar.gz
-
 # Build COSMA
 COPY . /COSMA
 
-RUN COMPILERVARS_ARCHITECTURE=intel64 /opt/intel/bin/compilervars.sh intel64 && \
+RUN COMPILERVARS_ARCHITECTURE=intel64 /opt/intel/bin/compilervars.sh && \
     mkdir /COSMA/build && cd /COSMA/build && \
     CC=mpicc CXX=mpicxx cmake .. \
       -DCOSMA_WITH_TESTS=ON \
@@ -28,33 +23,33 @@ RUN COMPILERVARS_ARCHITECTURE=intel64 /opt/intel/bin/compilervars.sh intel64 && 
 ENV MKL_LIB=/opt/intel/compilers_and_libraries/linux/mkl/lib/intel64
 
 # Run linuxdeploy, and add a bunch of libs that are dlopen'ed by mkl
-RUN /root/bundler/bundler -d /root/COSMA.bundle/ \
-      -e /root/COSMA-build/usr/bin/test.cosma \
-      -e /root/COSMA-build/usr/bin/test.pdgemm \
-      -e /root/COSMA-build/usr/bin/test.multiply \
-      -e /root/COSMA-build/usr/bin/test.mapper \
-      -e /root/COSMA-build/usr/bin/test.scalar_matmul \
-      -e /root/COSMA-build/usr/bin/test.multiply_using_layout \
+RUN /root/libtree/libtree -d /root/COSMA.bundle/ \
+      /root/COSMA-build/usr/bin/test.cosma \
+      /root/COSMA-build/usr/bin/test.mapper \
+      /root/COSMA-build/usr/bin/test.multiply \
+      /root/COSMA-build/usr/bin/test.multiply_using_layout \
+      /root/COSMA-build/usr/bin/test.pdgemm \
+      /root/COSMA-build/usr/bin/test.scalar_matmul \
       # MKL dlopen's some of their libs, so we have to explicitly copy them over
-      -l ${MKL_LIB}/libmkl_tbb_thread.so \
-      -l ${MKL_LIB}/libmkl_intel_thread.so \
-      -l ${MKL_LIB}/libmkl_sequential.so \
-      -l ${MKL_LIB}/libmkl_def.so \
-      -l ${MKL_LIB}/libmkl_vml_def.so \
-      -l ${MKL_LIB}/libmkl_vml_cmpt.so \
-      -l ${MKL_LIB}/libmkl_mc.so \
-      -l ${MKL_LIB}/libmkl_vml_mc.so \
-      -l ${MKL_LIB}/libmkl_mc3.so \
-      -l ${MKL_LIB}/libmkl_vml_mc3.so \
-      -l ${MKL_LIB}/libmkl_avx.so \
-      -l ${MKL_LIB}/libmkl_vml_avx.so \
-      -l ${MKL_LIB}/libmkl_avx2.so \
-      -l ${MKL_LIB}/libmkl_vml_avx2.so \
-      -l ${MKL_LIB}/libmkl_avx512_mic.so \
-      -l ${MKL_LIB}/libmkl_vml_avx512_mic.so \
-      -l ${MKL_LIB}/libmkl_avx512.so \
-      -l ${MKL_LIB}/libmkl_vml_avx512.so \
-      -l ${MKL_LIB}/libmkl_core.so 
+      ${MKL_LIB}/libmkl_avx.so \
+      ${MKL_LIB}/libmkl_avx2.so \
+      ${MKL_LIB}/libmkl_avx512_mic.so \
+      ${MKL_LIB}/libmkl_avx512.so \
+      ${MKL_LIB}/libmkl_core.so \
+      ${MKL_LIB}/libmkl_def.so \
+      ${MKL_LIB}/libmkl_intel_thread.so \
+      ${MKL_LIB}/libmkl_mc.so \
+      ${MKL_LIB}/libmkl_mc3.so \
+      ${MKL_LIB}/libmkl_sequential.so \
+      ${MKL_LIB}/libmkl_tbb_thread.so \
+      ${MKL_LIB}/libmkl_vml_avx.so \
+      ${MKL_LIB}/libmkl_vml_avx2.so \
+      ${MKL_LIB}/libmkl_vml_avx512_mic.so \
+      ${MKL_LIB}/libmkl_vml_avx512.so \
+      ${MKL_LIB}/libmkl_vml_cmpt.so \
+      ${MKL_LIB}/libmkl_vml_def.so \
+      ${MKL_LIB}/libmkl_vml_mc.so \
+      ${MKL_LIB}/libmkl_vml_mc3.so
 
 FROM ubuntu:18.04
 
