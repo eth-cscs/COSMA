@@ -51,7 +51,7 @@ if (NOT ${COSMA_BLAS} STREQUAL "CUDA" AND NOT ${COSMA_BLAS} STREQUAL "ROCM" AND 
   endif()
 endif()
 
-project(cosma VERSION 0.1 LANGUAGES CXX)
+project(cosma VERSION 2.0.7 LANGUAGES CXX)
 
 # Dependencies
 #
