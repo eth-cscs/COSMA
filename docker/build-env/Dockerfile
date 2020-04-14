@@ -36,3 +36,8 @@ RUN wget -qO - https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-P
     rm -rf /var/lib/apt/lists/* && \
     echo "/opt/intel/lib/intel64\n/opt/intel/compilers_and_libraries/linux/mkl/lib/intel64" >> /etc/ld.so.conf.d/intel.conf && \
     ldconfig
+
+# Add deployment tooling
+RUN wget -q https://github.com/haampie/libtree/releases/download/v1.0.3/libtree_x86_64.tar.gz && \
+    tar -xzf libtree_x86_64.tar.gz && \
+    rm libtree_x86_64.tar.gz
