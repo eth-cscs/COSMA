@@ -1,0 +1,34 @@
+name: VersionChecker
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  checker:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    - name: Version check
+      id: check
+      run: |
+           mkdir build 
+           cd build 
+           cmake .. 
+           CMAKE_VERSION="v$(cat CMakeCache.txt | grep '^CMAKE_PROJECT_VERSION\b' | cut -d "=" -f2)"
+           GIT_VERSION=$(git describe --tags)
+           if [ "$CMAKE_VERSION" != "$GIT_VERSION" ]; then
+             echo ::set-output name=CMAKE_ISSUE::yes
+             echo ::set-output name=CMAKE_VERSION::$CMAKE_VERSION
+             echo ::set-output name=GIT_VERSION::$GIT_VERSION
+           fi
+    - uses: JasonEtco/create-an-issue@v2.4.0
+      if: steps.check.outputs.CMAKE_ISSUE == 'yes'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        CMAKE_VERSION: ${{ steps.check.outputs.CMAKE_VERSION }}
+        GIT_VERSION: ${{ steps.check.outputs.GIT_VERSION }}
+      with:
+        filename: .github/tag-issue.md
