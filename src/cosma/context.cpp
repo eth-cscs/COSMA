@@ -3,8 +3,24 @@
 #include <limits>
 #include <cassert>
 #include <stdlib.h>
+#include <limits>
 
 namespace cosma {
+template <typename T>
+long long get_cpu_max_memory() {
+    char* var;
+    var = getenv ("COSMA_CPU_MAX_MEMORY");
+    long long value = std::numeric_limits<long long>::max();
+    long long megabytes = std::numeric_limits<long long>::max();
+    if (var != nullptr) {
+        megabytes = std::atoll(var);
+        // from megabytes to #elements
+        value = megabytes * 1024LL * 1024LL / sizeof(T);
+    }
+
+    return value;
+}
+
 int get_num_gpu_streams() {
     char* var;
     var = getenv ("COSMA_GPU_STREAMS");
@@ -57,6 +73,7 @@ gpu::mm_handle<Scalar>* cosma_context<Scalar>::get_gpu_context() {
 #endif
 template <typename Scalar>
 cosma_context<Scalar>::cosma_context() {
+    cpu_memory_limit = get_cpu_max_memory<Scalar>();
 #ifdef COSMA_HAVE_GPU
     gpu_ctx_ = gpu::make_context<Scalar>(get_num_gpu_streams(),
                                          get_gpu_tile_size_m(),
@@ -67,6 +84,7 @@ cosma_context<Scalar>::cosma_context() {
 
 template <typename Scalar>
 cosma_context<Scalar>::cosma_context(size_t cpu_mem_limit, int streams, int tile_m, int tile_n, int tile_k) {
+    cpu_memory_limit = (long long) cpu_mem_limit;
     memory_pool_.resize(cpu_mem_limit);
 #ifdef COSMA_HAVE_GPU
     gpu_ctx_ = gpu::make_context<Scalar>(streams, tile_m, tile_n, tile_k);
@@ -90,6 +108,11 @@ cosma_context<Scalar>::~cosma_context() {
 template <typename Scalar>
 memory_pool<Scalar>& cosma_context<Scalar>::get_memory_pool() {
     return memory_pool_;
+}
+
+template <typename Scalar>
+long long cosma_context<Scalar>::get_cpu_memory_limit() {
+    return cpu_memory_limit;
 }
 
 template <typename Scalar>

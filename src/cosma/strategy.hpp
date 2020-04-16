@@ -92,10 +92,6 @@ class Strategy {
     // number of steps of the algorithm
     size_t n_steps() const;
 
-    // default strategy dividing always the largest dimension in that step
-    // if there is enough memory uses a parallel step, if not uses a sequential
-    // step
-    void default_strategy();
     // strategy that tries to make each base case as square as possible
     // it always uses all the resources (all P available ranks) but tries to
     // find divm, divn and divk such that divm * divn * divk = P and m/divm =
@@ -103,8 +99,6 @@ class Strategy {
     // sequential step is performed and new divm, divn and divk are found that
     // correspond to the new subproblem.
     void square_strategy(bool& should_optimize);
-
-    void spartition_strategy();
 
     bool add_step(long long& prev_m, long long& prev_n, long long& prev_k,
                   int& prev_P, char step, char dim_label, int divisor);
@@ -134,9 +128,8 @@ class Strategy {
     bool final_step(size_t i) const;
     int parallel_steps_before_gemm(char label) const;
 
-    static long long
+    static std::tuple<long long, long long, long long>
     initial_memory(long long m, long long n, long long k, int P);
-    static long long required_memory(Strategy &strategy);
 
     // checks if the strategy is well-defined
     void check_if_valid();

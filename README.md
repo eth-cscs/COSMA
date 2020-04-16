@@ -100,7 +100,6 @@ The documentation for the latter option will soon be published here.
 For easy integration, it is enough to build COSMA with ScaLAPACK API and then link your code to COSMA before linking to any other library providing ScaLAPACK `pxgemm`. This way, all `pxgemm` calls will be using COSMA `pxgemm` wrappers. To achieve this, please follow these steps:
 
 1) Build COSMA with ScaLAPACK API:
-
 ```bash
 ###############
 # get COSMA
@@ -118,6 +117,7 @@ cmake -DCOSMA_BLAS=CUDA -DCOSMA_SCALAPACK=MKL -DCMAKE_INSTALL_PREFIX=<installati
 make -j 8
 make install
 ```
+> !! Note the *--recursive* flag !!
 
 2) Link your code to COSMA:
     - **CPU-only** version of COSMA:
@@ -237,6 +237,10 @@ The flags have the following meaning:
 
 ## Tunable Parameters
 
+It is possible to set the limit for both CPU and GPU memory that COSMA is allowed to use.
+
+### GPU parameters
+
 Controlling how much GPU memory COSMA is allowed to use can be done by specifying the tile dimensions as:
 ```bash
 export COSMA_GPU_MAX_TILE_M=5000
@@ -261,7 +265,17 @@ num_streams * (tile_m * tile_k + tile_k * tile_n + tile_m * tile_n)
 
 Therefore, by changing the values of these variables, it is possible to control the usage of GPU memory.
 
-It is also possible to control the CPU memory usage, which will soon be added.
+### CPU parameters
+
+In case the available CPU memory is a scarce resource, it is possible to set the CPU memory limit to COSMA, by exporting the following environment variable:
+```bash
+export COSMA_CPU_MAX_MEMORY=1024 # in megabytes
+```
+which will set the upper limit on the memory that the algorithm is allowed to use. This might, however, reduce the performance.
+
+In case the algorithm is not able to perform the multiplication within the given memory range, a `runtime_error` will be thrown.
+
+> This parameter is still in the testing phase!
 
 ## Profiling
 
