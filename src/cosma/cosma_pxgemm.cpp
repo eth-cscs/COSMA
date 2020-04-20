@@ -134,7 +134,10 @@ void pxgemm(const char transa,
                                             );
     }
 
-    Strategy strategy(m, n, k, P, divisors, dimensions, step_type);
+    auto cpu_memory_limit = get_context_instance<T>()->get_cpu_memory_limit();
+    Strategy strategy(m, n, k, P,
+                      divisors, dimensions, step_type,
+                      cpu_memory_limit);
     // strategy.enable_overlapping_comm_and_comp();
     PL();
 

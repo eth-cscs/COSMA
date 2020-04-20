@@ -26,9 +26,12 @@ public:
     gpu::mm_handle<Scalar>* get_gpu_context();
 #endif
 
+    long long get_cpu_memory_limit();
+
     void turn_on_output();
 
 private:
+    long long cpu_memory_limit = std::numeric_limits<long long>::max();
     memory_pool<Scalar> memory_pool_;
 #ifdef COSMA_HAVE_GPU
     std::unique_ptr<gpu::mm_handle<Scalar>> gpu_ctx_;
