@@ -10,7 +10,7 @@ TEST(strategy, spartition) {
     int k = 3473408;
     long long memory_limit = 52428800; // #elements per rank
     int nodes = 128;
-    int ranks_per_node = 1;
+    int ranks_per_node = 36;
     int P = nodes * ranks_per_node;
     // memory_limit /= ranks_per_node;
 
@@ -37,7 +37,7 @@ TEST(strategy, nested_sequential_parallel) {
     long long memory_limit =
         80000000; // #elements, per node, corresponding to 50GB
     int nodes = 10;
-    int ranks_per_node = 1;
+    int ranks_per_node = 36;
     int P = nodes * ranks_per_node;
     // memory_limit /= ranks_per_node;
 

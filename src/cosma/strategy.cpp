@@ -106,9 +106,9 @@ Strategy::Strategy(int mm,
 std::tuple<long long, long long, long long>
 Strategy::initial_memory(long long m, long long n, long long k, int P) {
     return {
-            math_utils::divide_and_round_up(m * n, P),
+            math_utils::divide_and_round_up(m * k, P),
             math_utils::divide_and_round_up(k * n, P),
-            math_utils::divide_and_round_up(m * k, P)
+            math_utils::divide_and_round_up(m * n, P)
     };
 }
 
@@ -241,7 +241,7 @@ std::tuple<long long, long long, long long>
 maximum_memory(long long m, long long n, long long k, 
                int divm, int divn, int divk, int P) {
     using dim_pair = std::tuple<long long, int, char>;
-    std::vector<dim_pair> dims = {{m, divm, 'A'}, {n, divn, 'B'}, {k, divk, 'C'}};
+    std::vector<dim_pair> dims = {{m, divm, 'B'}, {n, divn, 'A'}, {k, divk, 'C'}};
     std::sort(dims.begin(), dims.end(),
               [](const dim_pair& a, const dim_pair& b) -> bool {
                   return std::get<0>(a) > std::get<0>(b) ||
@@ -272,7 +272,7 @@ maximum_memory(long long m, long long n, long long k,
                 memory_C = memory;
             }
             P /= div;
-            std::get<1>(dim) /= div;
+            std::get<0>(dim) /= div;
         }
     }
     return {memory_A, memory_B, memory_C};
@@ -395,10 +395,11 @@ void Strategy::square_strategy(bool& incomplete_strategy) {
     // if not enough memory for all of the proposed parallel steps
     // then perform a single sequential step and recompute again
     // best divm, divn, divk for the smaller problem
-    while (memory_with_buffer_optimization(new_memory_A,
-                                           new_memory_B,
-                                           new_memory_C) 
-           > memory_limit) {
+    long long used =
+        memory_with_buffer_optimization(new_memory_A,
+                                        new_memory_B,
+                                        new_memory_C);
+    while (used > memory_limit) {
         int div = 2;
         bool success = false;
 
@@ -434,13 +435,13 @@ void Strategy::square_strategy(bool& incomplete_strategy) {
         new_memory_A.push_back(additional_memory_A);
         new_memory_B.push_back(additional_memory_B);
         new_memory_C.push_back(additional_memory_C);
+        used =
+            memory_with_buffer_optimization(new_memory_A,
+                                            new_memory_B,
+                                            new_memory_C);
     }
 
-    memory_A = new_memory_A;
-    memory_B = new_memory_B;
-    memory_C = new_memory_C;
-
-    memory_used = memory_with_buffer_optimization(memory_A, memory_B, memory_C);
+    memory_used = used;
 
     P = divm * divn * divk;
 
