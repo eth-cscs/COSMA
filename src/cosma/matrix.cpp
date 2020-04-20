@@ -428,6 +428,15 @@ grid2grid::grid_layout<T> CosmaMatrix<T>::get_grid_layout() {
     return {std::move(assigned_grid), std::move(local_memory)};
 }
 
+// allocates initial buffers (turns off dryrun)
+template <typename T>
+void CosmaMatrix<T>::allocate() {
+    if (rank_ < P_) {
+        bool dryrun = false;
+        buffer_.allocate_initial_buffers(dryrun);
+    }
+}
+
 template <typename T>
 void CosmaMatrix<T>::allocate_communication_buffers() {
     if (rank_ < P_)
@@ -450,6 +459,7 @@ int CosmaMatrix<T>::rank() const {
     return rank_;
 }
 
+// total memory = initial memory + communication memory
 template <typename T>
 size_t CosmaMatrix<T>::total_required_memory() {
     if (rank_ < P_)

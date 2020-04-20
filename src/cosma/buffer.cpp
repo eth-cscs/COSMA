@@ -78,9 +78,9 @@ void Buffer<T>::allocate_communication_buffers(bool dry_run) {
 }
 
 template <typename T>
-size_t Buffer<T>::total_size(bool dry_run) {
+size_t Buffer<T>::total_size() {
     size_t total_size = 0;
-    if (!dry_run && rank_ < strategy_->P) {
+    if (rank_ < strategy_->P) {
         for (int i = 0; i < buff_sizes_.size(); ++i) {
             total_size += buff_sizes_[i];
         }

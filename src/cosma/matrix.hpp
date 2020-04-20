@@ -177,7 +177,11 @@ class CosmaMatrix {
 
     int rank() const;
 
+    // total memory = initial memory + communication memory
     size_t total_required_memory();
+
+    // turns off dry-run mode, allocate initial buffers
+    void allocate();
 
   protected:
     cosma_context<scalar_t> *ctxt_;

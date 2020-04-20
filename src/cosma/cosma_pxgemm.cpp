@@ -271,14 +271,23 @@ void pxgemm(const char transa,
         }
     }
 #endif
-    CosmaMatrix<T> A(std::move(mapper_a), rank_permutation[rank]);
-    CosmaMatrix<T> B(std::move(mapper_b), rank_permutation[rank]);
-    CosmaMatrix<T> C(std::move(mapper_c), rank_permutation[rank]);
+    // first, we don't want to alloate the space, just to precompute
+    // the required memory size, so we active dry_run, which precomputes
+    // everything but doesn't allocate anything yet
+    bool dont_allocate = true;
+    CosmaMatrix<T> A(std::move(mapper_a), rank_permutation[rank], dont_allocate);
+    CosmaMatrix<T> B(std::move(mapper_b), rank_permutation[rank], dont_allocate);
+    CosmaMatrix<T> C(std::move(mapper_c), rank_permutation[rank], dont_allocate);
 
     // avoid resizing the buffer by reserving immediately the total required memory
     get_context_instance<T>()->get_memory_pool().reserve(A.total_required_memory()
                                                        + B.total_required_memory()
                                                        + C.total_required_memory());
+
+    // turn off dryrun mode, allocate memory for all matrices
+    A.allocate();
+    B.allocate();
+    C.allocate();
 
     // get abstract layout descriptions for COSMA layout
     auto cosma_layout_a = A.get_grid_layout();
@@ -303,7 +312,7 @@ void pxgemm(const char transa,
     }
 
     // transform all scheduled transformations together
-    transf.transform();
+    transf.transform_with_memory_pool();
 
 #ifdef DEBUG
     std::cout << "COSMA multiply" << std::endl;
@@ -323,7 +332,7 @@ void pxgemm(const char transa,
     // grid2grid::transform the result from cosma back to scalapack
     // grid2grid::transform<T>(cosma_layout_c, scalapack_layout_c, comm);
     transf.schedule(cosma_layout_c, scalapack_layout_c);
-    transf.transform();
+    transf.transform_with_memory_pool();
 
 #ifdef DEBUG
     if (rank == 0) {

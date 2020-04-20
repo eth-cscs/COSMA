@@ -2,7 +2,6 @@
 #include <complex>
 #include <cosma/memory_pool.hpp>
 #include <iostream>
-#include <mpi.h>
 
 template <typename T>
 cosma::memory_pool<T>::memory_pool() {
@@ -91,8 +90,25 @@ void cosma::memory_pool<T>::reserve(size_t size) {
         // function from this allocator might actually allocate
         // a bit more (due to the alignment) bytes than instructed to, 
         // so we have to take that into account.
-        std::size_t size_with_alignment = (pool_size_ + size) + main_allocator<T>::alignment;
+        std::size_t size_with_alignment = size + main_allocator<T>::alignment;
         pool_.reserve(size_with_alignment);
+        pool_capacity_ = size;
+    }
+}
+
+template <typename T>
+void cosma::memory_pool<T>::reserve_additionally(size_t size) {
+    if (size > 0 && size > pool_capacity_) {
+        // reserve will internally increase the vector capacity
+        // but we have to be careful:
+        // since we are using a custom allocator for the vector
+        // we have to take into account that the allocate
+        // function from this allocator might actually allocate
+        // a bit more (due to the alignment) bytes than instructed to, 
+        // so we have to take that into account.
+        std::size_t size_with_alignment = (pool_capacity_ + size) + main_allocator<T>::alignment;
+        pool_.reserve(size_with_alignment);
+        pool_capacity_ += size;
     }
 }
 

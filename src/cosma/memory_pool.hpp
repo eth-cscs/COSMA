@@ -35,7 +35,10 @@ public:
     void turn_on_output();
 
     size_t size();
+    // resreves size
     void reserve(size_t size);
+    // reserves pool_capacity_ + size
+    void reserve_additionally(size_t size);
 
     void pin(T* ptr, std::size_t size);
     void unpin_all();

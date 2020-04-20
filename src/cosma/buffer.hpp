@@ -62,7 +62,7 @@ public:
     void free_communication_buffers(bool dry_run = false);
 
     // total required memory
-    size_t total_size(bool dry_run = false);
+    size_t total_size();
 
     // increases the index of the current buffer
     void advance_buffer();
