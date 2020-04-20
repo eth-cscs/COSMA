@@ -269,9 +269,9 @@ Therefore, by changing the values of these variables, it is possible to control 
 
 In case the available CPU memory is a scarce resource, it is possible to set the CPU memory limit to COSMA, by exporting the following environment variable:
 ```bash
-export COSMA_CPU_MAX_MEMORY=1024 # in megabytes
+export COSMA_CPU_MAX_MEMORY=1024 # in megabytes per MPI process (rank)
 ```
-which will set the upper limit on the memory that the algorithm is allowed to use. This might, however, reduce the performance.
+which will set the upper limit [in MB] on the memory that each MPI process (rank) is allowed to use. This might, however, reduce the performance.
 
 In case the algorithm is not able to perform the multiplication within the given memory range, a `runtime_error` will be thrown.
 

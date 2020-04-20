@@ -6,6 +6,33 @@
 #include <limits>
 
 namespace cosma {
+int get_int_env_var(std::string name, int default_value) {
+    char* var;
+    var = getenv(name.c_str());
+    int value = default_value;
+    if (var != nullptr)
+        value = std::atoi(var);
+    return value;
+}
+
+int gpu_streams() {
+    return get_int_env_var("COSMA_GPU_STREAMS", 2);
+}
+
+int gpu_max_tile_m() {
+    return get_int_env_var("COSMA_GPU_MAX_TILE_M", 5000);
+}
+
+int gpu_max_tile_n() {
+    return get_int_env_var("COSMA_GPU_MAX_TILE_N", 5000);
+}
+
+int gpu_max_tile_k() {
+    return get_int_env_var("COSMA_GPU_MAX_TILE_K", 5000);
+}
+
+// reads the memory limit in MB per rank
+// and converts the limit to #elements that each rank is allowed to use
 template <typename T>
 long long get_cpu_max_memory() {
     char* var;
@@ -19,45 +46,6 @@ long long get_cpu_max_memory() {
     }
 
     return value;
-}
-
-int get_num_gpu_streams() {
-    char* var;
-    var = getenv ("COSMA_GPU_STREAMS");
-    int n_streams = 2;
-    if (var != nullptr)
-        n_streams = std::atoi(var);
-    return n_streams;
-}
-
-int get_gpu_tile_size_m() {
-    char* var;
-    var = getenv("COSMA_GPU_MAX_TILE_M");
-    int tile = 5000;
-    bool defined = var != nullptr;
-    if (defined)
-        tile = std::atoi(var);
-    return tile;
-}
-
-int get_gpu_tile_size_n() {
-    char* var;
-    var = getenv("COSMA_GPU_MAX_TILE_N");
-    int tile = 5000;
-    bool defined = var != nullptr;
-    if (defined)
-        tile = std::atoi(var);
-    return tile;
-}
-
-int get_gpu_tile_size_k() {
-    char* var;
-    var = getenv("COSMA_GPU_MAX_TILE_K");
-    int tile = 5000;
-    bool defined = var != nullptr;
-    if (defined)
-        tile = std::atoi(var);
-    return tile;
 }
 
 bool env_var_defined(const char* var_name) {
@@ -75,10 +63,10 @@ template <typename Scalar>
 cosma_context<Scalar>::cosma_context() {
     cpu_memory_limit = get_cpu_max_memory<Scalar>();
 #ifdef COSMA_HAVE_GPU
-    gpu_ctx_ = gpu::make_context<Scalar>(get_num_gpu_streams(),
-                                         get_gpu_tile_size_m(),
-                                         get_gpu_tile_size_n(),
-                                         get_gpu_tile_size_k());
+    gpu_ctx_ = gpu::make_context<Scalar>(gpu_streams(),
+                                         gpu_max_tile_m(),
+                                         gpu_max_tile_n(),
+                                         gpu_max_tile_k());
 #endif
 }
 
