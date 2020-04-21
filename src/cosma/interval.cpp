@@ -6,13 +6,23 @@ Interval::Interval() = default;
 
 Interval::Interval(int start, int end)
     : start_(start)
-    , end_(end) {}
+    , end_(end) {
+    if (start < 0 || end < 0) {
+        throw std::runtime_error(
+            "ERROR: in class interval (COSMA): start, end > 0 must be satisfied.");
+    }
+
+    if (start > end) {
+        throw std::runtime_error(
+            "ERROR: in class interval (COSMA): start<=end must be satisfied.");
+    }
+}
 
 int Interval::first() const { return start_; }
 
 int Interval::last() const { return end_; }
 
-int Interval::length() { return end_ - start_ + 1; }
+std::size_t Interval::length() { return end_ - start_ + 1; }
 
 bool Interval::empty() { return start_ == end_; }
 
@@ -127,7 +137,7 @@ Interval2D::Interval2D(int row_start, int row_end, int col_start, int col_end) {
 // splits the current Interval2D into divisor many submatrices by splitting
 // only the columns interval and returns the size of the submatrix indexed with
 // index
-int Interval2D::split_by(int divisor, int index) {
+std::size_t Interval2D::split_by(int divisor, int index) {
     if (index >= divisor) {
         std::cout << "Error in Interval2D.split_by: trying to access " << index
                   << "-subinterval, out of " << divisor
@@ -135,7 +145,7 @@ int Interval2D::split_by(int divisor, int index) {
         return -1;
     }
 
-    if (cols.length() < divisor) {
+    if (cols.length() < 0 || cols.length() < divisor) {
         std::cout << "Error in Interval2D.split_by: trying to divide the "
                      "subinterval of length "
                   << cols.length() << " into " << divisor
@@ -146,8 +156,8 @@ int Interval2D::split_by(int divisor, int index) {
     return rows.length() * cols.subinterval(divisor, index).length();
 }
 
-int Interval2D::size() {
-    int size = split_by(1, 0);
+std::size_t Interval2D::size() {
+    auto size = split_by(1, 0);
     return size;
 }
 

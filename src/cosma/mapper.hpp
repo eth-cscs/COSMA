@@ -49,7 +49,7 @@ class Mapper {
     char which_matrix();
 
     // get a vector of offsets of each local block
-    std::vector<int>& local_blocks_offsets();
+    std::vector<std::size_t>& local_blocks_offsets();
 
     // get a vector of local blocks
     std::vector<Interval2D> local_blocks();
@@ -96,7 +96,7 @@ class Mapper {
     std::vector<size_t> initial_buffer_size_;
 
     // rank -> vector of sizes of all the ranges that this rank owns
-    std::vector<std::vector<int>> range_offset_;
+    std::vector<std::vector<std::size_t>> range_offset_;
 
     Interval mi_;
     Interval ni_;

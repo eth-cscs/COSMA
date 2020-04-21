@@ -20,7 +20,7 @@ Mapper::Mapper(char label,
     Pi_ = Interval(0, P_ - 1);
     compute_sizes(mi_, ni_, Pi_, 0, strategy);
     initial_buffer_size_ = std::vector<size_t>(P_);
-    range_offset_ = std::vector<std::vector<int>>(P_, std::vector<int>());
+    range_offset_ = std::vector<std::vector<std::size_t>>(P_, std::vector<std::size_t>());
 
     for (size_t rank = 0; rank < P_; ++rank) {
         size_t size = 0;
@@ -346,7 +346,7 @@ char Mapper::which_matrix() {
     return label_;
 }
 
-std::vector<int>& Mapper::local_blocks_offsets() {
+std::vector<std::size_t>& Mapper::local_blocks_offsets() {
     return range_offset_[rank_];
 }
 
@@ -358,9 +358,13 @@ std::vector<Interval2D> Mapper::local_blocks() {
 
 int Mapper::owner(Interval2D& block) {
     auto rank_and_offset_iterator = range_to_rank_.find(block);
+    if (rank_and_offset_iterator == range_to_rank_.end()) {
+        std::cout << "ERROR in mapper.cpp: block: " << block << " not found" << std::endl;
+        std::cout << "range_to_rank_.size() = " << range_to_rank_.size() << std::endl;
+    }
     assert(rank_and_offset_iterator != range_to_rank_.end());
     auto rank_and_offset = rank_and_offset_iterator->second;
-    int rank = rank_and_offset.first;
+    auto rank = rank_and_offset.first;
     return rank;
 }
 

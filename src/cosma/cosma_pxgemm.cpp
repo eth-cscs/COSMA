@@ -107,6 +107,43 @@ void pxgemm(const char transa,
     char grid_order = 
         ordering == grid2grid::scalapack::ordering::column_major ? 'C' : 'R';
 
+#ifdef DEBUG
+    if (rank == 0) {
+        pxgemm_params<T> params(
+                             // global dimensions
+                             mat_dim_a.rows, mat_dim_a.cols,
+                             mat_dim_b.rows, mat_dim_b.cols,
+                             mat_dim_c.rows, mat_dim_c.cols,
+                             // block dimensions
+                             b_dim_a.rows, b_dim_a.cols,
+                             b_dim_b.rows, b_dim_b.cols,
+                             b_dim_c.rows, b_dim_c.cols,
+                             // submatrix start
+                             ia, ja,
+                             ib, jb,
+                             ic, jc,
+                             // problem size
+                             m, n, k,
+                             // transpose flags
+                             trans_a, trans_b,
+                             // alpha, beta
+                             alpha, beta,
+                             // leading dimensinons
+                             lld_a, lld_b, lld_c,
+                             // processor grid
+                             procrows, proccols,
+                             // processor grid ordering
+                             grid_order,
+                             // ranks containing first rows
+                             rank_src_a.row_src, rank_src_a.col_src,
+                             rank_src_b.row_src, rank_src_b.col_src,
+                             rank_src_c.row_src, rank_src_c.col_src
+                         );
+        std::cout << params << std::endl;
+    }
+    MPI_Barrier(comm);
+#endif
+
     std::vector<int> divisors;
     std::string step_type = "";
     std::string dimensions = "";
@@ -145,40 +182,10 @@ void pxgemm(const char transa,
 
 #ifdef DEBUG
     if (rank == 0) {
-        pxgemm_params<T> params(
-                             // global dimensions
-                             mat_dim_a.rows, mat_dim_a.cols,
-                             mat_dim_b.rows, mat_dim_b.cols,
-                             mat_dim_c.rows, mat_dim_c.cols,
-                             // block dimensions
-                             b_dim_a.rows, b_dim_a.cols,
-                             b_dim_b.rows, b_dim_b.cols,
-                             b_dim_c.rows, b_dim_c.cols,
-                             // submatrix start
-                             ia, ja,
-                             ib, jb,
-                             ic, jc,
-                             // problem size
-                             m, n, k,
-                             // transpose flags
-                             trans_a, trans_b,
-                             // alpha, beta
-                             alpha, beta,
-                             // leading dimensinons
-                             lld_a, lld_b, lld_c,
-                             // processor grid
-                             procrows, proccols,
-                             // processor grid ordering
-                             grid_order,
-                             // ranks containing first rows
-                             rank_src_a.row_src, rank_src_a.col_src,
-                             rank_src_b.row_src, rank_src_b.col_src,
-                             rank_src_c.row_src, rank_src_c.col_src
-                         );
-        std::cout << params << std::endl;
         std::cout << strategy << std::endl;
         std::cout << "============================================" << std::endl;
     }
+    MPI_Barrier(comm);
 #endif
 
     PL();
