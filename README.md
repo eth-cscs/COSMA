@@ -229,8 +229,8 @@ The flags have the following meaning:
 - `-ba (--block_a)` (optional, default 128x128): block size for matrix A
 - `-bb (--block_b)` (optional, default 128x128): block size for matrix B
 - `-bc (--block_c)` (optional, default 128x128): block size for matrix C
-- `-ta (--trans_a)` (optional, default: no transpose): transpose A before mutliplication
-- `-tb (--trans_b)` (optional, default: no transpose): transpose B before mutliplication
+- `-ta (--trans_a)` (optional, default: no transpose): transpose A before multiplication
+- `-tb (--trans_b)` (optional, default: no transpose): transpose B before multiplication
 - `-p (--p_row)` (optional, default: 1): number of rows in a processor grid.
 - `-q (--q_row)` (optional, default: P): number of cols in a processor grid.
 - `-r (--n_rep)` (optional, default: 2): number of repetitions.
