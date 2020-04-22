@@ -1,0 +1,41 @@
+ARG BUILD_ENV
+
+FROM $BUILD_ENV as builder
+
+ARG BLAS
+
+# Build COSMA
+COPY . /COSMA
+
+RUN mkdir /COSMA/build && cd /COSMA/build && \
+    CC=mpicc CXX=mpicxx cmake .. \
+      -DCOSMA_WITH_TESTS=ON \
+      -DCOSMA_BLAS=OPENBLAS \
+      -DCOSMA_SCALAPACK=CUSTOM \
+      -DCMAKE_BUILD_TYPE=Debug \
+      -DCMAKE_CXX_FLAGS_DEBUG="-g -Og -fno-omit-frame-pointer -fsanitize=address,undefined" \
+      -DCMAKE_INSTALL_PREFIX=/usr && \
+      make -j$(nproc) && \
+      make DESTDIR=/root/COSMA-build install && \
+      rm -rf /COSMA
+
+RUN /root/libtree/libtree \
+      --chrpath \
+      -d /root/COSMA.bundle/ \
+      /root/COSMA-build/usr/bin/test.cosma \
+      /root/COSMA-build/usr/bin/test.mapper \
+      /root/COSMA-build/usr/bin/test.multiply \
+      /root/COSMA-build/usr/bin/test.multiply_using_layout \
+      /root/COSMA-build/usr/bin/test.pdgemm \
+      /root/COSMA-build/usr/bin/test.scalar_matmul
+
+FROM ubuntu:18.04
+
+COPY --from=builder /root/COSMA.bundle /root/COSMA.bundle
+
+# Make it easy to call our binaries.
+ENV PATH="/root/COSMA.bundle/usr/bin:$PATH"
+
+RUN echo "/root/COSMA.bundle/usr/lib/" > /etc/ld.so.conf.d/cosma.conf && ldconfig
+
+WORKDIR /root/COSMA.bundle/usr/bin
