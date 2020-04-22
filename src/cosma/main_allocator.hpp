@@ -39,7 +39,11 @@ public:
     using difference_type = std::ptrdiff_t;
 
     // alignment corresponding to 2M page-size
-    std::size_t alignment = (size_t) 2U * (size_t) 1024U * (size_t) 1024U;
+#if defined COSMA_POSIX_MEMALIGN_AVAILABLE || defined COSMA_ALIGNED_ALLOC_AVAILABLE
+    static const std::size_t alignment = (std::size_t) 2U * (std::size_t) 1024U * (std::size_t) 1024U;
+#else
+    static const std::size_t alignment = (std::size_t) 1;
+#endif
 
     template <typename U>
     using rebind = main_allocator<U>;

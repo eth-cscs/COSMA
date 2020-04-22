@@ -23,6 +23,10 @@ int cosma::scalapack::get_grid_context(const int* desca, const int* descb, const
     return ctxt;
 }
 
+int cosma::scalapack::get_grid_context(const int* desc) {
+    return desc[1];
+}
+
 int cosma::scalapack::leading_dimension(const int* desc) {
     return desc[8];
 }

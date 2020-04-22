@@ -1,3 +1,5 @@
+[![pipeline status](https://gitlab.com/cscs-ci/eth-cscs/COSMA/badges/master/pipeline.svg)](https://gitlab.com/cscs-ci/eth-cscs/COSMA/-/commits/master)
+
 <p align="center"><img src="./docs/cosma-logo.svg" width="70%"></p>
 
 ## Table of Contents
@@ -12,6 +14,7 @@
 - [Examples - Miniapps](#miniapps)
     - [Matrix Multiplication with COSMA](#matrix-multiplication)
     - [COSMA pdgemm wrapper](#cosma-pdgemm-wrapper)
+- [Tunable Parameters](#tunable-parameters)
 - [Performance Profiling](#profiling)
 - [Authors](#authors)
 - [Questions?](#questions)
@@ -97,7 +100,6 @@ The documentation for the latter option will soon be published here.
 For easy integration, it is enough to build COSMA with ScaLAPACK API and then link your code to COSMA before linking to any other library providing ScaLAPACK `pxgemm`. This way, all `pxgemm` calls will be using COSMA `pxgemm` wrappers. To achieve this, please follow these steps:
 
 1) Build COSMA with ScaLAPACK API:
-
 ```bash
 ###############
 # get COSMA
@@ -115,6 +117,7 @@ cmake -DCOSMA_BLAS=CUDA -DCOSMA_SCALAPACK=MKL -DCMAKE_INSTALL_PREFIX=<installati
 make -j 8
 make install
 ```
+> !! Note the *--recursive* flag !!
 
 2) Link your code to COSMA:
     - **CPU-only** version of COSMA:
@@ -232,6 +235,48 @@ The flags have the following meaning:
 - `-q (--q_row)` (optional, default: P): number of cols in a processor grid.
 - `-r (--n_rep)` (optional, default: 2): number of repetitions.
 
+## Tunable Parameters
+
+It is possible to set the limit for both CPU and GPU memory that COSMA is allowed to use.
+
+### GPU parameters
+
+Controlling how much GPU memory COSMA is allowed to use can be done by specifying the tile dimensions as:
+```bash
+export COSMA_GPU_MAX_TILE_M=5000
+export COSMA_GPU_MAX_TILE_N=5000
+export COSMA_GPU_MAX_TILE_K=5000
+```
+where `K` refers to the shared dimension and `MxN` refer to the dimensions of matrix `C`. By default, all tiles are square and have dimensions `5000x5000`.
+
+These are only the maximum tiles and the actual tile sizes that will be used might be less, depending on the problem size. These variables are only used in the GPU backend for pipelining the local matrices to GPUs. 
+
+It is also possible to specify the number of GPU streams:
+```bash
+export COSMA_GPU_STREAMS=2
+```
+
+The values given here are the default values.
+
+The algorithm will then require device memory for at most this many elements:
+```cpp
+num_streams * (tile_m * tile_k + tile_k * tile_n + tile_m * tile_n)
+```
+
+Therefore, by changing the values of these variables, it is possible to control the usage of GPU memory.
+
+### CPU parameters
+
+In case the available CPU memory is a scarce resource, it is possible to set the CPU memory limit to COSMA, by exporting the following environment variable:
+```bash
+export COSMA_CPU_MAX_MEMORY=1024 # in megabytes per MPI process (rank)
+```
+which will set the upper limit [in MB] on the memory that each MPI process (rank) is allowed to use. This might, however, reduce the performance.
+
+In case the algorithm is not able to perform the multiplication within the given memory range, a `runtime_error` will be thrown.
+
+> This parameter is still in the testing phase!
+
 ## Profiling
 
 Use `-DCOSMA_WITH_PROFILING=ON` to instrument the code. We use the profiler, called `semiprof`, written by Benjamin Cumming (https://github.com/bcumming).
@@ -279,7 +324,7 @@ Cite as:
 ## Questions?
 
 For questions, feel free to contact us, and we will soon get back to you:
-- For questions regarding the implementation, contact Marko Kabic (marko.kabic@cscs.ch).
+- For questions regarding the implementation, contact Marko Kabic (marko.kabic@cscs.ch) or Teodor Nikolov (tnikolov@cscs.ch).
 - For questions regarding the theory, contact Grzegorz Kwasniewski (gkwasnie@inf.ethz.ch).
 
 > If you need any help with the integration of COSMA into your library, we will be more than happy to help you!

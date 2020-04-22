@@ -51,6 +51,8 @@ grid2grid::scalapack::ordering rank_ordering(int ctxt, int P);
 // gets the grid context from descriptors of A, B and C and compares
 // if all three matrices belong to the same context
 int get_grid_context(const int* desca, const int* descb, const int* descc);
+// same as previous, but just for a single matrix
+int get_grid_context(const int* desc);
 // gets the communication blacs context from the grid blacs context
 int get_comm_context(const int grid_context);
 // gets the MPI communicator from the grid blacs context

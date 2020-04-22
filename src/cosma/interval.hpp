@@ -15,7 +15,7 @@ class Interval {
     int first() const;
     int last() const;
 
-    int length();
+    std::size_t length();
     bool empty();
     bool only_one();
 
@@ -62,9 +62,9 @@ class Interval2D {
     // splits the current Interval2D into divisor many submatrices by splitting
     // only the columns interval and returns the size of the submatrix indexed
     // with index
-    int split_by(int divisor, int index);
+    std::size_t split_by(int divisor, int index);
 
-    int size();
+    std::size_t size();
 
     bool contains(int row, int col);
     bool contains(Interval2D other);

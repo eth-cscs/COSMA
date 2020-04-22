@@ -3,8 +3,38 @@
 #include <gtest/gtest.h>
 
 using namespace cosma;
+TEST(mapper, rpa_256) {
+    int k = 13893632;
+    int m = 34816;
+    int n = 34816;
+    int nodes = 1024;
+    int ranks_per_node = 1;
+    int P = nodes * ranks_per_node;
+    // memory_limit /= ranks_per_node;
+    //
+    std::string split_dimension = "kmkm";
+    std::string step_type = "sspp";
+    std::vector<int> divisors = {2, 2, 512, 2};
 
-TEST(strategy, spartition) {
+    Strategy strategy(m, n, k, P, divisors, split_dimension, step_type);
+    std::cout << strategy << std::endl;
+
+    for (int rank = 0; rank < P; ++rank) {
+        EXPECT_NO_THROW(Mapper mapper_a('A', strategy, rank));
+        EXPECT_NO_THROW(Mapper mapper_b('B', strategy, rank));
+        EXPECT_NO_THROW(Mapper mapper_c('C', strategy, rank));
+
+        Mapper mapper_a('A', strategy, rank);
+        Mapper mapper_b('B', strategy, rank);
+        Mapper mapper_c('C', strategy, rank);
+
+        EXPECT_NO_THROW(auto cosma_grid_a = mapper_a.get_layout_grid());
+        EXPECT_NO_THROW(auto cosma_grid_b = mapper_b.get_layout_grid());
+        EXPECT_NO_THROW(auto cosma_grid_c = mapper_c.get_layout_grid());
+    }
+}
+
+TEST(strategy, rpa_128) {
     int m = 17408;
     int n = 17408;
     int k = 3473408;

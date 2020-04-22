@@ -31,8 +31,24 @@ void pxgemm(const char transa,
            const int ic,
            const int jc,
            const int *descc) {
+    // **********************************
+    //           CORNER CASES
+    // **********************************
     // edge cases, which are allowed by the standard
-    if (m == 0 || n == 0 || k == 0) return;
+    if (m == 0 || n == 0) return;
+    // afterwards we are sure m != 0 and n != 0
+    if (k == 0 || alpha == T{0}) {
+        // scale matrix C by beta
+        // starting from (ic-1, jc-1)
+        scale_matrix(descc, c, ic, jc, m, n, beta);
+        return;
+    }
+    // afterwards we are sure k != 0 and alpha != 0
+    // case beta == 0 is already handled by the code below
+
+    // **********************************
+    //           MAIN CODE
+    // **********************************
     // clear the profiler
     PC();
     // start profiling
@@ -91,37 +107,6 @@ void pxgemm(const char transa,
     char grid_order = 
         ordering == grid2grid::scalapack::ordering::column_major ? 'C' : 'R';
 
-    std::vector<int> divisors;
-    std::string step_type = "";
-    std::string dimensions = "";
-    PL();
-
-    PE(strategy);
-    /*
-      If the matrix is very large, then its reshuffling is expensive.
-      For this reason, try to adapt the strategy to the scalapack layout
-      to minimize the need for reshuffling, even if it makes a 
-      suoptimal communication scheme in COSMA.
-      This method will add "prefix" to the strategy, i.e. some initial steps
-      that COSMA should start with and then continue with finding 
-      the communication-optimal strategy.
-     */
-    adapt_strategy_to_block_cyclic_grid(divisors, dimensions, step_type,
-                                        m, n, k, P,
-                                        mat_dim_a, mat_dim_b, mat_dim_c,
-                                        b_dim_a, b_dim_b, b_dim_c,
-                                        ia, ja, ib, jb, ic, jc,
-                                        trans_a, trans_b,
-                                        procrows, proccols,
-                                        grid_order
-                                        );
-
-    Strategy strategy(m, n, k, P, divisors, dimensions, step_type);
-    // strategy.enable_overlapping_comm_and_comp();
-    PL();
-
-    PE(init);
-
 #ifdef DEBUG
     if (rank == 0) {
         pxgemm_params<T> params(
@@ -155,9 +140,52 @@ void pxgemm(const char transa,
                              rank_src_c.row_src, rank_src_c.col_src
                          );
         std::cout << params << std::endl;
+    }
+    MPI_Barrier(comm);
+#endif
+
+    std::vector<int> divisors;
+    std::string step_type = "";
+    std::string dimensions = "";
+    PL();
+
+    PE(strategy);
+    /*
+      If the matrix is very large, then its reshuffling is expensive.
+      For this reason, try to adapt the strategy to the scalapack layout
+      to minimize the need for reshuffling, even if it makes a 
+      suoptimal communication scheme in COSMA.
+      This method will add "prefix" to the strategy, i.e. some initial steps
+      that COSMA should start with and then continue with finding 
+      the communication-optimal strategy.
+     */
+    if (P > 1) {
+        adapt_strategy_to_block_cyclic_grid(divisors, dimensions, step_type,
+                                            m, n, k, P,
+                                            mat_dim_a, mat_dim_b, mat_dim_c,
+                                            b_dim_a, b_dim_b, b_dim_c,
+                                            ia, ja, ib, jb, ic, jc,
+                                            trans_a, trans_b,
+                                            procrows, proccols,
+                                            grid_order
+                                            );
+    }
+
+    auto cpu_memory_limit = get_context_instance<T>()->get_cpu_memory_limit();
+    Strategy strategy(m, n, k, P,
+                      divisors, dimensions, step_type,
+                      cpu_memory_limit);
+    // strategy.enable_overlapping_comm_and_comp();
+    PL();
+
+    PE(init);
+
+#ifdef DEBUG
+    if (rank == 0) {
         std::cout << strategy << std::endl;
         std::cout << "============================================" << std::endl;
     }
+    MPI_Barrier(comm);
 #endif
 
     PL();
@@ -242,7 +270,6 @@ void pxgemm(const char transa,
     }
     PL();
 
-
 #ifdef DEBUG
     if (rank == 0) {
         std::cout << "Optimal rank relabeling:" << std::endl;
@@ -255,7 +282,7 @@ void pxgemm(const char transa,
     CosmaMatrix<T> B(std::move(mapper_b), rank_permutation[rank]);
     CosmaMatrix<T> C(std::move(mapper_c), rank_permutation[rank]);
 
-    // avoid resizing of buffer by reserving immediately the total required memory
+    // avoid resizing the buffer by reserving immediately the total required memory
     get_context_instance<T>()->get_memory_pool().reserve(A.total_required_memory()
                                                        + B.total_required_memory()
                                                        + C.total_required_memory());
@@ -330,6 +357,78 @@ void pxgemm(const char transa,
     if (reordered) {
         MPI_Comm_free(&reordered_comm);
     }
+    PL();
+}
+
+// scales the submatrix of C by beta
+// The submatrix is defined by (ic-1, jc-1) and (ic-1+m, jc-1+n)
+template <typename T>
+void scale_matrix(const int* descc, T* c,
+                  const int ic, const int jc,
+                  const int m, const int n,
+                  const T beta) {
+    if (beta == T{1}) return;
+    // clear the profiler
+    PC();
+
+    // start profiling
+    PE(init);
+
+    // blas context
+    int ctxt = scalapack::get_grid_context(descc);
+
+    // scalapack rank grid decomposition
+    int procrows, proccols;
+    int myrow, mycol;
+    blacs::Cblacs_gridinfo(ctxt, &procrows, &proccols, &myrow, &mycol);
+
+    // get MPI communicator
+    MPI_Comm comm = scalapack::get_communicator(ctxt);
+
+    // communicator size and rank
+    int rank, P;
+    MPI_Comm_size(comm, &P);
+    MPI_Comm_rank(comm, &rank);
+
+    // block sizes
+    scalapack::block_size b_dim_c(descc);
+
+    // global matrix sizes
+    scalapack::global_matrix_size mat_dim_c(descc);
+
+    // sumatrix size to multiply
+    int c_subm = m;
+    int c_subn = n;
+
+    // rank sources (rank coordinates that own first row and column of a matrix)
+    scalapack::rank_src rank_src_c(descc);
+
+    // leading dimensions
+    int lld_c = scalapack::leading_dimension(descc);
+
+    // check whether rank grid is row-major or col-major
+    auto ordering = scalapack::rank_ordering(ctxt, P);
+    char grid_order = 
+        ordering == grid2grid::scalapack::ordering::column_major ? 'C' : 'R';
+
+    // create grid2grid object describing the given scalapack layout
+    auto layout = grid2grid::get_scalapack_grid<T>(
+        lld_c,
+        {mat_dim_c.rows, mat_dim_c.cols},
+        {ic, jc},
+        {c_subm, c_subn},
+        {b_dim_c.rows, b_dim_c.cols},
+        {procrows, proccols},
+        ordering,
+        'N',
+        {rank_src_c.row_src, rank_src_c.col_src},
+        c,
+        rank);
+    PL();
+
+    PE(multiply_computation);
+    // scale the elements in the submatrix given by the layout
+    layout.scale_by(beta);
     PL();
 }
 
@@ -447,7 +546,7 @@ void adapt_strategy_to_block_cyclic_grid(// these will contain the suggested str
     // However, when the reshuffling cost is too high, then it might be beneficial
     // to make COSMA use a communication-suboptimal strategy
     // to reduce the overall time.
-    if (largest_matrix_local_size > 1e8) {
+    if (largest_matrix_local_size > 1e7) {
         auto b_dim = one_of(b_dim_a, b_dim_b, b_dim_c, first, second, third);
         auto mat_dim = one_of(mat_dim_a, mat_dim_b, mat_dim_c, first, second, third);
         auto subm = one_of(a_subm, b_subm, c_subm, first, second, third);

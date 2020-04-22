@@ -302,6 +302,12 @@ std::vector<multiply_state> generate_tests() {
                        {3, 2, 3, 2, 3, 2}, // divisors
                        "mnkmnk", // split dimensions
                        "spspsp" // step types
+        ), 
+
+        multiply_state(512, 32, 736, 8,
+                       {2, 2, 2},
+                       "kmk",
+                       "ppp"
         )
     };
 };

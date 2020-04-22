@@ -111,13 +111,14 @@ bool validate_results(std::vector<T>& v1, std::vector<T>& v2, double epsilon=1e-
         return false;
     if (v1.size() == 0)
         return true;
+    bool correct = true;
     for (size_t i = 0; i < v1.size(); ++i) {
         if (std::abs(v1[i] - v2[i]) > epsilon) {
             std::cout << "epsilon = " << epsilon << ", v1 = " << v1[i] << ", which is != " << v2[i] << std::endl;
-            return false;
+            correct = false;
         }
     }
-    return true;
+    return correct;
 }
 
 // runs cosma or scalapack pdgemm wrapper for n_rep times and returns
@@ -229,13 +230,14 @@ bool test_pdgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, double epsilon=
 
 #ifdef DEBUG
     if (rank == 0) {
+        int max_size = 10;
         std::cout << "c(cosma) = ";
-        for (int i = 0; i < std::min(c_cosma.size(), (std::size_t) 10); ++i) {
+        for (int i = 0; i < std::min(c_cosma.size(), (std::size_t) max_size); ++i) {
             std::cout << c_cosma[i] << ", ";
         }
         std::cout << std::endl;
         std::cout << "c(scalapack) = ";
-        for (int i = 0; i < std::min(c_scalapack.size(), (std::size_t) 10); ++i) {
+        for (int i = 0; i < std::min(c_scalapack.size(), (std::size_t) max_size); ++i) {
             std::cout << c_scalapack[i] << ", ";
         }
         std::cout << std::endl;

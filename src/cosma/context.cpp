@@ -3,45 +3,49 @@
 #include <limits>
 #include <cassert>
 #include <stdlib.h>
+#include <limits>
 
 namespace cosma {
-int get_num_gpu_streams() {
+int get_int_env_var(std::string name, int default_value) {
     char* var;
-    var = getenv ("COSMA_GPU_STREAMS");
-    int n_streams = 2;
+    var = getenv(name.c_str());
+    int value = default_value;
     if (var != nullptr)
-        n_streams = std::atoi(var);
-    return n_streams;
+        value = std::atoi(var);
+    return value;
 }
 
-int get_gpu_tile_size_m() {
-    char* var;
-    var = getenv ("COSMA_GPU_TILE_M");
-    int tile = 5000;
-    bool defined = var != nullptr;
-    if (defined)
-        tile = std::atoi(var);
-    return tile;
+int gpu_streams() {
+    return get_int_env_var("COSMA_GPU_STREAMS", 2);
 }
 
-int get_gpu_tile_size_n() {
-    char* var;
-    var = getenv ("COSMA_GPU_TILE_N");
-    int tile = 5000;
-    bool defined = var != nullptr;
-    if (defined)
-        tile = std::atoi(var);
-    return tile;
+int gpu_max_tile_m() {
+    return get_int_env_var("COSMA_GPU_MAX_TILE_M", 5000);
 }
 
-int get_gpu_tile_size_k() {
+int gpu_max_tile_n() {
+    return get_int_env_var("COSMA_GPU_MAX_TILE_N", 5000);
+}
+
+int gpu_max_tile_k() {
+    return get_int_env_var("COSMA_GPU_MAX_TILE_K", 5000);
+}
+
+// reads the memory limit in MB per rank
+// and converts the limit to #elements that each rank is allowed to use
+template <typename T>
+long long get_cpu_max_memory() {
     char* var;
-    var = getenv ("COSMA_GPU_TILE_K");
-    int tile = 5000;
-    bool defined = var != nullptr;
-    if (defined)
-        tile = std::atoi(var);
-    return tile;
+    var = getenv ("COSMA_CPU_MAX_MEMORY");
+    long long value = std::numeric_limits<long long>::max();
+    long long megabytes = std::numeric_limits<long long>::max();
+    if (var != nullptr) {
+        megabytes = std::atoll(var);
+        // from megabytes to #elements
+        value = megabytes * 1024LL * 1024LL / sizeof(T);
+    }
+
+    return value;
 }
 
 bool env_var_defined(const char* var_name) {
@@ -57,16 +61,18 @@ gpu::mm_handle<Scalar>* cosma_context<Scalar>::get_gpu_context() {
 #endif
 template <typename Scalar>
 cosma_context<Scalar>::cosma_context() {
+    cpu_memory_limit = get_cpu_max_memory<Scalar>();
 #ifdef COSMA_HAVE_GPU
-    gpu_ctx_ = gpu::make_context<Scalar>(get_num_gpu_streams(),
-                                         get_gpu_tile_size_m(),
-                                         get_gpu_tile_size_n(),
-                                         get_gpu_tile_size_k());
+    gpu_ctx_ = gpu::make_context<Scalar>(gpu_streams(),
+                                         gpu_max_tile_m(),
+                                         gpu_max_tile_n(),
+                                         gpu_max_tile_k());
 #endif
 }
 
 template <typename Scalar>
 cosma_context<Scalar>::cosma_context(size_t cpu_mem_limit, int streams, int tile_m, int tile_n, int tile_k) {
+    cpu_memory_limit = (long long) cpu_mem_limit;
     memory_pool_.resize(cpu_mem_limit);
 #ifdef COSMA_HAVE_GPU
     gpu_ctx_ = gpu::make_context<Scalar>(streams, tile_m, tile_n, tile_k);
@@ -90,6 +96,11 @@ cosma_context<Scalar>::~cosma_context() {
 template <typename Scalar>
 memory_pool<Scalar>& cosma_context<Scalar>::get_memory_pool() {
     return memory_pool_;
+}
+
+template <typename Scalar>
+long long cosma_context<Scalar>::get_cpu_memory_limit() {
+    return cpu_memory_limit;
 }
 
 template <typename Scalar>
