@@ -29,6 +29,8 @@ RUN /root/libtree/libtree \
       /root/COSMA-build/usr/bin/test.pdgemm \
       /root/COSMA-build/usr/bin/test.scalar_matmul
 
+COPY ./docker/asan/suppressions /root/COSMA.bundle/
+
 FROM ubuntu:18.04
 
 COPY --from=builder /root/COSMA.bundle /root/COSMA.bundle
@@ -39,3 +41,7 @@ ENV PATH="/root/COSMA.bundle/usr/bin:$PATH"
 RUN echo "/root/COSMA.bundle/usr/lib/" > /etc/ld.so.conf.d/cosma.conf && ldconfig
 
 WORKDIR /root/COSMA.bundle/usr/bin
+
+ENV ASAN_OPTIONS=suppressions=/root/COSMA.bundle/suppressions
+
+
