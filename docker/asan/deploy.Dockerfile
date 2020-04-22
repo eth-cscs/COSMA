@@ -29,8 +29,6 @@ RUN /root/libtree/libtree \
       /root/COSMA-build/usr/bin/test.pdgemm \
       /root/COSMA-build/usr/bin/test.scalar_matmul
 
-COPY ./docker/asan/suppressions /root/COSMA.bundle/
-
 FROM ubuntu:18.04
 
 COPY --from=builder /root/COSMA.bundle /root/COSMA.bundle
@@ -42,6 +40,7 @@ RUN echo "/root/COSMA.bundle/usr/lib/" > /etc/ld.so.conf.d/cosma.conf && ldconfi
 
 WORKDIR /root/COSMA.bundle/usr/bin
 
-ENV ASAN_OPTIONS=suppressions=/root/COSMA.bundle/suppressions
+# I'm not getting ASAN_OPTIONS=suppressions=file to work, so just disable leak detection for now.
+ENV ASAN_OPTIONS=detect_leaks=false
 
 
