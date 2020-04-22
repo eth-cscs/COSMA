@@ -73,7 +73,10 @@ cosma_context<Scalar>::cosma_context() {
 template <typename Scalar>
 cosma_context<Scalar>::cosma_context(size_t cpu_mem_limit, int streams, int tile_m, int tile_n, int tile_k) {
     cpu_memory_limit = (long long) cpu_mem_limit;
-    memory_pool_.resize(cpu_mem_limit);
+    // do not reserve nor resize the memory pool
+    // let this just serve as the upper bound when creating a strategy
+    // because otherwise, it might reserve/resize to much more than the problem requires
+    // memory_pool_.resize(cpu_mem_limit);
 #ifdef COSMA_HAVE_GPU
     gpu_ctx_ = gpu::make_context<Scalar>(streams, tile_m, tile_n, tile_k);
 #else
