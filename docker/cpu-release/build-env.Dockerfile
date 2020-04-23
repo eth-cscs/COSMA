@@ -15,7 +15,7 @@ ENV MKL_VERSION ${MKL_VERSION}
 RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     software-properties-common \
     build-essential \
-    git tar wget curl && \
+    git tar wget curl gpg-agent && \
     rm -rf /var/lib/apt/lists/*
 
 # Install cmake
