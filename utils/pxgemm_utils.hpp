@@ -390,7 +390,7 @@ void benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
     // exit blacs context
     cosma::blacs::Cblacs_gridexit(ctxt);
     if (exit_blacs) {
-        int dont_finalize_mpi;
+        int dont_finalize_mpi = 1;
         cosma::blacs::Cblacs_exit(dont_finalize_mpi);
     }
 }
