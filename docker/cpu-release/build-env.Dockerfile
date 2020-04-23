@@ -1,9 +1,9 @@
-FROM nvidia/cuda:10.1-devel-ubuntu18.04
+FROM ubuntu:18.04
 
 WORKDIR /root
 
 ARG MKL_VERSION=2020.0-088
-ARG MPICH_VERSION=3.1.4
+ARG MPICH_VERSION=3.3.2
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV MKLROOT=/opt/intel/compilers_and_libraries/linux/mkl
@@ -15,7 +15,7 @@ ENV MKL_VERSION ${MKL_VERSION}
 RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     software-properties-common \
     build-essential \
-    git tar wget curl && \
+    git tar wget curl gpg-agent && \
     rm -rf /var/lib/apt/lists/*
 
 # Install cmake
