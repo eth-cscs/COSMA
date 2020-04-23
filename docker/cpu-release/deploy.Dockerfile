@@ -2,8 +2,6 @@ ARG BUILD_ENV
 
 FROM $BUILD_ENV as builder
 
-ARG BLAS
-
 # Build COSMA
 COPY . /COSMA
 
@@ -12,7 +10,7 @@ RUN COMPILERVARS_ARCHITECTURE=intel64 /opt/intel/bin/compilervars.sh && \
     CC=mpicc CXX=mpicxx cmake .. \
       -DCOSMA_WITH_TESTS=ON \
       -DCUDA_PATH=/usr/local/cuda \
-      -DCOSMA_BLAS=${BLAS} \
+      -DCOSMA_BLAS=MKL \
       -DCOSMA_SCALAPACK=MKL \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INSTALL_PREFIX=/usr && \
@@ -52,11 +50,6 @@ RUN /root/libtree/libtree --chrpath --strip -d /root/COSMA.bundle/ \
       ${MKL_LIB}/libmkl_vml_mc3.so
 
 FROM ubuntu:18.04
-
-# This is the only thing necessary really from nvidia/cuda's ubuntu18.04 runtime image
-ENV NVIDIA_VISIBLE_DEVICES all
-ENV NVIDIA_DRIVER_CAPABILITIES compute,utility
-ENV NVIDIA_REQUIRE_CUDA "cuda>=10.1 brand=tesla,driver>=384,driver<385 brand=tesla,driver>=396,driver<397 brand=tesla,driver>=410,driver<411"
 
 COPY --from=builder /root/COSMA.bundle /root/COSMA.bundle
 
