@@ -29,8 +29,7 @@ RUN /root/libtree/libtree \
       /root/COSMA-build/usr/bin/test.multiply \
       /root/COSMA-build/usr/bin/test.multiply_using_layout \
       /root/COSMA-build/usr/bin/test.pdgemm \
-      /root/COSMA-build/usr/bin/test.scalar_matmul \
-      $(which cuda-memcheck)
+      /root/COSMA-build/usr/bin/test.scalar_matmul
 
 FROM ubuntu:18.04
 
