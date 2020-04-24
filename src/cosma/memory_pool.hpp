@@ -57,4 +57,8 @@ private:
 #endif
     bool output = false;
 };
+
+template <typename T>
+memory_pool<T>* get_memory_pool_instance();
+
 }

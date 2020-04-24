@@ -278,6 +278,7 @@ void pxgemm(const char transa,
         }
     }
 #endif
+
     // first, we don't want to alloate the space, just to precompute
     // the required memory size, so we active dry_run, which precomputes
     // everything but doesn't allocate anything yet
@@ -318,8 +319,7 @@ void pxgemm(const char transa,
         transf.schedule(scalapack_layout_c, cosma_layout_c);
     }
 
-    // transform all scheduled transformations together
-    transf.transform_with_memory_pool();
+    transf.transform();
 
 #ifdef DEBUG
     std::cout << "COSMA multiply" << std::endl;
@@ -339,7 +339,8 @@ void pxgemm(const char transa,
     // grid2grid::transform the result from cosma back to scalapack
     // grid2grid::transform<T>(cosma_layout_c, scalapack_layout_c, comm);
     transf.schedule(cosma_layout_c, scalapack_layout_c);
-    transf.transform_with_memory_pool();
+
+    transf.transform();
 
 #ifdef DEBUG
     if (rank == 0) {

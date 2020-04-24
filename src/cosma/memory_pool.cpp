@@ -1,7 +1,9 @@
 #include <cassert>
 #include <complex>
-#include <cosma/memory_pool.hpp>
 #include <iostream>
+#include <memory>
+
+#include <cosma/memory_pool.hpp>
 
 template <typename T>
 cosma::memory_pool<T>::memory_pool() {
@@ -37,7 +39,6 @@ T* cosma::memory_pool<T>::get_buffer_pointer(size_t id) {
 
 template <typename T>
 void cosma::memory_pool<T>::free_buffer(T* ptr, size_t size) {
-    // std::cout << "freeing buffer of size " << size << ", current size =  " << pool_size_ << std::endl;
     assert(pool_size_ >= size);
     pool_size_ -= size;
     --n_buffers_;
@@ -128,7 +129,18 @@ void cosma::memory_pool<T>::unpin_all() {
 #endif
 }
 
+template <typename T>
+cosma::memory_pool<T>* cosma::get_memory_pool_instance() {
+    static auto pool = std::make_unique<cosma::memory_pool<T>>();
+    return pool.get();
+};
+
 template class cosma::memory_pool<double>;
 template class cosma::memory_pool<float>;
 template class cosma::memory_pool<std::complex<double>>;
 template class cosma::memory_pool<std::complex<float>>;
+
+template cosma::memory_pool<float>* cosma::get_memory_pool_instance();
+template cosma::memory_pool<double>* cosma::get_memory_pool_instance();
+template cosma::memory_pool<std::complex<float>>* cosma::get_memory_pool_instance();
+template cosma::memory_pool<std::complex<double>>* cosma::get_memory_pool_instance();

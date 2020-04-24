@@ -370,6 +370,7 @@ void benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
         // ***********************************
         // running ScaLAPACK
         time = 0;
+        /*|
         MPI_Barrier(comm);
         start = std::chrono::steady_clock::now();
         scalapack_pxgemm<T>::pxgemm(
@@ -381,6 +382,7 @@ void benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
         MPI_Barrier(comm);
         end = std::chrono::steady_clock::now();
         time = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+        */
         scalapack_times[i] = time;
     }
 
@@ -390,7 +392,7 @@ void benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
     // exit blacs context
     cosma::blacs::Cblacs_gridexit(ctxt);
     if (exit_blacs) {
-        int dont_finalize_mpi;
+        int dont_finalize_mpi = 1;
         cosma::blacs::Cblacs_exit(dont_finalize_mpi);
     }
 }
