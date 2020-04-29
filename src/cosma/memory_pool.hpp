@@ -1,13 +1,12 @@
 #pragma once
 #include <vector>
-#include <cosma/fast_vector.hpp>
 #include <cosma/pinned_buffers.hpp>
 
 namespace cosma {
 template <typename T>
 class memory_pool {
 public:
-    using mpi_buffer_t = fast_vector<T>;
+    using mpi_buffer_t = std::vector<T>;
 
     memory_pool();
     memory_pool(size_t capacity);
@@ -35,9 +34,7 @@ public:
     void turn_on_output();
 
     size_t size();
-    // resreves size
     void reserve(size_t size);
-    // reserves pool_capacity_ + size
     void reserve_additionally(size_t size);
 
     void pin(T* ptr, std::size_t size);
@@ -57,8 +54,4 @@ private:
 #endif
     bool output = false;
 };
-
-template <typename T>
-memory_pool<T>* get_memory_pool_instance();
-
 }

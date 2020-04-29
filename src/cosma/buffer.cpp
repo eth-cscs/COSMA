@@ -293,6 +293,7 @@ void Buffer<T>::set_buffer_index(int idx) {
 template <typename T>
 void Buffer<T>::swap_reduce_buffer_with(size_t buffer_idx) {
     std::swap(buffers_[buffer_idx], reduce_buffer_);
+    std::swap(buff_sizes_[buffer_idx], max_reduce_buffer_size_);
 }
 
 template <typename T>
