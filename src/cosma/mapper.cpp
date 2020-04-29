@@ -242,11 +242,10 @@ void Mapper::compute_range_to_rank() {
     for (auto rank = 0u; rank < P_; ++rank) {
         int matrix_id = 0;
         for (auto matrix : rank_to_range_[rank]) {
-            range_to_rank_.insert(
-                {matrix, {rank, range_offset_[rank][matrix_id]}});
+            range_to_rank_.insert({matrix, {rank, range_offset_[rank][matrix_id]}});
             row_partition_set_.insert(matrix.rows.last());
             col_partition_set_.insert(matrix.cols.last());
-            matrix_id++;
+            ++matrix_id;
         }
     }
 }
@@ -359,8 +358,7 @@ std::vector<Interval2D> Mapper::local_blocks() {
 int Mapper::owner(Interval2D& block) {
     auto rank_and_offset_iterator = range_to_rank_.find(block);
     if (rank_and_offset_iterator == range_to_rank_.end()) {
-        std::cout << "ERROR in mapper.cpp: block: " << block << " not found" << std::endl;
-        std::cout << "range_to_rank_.size() = " << range_to_rank_.size() << std::endl;
+        throw std::runtime_error("ERROR in mapper.cpp: the owner cannot be determined, the block not found.");
     }
     assert(rank_and_offset_iterator != range_to_rank_.end());
     auto rank_and_offset = rank_and_offset_iterator->second;
@@ -375,10 +373,12 @@ grid2grid::assigned_grid2D Mapper::get_layout_grid() {
     // prepare row intervals
     // and col intervals
     std::vector<int> rows_split;
+    rows_split.reserve(row_partition_.size());
     for (const auto& tick : row_partition_) {
         rows_split.push_back(tick + 1);
     }
     std::vector<int> cols_split;
+    cols_split.reserve(col_partition_.size());
     for (const auto& tick : col_partition_) {
         cols_split.push_back(tick + 1);
     }

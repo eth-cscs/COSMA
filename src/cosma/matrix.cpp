@@ -434,6 +434,7 @@ void CosmaMatrix<T>::allocate() {
     if (rank_ < P_) {
         bool dryrun = false;
         buffer_.allocate_initial_buffers(dryrun);
+        initialize();
     }
 }
 

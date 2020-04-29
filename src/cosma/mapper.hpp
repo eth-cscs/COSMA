@@ -90,7 +90,7 @@ class Mapper {
     // is equal to the number of sequential steps in which
     // this matrix was divided
     std::vector<std::vector<Interval2D>> rank_to_range_;
-    std::unordered_map<Interval2D, std::pair<int, int>> range_to_rank_;
+    std::unordered_map<Interval2D, std::pair<int, std::size_t>> range_to_rank_;
 
     // rank -> total initial buffer size
     std::vector<size_t> initial_buffer_size_;

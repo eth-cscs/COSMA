@@ -1,13 +1,13 @@
 #pragma once
 #include <vector>
-#include <cosma/main_allocator.hpp>
+#include <cosma/fast_vector.hpp>
 #include <cosma/pinned_buffers.hpp>
 
 namespace cosma {
 template <typename T>
 class memory_pool {
 public:
-    using mpi_buffer_t = std::vector<T, main_allocator<T>>;
+    using mpi_buffer_t = fast_vector<T>;
 
     memory_pool();
     memory_pool(size_t capacity);

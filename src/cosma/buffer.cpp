@@ -3,6 +3,8 @@
 #include <cosma/profiler.hpp>
 #include <complex>
 
+#include <algorithm>
+
 namespace cosma {
 
 template<typename T>
@@ -32,6 +34,20 @@ Buffer<T>::Buffer(cosma_context<T>* ctxt,
 
     init_first_split_steps();
     buff_sizes_ = compute_buffer_size();
+
+    // to account for possible swapping with the reduce buffer
+    // that occurs if k split is present and beta != 0
+    if (label_ == 'C') {
+        for (int step = 0; step < strategy_->n_steps(); ++step) {
+            if (strategy_->split_k(step) && strategy_->parallel_step(step)) {
+                max_reduce_buffer_size_ = std::max(
+                          max_reduce_buffer_size_,
+                          *max_element(buff_sizes_.begin(), buff_sizes_.end()));
+                break;
+            }
+        }
+    }
+
     allocate_initial_buffers(dry_run);
     PL();
 }
@@ -61,18 +77,27 @@ void Buffer<T>::allocate_communication_buffers(bool dry_run) {
             reduce_buffer_ = ctxt_->get_memory_pool().get_buffer_id(max_reduce_buffer_size_);
         }
 #ifdef DEBUG
-        std::cout << "Buffer sizes for matrix " << label_ << " on rank " << rank_
-                  << std::endl;
-        std::cout << "max_reshuffle_buffer_size_ = " << max_reshuffle_buffer_size_
-                  << std::endl;
-        std::cout << "max_reduce_buffer_size_ = " << max_reduce_buffer_size_
-                  << std::endl;
-        std::cout << "max_send_buffer_size_ = " << max_send_buffer_size_
-                  << std::endl;
-        std::cout << "max_recv_buffer_size_ = " << max_recv_buffer_size_
-                  << std::endl;
-        std::cout << "max_base_buffer_size_ = " << max_base_buffer_size_
-                  << std::endl;
+        for (int rank = 0; rank < strategy_->P; ++rank) {
+            if (rank_ == rank) {
+                std::cout << "Rank " << rank_ << " buffers" << std::endl;
+                std::cout << "Buffer sizes for matrix " << label_ << " on rank " << rank_
+                          << std::endl;
+                std::cout << "max_reshuffle_buffer_size_ = " << max_reshuffle_buffer_size_
+                          << std::endl;
+                std::cout << "max_reduce_buffer_size_ = " << max_reduce_buffer_size_
+                          << std::endl;
+                std::cout << "max_send_buffer_size_ = " << max_send_buffer_size_
+                          << std::endl;
+                std::cout << "max_recv_buffer_size_ = " << max_recv_buffer_size_
+                          << std::endl;
+                std::cout << "max_base_buffer_size_ = " << max_base_buffer_size_
+                          << std::endl;
+                for (int i = 0; i < buff_sizes_.size(); ++i) {
+                    std::cout << "buffer" << i << " size = " << buff_sizes_[i] << std::endl;
+                }
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
 #endif
     }
 }
@@ -81,7 +106,10 @@ template <typename T>
 size_t Buffer<T>::total_size() {
     size_t total_size = 0;
     if (rank_ < strategy_->P) {
-        for (int i = 0; i < buff_sizes_.size(); ++i) {
+        if (buff_sizes_.size() >= 1) {
+            total_size += std::max((size_t) buff_sizes_[0], mapper_->initial_size());
+        }
+        for (int i = 1; i < buff_sizes_.size(); ++i) {
             total_size += buff_sizes_[i];
         }
         total_size += (max_reduce_buffer_size_ > 0 ? max_reduce_buffer_size_ : 0);
@@ -237,12 +265,14 @@ int Buffer<T>::buff_index_before_gemm() const {
 
 template <typename T>
 T* Buffer<T>::buffer_ptr() {
-    return ctxt_->get_memory_pool().get_buffer_pointer(buffers_[current_buffer_]);
+    auto ptr = ctxt_->get_memory_pool().get_buffer_pointer(buffers_[current_buffer_]);
+    return ptr;
 }
 
 template <typename T>
 const T* Buffer<T>::buffer_ptr() const {
-    return ctxt_->get_memory_pool().get_buffer_pointer(buffers_[current_buffer_]);
+    auto ptr = ctxt_->get_memory_pool().get_buffer_pointer(buffers_[current_buffer_]);
+    return ptr;
 }
 
 template <typename T>
