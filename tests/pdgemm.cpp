@@ -407,44 +407,6 @@ INSTANTIATE_TEST_CASE_P(
 
         cosma::pxgemm_params<double>{26, 13, 448, 13, 13, 13, 2, 7, 'T', 'N', 1.0, 0.5},
 
-        // detailed pdgemm call
-        cosma::pxgemm_params<double>{
-            // matrix dimensions
-            1280, 1280, // matrix A
-            1280, 1280, // matrix B
-            1280, 1280, // matrix C
-
-            // block sizes
-            32, 32, // matrix A
-            32, 32, // matrix B
-            32, 32, // matrix C
-
-            // submatrices ij
-            1, 545, // matrix A
-            513, 545, // matrix B
-            1, 513, // matrix C
-
-            // problem size
-            512, 32, 736,
-
-            // transpose flags
-            'N', 'T',
-
-            // scaling flags
-            1.0, 1.0,
-
-            // leading dims
-            640, 640, 640,
-
-            // proc grid
-            2, 4, 'R',
-
-            // proc srcs
-            0, 0, // matrix A
-            0, 0, // matrix B
-            0, 0  // matrix C
-        },
-
         // adapt strategy to scalapack grid when P = 1
         cosma::pxgemm_params<double>{
             // matrix dimensions
@@ -476,6 +438,82 @@ INSTANTIATE_TEST_CASE_P(
 
             // proc grid
             1, 1, 'C',
+
+            // proc srcs
+            0, 0, // matrix A
+            0, 0, // matrix B
+            0, 0  // matrix C
+        },
+
+        // detailed pdgemm call
+        cosma::pxgemm_params<double>{
+            // matrix dimensions
+            1280, 1280, // matrix A
+            1280, 1280, // matrix B
+            1280, 1280, // matrix C
+
+            // block sizes
+            32, 32, // matrix A
+            32, 32, // matrix B
+            32, 32, // matrix C
+
+            // submatrices ij
+            1, 545, // matrix A
+            513, 545, // matrix B
+            1, 513, // matrix C
+
+            // problem size
+            512, 32, 736,
+
+            // transpose flags
+            'N', 'T',
+
+            // scaling flags
+            1.0, 0.0,
+
+            // leading dims
+            640, 640, 640,
+
+            // proc grid
+            2, 4, 'R',
+
+            // proc srcs
+            0, 0, // matrix A
+            0, 0, // matrix B
+            0, 0  // matrix C
+        },
+
+        // detailed pdgemm call
+        cosma::pxgemm_params<double>{
+            // matrix dimensions
+            1280, 1280, // matrix A
+            1280, 1280, // matrix B
+            1280, 1280, // matrix C
+
+            // block sizes
+            32, 32, // matrix A
+            32, 32, // matrix B
+            32, 32, // matrix C
+
+            // submatrices ij
+            1, 545, // matrix A
+            513, 545, // matrix B
+            1, 513, // matrix C
+
+            // problem size
+            512, 32, 736,
+
+            // transpose flags
+            'N', 'T',
+
+            // scaling flags
+            1.0, 1.0,
+
+            // leading dims
+            640, 640, 640,
+
+            // proc grid
+            2, 4, 'R',
 
             // proc srcs
             0, 0, // matrix A
