@@ -1,3 +1,4 @@
+#pragma once
 #include <complex>
 #include <memory>
 #include <mpi.h>
@@ -113,9 +114,4 @@ private:
     pointer ptr_ = nullptr;
     size_type size_ = 0;
 };
-
-template class fast_vector<float>;
-template class fast_vector<double>;
-template class fast_vector<std::complex<float>>;
-template class fast_vector<std::complex<double>>;
 }
