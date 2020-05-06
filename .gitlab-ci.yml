@@ -52,16 +52,19 @@ sanitize:
   stage: test
   only: ['master', 'staging', 'trying']
   trigger:
+    strategy: depend
     include: /ci/sanitize.yml
 
 cpu test:
   stage: test
   only: ['master', 'staging', 'trying']
   trigger:
+    strategy: depend
     include: /ci/cpu.yml
 
 gpu test:
   stage: test
   only: ['master', 'staging', 'trying']
   trigger:
+    strategy: depend
     include: /ci/gpu.yml
