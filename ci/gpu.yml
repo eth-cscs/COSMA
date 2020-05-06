@@ -1,7 +1,7 @@
 include:
   - local: /ci/test.yml
 
-image: $CI_REGISTRY_IMAGE/build-env-gpu:latest
+image: $CI_REGISTRY_IMAGE/deploy-gpu:latest
 
 variables:
   ALLOCATION_NAME: cosma-test-sanitizer-gpu-$CI_PIPELINE_ID
