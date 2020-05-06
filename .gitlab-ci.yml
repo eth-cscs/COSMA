@@ -1,3 +1,6 @@
+include:
+  - remote: 'https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.cscs.yml'
+
 stages:
   - build
   - test
@@ -5,152 +8,60 @@ stages:
 ##
 ## BUILDS
 ##
-
-.kubernetes:
+.build_common:
+  extends: .dind
+  stage: build
+  only: ['master', 'staging', 'trying']
   variables:
-    DOCKER_DRIVER: overlay2
-    DOCKER_HOST: tcp://localhost:2375
-    DOCKER_TLS_CERTDIR: ""
-    DOCKER_BUILDKIT: 1
-    BUILDKIT_PROGRESS: plain
-
-  image: docker:stable
-  only:
-    - master
-    - staging
-    - trying
-  tags:
-    - kubernetes
-  services:
-    - docker:19.03.1-dind # Important to keep the patch version here!
+    GIT_SUBMODULE_STRATEGY: recursive
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build --network=host --cache-from $BUILD_IMAGE --build-arg BUILDKIT_INLINE_CACHE=1 -t $BUILD_IMAGE -f $BUILD_DOCKERFILE .
+    - docker push $BUILD_IMAGE
+    - docker build -t $DEPLOY_IMAGE --network=host --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BUILD_ENV=$BUILD_IMAGE -f $DEPLOY_DOCKERFILE .
+    - docker push $DEPLOY_IMAGE
 
 # Builds a Docker image for the current commit, cpu / gpu
 build sanitizer cpu:
+  extends: .build_common
   variables:
-    GIT_SUBMODULE_STRATEGY: recursive
-  extends: .kubernetes
-  stage: build
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - export BUILD_IMAGE=$CI_REGISTRY_IMAGE/build-env-asan:latest
-    - export IMAGE=$CI_REGISTRY_IMAGE/deploy-cpu-asan:$CI_COMMIT_SHA
-  script:
-    - docker build --network=host --cache-from $BUILD_IMAGE --build-arg BUILDKIT_INLINE_CACHE=1 -t $BUILD_IMAGE -f docker/asan/build-env.Dockerfile .
-    - docker push $BUILD_IMAGE
-    - docker build -t $IMAGE --network=host --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BUILD_ENV=$BUILD_IMAGE -f docker/asan/deploy.Dockerfile .
-    - docker push $IMAGE
+    BUILD_DOCKERFILE: docker/asan/build-env.Dockerfile
+    BUILD_IMAGE: $CI_REGISTRY_IMAGE/build-env-asan:latest
+    DEPLOY_DOCKERFILE: docker/asan/deploy.Dockerfile
+    DEPLOY_IMAGE: $CI_REGISTRY_IMAGE/deploy-cpu-asan:$CI_COMMIT_SHA
 
 build cpu:
+  extends: .build_common
   variables:
-    GIT_SUBMODULE_STRATEGY: recursive
-  extends: .kubernetes
-  stage: build
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - export BUILD_IMAGE=$CI_REGISTRY_IMAGE/build-env-cpu:latest
-    - export IMAGE=$CI_REGISTRY_IMAGE/deploy-cpu:$CI_COMMIT_SHA
-  script:
-    - docker build --network=host --cache-from $BUILD_IMAGE --build-arg BUILDKIT_INLINE_CACHE=1 -t $BUILD_IMAGE -f docker/cpu-release/build-env.Dockerfile .
-    - docker push $BUILD_IMAGE
-    - docker build -t $IMAGE --network=host --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BUILD_ENV=$BUILD_IMAGE -f docker/cpu-release/deploy.Dockerfile .
-    - docker push $IMAGE
+    BUILD_DOCKERFILE: docker/cpu-release/build-env.Dockerfile
+    BUILD_IMAGE: $CI_REGISTRY_IMAGE/build-env-cpu:latest
+    DEPLOY_DOCKERFILE: docker/cpu-release/deploy.Dockerfile
+    DEPLOY_IMAGE: $CI_REGISTRY_IMAGE/deploy-cpu:$CI_COMMIT_SHA
+
 
 build gpu:
+  extends: .build_common
   variables:
-    GIT_SUBMODULE_STRATEGY: recursive
-  extends: .kubernetes
-  stage: build
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - export BUILD_IMAGE=$CI_REGISTRY_IMAGE/build-env-gpu:latest
-    - export IMAGE=$CI_REGISTRY_IMAGE/deploy-gpu:$CI_COMMIT_SHA
-  script:
-    - docker build --network=host --cache-from $BUILD_IMAGE --build-arg BUILDKIT_INLINE_CACHE=1 -t $BUILD_IMAGE -f docker/gpu/build-env.Dockerfile .
-    - docker push $BUILD_IMAGE
-    - docker build -t $IMAGE --network=host --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BUILD_ENV=$BUILD_IMAGE -f docker/gpu/deploy.Dockerfile .
-    - docker push $IMAGE
+    BUILD_DOCKERFILE: docker/gpu/build-env.Dockerfile
+    BUILD_IMAGE: $CI_REGISTRY_IMAGE/build-env-gpu:latest
+    DEPLOY_DOCKERFILE: docker/gpu/deploy.Dockerfile
+    DEPLOY_IMAGE: $CI_REGISTRY_IMAGE/deploy-gpu:$CI_COMMIT_SHA
 
-##
-## RUNS
-##
-
-.daint-common:
-  variables:
-    GIT_SUBMODULE_STRATEGY: none # no need to clone as we have images
-    CRAY_CUDA_MPS: 1
-    COSMA_GPU_MAX_TILE_M: 100
-    COSMA_GPU_MAX_TILE_N: 100
-    COSMA_GPU_MAX_TILE_K: 100
-  only:
-    - master
-    - staging
-    - trying
-  tags:
-    - daint
-
-# Executes the docker images on Daint via Sarus
-test sanitizer cpu:
-  extends: .daint-common
+sanitize:
   stage: test
-  before_script:
-    - module load sarus daint-mc
-    - export IMAGE=$CI_REGISTRY_IMAGE/deploy-cpu-asan:$CI_COMMIT_SHA
-    - sarus pull $IMAGE
-    - salloc --no-shell --job-name=cosma-ci-$CI_JOB_ID -N 2 -n 16 -C mc -p normal 
-    - export JOBID=$(squeue -h --name=cosma-ci-$CI_JOB_ID --format=%A)
-  script:
-    - srun --jobid=$JOBID -N 2 -n 16 -C mc -p normal unbuffer sarus run -t --mpi $IMAGE test.pdgemm
-    - srun --jobid=$JOBID -N 2 -n 16 -C mc -p normal unbuffer sarus run -t --mpi $IMAGE test.multiply
-    - srun --jobid=$JOBID -N 1 -n 1 -C mc -p normal unbuffer sarus run -t --mpi $IMAGE test.mapper
-    - srun --jobid=$JOBID -N 1 -n 8 -C mc -p normal unbuffer sarus run -t --mpi $IMAGE test.scalar_matmul
-    - srun --jobid=$JOBID -N 1 -n 4 -C mc -p normal unbuffer sarus run -t --mpi $IMAGE test.multiply_using_layout
-  after_script:
-    - module load sarus
-    - export IMAGE=$CI_REGISTRY_IMAGE/deploy-cpu-asan:$CI_COMMIT_SHA
-    - export JOBID=$(squeue -h --name=cosma-ci-$CI_JOB_ID --format=%A)
-    - scancel $JOBID
+  only: ['master', 'staging', 'trying']
+  trigger:
+    include: /ci/sanitize.yml
 
-test cpu:
-  extends: .daint-common
+cpu test:
   stage: test
-  before_script:
-    - module load sarus daint-mc
-    - export IMAGE=$CI_REGISTRY_IMAGE/deploy-cpu:$CI_COMMIT_SHA
-    - sarus pull $IMAGE
-    - salloc --no-shell --job-name=cosma-ci-$CI_JOB_ID -N 2 -n 16 -C mc -p normal 
-    - export JOBID=$(squeue -h --name=cosma-ci-$CI_JOB_ID --format=%A)
-  script:
-    - srun --jobid=$JOBID -N 2 -n 16 -C mc -p normal unbuffer sarus run -t --mpi $IMAGE test.pdgemm
-    - srun --jobid=$JOBID -N 2 -n 16 -C mc -p normal unbuffer sarus run -t --mpi $IMAGE test.multiply
-    - srun --jobid=$JOBID -N 1 -n 1 -C mc -p normal unbuffer sarus run -t --mpi $IMAGE test.mapper
-    - srun --jobid=$JOBID -N 1 -n 8 -C mc -p normal unbuffer sarus run -t --mpi $IMAGE test.scalar_matmul
-    - srun --jobid=$JOBID -N 1 -n 4 -C mc -p normal unbuffer sarus run -t --mpi $IMAGE test.multiply_using_layout
-  after_script:
-    - module load sarus
-    - export IMAGE=$CI_REGISTRY_IMAGE/deploy-cpu:$CI_COMMIT_SHA
-    - export JOBID=$(squeue -h --name=cosma-ci-$CI_JOB_ID --format=%A)
-    - scancel $JOBID
-    - sarus rmi $IMAGE
+  only: ['master', 'staging', 'trying']
+  trigger:
+    include: /ci/cpu.yml
 
-test gpu:
-  extends: .daint-common
+gpu test:
   stage: test
-  before_script:
-    - module load sarus daint-gpu
-    - export IMAGE=$CI_REGISTRY_IMAGE/deploy-gpu:$CI_COMMIT_SHA
-    - sarus pull $IMAGE
-    - salloc --no-shell --job-name=cosma-ci-$CI_JOB_ID -N 2 -n 16 -C gpu -p normal 
-    - export JOBID=$(squeue -h --name=cosma-ci-$CI_JOB_ID --format=%A)
-  script:
-    - srun --jobid=$JOBID -N 2 -n 16 -C gpu -p normal unbuffer sarus run -t --mpi $IMAGE test.pdgemm
-    - srun --jobid=$JOBID -N 2 -n 16 -C gpu -p normal unbuffer sarus run -t --mpi $IMAGE test.multiply
-    - srun --jobid=$JOBID -N 1 -n 1 -C gpu -p normal unbuffer sarus run -t --mpi $IMAGE test.mapper
-    - srun --jobid=$JOBID -N 1 -n 8 -C gpu -p normal unbuffer sarus run -t --mpi $IMAGE test.scalar_matmul
-    - srun --jobid=$JOBID -N 1 -n 4 -C gpu -p normal unbuffer sarus run -t --mpi $IMAGE test.multiply_using_layout
-  after_script:
-    - module load sarus
-    - export IMAGE=$CI_REGISTRY_IMAGE/deploy-gpu:$CI_COMMIT_SHA
-    - export JOBID=$(squeue -h --name=cosma-ci-$CI_JOB_ID --format=%A)
-    - scancel $JOBID
-    - sarus rmi $IMAGE
-
+  only: ['master', 'staging', 'trying']
+  trigger:
+    include: /ci/gpu.yml

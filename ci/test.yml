@@ -1,0 +1,65 @@
+include:
+  - remote: 'https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.cscs.yml'
+
+stages:
+  - allocate
+  - test
+  - cleanup
+
+variables:
+  SLURM_TIMELIMIT: '15:00'
+  USE_MPI: 'YES'
+  DISABLE_AFTER_SCRIPT: 'YES'
+  PULL_IMAGE: 'NO'
+  COSMA_GPU_MAX_TILE_K: 100
+  COSMA_GPU_MAX_TILE_M: 100
+  COSMA_GPU_MAX_TILE_N: 100
+  CRAY_CUDA_MPS: 1
+
+allocate:
+  stage: allocate
+  extends: .daint_alloc
+  variables:
+    PULL_IMAGE: 'YES'
+
+pdgemm and multiply:
+  extends: .daint
+  stage: test
+  resource_group: daint-job
+  script:
+    - test.pdgemm
+    - test.multiply
+  variables:
+    SLURM_JOB_NUM_NODES: 2
+    SLURM_NTASKS: 16
+
+mapper:
+  extends: .daint
+  stage: test
+  resource_group: daint-job
+  script: test.mapper
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 1
+
+scalar_matmul:
+  extends: .daint
+  stage: test
+  resource_group: daint-job
+  script: test.mapper
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 8
+
+multiply_using_layout:
+  extends: .daint
+  stage: test
+  resource_group: daint-job
+  script: test.mapper
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 4
+
+deallocate:
+  stage: cleanup
+  extends: .daint_dealloc
