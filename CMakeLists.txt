@@ -51,7 +51,7 @@ if (NOT ${COSMA_BLAS} STREQUAL "CUDA" AND NOT ${COSMA_BLAS} STREQUAL "ROCM" AND 
   endif()
 endif()
 
-project(cosma VERSION 2.0.7 LANGUAGES CXX)
+project(cosma VERSION 2.1.0 LANGUAGES CXX)
 
 # preserve rpaths when installing and make the install folder relocatable
 # use `CMAKE_SKIP_INSTALL_RPATH` to skip this
