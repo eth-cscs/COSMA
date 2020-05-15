@@ -40,40 +40,40 @@ struct layout {
 };
 
 void smultiply_using_layout(MPI_Comm comm,
-                const char *transa,
-                const char *transb,
-                const float *alpha,
-                const layout *layout_a,
-                const layout *layout_b,
-                const float *beta,
-                const layout *layout_c);
+                            const char *transa,
+                            const char *transb,
+                            const float *alpha,
+                            const layout *layout_a,
+                            const layout *layout_b,
+                            const float *beta,
+                            const layout *layout_c);
 
 void dmultiply_using_layout(MPI_Comm comm,
-                const char *transa,
-                const char *transb,
-                const double *alpha,
-                const layout *layout_a,
-                const layout *layout_b,
-                const double *beta,
-                const layout *layout_c);
+                            const char *transa,
+                            const char *transb,
+                            const double *alpha,
+                            const layout *layout_a,
+                            const layout *layout_b,
+                            const double *beta,
+                            const layout *layout_c);
 
 void cmultiply_using_layout(MPI_Comm comm,
-                const char *transa,
-                const char *transb,
-                const float *alpha,
-                const layout *layout_a,
-                const layout *layout_b,
-                const float *beta,
-                const layout *layout_c);
+                            const char *transa,
+                            const char *transb,
+                            const float *alpha,
+                            const layout *layout_a,
+                            const layout *layout_b,
+                            const float *beta,
+                            const layout *layout_c);
 
 void zmultiply_using_layout(MPI_Comm comm,
-                const char *transa,
-                const char *transb,
-                const double *alpha,
-                const layout *layout_a,
-                const layout *layout_b,
-                const double *beta,
-                const layout *layout_c);
+                            const char *transa,
+                            const char *transb,
+                            const double *alpha,
+                            const layout *layout_a,
+                            const layout *layout_b,
+                            const double *beta,
+                            const layout *layout_c);
 
 #ifdef __cplusplus
 }

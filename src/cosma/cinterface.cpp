@@ -8,7 +8,8 @@
 namespace cosma {
 
 template <class T>
-grid2grid::grid_layout<T> grid_from_clayout(int n_ranks, const ::layout *layout) {
+grid2grid::grid_layout<T> grid_from_clayout(int n_ranks,
+                                            const ::layout *layout) {
 
     // Create the local blocks
     std::vector<grid2grid::block<T>> loc_blks;
@@ -22,8 +23,10 @@ grid2grid::grid_layout<T> grid_from_clayout(int n_ranks, const ::layout *layout)
         auto stride = block.ld;
 
         grid2grid::block_coordinates coord{row, col};
-        grid2grid::interval rows{layout->rowsplit[row], layout->rowsplit[row + 1]};
-        grid2grid::interval cols{layout->colsplit[col], layout->colsplit[col + 1]};
+        grid2grid::interval rows{layout->rowsplit[row],
+                                 layout->rowsplit[row + 1]};
+        grid2grid::interval cols{layout->colsplit[col],
+                                 layout->colsplit[col + 1]};
         loc_blks.emplace_back(rows, cols, coord, ptr, stride);
     }
 
@@ -49,13 +52,13 @@ grid2grid::grid_layout<T> grid_from_clayout(int n_ranks, const ::layout *layout)
 
 template <class T>
 void xmultiply_using_layout(MPI_Comm comm,
-                const char *transa,
-                const char *transb,
-                const T *alpha,
-                const layout *layout_a,
-                const layout *layout_b,
-                const T *beta,
-                const layout *layout_c) {
+                            const char *transa,
+                            const char *transb,
+                            const T *alpha,
+                            const layout *layout_a,
+                            const layout *layout_b,
+                            const T *beta,
+                            const layout *layout_c) {
 
     // communicator size and rank
     int rank, P;
@@ -80,39 +83,39 @@ extern "C" {
 #endif
 
 void smultiply_using_layout(MPI_Comm comm,
-                const char *transa,
-                const char *transb,
-                const float *alpha,
-                const layout *layout_a,
-                const layout *layout_b,
-                const float *beta,
-                const layout *layout_c) {
+                            const char *transa,
+                            const char *transb,
+                            const float *alpha,
+                            const layout *layout_a,
+                            const layout *layout_b,
+                            const float *beta,
+                            const layout *layout_c) {
 
     cosma::xmultiply_using_layout<float>(
         comm, transa, transb, alpha, layout_a, layout_b, beta, layout_c);
 }
 
 void dmultiply_using_layout(MPI_Comm comm,
-                const char *transa,
-                const char *transb,
-                const double *alpha,
-                const layout *layout_a,
-                const layout *layout_b,
-                const double *beta,
-                const layout *layout_c) {
+                            const char *transa,
+                            const char *transb,
+                            const double *alpha,
+                            const layout *layout_a,
+                            const layout *layout_b,
+                            const double *beta,
+                            const layout *layout_c) {
 
     cosma::xmultiply_using_layout<double>(
         comm, transa, transb, alpha, layout_a, layout_b, beta, layout_c);
 }
 
 void cmultiply_using_layout(MPI_Comm comm,
-                const char *transa,
-                const char *transb,
-                const float *alpha,
-                const layout *layout_a,
-                const layout *layout_b,
-                const float *beta,
-                const layout *layout_c) {
+                            const char *transa,
+                            const char *transb,
+                            const float *alpha,
+                            const layout *layout_a,
+                            const layout *layout_b,
+                            const float *beta,
+                            const layout *layout_c) {
 
     cosma::xmultiply_using_layout<std::complex<float>>(
         comm,
@@ -126,13 +129,13 @@ void cmultiply_using_layout(MPI_Comm comm,
 }
 
 void zmultiply_using_layout(MPI_Comm comm,
-                const char *transa,
-                const char *transb,
-                const double *alpha,
-                const layout *layout_a,
-                const layout *layout_b,
-                const double *beta,
-                const layout *layout_c) {
+                            const char *transa,
+                            const char *transb,
+                            const double *alpha,
+                            const layout *layout_a,
+                            const layout *layout_b,
+                            const double *beta,
+                            const layout *layout_c) {
 
     cosma::xmultiply_using_layout<std::complex<double>>(
         comm,
