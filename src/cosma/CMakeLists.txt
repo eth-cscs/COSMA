@@ -22,7 +22,7 @@ if(NOT TARGET cosma)
         list(APPEND cosma_src_files "pinned_buffers.cpp")
     endif()
 
-    add_library(cosma STATIC ${cosma_src_files})
+    add_library(cosma ${cosma_src_files})
     target_include_directories(cosma PUBLIC $<BUILD_INTERFACE:${cosma_SOURCE_DIR}/src>)
     target_compile_features(cosma PUBLIC cxx_std_14)
     target_link_libraries(cosma PUBLIC MPI::MPI_CXX
@@ -43,10 +43,10 @@ endif()
 # if ScaLAPACK is found and cosma_pxgemm library is not already created
 # then create it here and link it to the profiler if needed
 if(ScaLAPACK_TARGET AND NOT TARGET cosma_pxgemm)
-    add_library(cosma_pxgemm STATIC scalapack.cpp
-                                    pxgemm_params.hpp
-                                    cosma_pxgemm.cpp
-                                    pxgemm.cpp
+    add_library(cosma_pxgemm scalapack.cpp
+                             pxgemm_params.hpp
+                             cosma_pxgemm.cpp
+                             pxgemm.cpp
     )
     target_link_libraries(cosma_pxgemm PUBLIC cosma 
                                               ${BLAS_TARET}
@@ -64,9 +64,9 @@ endif()
 # pxgemm.h, so that pxgemm calls of scalapack are not overwritten
 # and can still be compared to scalapack for correctness check
 if(ScaLAPACK_TARGET AND NOT TARGET cosma_pxgemm_cpp)
-    add_library(cosma_pxgemm_cpp STATIC scalapack.cpp
-                                        pxgemm_params.hpp
-                                        cosma_pxgemm.cpp
+    add_library(cosma_pxgemm_cpp scalapack.cpp
+                                 pxgemm_params.hpp
+                                 cosma_pxgemm.cpp
     )
     target_link_libraries(cosma_pxgemm_cpp PUBLIC cosma 
                                               ${BLAS_TARET}
