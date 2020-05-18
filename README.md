@@ -11,6 +11,8 @@
 - [Using COSMA](#using-cosma)
     - [30 seconds Tutorial](#using-cosma-in-30-seconds)
 - [COSMA in production](#cosma-in-production)
+    - [CP2K](#cp2k)
+    - [Julia language](#julia-language)
 - [Examples - Miniapps](#miniapps)
     - [Matrix Multiplication with COSMA](#matrix-multiplication)
     - [COSMA pdgemm wrapper](#cosma-pdgemm-wrapper)
@@ -144,6 +146,8 @@ make install
 
 ## COSMA in Production
 
+### CP2K
+
 COSMA is integrated into the [CP2K](https://www.cp2k.org) quantum chemistry simulator. Since COSMA provides ScaLAPACK API, it is enough to link CP2K to COSMA, without changing CP2K code at all, which makes the integration trivial even if (as in the case of CP2K) the simulation code is in written Fortran.
 
 In the production run, we ran *Random-Phase Approximation (RPA)* benchmark of 128 water molecules, using the *Resolution of Identity (RI)*. The benchmark was run once on 1024 and once on 128 nodes of the GPU partition on [Piz Daint supercomputer](https://www.cscs.ch/computers/piz-daint/) (Cray XC50). Computationally, the most dominant part of this benchmark consists of 46 **tall-and-skinny** dense matrix multiplications, with the parameters shown in the table below:
@@ -163,6 +167,22 @@ With COSMA, even higher speedups are possible, depending on matrix shapes. To il
 <p align="center"><img src="./docs/square-results.svg" width="80%"></p>
 
 All the results from this section assumed matrices given in (block-cyclic) ScaLAPACK data layout. However, if the native COSMA layout is used, even higher throughput is possible. 
+
+### Julia language
+
+The [COSMA.jl](https://github.com/haampie/COSMA.jl/) Julia package uses COSMA's C-interface to provide COSMA-based matrix-matrix multiplication for the [DistributedArrays.jl](https://github.com/JuliaParallel/DistributedArrays.jl/) package. A minimal working example to multiply two random matrices looks as follows:
+
+```julia
+using MPIClusterManager, DistributedArrays, Distributed
+
+manager = MPIManager(np = 6)
+addprocs(manager)
+COSMA.use_manager(manager)
+
+@everywhere using COSMA
+
+A = drand(8000, 8000) * drand(8000, 8000)
+```
 
 ## Miniapps
 
