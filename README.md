@@ -57,6 +57,7 @@ The paper and other materials on COSMA are available under the following link:
 - **Tranposition/Conjugation Support:** matrices `A` and `B` can be transposed and/or conjugated.
 - **Communication and Computation Overlap:** supports overlapping of communication and computation.
 - **Spack Installation:** can be built and installed with `Spack` since v14.1
+- **Julia Package:** see https://github.com/haampie/COSMA.jl/ on how to use COSMA in the Julia language.
 
 ## Building COSMA
 
