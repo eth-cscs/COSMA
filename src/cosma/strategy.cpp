@@ -1004,8 +1004,12 @@ std::ostream &operator<<(std::ostream &os, const Strategy &other) {
     }
     os << "Required memory per rank (in #elements): " << other.memory_used
        << "\n";
-    os << "Available memory per rank (in #elements): " << other.memory_limit
-       << "\n";
+    os << "Available memory per rank (in #elements): ";
+    if (other.memory_limit < std::numeric_limits<long long>::max())
+        os << other.memory_limit;
+    else
+        os << "not specified (assumed: infinite)";
+    os << "\n";
     return os;
 }
 } // namespace cosma
