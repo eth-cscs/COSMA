@@ -17,6 +17,9 @@
     - [Matrix Multiplication with COSMA](#matrix-multiplication)
     - [COSMA pdgemm wrapper](#cosma-pdgemm-wrapper)
 - [Tunable Parameters](#tunable-parameters)
+    - [Parameters Overview](#parameters-overview)
+    - [Controlling GPU memory](#controlling-gpu-memory)
+    - [Controlling CPU memory](#controlling-cpu-memory)
 - [Performance Profiling](#profiling)
 - [Authors](#authors)
 - [Questions?](#questions)
@@ -258,9 +261,22 @@ The flags have the following meaning:
 
 ## Tunable Parameters
 
-It is possible to set the limit for both CPU and GPU memory that COSMA is allowed to use.
+### Parameters Overview
 
-### GPU parameters
+The overview of tunable parameters, that can be set through environment variables is given in the table below. The default values are given in **bold**. 
+
+ENVIRONMENT VARIABLE | POSSIBLE VALUES | DESCRIPTION
+| :------------------- | :------------------- |:------------------- |
+`COSMA_OVERLAP_COMM_AND_COMP` | ON, **OFF** | If enabled, commmunication and computation might be overlapped, depending on the built-in heuristics.
+`COSMA_ADAPT_STRATEGY` | **ON**, OFF | If enabled, COSMA will try to natively use the scalapack layout, without transforming to the COSMA layout.  Used only in the pxgemm wrapper. 
+`COSMA_CPU_MAX_MEMORY` | integer (`size_t`), by default: **infinite** | CPU memory limit in megabytes per MPI process (rank). Allowing too little memory might reduce the performance.
+`COSMA_GPU_MAX_TILE_M`, `COSMA_GPU_MAX_TILE_N`, `COSMA_GPU_MAX_TILE_K` | integer (`int`), by default: **5000** | Tile sizes for each dimension, that are used to pipeline the local CPU matrices to GPU. `K` refers to the shared dimension and `MxN` refer to the dimensions of matrix `C`
+
+These are all optional parameters. They are used in runtime and hence changing any of those does not require the code to be recompiled.
+
+We further discuss in details how to set the limits for both CPU and GPU memory that COSMA is allowed to use.
+
+### Controlling GPU memory
 
 Controlling how much GPU memory COSMA is allowed to use can be done by specifying the tile dimensions as:
 ```bash
@@ -286,7 +302,7 @@ num_streams * (tile_m * tile_k + tile_k * tile_n + tile_m * tile_n)
 
 Therefore, by changing the values of these variables, it is possible to control the usage of GPU memory.
 
-### CPU parameters
+### Controlling CPU memory
 
 In case the available CPU memory is a scarce resource, it is possible to set the CPU memory limit to COSMA, by exporting the following environment variable:
 ```bash
