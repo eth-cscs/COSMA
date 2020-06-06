@@ -30,6 +30,10 @@ public:
 
     void turn_on_output();
 
+    bool adapt_to_scalapack_strategy = true;
+
+    bool overlap_comm_and_comp = false;
+
 private:
     long long cpu_memory_limit = std::numeric_limits<long long>::max();
     memory_pool<Scalar> memory_pool_;

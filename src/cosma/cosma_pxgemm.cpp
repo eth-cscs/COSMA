@@ -159,7 +159,7 @@ void pxgemm(const char transa,
       that COSMA should start with and then continue with finding 
       the communication-optimal strategy.
      */
-    if (P > 1) {
+    if (P > 1 && get_context_instance<T>()->adapt_to_scalapack_strategy) {
         adapt_strategy_to_block_cyclic_grid(divisors, dimensions, step_type,
                                             m, n, k, P,
                                             mat_dim_a, mat_dim_b, mat_dim_c,
@@ -171,11 +171,15 @@ void pxgemm(const char transa,
                                             );
     }
 
+    // get CPU memory limit
     auto cpu_memory_limit = get_context_instance<T>()->get_cpu_memory_limit();
     Strategy strategy(m, n, k, P,
                       divisors, dimensions, step_type,
                       cpu_memory_limit);
-    // strategy.enable_overlapping_comm_and_comp();
+    // enable overlapping communication and computation if turned on
+    if (get_context_instance<T>()->overlap_comm_and_comp) {
+        strategy.enable_overlapping_comm_and_comp();
+    }
     PL();
 
     PE(init);

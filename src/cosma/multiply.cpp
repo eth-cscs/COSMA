@@ -1,4 +1,3 @@
-#include <cosma/context.hpp>
 #include <cosma/local_multiply.hpp>
 #include <cosma/multiply.hpp>
 #include <cosma/profiler.hpp>
@@ -99,6 +98,10 @@ void multiply_using_layout(cosma_context<T> *ctx,
 
     // find an optimal strategy for this problem
     Strategy strategy(m, n, k, P);
+    // enable overlapping communication and computation if turned on
+    if (get_context_instance<T>()->overlap_comm_and_comp) {
+        strategy.enable_overlapping_comm_and_comp();
+    }
 
     // create COSMA mappers
     Mapper mapper_a('A', strategy, rank);

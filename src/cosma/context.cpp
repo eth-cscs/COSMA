@@ -6,6 +6,22 @@
 #include <limits>
 
 namespace cosma {
+bool get_bool_env_var(std::string name, bool default_value) {
+    char* var;
+    var = getenv(name.c_str());
+    bool value = default_value;
+    if (var != nullptr) {
+        std::string s(var);
+        std::transform(s.begin(), s.end(), s.begin(), 
+            [&](char c) {
+                return std::toupper(c);
+            }
+        );
+        value = (s == "ON");
+    }
+    return value;
+}
+
 int get_int_env_var(std::string name, int default_value) {
     char* var;
     var = getenv(name.c_str());
@@ -29,6 +45,14 @@ int gpu_max_tile_n() {
 
 int gpu_max_tile_k() {
     return get_int_env_var("COSMA_GPU_MAX_TILE_K", 5000);
+}
+
+bool get_adapt_strategy() {
+    return get_bool_env_var("COSMA_ADAPT_STRATEGY", true);
+}
+
+bool get_overlap_comm_and_comp() {
+    return get_bool_env_var("COSMA_OVERLAP_COMM_AND_COMP", true);
 }
 
 // reads the memory limit in MB per rank
@@ -62,6 +86,8 @@ gpu::mm_handle<Scalar>* cosma_context<Scalar>::get_gpu_context() {
 template <typename Scalar>
 cosma_context<Scalar>::cosma_context() {
     cpu_memory_limit = get_cpu_max_memory<Scalar>();
+    adapt_to_scalapack_strategy = get_adapt_strategy();
+    overlap_comm_and_comp = get_overlap_comm_and_comp();
 #ifdef COSMA_HAVE_GPU
     gpu_ctx_ = gpu::make_context<Scalar>(gpu_streams(),
                                          gpu_max_tile_m(),
@@ -73,6 +99,8 @@ cosma_context<Scalar>::cosma_context() {
 template <typename Scalar>
 cosma_context<Scalar>::cosma_context(size_t cpu_mem_limit, int streams, int tile_m, int tile_n, int tile_k) {
     cpu_memory_limit = (long long) cpu_mem_limit;
+    adapt_to_scalapack_strategy = get_adapt_strategy();
+    overlap_comm_and_comp = get_overlap_comm_and_comp();
     // do not reserve nor resize the memory pool
     // let this just serve as the upper bound when creating a strategy
     // because otherwise, it might reserve/resize to much more than the problem requires
