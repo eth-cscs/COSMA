@@ -98,6 +98,7 @@ int main(int argc, char **argv) {
         int flag = 0;
         MPI_Finalized(&flag);
         if (!flag) {
+            MPI_Abort(MPI_COMM_WORLD, -1);
             MPI_Finalize();
         }
         return 0;

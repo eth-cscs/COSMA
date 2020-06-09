@@ -207,17 +207,20 @@ bool test_pdgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, double epsilon=
     } catch (const std::bad_alloc& e) {
         std::cout << "COSMA (pxgemm_utils): not enough space to store the initial local matrices. The problem size is too large. Either decrease the problem size or run it on more nodes/ranks." << std::endl;
         cosma::blacs::Cblacs_gridexit(ctxt);
-        cosma::blacs::Cblacs_exit(0);
+        int dont_finalize_mpi = 1;
+        cosma::blacs::Cblacs_exit(dont_finalize_mpi);
         throw;
     } catch (const std::length_error& e) {
         std::cout << "COSMA (pxgemm_utils): the initial local size of matrices >= vector::max_size(). Try using std::array or similar in cosma/utils/pxgemm_utils.cpp instead of vectors to store the initial matrices." << std::endl;
         cosma::blacs::Cblacs_gridexit(ctxt);
-        cosma::blacs::Cblacs_exit(0);
+        int dont_finalize_mpi = 1;
+        cosma::blacs::Cblacs_exit(dont_finalize_mpi);
         throw;
     } catch (const std::exception& e) {
         std::cout << "COSMA (pxgemm_utils): unknown exception, potentially a bug. Please inform us of the test-case." << std::endl;
         cosma::blacs::Cblacs_gridexit(ctxt);
-        cosma::blacs::Cblacs_exit(0);
+        int dont_finalize_mpi = 1;
+        cosma::blacs::Cblacs_exit(dont_finalize_mpi);
         throw;
     }
 
@@ -368,17 +371,20 @@ void benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
     } catch (const std::bad_alloc& e) {
         std::cout << "COSMA (pxgemm_utils): not enough space to store the initial local matrices. The problem size is too large. Either decrease the problem size or run it on more nodes/ranks." << std::endl;
         cosma::blacs::Cblacs_gridexit(ctxt);
-        cosma::blacs::Cblacs_exit(0);
+        int dont_finalize_mpi = 1;
+        cosma::blacs::Cblacs_exit(dont_finalize_mpi);
         throw;
     } catch (const std::length_error& e) {
         std::cout << "COSMA (pxgemm_utils): the initial local size of matrices >= vector::max_size(). Try using std::array or similar in cosma/utils/pxgemm_utils.cpp instead of vectors to store the initial matrices." << std::endl;
         cosma::blacs::Cblacs_gridexit(ctxt);
-        cosma::blacs::Cblacs_exit(0);
+        int dont_finalize_mpi = 1;
+        cosma::blacs::Cblacs_exit(dont_finalize_mpi);
         throw;
     } catch (const std::exception& e) {
         std::cout << "COSMA (pxgemm_utils): unknown exception, potentially a bug. Please inform us of the test-case." << std::endl;
         cosma::blacs::Cblacs_gridexit(ctxt);
-        cosma::blacs::Cblacs_exit(0);
+        int dont_finalize_mpi = 1;
+        cosma::blacs::Cblacs_exit(dont_finalize_mpi);
         throw;
     }
 
