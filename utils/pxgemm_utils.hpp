@@ -194,10 +194,32 @@ bool test_pdgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, double epsilon=
     int size_b = cosma::scalapack::local_buffer_size(&descb[0]);
     int size_c = cosma::scalapack::local_buffer_size(&descc[0]);
 
-    std::vector<T> a(size_a);
-    std::vector<T> b(size_b);
-    std::vector<T> c_cosma(size_c);
-    std::vector<T> c_scalapack(size_c);
+    std::vector<T> a;
+    std::vector<T> b;
+    std::vector<T> c_cosma;
+    std::vector<T> c_scalapack;
+
+    try {
+        a = std::vector<T>(size_a);
+        b = std::vector<T>(size_b);
+        c_cosma = std::vector<T>(size_c);
+        c_scalapack = std::vector<T>(size_c);
+    } catch (const std::bad_alloc& e) {
+        std::cout << "COSMA (pxgemm_utils): not enough space to store the initial local matrices. The problem size is too large. Either decrease the problem size or run it on more nodes/ranks." << std::endl;
+        cosma::blacs::Cblacs_gridexit(ctxt);
+        cosma::blacs::Cblacs_exit(0);
+        throw;
+    } catch (const std::length_error& e) {
+        std::cout << "COSMA (pxgemm_utils): the initial local size of matrices >= vector::max_size(). Try using std::array or similar in cosma/utils/pxgemm_utils.cpp instead of vectors to store the initial matrices." << std::endl;
+        cosma::blacs::Cblacs_gridexit(ctxt);
+        cosma::blacs::Cblacs_exit(0);
+        throw;
+    } catch (const std::exception& e) {
+        std::cout << "COSMA (pxgemm_utils): unknown exception, potentially a bug. Please inform us of the test-case." << std::endl;
+        cosma::blacs::Cblacs_gridexit(ctxt);
+        cosma::blacs::Cblacs_exit(0);
+        throw;
+    }
 
     // fill the matrices with random data
     fill_randomly(a);
@@ -333,10 +355,32 @@ void benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
     int size_b = cosma::scalapack::local_buffer_size(&descb[0]);
     int size_c = cosma::scalapack::local_buffer_size(&descc[0]);
 
-    std::vector<T> a(size_a);
-    std::vector<T> b(size_b);
-    std::vector<T> c_cosma(size_c);
-    std::vector<T> c_scalapack(size_c);
+    std::vector<T> a;
+    std::vector<T> b;
+    std::vector<T> c_cosma;
+    std::vector<T> c_scalapack;
+
+    try {
+        a = std::vector<T>(size_a);
+        b = std::vector<T>(size_b);
+        c_cosma = std::vector<T>(size_c);
+        c_scalapack = std::vector<T>(size_c);
+    } catch (const std::bad_alloc& e) {
+        std::cout << "COSMA (pxgemm_utils): not enough space to store the initial local matrices. The problem size is too large. Either decrease the problem size or run it on more nodes/ranks." << std::endl;
+        cosma::blacs::Cblacs_gridexit(ctxt);
+        cosma::blacs::Cblacs_exit(0);
+        throw;
+    } catch (const std::length_error& e) {
+        std::cout << "COSMA (pxgemm_utils): the initial local size of matrices >= vector::max_size(). Try using std::array or similar in cosma/utils/pxgemm_utils.cpp instead of vectors to store the initial matrices." << std::endl;
+        cosma::blacs::Cblacs_gridexit(ctxt);
+        cosma::blacs::Cblacs_exit(0);
+        throw;
+    } catch (const std::exception& e) {
+        std::cout << "COSMA (pxgemm_utils): unknown exception, potentially a bug. Please inform us of the test-case." << std::endl;
+        cosma::blacs::Cblacs_gridexit(ctxt);
+        cosma::blacs::Cblacs_exit(0);
+        throw;
+    }
 
     for (int i = 0; i < n_rep; ++i) {
         // refill the matrices with random data to avoid

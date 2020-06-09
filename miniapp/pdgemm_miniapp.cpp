@@ -90,8 +90,18 @@ int main(int argc, char **argv) {
     // ******************************
     // no blacs functions will be invoked afterwards
     bool exit_blacs = true;
-    benchmark_pxgemm<double>(params, MPI_COMM_WORLD, n_rep,
-                           cosma_times, scalapack_times, exit_blacs);
+    try {
+        benchmark_pxgemm<double>(params, MPI_COMM_WORLD, n_rep,
+                               cosma_times, scalapack_times, exit_blacs);
+    } catch (const std::exception& e) {
+        // MPI is already finalized, but just in case
+        int flag = 0;
+        MPI_Finalized(&flag);
+        if (!flag) {
+            MPI_Finalize();
+        }
+        return 0;
+    }
 
     // *****************
     //   output times

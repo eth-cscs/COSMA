@@ -80,7 +80,16 @@ int main(int argc, char **argv) {
     std::vector<long> times;
     for (int i = 0; i < n_iter; ++i) {
         long t_run = 0;
-        t_run = run(strategy);
+        try {
+            t_run = run(strategy);
+        } catch (const std::exception& e) {
+            int flag = 0;
+            MPI_Finalized(&flag);
+            if (!flag) {
+                MPI_Finalize();
+            }
+            return 0;
+        }
         times.push_back(t_run);
     }
     std::sort(times.begin(), times.end());

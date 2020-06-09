@@ -52,7 +52,18 @@ void cosma::memory_pool<T>::resize(size_t capacity) {
     this->unpin_all();
     resized = true;
     already_pinned = false;
-    pool_.resize(capacity);
+    try {
+        pool_.resize(capacity);
+    } catch (const std::bad_alloc& e) {
+        std::cout << "COSMA (memory pool): not enough space. Try setting the CPU memory limit (see environment variable COSMA_CPU_MAX_MEMORY)." << std::endl;
+        throw;
+    } catch (const std::length_error& e) {
+        std::cout << "COSMA (memory pool): size >= max_size(). Try setting the CPU memory limit (see environment variable COSMA_CPU_MAX_MEMORY)." << std::endl;
+        throw;
+    } catch (const std::exception& e) {
+        std::cout << "COSMA (memory pool): unknown exception, potentially a bug. Please inform us of the test-case." << std::endl;
+        throw;
+    }
     pool_size_ = capacity;
     pool_capacity_ = capacity;
 }
@@ -87,7 +98,18 @@ void cosma::memory_pool<T>::reserve(size_t size) {
     size += size / 10;
     if (size > 0 && size > pool_capacity_) {
         pool_capacity_ = size;
-        pool_.reserve(pool_capacity_);
+        try {
+            pool_.reserve(pool_capacity_);
+        } catch (const std::bad_alloc& e) {
+            std::cout << "COSMA (memory pool): not enough space. Try setting the CPU memory limit (see environment variable COSMA_CPU_MAX_MEMORY)." << std::endl;
+            throw;
+        } catch (const std::length_error& e) {
+            std::cout << "COSMA (memory pool): size >= max_size(). Try setting the CPU memory limit (see environment variable COSMA_CPU_MAX_MEMORY)." << std::endl;
+            throw;
+        } catch (const std::exception& e) {
+            std::cout << "COSMA (memory pool): unknown exception, potentially a bug. Please inform us of the test-case." << std::endl;
+            throw;
+        }
     }
 }
 
@@ -95,10 +117,21 @@ template <typename T>
  void cosma::memory_pool<T>::reserve_additionally(size_t size) {
     // reserve a bit more
     size += size / 10;
-     if (size > 0 && pool_size_ + size > pool_capacity_) {
-         pool_capacity_ = pool_size_ + size;
-         pool_.reserve(pool_capacity_);
-     }
+    if (size > 0 && pool_size_ + size > pool_capacity_) {
+        pool_capacity_ = pool_size_ + size;
+        try {
+            pool_.reserve(pool_capacity_);
+        } catch (const std::bad_alloc& e) {
+            std::cout << "COSMA (memory pool): not enough space. Try setting the CPU memory limit (see environment variable COSMA_CPU_MAX_MEMORY)." << std::endl;
+            throw;
+        } catch (const std::length_error& e) {
+            std::cout << "COSMA (memory pool): size >= max_size(). Try setting the CPU memory limit (see environment variable COSMA_CPU_MAX_MEMORY)." << std::endl;
+            throw;
+        } catch (const std::exception& e) {
+            std::cout << "COSMA (memory pool): unknown exception, potentially a bug. Please inform us of the test-case." << std::endl;
+            throw;
+        }
+    }
  }
 
 template <typename T>
