@@ -76,19 +76,22 @@ int main(int argc, char **argv) {
 
     MPI_Init(&argc, &argv);
 
-    const cosma::Strategy& strategy = parse_strategy(argc, argv);
+    const cosma::Strategy& strategy_float = parse_strategy<float>(argc, argv);
+    const cosma::Strategy& strategy_double = parse_strategy<double>(argc, argv);
+    const cosma::Strategy& strategy_zfloat = parse_strategy<zfloat>(argc, argv);
+    const cosma::Strategy& strategy_zdouble = parse_strategy<zdouble>(argc, argv);
 
     auto cxt_f = cosma::make_context<float>();
-    run<float>(strategy, "Float");
+    run<float>(strategy_float, "Float");
 
     auto cxt_d = cosma::make_context<double>();
-    run<double>(strategy, "Double");
+    run<double>(strategy_double, "Double");
 
     auto cxt_zf = cosma::make_context<zfloat>();
-    run<zfloat>(strategy, "Complex Float");
+    run<zfloat>(strategy_zfloat, "Complex Float");
 
     auto cxt_zd = cosma::make_context<zdouble>();
-    run<zdouble>(strategy, "Complex Double");
+    run<zdouble>(strategy_zdouble, "Complex Double");
 
     MPI_Finalize();
 }

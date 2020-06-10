@@ -1,4 +1,5 @@
 #include <cosma/strategy.hpp>
+#include <cosma/environment_variables.hpp>
 #include <options.hpp>
 #include <vector>
 
@@ -38,6 +39,7 @@ void process_steps(size_t start, const std::string &line,
     }
 }
 
+template <typename T>
 cosma::Strategy parse_strategy(int argc, char** argv) {
     std::string cmd_line;
     for (auto i = 1; i < argc; ++i) {
@@ -65,10 +67,10 @@ cosma::Strategy parse_strategy(int argc, char** argv) {
     int P = options::next_int(P_it, cmd_line);
     long long memory_limit = options::next_long_long(M_it, cmd_line);
 
-    // if memory limit not given, assume we have infinity
-    // (i.e. assume that each rank can store all 3 matrices)
+    // if memory limit not given, check if it is specified
+    // through the environment variable COSMA_CPU_MAX_MEMORY
     if (memory_limit < 0) {
-        memory_limit = std::numeric_limits<long long>::max();
+        memory_limit = cosma::get_cpu_max_memory<T>();
     }
 
     bool overlap_comm_and_comp = options::flag_exists("-o", "--overlap", cmd_line);

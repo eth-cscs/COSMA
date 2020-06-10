@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &P);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    const Strategy& strategy = parse_strategy(argc, argv);
+    const Strategy& strategy = parse_strategy<double>(argc, argv);
 
     if (rank == 0) {
         std::cout << "Strategy = " << strategy << std::endl;

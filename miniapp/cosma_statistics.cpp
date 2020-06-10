@@ -11,7 +11,7 @@ Simulates the algorithm (without actually computing the matrix multiplication)
 using namespace cosma;
 
 int main( int argc, char **argv ) {
-    const Strategy& strategy = parse_strategy(argc, argv);
+    const Strategy& strategy = parse_strategy<double>(argc, argv);
 
     std::cout << strategy << std::endl;
 

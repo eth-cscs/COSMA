@@ -17,6 +17,7 @@ if(NOT TARGET cosma)
                         two_sided_communicator.cpp
                         random_generator.hpp
                         cinterface.cpp
+                        environment_variables.cpp
     )
 
     if (${BLAS_DEF} STREQUAL "COSMA_HAVE_GPU")
