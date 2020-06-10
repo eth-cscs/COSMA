@@ -75,8 +75,8 @@ void multiply(const Strategy &strategy, int n_rep = 1) {
     free(matrixB);
     free(matrixC);
 
-    std::cout << "Total communication volume in [GB]: "
-              << n_rep * 8.0 * total_communication << std::endl;
+    std::cout << "Total communication volume per rank in [GB]: "
+              << sizeof(double) * total_communication / (strategy.P * 1e9) << std::endl;
     std::cout << "Total computation units: " << max_total_computation
               << std::endl;
     std::cout << "Max buffer size: " << max_buffer_size << std::endl;
