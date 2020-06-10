@@ -270,6 +270,7 @@ ENVIRONMENT VARIABLE | POSSIBLE VALUES | DESCRIPTION
 `COSMA_OVERLAP_COMM_AND_COMP` | ON, **OFF** | If enabled, commmunication and computation might be overlapped, depending on the built-in heuristics.
 `COSMA_ADAPT_STRATEGY` | **ON**, OFF | If enabled, COSMA will try to natively use the scalapack layout, without transforming to the COSMA layout.  Used only in the pxgemm wrapper. 
 `COSMA_CPU_MAX_MEMORY` | integer (`size_t`), by default: **infinite** | CPU memory limit in megabytes per MPI process (rank). Allowing too little memory might reduce the performance.
+`COSMA_GPU_MEMORY_PINNING` | **ON**, OFF | If enabled, COSMA will pin parts of the host memory to speed up CPU-GPU memory transfers. Used only in the GPU backend.
 `COSMA_GPU_MAX_TILE_M`, `COSMA_GPU_MAX_TILE_N`, `COSMA_GPU_MAX_TILE_K` | integer (`size_t`), by default: **5000** | Tile sizes for each dimension, that are used to pipeline the local CPU matrices to GPU. `K` refers to the shared dimension and `MxN` refer to the dimensions of matrix `C`
 `COSMA_GPU_STREAMS` | integer (`size_t`), by default: **2** | The number of GPU streams that each rank should use.
 

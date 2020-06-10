@@ -81,9 +81,11 @@ void local_multiply(gpu::mm_handle<Scalar>* gpu_ctx,
                     int n,
                     int k,
                     Scalar alpha,
-                    Scalar beta) {
-    bool pin_host_buffers = false;
-    gpu::gemm(*(gpu_ctx), matrixA, matrixB, matrixC, m, n, k, alpha, beta, pin_host_buffers);
+                    Scalar beta,
+                    bool pin_host_buffers) {
+    gpu::gemm(*(gpu_ctx), matrixA, matrixB, matrixC,
+              m, n, k, alpha, beta,
+              pin_host_buffers);
 }
 #endif
 
@@ -132,12 +134,15 @@ void local_multiply(cosma_context<Scalar>* ctx,
 #endif
 
 #ifdef COSMA_HAVE_GPU
-    ctx->get_memory_pool().pin(matrixA, m * k);
-    ctx->get_memory_pool().pin(matrixB, k * n);
-    ctx->get_memory_pool().pin(matrixC, m * n);
+    if (ctx->pin_host_buffers) {
+        ctx->get_memory_pool().pin(matrixA, m * k);
+        ctx->get_memory_pool().pin(matrixB, k * n);
+        ctx->get_memory_pool().pin(matrixC, m * n);
+    }
     local_multiply(ctx->get_gpu_context(),
                    matrixA, matrixB, matrixC,
-                   m, n, k, alpha, beta);
+                   m, n, k, alpha, beta,
+                   false);
 #else
     gemm(m, n, k, alpha, matrixA, m, matrixB, k, beta, matrixC, m);
 #endif
@@ -354,7 +359,8 @@ template void local_multiply<double>(gpu::mm_handle<double> *ctx,
                                      int n,
                                      int k,
                                      double alpha,
-                                     double beta);
+                                     double beta,
+                                     bool pin_host_buffers);
 
 template void local_multiply<float>(gpu::mm_handle<float> *ctx,
                                     float *matrixA,
@@ -364,7 +370,8 @@ template void local_multiply<float>(gpu::mm_handle<float> *ctx,
                                     int n,
                                     int k,
                                     float alpha,
-                                    float beta);
+                                    float beta,
+                                    bool pin_host_buffers);
 
 template void
 local_multiply<std::complex<double>>(gpu::mm_handle<std::complex<double>> *ctx,
@@ -375,7 +382,8 @@ local_multiply<std::complex<double>>(gpu::mm_handle<std::complex<double>> *ctx,
                                      int n,
                                      int k,
                                      std::complex<double> alpha,
-                                     std::complex<double> beta);
+                                     std::complex<double> beta,
+                                     bool pin_host_buffers);
 
 template void
 local_multiply<std::complex<float>>(gpu::mm_handle<std::complex<float>> *ctx,
@@ -386,6 +394,7 @@ local_multiply<std::complex<float>>(gpu::mm_handle<std::complex<float>> *ctx,
                                     int n,
                                     int k,
                                     std::complex<float> alpha,
-                                    std::complex<float> beta);
+                                    std::complex<float> beta,
+                                    bool pin_host_buffers);
 #endif
 } // namespace cosma

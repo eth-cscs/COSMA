@@ -22,6 +22,10 @@ namespace env_var_names {
     const std::string overlap = "COSMA_OVERLAP_COMM_AND_COMP";
     // specifies the maximum available CPU memory per rank in MB
     const std::string cpu_max_memory = "COSMA_CPU_MAX_MEMORY";
+    // if true, local host matrices will be pinned 
+    // (only used when GPU backend enabled)
+    // which increases the efficiency
+    const std::string memory_pinning_enabled = "COSMA_GPU_MEMORY_PINNING";
 };
 
 // default values of supported environment variables
@@ -40,6 +44,10 @@ namespace env_var_defaults {
     const bool overlap = false;
     // specifies the maximum available CPU memory per rank in MB
     const long long cpu_max_memory = std::numeric_limits<long long>::max(); // inf
+    // if true, local host matrices will be pinned 
+    // (only used when GPU backend enabled)
+    // which increases the efficiency
+    const bool memory_pinning_enabled = true;
 };
 
 // checks if the specified environment variable is defined
@@ -83,4 +91,6 @@ bool get_overlap_comm_and_comp();
 // returns the default value if the variable is undefined
 template <typename T>
 long long get_cpu_max_memory();
+
+bool get_memory_pinning();
 }

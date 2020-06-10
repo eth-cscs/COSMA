@@ -61,6 +61,11 @@ bool cosma::get_overlap_comm_and_comp() {
                             env_var_defaults::overlap);
 }
 
+bool cosma::get_memory_pinning() {
+    return get_bool_env_var(env_var_names::memory_pinning_enabled,
+                            env_var_defaults::memory_pinning_enabled);
+}
+
 // reads the memory limit in MB per rank
 // and converts the limit to #elements that each rank is allowed to use
 template <typename T>

@@ -56,6 +56,7 @@ void local_multiply(gpu::mm_handle<scalar>* gpu_ctx,
                     int n,
                     int k,
                     scalar alpha,
-                    scalar beta);
+                    scalar beta,
+                    bool pin_host_buffers);
 #endif
 } // namespace cosma
