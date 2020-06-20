@@ -1,12 +1,24 @@
+#include <regex>
+#include <vector>
+
 #include <cosma/strategy.hpp>
 #include <cosma/environment_variables.hpp>
-#include <vector>
 
 /*
  * Parses the command line input to get the problem size
  * and divisions strategy if provided in the input.
  * Returns the strategy.
  */
+
+// finds the next int after start in the line
+int next_int(int start, const std::string& line) {
+    if (start < 0)
+        return -1;
+    std::regex int_expr("([0-9]+)");
+    auto it = std::sregex_iterator(line.begin() + start, line.end(), int_expr);
+    int result = std::stoi(it->str());
+    return result;
+}
 
 // token is a triplet e.g. pm3 (denoting parallel (m / 3) step)
 void process_token(const std::string &step_triplet, 
@@ -17,10 +29,10 @@ void process_token(const std::string &step_triplet,
         return;
     step_type += step_triplet[0];
     split_dimension += step_triplet[1];
-    divisors.push_back(options::next_int(2, step_triplet));
+    divisors.push_back(next_int(2, step_triplet));
 }
 
-cosma::Strategy parse_strategy(int m, int n, int k,
+cosma::Strategy parse_strategy(int m, int n, int k, int P,
                                std::vector<std::string>& steps,
                                long long memory_limit,
                                bool overlap_comm_and_comp) {

@@ -43,7 +43,7 @@ long run(const int m, const int n, const int k,
     // specified by the env var COSMA_OVERLAP_COMM_AND_COMP
     bool overlap_comm_and_comp = cosma::get_overlap_comm_and_comp();
 
-    const Strategy& strategy = parse_strategy(m, n, k,
+    const Strategy& strategy = parse_strategy(m, n, k, size,
                                               steps,
                                               memory_limit,
                                               overlap_comm_and_comp);

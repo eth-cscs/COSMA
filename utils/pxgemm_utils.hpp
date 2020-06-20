@@ -160,14 +160,16 @@ inline void scalapack_pxgemm<std::complex<double>>::pxgemm(
 
 // compares two vectors up to eps precision, returns true if they are equal
 template <typename T>
-bool validate_results(std::vector<T>& v1, std::vector<T>& v2, double epsilon=1e-8) {
+bool validate_results(std::vector<T>& v1, std::vector<T>& v2, double epsilon=1e-6) {
+    double lower_threshold = 1e-3;
+
     if (v1.size() != v2.size())
         return false;
     if (v1.size() == 0)
         return true;
     bool correct = true;
     for (size_t i = 0; i < v1.size(); ++i) {
-        if (std::abs(v1[i] - v2[i]) > epsilon) {
+        if (std::abs(v1[i] - v2[i]) / std::max(std::max(lower_threshold, (double) std::abs(v1[i])), (double) std::abs(v2[i])) > epsilon) {
             std::cout << "epsilon = " << epsilon << ", v1 = " << v1[i] << ", which is != " << v2[i] << std::endl;
             correct = false;
         }
@@ -178,167 +180,9 @@ bool validate_results(std::vector<T>& v1, std::vector<T>& v2, double epsilon=1e-
 // runs cosma or scalapack pdgemm wrapper for n_rep times and returns
 // a vector of timings (in milliseconds) of size n_rep
 template <typename T>
-bool test_pdgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, double epsilon=1e-8, bool exit_blacs=false) {
-    // create the context here, so that
-    // it doesn't have to be created later
-    // (this is not necessary)
-    int rank;
-    MPI_Comm_rank(comm, &rank);
-    auto cosma_ctx = cosma::get_context_instance<T>();
-#ifdef DEBUG
-    if (rank == 0) {
-        cosma_ctx->turn_on_output();
-    }
-#endif
-
-    // ************************************
-    // *    scalapack processor grid      *
-    // ************************************
-    int ctxt = cosma::blacs::Csys2blacs_handle(comm);
-    cosma::blacs::Cblacs_gridinit(&ctxt, &params.order, params.p_rows, params.p_cols);
-
-    // ************************************
-    // *   scalapack array descriptors    *
-    // ************************************
-    int info;
-    // matrix A
-    std::array<int, 9> desca;
-    scalapack::descinit_(&desca[0],
-                         &params.ma, &params.na,
-                         &params.bma, &params.bna,
-                         &params.src_ma, &params.src_na,
-                         &ctxt,
-                         &params.lld_a,
-                         &info);
-    if (rank == 0 && info != 0) {
-        std::cout << "ERROR: descinit, argument: " << -info << " has an illegal value!" << std::endl;
-    }
-
-    // matrix B
-    std::array<int, 9> descb;
-    scalapack::descinit_(&descb[0],
-                         &params.mb, &params.nb,
-                         &params.bmb, &params.bnb,
-                         &params.src_mb, &params.src_nb,
-                         &ctxt,
-                         &params.lld_b,
-                         &info);
-
-    if (rank == 0 && info != 0) {
-        std::cout << "error: descinit, argument: " << -info << " has an illegal value!" << std::endl;
-    }
-
-    // matrix C
-    std::array<int, 9> descc;
-    scalapack::descinit_(&descc[0],
-                         &params.mc, &params.nc,
-                         &params.bmc, &params.bnc,
-                         &params.src_mc, &params.src_nc,
-                         &ctxt,
-                         &params.lld_c,
-                         &info);
-    if (rank == 0 && info != 0) {
-        std::cout << "error: descinit, argument: " << -info << " has an illegal value!" << std::endl;
-    }
-
-    // ************************************
-    // *   scalapack memory allocations   *
-    // ************************************
-    int size_a = cosma::scalapack::local_buffer_size(&desca[0]);
-    int size_b = cosma::scalapack::local_buffer_size(&descb[0]);
-    int size_c = cosma::scalapack::local_buffer_size(&descc[0]);
-
-    std::vector<T> a;
-    std::vector<T> b;
-    std::vector<T> c_cosma;
-    std::vector<T> c_scalapack;
-
-    try {
-        a = std::vector<T>(size_a);
-        b = std::vector<T>(size_b);
-        c_cosma = std::vector<T>(size_c);
-        c_scalapack = std::vector<T>(size_c);
-    } catch (const std::bad_alloc& e) {
-        std::cout << "COSMA (pxgemm_utils): not enough space to store the initial local matrices. The problem size is too large. Either decrease the problem size or run it on more nodes/ranks." << std::endl;
-        cosma::blacs::Cblacs_gridexit(ctxt);
-        int dont_finalize_mpi = 1;
-        cosma::blacs::Cblacs_exit(dont_finalize_mpi);
-        throw;
-    } catch (const std::length_error& e) {
-        std::cout << "COSMA (pxgemm_utils): the initial local size of matrices >= vector::max_size(). Try using std::array or similar in cosma/utils/pxgemm_utils.cpp instead of vectors to store the initial matrices." << std::endl;
-        cosma::blacs::Cblacs_gridexit(ctxt);
-        int dont_finalize_mpi = 1;
-        cosma::blacs::Cblacs_exit(dont_finalize_mpi);
-        throw;
-    } catch (const std::exception& e) {
-        std::cout << "COSMA (pxgemm_utils): unknown exception, potentially a bug. Please inform us of the test-case." << std::endl;
-        cosma::blacs::Cblacs_gridexit(ctxt);
-        int dont_finalize_mpi = 1;
-        cosma::blacs::Cblacs_exit(dont_finalize_mpi);
-        throw;
-    }
-
-    // fill the matrices with random data
-    fill_randomly(a);
-    fill_randomly(b);
-    fill_randomly(c_cosma);
-    // in case beta > 0, this is important in order to get the same results
-    c_scalapack = c_cosma;
-
-    // ***********************************
-    //       run ScaLAPACK PDGEMM
-    // ***********************************
-    // running ScaLAPACK
-    scalapack_pxgemm<T>::pxgemm(
-           &params.trans_a, &params.trans_b,
-           &params.m, &params.n, &params.k,
-           &params.alpha, a.data(), &params.ia, &params.ja, &desca[0],
-           b.data(), &params.ib, &params.jb, &descb[0], &params.beta,
-           c_scalapack.data(), &params.ic, &params.jc, &descc[0]);
-
-    // ***********************************
-    //       run COSMA PDGEMM
-    // ***********************************
-    // running COSMA wrapper
-    cosma::pxgemm<T>(
-           params.trans_a, params.trans_b, 
-           params.m, params.n, params.k,
-           params.alpha, a.data(), params.ia, params.ja, &desca[0],
-           b.data(), params.ib, params.jb, &descb[0], params.beta,
-           c_cosma.data(), params.ic, params.jc, &descc[0]);
-
-#ifdef DEBUG
-    if (rank == 0) {
-        int max_size = 10;
-        std::cout << "c(cosma) = ";
-        for (int i = 0; i < std::min(c_cosma.size(), (std::size_t) max_size); ++i) {
-            std::cout << c_cosma[i] << ", ";
-        }
-        std::cout << std::endl;
-        std::cout << "c(scalapack) = ";
-        for (int i = 0; i < std::min(c_scalapack.size(), (std::size_t) max_size); ++i) {
-            std::cout << c_scalapack[i] << ", ";
-        }
-        std::cout << std::endl;
-    }
-#endif
-
-    // exit blacs context
-    cosma::blacs::Cblacs_gridexit(ctxt);
-
-    if (exit_blacs) {
-        int dont_finalize_mpi = 1;
-        cosma::blacs::Cblacs_exit(dont_finalize_mpi);
-    }
-
-    return validate_results(c_cosma, c_scalapack, epsilon);
-}
-
-// runs cosma or scalapack pdgemm wrapper for n_rep times and returns
-// a vector of timings (in milliseconds) of size n_rep
-template <typename T>
-void benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
-                    std::vector<long>& cosma_times, std::vector<long>& scalapack_times, bool exit_blacs = false) {
+bool benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
+                    std::vector<long>& cosma_times, std::vector<long>& scalapack_times, 
+                    bool test_correctness = false, bool exit_blacs = false) {
     cosma_times.resize(n_rep);
     scalapack_times.resize(n_rep);
 
@@ -491,10 +335,14 @@ void benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
     std::sort(cosma_times.rbegin(), cosma_times.rend());
     std::sort(scalapack_times.rbegin(), scalapack_times.rend());
 
+    bool correct = !test_correctness || validate_results(c_cosma, c_scalapack);
+
     // exit blacs context
     cosma::blacs::Cblacs_gridexit(ctxt);
     if (exit_blacs) {
         int dont_finalize_mpi = 1;
         cosma::blacs::Cblacs_exit(dont_finalize_mpi);
     }
+
+    return correct;
 }

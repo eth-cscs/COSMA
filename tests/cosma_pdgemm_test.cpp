@@ -75,10 +75,17 @@ int main(int argc, char **argv) {
         std::cout << params << std::endl;
     }
 
+    bool test_correctness = true;
+    bool exit_blacs = false;
+
+    std::vector<long> cosma_times;
+    std::vector<long> scalapack_times;
+
     // *******************************
     //   multiply and validate
     // *******************************
-    bool ok = test_pdgemm(params, MPI_COMM_WORLD);
+    bool ok = benchmark_pxgemm(params, MPI_COMM_WORLD, 1, 
+            cosma_times, scalapack_times, test_correctness, exit_blacs);
 
     int result = ok ? 0 : 1;
     int global_result = 0;

@@ -32,13 +32,13 @@ int main(int argc, char **argv) {
         ("k,k_dim",
             "number of columns of A and rows of B.", 
             cxxopts::value<int>()->default_value("1000"))
-        ("x,block_a",
+        ("block_a",
             "block dimensions for matrix A.",
              cxxopts::value<std::vector<int>>()->default_value("128,128"))
-        ("y,block_b",
+        ("block_b",
             "block dimensions for matrix B.",
              cxxopts::value<std::vector<int>>()->default_value("128,128"))
-        ("z,block_c",
+        ("block_c",
             "block dimensions for matrix C.",
              cxxopts::value<std::vector<int>>()->default_value("128,128"))
         ("p,p_grid",
@@ -47,18 +47,21 @@ int main(int argc, char **argv) {
         ("transpose",
             "Transpose/Conjugate flags for A and B.",
              cxxopts::value<std::string>()->default_value("NN"))
-        ("a,alpha",
+        ("alpha",
             "Alpha parameter in C = alpha*A*B + beta*C.",
             cxxopts::value<int>()->default_value("1"))
-        ("b,beta",
+        ("beta",
             "Beta parameter in C = alpha*A*B + beta*C.",
             cxxopts::value<int>()->default_value("0"))
         ("r,n_rep",
             "number of repetitions",
-            cxxopts::value<int>()->default_value("2"))
+            cxxopts::value<int>()->default_value("0"))
         ("t,type",
             "data type of matrix entries.",
             cxxopts::value<std::string>()->default_value("double"))
+        ("test",
+            "test the result correctness.",
+            cxxopts::value<bool>()->default_value("false"))
         ("h,help", "Print usage.")
     ;
 
@@ -73,13 +76,28 @@ int main(int argc, char **argv) {
     auto block_c = result["block_c"].as<std::vector<int>>();
 
     auto p_grid = result["p_grid"].as<std::vector<int>>();
+    if (p_grid[0] * p_grid[0] != P) {
+        p_grid[0] = 1;
+        p_grid[1] = P;
+        if (rank == 0) {
+            std::cout << "COSMA(pxgemm_miniapp.cpp): warning: number of processors in the grid must be equal to P, setting grid to 1xP instead." << std::endl;
+        }
+    }
 
     auto transpose = result["transpose"].as<std::string>();
 
     auto al = result["alpha"].as<int>();
     auto be = result["beta"].as<int>();
 
+    bool test_correctness = result["test"].as<bool>();
+
     auto n_rep = result["n_rep"].as<int>();
+
+    if (n_rep == 0) {
+        // if testing correctness, default value 1, otherwise 2
+        // to account for a warm-up run.
+        n_rep = (test_correctness ? 1 : 2);
+    }
 
     auto type = result["type"].as<std::string>();
 
@@ -88,6 +106,8 @@ int main(int argc, char **argv) {
 
     std::vector<long> cosma_times(n_rep);
     std::vector<long> scalapack_times(n_rep);
+
+    bool result_correct = true;
 
     // *******************************
     //   perform the multiplication
@@ -122,8 +142,9 @@ int main(int argc, char **argv) {
                 std::cout << params << std::endl;
             }
 
-            benchmark_pxgemm<double>(params, MPI_COMM_WORLD, n_rep,
-                                     cosma_times, scalapack_times, exit_blacs);
+            result_correct = benchmark_pxgemm<double>(params, MPI_COMM_WORLD, n_rep,
+                                     cosma_times, scalapack_times, 
+                                     test_correctness, exit_blacs);
         } else if (type == "float") {
             // create the context here, so that
             // it doesn't have to be created later
@@ -151,8 +172,9 @@ int main(int argc, char **argv) {
                 std::cout << params << std::endl;
             }
 
-            benchmark_pxgemm<float>(params, MPI_COMM_WORLD, n_rep,
-                                    cosma_times, scalapack_times, exit_blacs);
+            result_correct = benchmark_pxgemm<float>(params, MPI_COMM_WORLD, n_rep,
+                                    cosma_times, scalapack_times,
+                                    test_correctness, exit_blacs);
 
         } else if (type == "zfloat") {
             // create the context here, so that
@@ -181,8 +203,9 @@ int main(int argc, char **argv) {
                 std::cout << params << std::endl;
             }
 
-            benchmark_pxgemm<std::complex<float>>(params, MPI_COMM_WORLD, n_rep,
-                                     cosma_times, scalapack_times, exit_blacs);
+            result_correct = benchmark_pxgemm<std::complex<float>>(params, MPI_COMM_WORLD, n_rep,
+                                     cosma_times, scalapack_times,
+                                     test_correctness, exit_blacs);
         } else if (type == "zdouble") {
             // create the context here, so that
             // it doesn't have to be created later
@@ -210,8 +233,9 @@ int main(int argc, char **argv) {
                 std::cout << params << std::endl;
             }
 
-            benchmark_pxgemm<std::complex<double>>(params, MPI_COMM_WORLD, n_rep,
-                                     cosma_times, scalapack_times, exit_blacs);
+            result_correct = benchmark_pxgemm<std::complex<double>>(params, MPI_COMM_WORLD, n_rep,
+                                     cosma_times, scalapack_times,
+                                     test_correctness, exit_blacs);
         } else {
             throw std::runtime_error("COSMA(pxgemm_miniapp): unknown data type of matrix entries.");
         }
@@ -242,6 +266,16 @@ int main(int argc, char **argv) {
             std::cout << time << " ";
         }
         std::cout << std::endl;
+    }
+
+    if (test_correctness) {
+        int result = result_correct ? 0 : 1;
+        int global_result = 0;
+        MPI_Reduce(&result, &global_result, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+        if (rank == 0) {
+            std::string yes_no = global_result == 0 ? "" : " NOT";
+            std::cout << "Result is" << yes_no << " CORRECT!" << std::endl;
+        }
     }
 
     MPI_Finalize();
