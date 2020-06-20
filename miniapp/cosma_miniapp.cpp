@@ -21,32 +21,44 @@ void fill_int(T* ptr, size_t size) {
     }
 }
 
-// Reads an environment variable `n_iter`
-//
-int get_n_iter() {
-    auto env = std::getenv("n_iter");
-    return env == nullptr ? 1 : std::atoi(env);
-}
-
-void output_matrix(CosmaMatrix<double> &M, int rank) {
+template <typename T>
+void output_matrix(CosmaMatrix<T> &M, int rank) {
     std::string local = M.which_matrix() + std::to_string(rank) + ".txt";
     std::ofstream local_file(local);
     local_file << M << std::endl;
     local_file.close();
 }
 
-long run(const Strategy &s, MPI_Comm comm = MPI_COMM_WORLD) {
+template <typename T>
+long run(const int m, const int n, const int k, 
+         const std::vector<std::string>& steps, 
+         MPI_Comm comm = MPI_COMM_WORLD) {
     int rank, size;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
 
-    // Declare A,B and C COSMA matrices objects
-    CosmaMatrix<double> A('A', s, rank);
-    CosmaMatrix<double> B('B', s, rank);
-    CosmaMatrix<double> C('C', s, rank);
+    // specified by the environment variable COSMA_CPU_MAX_MEMORY
+    long long memory_limit = cosma::get_cpu_max_memory<T>();
 
-    double alpha = 1;
-    double beta = 0;
+    // specified by the env var COSMA_OVERLAP_COMM_AND_COMP
+    bool overlap_comm_and_comp = cosma::get_overlap_comm_and_comp();
+
+    const Strategy& strategy = parse_strategy(m, n, k,
+                                              steps,
+                                              memory_limit,
+                                              overlap_comm_and_comp);
+
+    if (rank == 0) {
+        std::cout << "Strategy = " << strategy << std::endl;
+    }
+
+    // Declare A,B and C COSMA matrices objects
+    CosmaMatrix<T> A('A', s, rank);
+    CosmaMatrix<T> B('B', s, rank);
+    CosmaMatrix<T> C('C', s, rank);
+
+    T alpha{1};
+    T beta{0};
 
     // fill the matrices with random data
     srand48(rank);
@@ -70,18 +82,53 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &P);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    const Strategy& strategy = parse_strategy<double>(argc, argv);
+    cxxopts::Options options("COSMA MINIAPP", 
+        "A miniapp computing: `C=A*B, where dim(A)=m x k, dim(B)=k x n, dim(C)=m x n");
+    options.add_options()
+        ("m,m_dim",
+            "number of rows of A and C.", 
+            cxxopts::value<int>()->default_value("1000"))
+        ("n,n_dim",
+            "number of columns of B and C.",
+            cxxopts::value<int>()->default_value("1000"))
+        ("k,k_dim",
+            "number of columns of A and rows of B.", 
+            cxxopts::value<int>()->default_value("1000"))
+        ("s,steps", 
+            "Division steps that the algorithm should perform.",
+            cxxopts::value<std::vector<std::string>>())
+        ("r,n_rep",
+            "number of repetitions.", 
+            cxxopts::value<int>()->default_value("2"))
+        ("t,type",
+            "data type of matrix entries.",
+            cxxopts::value<std::string>()->default_value("double"))
+        ("h,help", "Print usage.")
 
-    if (rank == 0) {
-        std::cout << "Strategy = " << strategy << std::endl;
-    }
+    auto result = options.parse(argc, argv);
 
-    int n_iter = get_n_iter();
+    auto m = result["m_dim"].as<int>();
+    auto n = result["n_dim"].as<int>();
+    auto k = result["k_dim"].as<int>();
+    auto steps = result["steps"].as<std::vector<std::string>>();
+    auto n_rep = result["n_rep"].as<int>();
+    auto type = result["type"].as<std::string>();
+
     std::vector<long> times;
-    for (int i = 0; i < n_iter; ++i) {
+    for (int i = 0; i < n_rep; ++i) {
         long t_run = 0;
         try {
-            t_run = run(strategy);
+            if (type == "double") {
+                t_run = run<double>(m, n, k, steps, comm);
+            } else if (type == "float") {
+                t_run = run<float>(m, n, k, steps, comm);
+            } else if (type = "zdouble") {
+                t_run = run<std::complex<double>>(m, n, k, steps, comm);
+            } else if (type = "zfloat") {
+                t_run = run<std::complex<float>>(m, n, k, steps, comm);
+            } else {
+                throw std::runtime_error("COSMA(cosma_miniapp): unknown data type of matrix entries.");
+            }
         } catch (const std::exception& e) {
             int flag = 0;
             MPI_Finalized(&flag);

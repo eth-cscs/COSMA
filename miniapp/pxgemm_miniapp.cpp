@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
             }
 
             benchmark_pxgemm<float>(params, MPI_COMM_WORLD, n_rep,
-                                     cosma_times, scalapack_times, exit_blacs);
+                                    cosma_times, scalapack_times, exit_blacs);
 
         } else if (type == "zfloat") {
             // create the context here, so that
