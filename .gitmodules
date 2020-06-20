@@ -10,6 +10,3 @@
 [submodule "libs/semiprof"]
 	path = libs/semiprof
 	url = https://github.com/kabicm/semiprof
-[submodule "libs/options"]
-	path = libs/options
-	url = https://github.com/kabicm/options
