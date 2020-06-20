@@ -9,7 +9,7 @@ foreach(exec ${executables})
 endforeach()
 
 if(COSMA_SCALAPACK)
-    set(scalapack_executables "pdgemm_miniapp")
+    set(scalapack_executables "pxgemm_miniapp")
     foreach(exec ${scalapack_executables})
         add_executable(${exec} "${exec}.cpp")
         target_link_libraries(${exec} PRIVATE cosma_pxgemm_cpp cxxopts)
