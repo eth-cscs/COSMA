@@ -42,6 +42,16 @@ extern "C" {
             const double* alpha, const double* a, const int* ia, const int* ja, const int* desca,
             const double* b, const int* ib, const int* jb, const int* descb, const double* beta,
             double* c, const int* ic, const int* jc, const int* descc);
+
+    void pcgemm_(const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
+            const float* alpha, const float* a, const int* ia, const int* ja, const int* desca,
+            const float* b, const int* ib, const int* jb, const int* descb, const float* beta,
+            float* c, const int* ic, const int* jc, const int* descc);
+
+    void pzgemm_(const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
+            const double* alpha, const double* a, const int* ia, const int* ja, const int* desca,
+            const double* b, const int* ib, const int* jb, const int* descb, const double* beta,
+            double* c, const int* ic, const int* jc, const int* descc);
 #ifdef __cplusplus
 }
 #endif
@@ -86,12 +96,12 @@ inline void scalapack_pxgemm<float>::pxgemm(
 
 template <>
 inline void scalapack_pxgemm<double>::pxgemm(
-              const char* trans_a, const char* trans_b,
+              const char* trans_a, const char* trans_b, 
               const int* m, const int* n, const int* k,
               const double* alpha, const double* a, 
               const int* ia, const int* ja, const int* desca,
               const double* b, 
-              const int* ib, const int* jb, const int* descb,
+              const int* ib, const int* jb, const int* descb, 
               const double* beta, double* c, 
               const int* ic, const int* jc, const int* descc) {
     scalapack::pdgemm_(trans_a, trans_b,
@@ -101,6 +111,50 @@ inline void scalapack_pxgemm<double>::pxgemm(
                        b,
                        ib, jb, descb,
                        beta, c,
+                       ic, jc, descc);
+}
+
+template <>
+inline void scalapack_pxgemm<std::complex<float>>::pxgemm(
+              const char* trans_a, const char* trans_b,
+              const int* m, const int* n, const int* k,
+              const std::complex<float>* alpha, const std::complex<float>* a,
+              const int* ia, const int* ja, const int* desca,
+              const std::complex<float>* b,
+              const int* ib, const int* jb, const int* descb,
+              const std::complex<float>* beta, std::complex<float>* c,
+              const int* ic, const int* jc, const int* descc) {
+    scalapack::pcgemm_(trans_a, trans_b,
+                       m, n, k,
+                       reinterpret_cast<const float*>(alpha),
+                       reinterpret_cast<const float*>(a),
+                       ia, ja, desca,
+                       reinterpret_cast<const float*>(b),
+                       ib, jb, descb,
+                       reinterpret_cast<const float*>(beta),
+                       reinterpret_cast<float*>(c),
+                       ic, jc, descc);
+}
+
+template <>
+inline void scalapack_pxgemm<std::complex<double>>::pxgemm(
+              const char* trans_a, const char* trans_b,
+              const int* m, const int* n, const int* k,
+              const std::complex<double>* alpha, const std::complex<double>* a,
+              const int* ia, const int* ja, const int* desca,
+              const std::complex<double>* b,
+              const int* ib, const int* jb, const int* descb,
+              const std::complex<double>* beta, std::complex<double>* c,
+              const int* ic, const int* jc, const int* descc) {
+    scalapack::pzgemm_(trans_a, trans_b,
+                       m, n, k,
+                       reinterpret_cast<const double*>(alpha),
+                       reinterpret_cast<const double*>(a),
+                       ia, ja, desca,
+                       reinterpret_cast<const double*>(b),
+                       ib, jb, descb,
+                       reinterpret_cast<const double*>(beta),
+                       reinterpret_cast<double*>(c),
                        ic, jc, descc);
 }
 

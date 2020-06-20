@@ -1,6 +1,6 @@
 // from std
 #include "../utils/pxgemm_utils.hpp"
-#include "../utils/parse_strategy.hpp"
+#include <cxxopts.hpp>
 
 using namespace cosma;
 
@@ -8,7 +8,8 @@ int main(int argc, char **argv) {
     // **************************************
     //   setup MPI and command-line parser
     // **************************************
-    options::initialize(argc, argv);
+    cxxopts::Options options("COSMA PXGEMM MINIAPP", 
+        "A miniapp computing: `C = alpha*A*B + beta*C` and comparing the performance of COSMA (with scalapack wrappers) VS SCALAPACK.");
 
     MPI_Init(&argc, &argv);
 
@@ -16,71 +17,74 @@ int main(int argc, char **argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &P);
 
-    // create the context here, so that
-    // it doesn't have to be created later
-    // (this is not necessary)
-    auto ctx = cosma::get_context_instance<double>();
-    if (rank == 0) {
-        ctx->turn_on_output();
-    }
-
     // **************************************
     //   readout the command line arguments
     // **************************************
     // matrix dimensions
     // dim(A) = mxk, dim(B) = kxn, dim(C) = mxn
-    auto m = options::next_int("-m", "--m_dim", "number of rows of A and C.", 1000);
-    auto n = options::next_int("-n", "--n_dim", "number of columns of B and C.", 1000);
-    auto k = options::next_int("-k", "--k_dim", "number of columns of A and rows of B.", 1000);
+    options.add_options()
+        ("m,m_dim",
+            "number of rows of A and C.", 
+            cxxopts::value<int>()->default_value("1000"))
+        ("n,n_dim",
+            "number of columns of B and C.",
+            cxxopts::value<int>()->default_value("1000"))
+        ("k,k_dim",
+            "number of columns of A and rows of B.", 
+            cxxopts::value<int>()->default_value("1000"))
+        ("x,block_a",
+            "block dimensions for matrix A.",
+             cxxopts::value<std::vector<int>>()->default_value("128,128"))
+        ("y,block_b",
+            "block dimensions for matrix B.",
+             cxxopts::value<std::vector<int>>()->default_value("128,128"))
+        ("z,block_c",
+            "block dimensions for matrix C.",
+             cxxopts::value<std::vector<int>>()->default_value("128,128"))
+        ("p,p_grid",
+            "processor 2D-decomposition.",
+             cxxopts::value<std::vector<int>>()->default_value("1,1"))
+        ("transpose",
+            "Transpose/Conjugate flags for A and B.",
+             cxxopts::value<std::string>()->default_value("NN"))
+        ("a,alpha",
+            "Alpha parameter in C = alpha*A*B + beta*C.",
+            cxxopts::value<int>()->default_value("1"))
+        ("b,beta",
+            "Beta parameter in C = alpha*A*B + beta*C.",
+            cxxopts::value<int>()->default_value("0"))
+        ("r,n_rep",
+            "number of repetitions",
+            cxxopts::value<int>()->default_value("2"))
+        ("t,type",
+            "data type of matrix entries.",
+            cxxopts::value<std::string>()->default_value("double"))
+        ("h,help", "Print usage.")
+    ;
 
-    // block sizes
-    auto block_a = options::next_int_pair("-ba", "--block_a", "block size for the number of rows of A.", 128);
-    auto block_b = options::next_int_pair("-bb", "--block_b", "block size for the number of rows of B.", 128);
-    auto block_c = options::next_int_pair("-bc", "--block_c", "block size for the number of rows of C.", 128);
+    auto result = options.parse(argc, argv);
 
-    // indices of submatrices of A, B and C to be multiplied
-    // if 1 then full matrices A and B are multiplied
-    int submatrix_m = 1;
-    int submatrix_n = 1;
-    int submatrix_k = 1;
+    auto m = result["m_dim"].as<int>();
+    auto n = result["n_dim"].as<int>();
+    auto k = result["k_dim"].as<int>();
 
-    // processor grid decomposition
-    auto p = options::next_int("-p", "--p_row", "number of rows in a processor grid.", 1);
-    auto q = options::next_int("-q", "--q_row", "number of columns in a processor grid.", P);
+    auto block_a = result["block_a"].as<std::vector<int>>();
+    auto block_b = result["block_b"].as<std::vector<int>>();
+    auto block_c = result["block_c"].as<std::vector<int>>();
 
-    // alpha and beta of multiplication
-    auto alpha = options::next_double("-a", "--alpha", "Alpha parameter in C = alpha*A*B + beta*C", 1.0);
-    auto beta = options::next_double("-b", "--beta", "Beta parameter in C = alpha*A*B + beta*C", 0.0);
+    auto p_grid = result["p_grid"].as<std::vector<int>>();
 
-    // number of repetitions
-    auto n_rep = options::next_int("-r", "--n_rep", "number of repetitions", 2);
+    auto transpose = result["transpose"].as<std::string>();
 
-    // transpose flags
-    bool trans_a = options::flag_exists("-ta", "--trans_a");
-    bool trans_b = options::flag_exists("-tb", "--trans_b");
+    auto al = result["alpha"].as<int>();
+    auto be = result["beta"].as<int>();
 
-    char ta = trans_a ? 'T' : 'N';
-    char tb = trans_b ? 'T' : 'N';
+    auto n_rep = result["n_rep"].as<int>();
 
-    if (p * q != P) {
-        std::runtime_error("Number of processors in a grid has to match the number of available ranks.");
-    }
+    auto type = result["type"].as<std::string>();
 
-    pxgemm_params<double> params(m, n, k, 
-                                 block_a.first, block_a.second,
-                                 block_b.first, block_b.second,
-                                 block_c.first, block_c.second,
-                                 p, q,
-                                 ta, tb,
-                                 alpha, beta);
-
-    // **************************************
-    //    output the problem description
-    // **************************************
-    if (rank == 0) {
-        std::cout << "Running PDGEMM on the following problem:" << std::endl;
-        std::cout << params << std::endl;
-    }
+    char ta = transpose[0];
+    char tb = transpose[1];
 
     std::vector<long> cosma_times(n_rep);
     std::vector<long> scalapack_times(n_rep);
@@ -91,10 +95,129 @@ int main(int argc, char **argv) {
     // no blacs functions will be invoked afterwards
     bool exit_blacs = true;
     try {
-        benchmark_pxgemm<double>(params, MPI_COMM_WORLD, n_rep,
-                               cosma_times, scalapack_times, exit_blacs);
+        if (type == "double") {
+            // create the context here, so that
+            // it doesn't have to be created later
+            // (this is not necessary)
+            auto ctx = cosma::get_context_instance<double>();
+            if (rank == 0) {
+                ctx->turn_on_output();
+            }
+
+            double alpha = double{1.0 * al};
+            double beta = double{1.0 * be};
+            pxgemm_params<double> params(m, n, k, 
+                                         block_a[0], block_a[1],
+                                         block_b[0], block_b[1],
+                                         block_c[0], block_c[1],
+                                         p_grid[0], p_grid[1],
+                                         ta, tb,
+                                         alpha, beta);
+
+            // **************************************
+            //    output the problem description
+            // **************************************
+            if (rank == 0) {
+                std::cout << "Running PDGEMM on the following problem:" << std::endl;
+                std::cout << params << std::endl;
+            }
+
+            benchmark_pxgemm<double>(params, MPI_COMM_WORLD, n_rep,
+                                     cosma_times, scalapack_times, exit_blacs);
+        } else if (type == "float") {
+            // create the context here, so that
+            // it doesn't have to be created later
+            // (this is not necessary)
+            auto ctx = cosma::get_context_instance<float>();
+            if (rank == 0) {
+                ctx->turn_on_output();
+            }
+
+            float alpha = float{1.0f * al};
+            float beta = float{1.0f * be};
+            pxgemm_params<float> params(m, n, k, 
+                                         block_a[0], block_a[1],
+                                         block_b[0], block_b[1],
+                                         block_c[0], block_c[1],
+                                         p_grid[0], p_grid[1],
+                                         ta, tb,
+                                         alpha, beta);
+
+            // **************************************
+            //    output the problem description
+            // **************************************
+            if (rank == 0) {
+                std::cout << "Running PSGEMM on the following problem:" << std::endl;
+                std::cout << params << std::endl;
+            }
+
+            benchmark_pxgemm<float>(params, MPI_COMM_WORLD, n_rep,
+                                     cosma_times, scalapack_times, exit_blacs);
+
+        } else if (type == "zfloat") {
+            // create the context here, so that
+            // it doesn't have to be created later
+            // (this is not necessary)
+            auto ctx = cosma::get_context_instance<std::complex<float>>();
+            if (rank == 0) {
+                ctx->turn_on_output();
+            }
+
+            std::complex<float> alpha = std::complex<float>{1.0f * al};
+            std::complex<float> beta = std::complex<float>{1.0f * be};
+            pxgemm_params<std::complex<float>> params(m, n, k, 
+                                         block_a[0], block_a[1],
+                                         block_b[0], block_b[1],
+                                         block_c[0], block_c[1],
+                                         p_grid[0], p_grid[1],
+                                         ta, tb,
+                                         alpha, beta);
+
+            // **************************************
+            //    output the problem description
+            // **************************************
+            if (rank == 0) {
+                std::cout << "Running PCGEMM on the following problem:" << std::endl;
+                std::cout << params << std::endl;
+            }
+
+            benchmark_pxgemm<std::complex<float>>(params, MPI_COMM_WORLD, n_rep,
+                                     cosma_times, scalapack_times, exit_blacs);
+        } else if (type == "zdouble") {
+            // create the context here, so that
+            // it doesn't have to be created later
+            // (this is not necessary)
+            auto ctx = cosma::get_context_instance<std::complex<double>>();
+            if (rank == 0) {
+                ctx->turn_on_output();
+            }
+
+            std::complex<double> alpha = std::complex<double>{1.0 * al};
+            std::complex<double> beta = std::complex<double>{1.0 * be};
+            pxgemm_params<std::complex<double>> params(m, n, k, 
+                                         block_a[0], block_a[1],
+                                         block_b[0], block_b[1],
+                                         block_c[0], block_c[1],
+                                         p_grid[0], p_grid[1],
+                                         ta, tb,
+                                         alpha, beta);
+
+            // **************************************
+            //    output the problem description
+            // **************************************
+            if (rank == 0) {
+                std::cout << "Running PZGEMM on the following problem:" << std::endl;
+                std::cout << params << std::endl;
+            }
+
+            benchmark_pxgemm<std::complex<double>>(params, MPI_COMM_WORLD, n_rep,
+                                     cosma_times, scalapack_times, exit_blacs);
+        } else {
+            throw std::runtime_error("COSMA(pxgemm_miniapp): unknown data type of matrix entries.");
+        }
     } catch (const std::exception& e) {
         // MPI is already finalized, but just in case
+        std::cout << e.what() << std::endl;
         int flag = 0;
         MPI_Finalized(&flag);
         if (!flag) {
@@ -108,13 +231,13 @@ int main(int argc, char **argv) {
     //   output times
     // *****************
     if (rank == 0) {
-        std::cout << "COSMA PDGEMM TIMES [ms] = ";
+        std::cout << "COSMA TIMES [ms] = ";
         for (auto &time : cosma_times) {
             std::cout << time << " ";
         }
         std::cout << std::endl;
 
-        std::cout << "SCALAPACK PDGEMM TIMES [ms] = ";
+        std::cout << "SCALAPACK TIMES [ms] = ";
         for (auto &time : scalapack_times) {
             std::cout << time << " ";
         }
