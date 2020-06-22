@@ -5,6 +5,7 @@
 #include <chrono>
 #include <complex>
 #include <vector>
+#include <cassert>
 
 // from cosma
 #include <cosma/blacs.hpp>
@@ -181,10 +182,16 @@ bool validate_results(std::vector<T>& v1, std::vector<T>& v2, double epsilon=1e-
 // a vector of timings (in milliseconds) of size n_rep
 template <typename T>
 bool benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
+                    const std::string& algorithm,
                     std::vector<long>& cosma_times, std::vector<long>& scalapack_times, 
                     bool test_correctness = false, bool exit_blacs = false) {
-    cosma_times.resize(n_rep);
-    scalapack_times.resize(n_rep);
+    assert(algorithm == "both" || algorithm == "cosma" || algorithm == "scalapack");
+    if (algorithm == "both" || "cosma") {
+        cosma_times.resize(n_rep);
+    }
+    if (algorithm == "both" || "scalapack") {
+        scalapack_times.resize(n_rep);
+    }
 
     // create the context here, so that
     // it doesn't have to be created later
@@ -264,8 +271,12 @@ bool benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
     try {
         a = std::vector<T>(size_a);
         b = std::vector<T>(size_b);
-        c_cosma = std::vector<T>(size_c);
-        c_scalapack = std::vector<T>(size_c);
+        if (algorithm == "both" || "cosma") {
+            c_cosma = std::vector<T>(size_c);
+        }
+        if (algorithm == "both" || "scalapack") {
+            c_scalapack = std::vector<T>(size_c);
+        }
     } catch (const std::bad_alloc& e) {
         std::cout << "COSMA (pxgemm_utils): not enough space to store the initial local matrices. The problem size is too large. Either decrease the problem size or run it on more nodes/ranks." << std::endl;
         cosma::blacs::Cblacs_gridexit(ctxt);
@@ -291,51 +302,69 @@ bool benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
         // reusing the cache in subsequent iterations
         fill_randomly(a);
         fill_randomly(b);
-        fill_randomly(c_cosma);
-        // in case beta > 0, this is important in order to get the same results
-        c_scalapack = c_cosma;
+        if (algorithm == "both") {
+            fill_randomly(c_cosma);
+            // in case beta > 0, this is important in order to get the same results
+            c_scalapack = c_cosma;
+        } else if (algorithm == "cosma") {
+            fill_randomly(c_cosma);
+        } else {
+            fill_randomly(c_scalapack);
+        }
 
-        // ***********************************
-        //       run COSMA PDGEMM
-        // ***********************************
-        // running COSMA wrapper
-        long time = 0;
-        MPI_Barrier(comm);
-        auto start = std::chrono::steady_clock::now();
-        cosma::pxgemm<T>(
-               params.trans_a, params.trans_b, 
-               params.m, params.n, params.k,
-               params.alpha, a.data(), params.ia, params.ja, &desca[0],
-               b.data(), params.ib, params.jb, &descb[0], params.beta,
-               c_cosma.data(), params.ic, params.jc, &descc[0]);
-        MPI_Barrier(comm);
-        auto end = std::chrono::steady_clock::now();
-        time = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
-        cosma_times[i] = time;
+        if (algorithm == "both" || "cosma") {
+            // ***********************************
+            //       run COSMA PDGEMM
+            // ***********************************
+            // running COSMA wrapper
+            long time = 0;
+            MPI_Barrier(comm);
+            auto start = std::chrono::steady_clock::now();
+            cosma::pxgemm<T>(
+                params.trans_a, params.trans_b, 
+                params.m, params.n, params.k,
+                params.alpha, a.data(), params.ia, params.ja, &desca[0],
+                b.data(), params.ib, params.jb, &descb[0], params.beta,
+                c_cosma.data(), params.ic, params.jc, &descc[0]);
+            MPI_Barrier(comm);
+            auto end = std::chrono::steady_clock::now();
+            time = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+            cosma_times[i] = time;
+        }
 
-        // ***********************************
-        //       run ScaLAPACK PDGEMM
-        // ***********************************
-        // running ScaLAPACK
-        time = 0;
-        MPI_Barrier(comm);
-        start = std::chrono::steady_clock::now();
-        scalapack_pxgemm<T>::pxgemm(
-               &params.trans_a, &params.trans_b,
-               &params.m, &params.n, &params.k,
-               &params.alpha, a.data(), &params.ia, &params.ja, &desca[0],
-               b.data(), &params.ib, &params.jb, &descb[0], &params.beta,
-               c_scalapack.data(), &params.ic, &params.jc, &descc[0]);
-        MPI_Barrier(comm);
-        end = std::chrono::steady_clock::now();
-        time = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
-        scalapack_times[i] = time;
+        if (algorithm == "both" || "scalapack") {
+            // ***********************************
+            //       run ScaLAPACK PDGEMM
+            // ***********************************
+            // running ScaLAPACK
+            long time = 0;
+            MPI_Barrier(comm);
+            auto start = std::chrono::steady_clock::now();
+            scalapack_pxgemm<T>::pxgemm(
+                &params.trans_a, &params.trans_b,
+                &params.m, &params.n, &params.k,
+                &params.alpha, a.data(), &params.ia, &params.ja, &desca[0],
+                b.data(), &params.ib, &params.jb, &descb[0], &params.beta,
+                c_scalapack.data(), &params.ic, &params.jc, &descc[0]);
+            MPI_Barrier(comm);
+            auto end = std::chrono::steady_clock::now();
+            time = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+            scalapack_times[i] = time;
+        }
     }
 
-    std::sort(cosma_times.rbegin(), cosma_times.rend());
-    std::sort(scalapack_times.rbegin(), scalapack_times.rend());
+    if (algorithm == "both" || "cosma") {
+        std::sort(cosma_times.rbegin(), cosma_times.rend());
+    }
+    if (algorithm == "both" || "scalapack") {
+        std::sort(scalapack_times.rbegin(), scalapack_times.rend());
+    }
 
-    bool correct = !test_correctness || validate_results(c_cosma, c_scalapack);
+    // if algorithm != both than we don't check the correctness,
+    // also if test_correctness flat is set to false
+    bool correct = algorithm != "both" 
+                   || !test_correctness 
+                   || validate_results(c_cosma, c_scalapack);
 
     // exit blacs context
     cosma::blacs::Cblacs_gridexit(ctxt);
@@ -353,5 +382,5 @@ bool test_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm,
     std::vector<long> t1;
     std::vector<long> t2;
     int n_rep = 1;
-    return benchmark_pxgemm(params, comm, n_rep, t1, t2, true, exit_blacs);
+    return benchmark_pxgemm(params, comm, n_rep, "both", t1, t2, true, exit_blacs);
 }

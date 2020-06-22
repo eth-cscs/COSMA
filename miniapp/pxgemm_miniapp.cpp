@@ -1,27 +1,22 @@
 // from std
 #include "../utils/pxgemm_utils.hpp"
 #include <cxxopts.hpp>
+#include <unordered_set> 
 
 using namespace cosma;
 
 int main(int argc, char **argv) {
     // **************************************
-    //   setup MPI and command-line parser
+    //   setup command-line parser
     // **************************************
     cxxopts::Options options("COSMA PXGEMM MINIAPP", 
         "A miniapp computing: `C = alpha*A*B + beta*C` and comparing the performance of COSMA (with scalapack wrappers) VS SCALAPACK.");
-
-    MPI_Init(&argc, &argv);
-
-    int rank, P;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &P);
 
     // **************************************
     //   readout the command line arguments
     // **************************************
     // matrix dimensions
-    // dim(A) = mxk, dim(B) = kxn, dim(C) = mxn
+    // dim(A) = m*k, dim(B) = k*n, dim(C) = m*n
     options.add_options()
         ("m,m_dim",
             "number of rows of A and C.", 
@@ -45,13 +40,13 @@ int main(int argc, char **argv) {
             "processor 2D-decomposition.",
              cxxopts::value<std::vector<int>>()->default_value("1,1"))
         ("transpose",
-            "Transpose/Conjugate flags for A and B.",
+            "transpose/Conjugate flags for A and B.",
              cxxopts::value<std::string>()->default_value("NN"))
         ("alpha",
-            "Alpha parameter in C = alpha*A*B + beta*C.",
+            "alpha parameter in C = alpha*A*B + beta*C.",
             cxxopts::value<int>()->default_value("1"))
         ("beta",
-            "Beta parameter in C = alpha*A*B + beta*C.",
+            "beta parameter in C = alpha*A*B + beta*C.",
             cxxopts::value<int>()->default_value("0"))
         ("r,n_rep",
             "number of repetitions",
@@ -62,10 +57,17 @@ int main(int argc, char **argv) {
         ("test",
             "test the result correctness.",
             cxxopts::value<bool>()->default_value("false"))
+        ("algorithm", 
+            "defines which algorithm (cosma, scalapack or both) to run",
+            cxxopts::value<std::string>()->default_value("both"))
         ("h,help", "Print usage.")
     ;
 
     auto result = options.parse(argc, argv);
+    if (result.count("help")) {
+        std::cout << options.help() << std::endl;
+        return 0;
+    }
 
     auto m = result["m_dim"].as<int>();
     auto n = result["n_dim"].as<int>();
@@ -76,6 +78,112 @@ int main(int argc, char **argv) {
     auto block_c = result["block_c"].as<std::vector<int>>();
 
     auto p_grid = result["p_grid"].as<std::vector<int>>();
+
+    auto transpose = result["transpose"].as<std::string>();
+    // transform to upper-case
+    std::transform(transpose.begin(), transpose.end(), transpose.begin(), 
+        [&](char c) {
+            return std::toupper(c);
+        }
+    );
+    std::unordered_set<std::string> transpose_options = {
+        "NN", "TT", "NT", "TN"
+    };
+    // check if transpose takes a correct value
+    if (std::find(transpose_options.begin(), transpose_options.end(), transpose) == transpose_options.end()) {
+        std::cout << "COSMA (pxgemm_miniapp.cpp): ERROR: --transpose option \
+        can only take the following values: " << std::endl;
+        for (const auto& el : transpose_options) {
+            std::cout << el << ", ";
+        }
+        std::cout << std::endl;
+        return 0;
+    }
+
+    auto al = result["alpha"].as<int>();
+    auto be = result["beta"].as<int>();
+    // check if alpha and beta take correct values
+    if ((al != 0 && al != 1) || (be != 0 && be != 1)) {
+        std::cout << "COSMA (pxgemm_miniapp.cpp): ERROR: in this miniapp, \
+        --alpha and --beta options can only take values 0 or 1 corresponding to \
+        the zero and the unit elements (respectively), of the chosen data type. \
+        This is not a requirement of COSMA pxgemm wrapper, but just of this miniapp. \
+        These elements are chosen because they are well defined also for complex data-types." 
+        << std::endl;
+        return 0;
+    }
+
+    bool test_correctness = result["test"].as<bool>();
+
+    auto n_rep = result["n_rep"].as<int>();
+
+    auto type = result["type"].as<std::string>();
+    // transform to lower-case
+    std::transform(type.begin(), type.end(), type.begin(), 
+        [&](char c) {
+            return std::tolower(c);
+        }
+    );
+    // check if the type option takes a correct value
+    std::unordered_set<std::string> type_options = {
+        "float", "double", "zfloat", "zdouble"
+    };
+    if (type_options.find(type) == type_options.end()) {
+        std::cout << "COSMA (pxgemm_miniapp.cpp): ERROR: --type option: can only take the following values: " << std::endl;
+        for (const auto& el : type_options) {
+            std::cout << el << ", ";
+        }
+        std::cout << std::endl;
+        return 0;
+    }
+
+    char ta = transpose[0];
+    char tb = transpose[1];
+
+    // make lower-space
+    auto algorithm = result["algorithm"].as<std::string>();
+    std::transform(algorithm.begin(), algorithm.end(), algorithm.begin(), 
+        [&](char c) {
+            return std::tolower(c);
+        }
+    );
+
+    // check if the algorithm option takes a correct value
+    std::unordered_set<std::string> algorithm_options = {
+        "cosma", "scalapack", "both"
+    };
+    if (algorithm_options.find(algorithm) == algorithm_options.end()) {
+        std::cout << "COSMA (pxgemm_miniapp.cpp): ERROR: --algorithm option: can only take the following values: " << std::endl;
+        for (const auto& el : algorithm_options) {
+            std::cout << el << ", ";
+        }
+        std::cout << std::endl;
+        return 0;
+    }
+
+    // some basic checks
+    if (test_correctness) {
+        // if testing correctness, n_rep = 1;
+        n_rep = 1;
+        std::cout << "COSMA(pxgemm_miniapp.cpp): WARNING: correctness checking enabled, setting `n_rep` to 1." << std::endl;
+        if (algorithm != "both") {
+            std::cout << "COSMA(pxgemm_miniapp.cpp): WARNING: correctness checking enabled, setting `algorithm` to `both`." << std::endl;
+        }
+    }
+
+    std::vector<long> cosma_times(n_rep);
+    std::vector<long> scalapack_times(n_rep);
+
+    bool result_correct = true;
+
+    // initilize MPI
+    MPI_Init(&argc, &argv);
+
+    int rank, P;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &P);
+
+    // check if processor grid corresponds to P
     if (p_grid[0] * p_grid[0] != P) {
         p_grid[0] = 1;
         p_grid[1] = P;
@@ -83,31 +191,6 @@ int main(int argc, char **argv) {
             std::cout << "COSMA(pxgemm_miniapp.cpp): warning: number of processors in the grid must be equal to P, setting grid to 1xP instead." << std::endl;
         }
     }
-
-    auto transpose = result["transpose"].as<std::string>();
-
-    auto al = result["alpha"].as<int>();
-    auto be = result["beta"].as<int>();
-
-    bool test_correctness = result["test"].as<bool>();
-
-    auto n_rep = result["n_rep"].as<int>();
-
-    if (test_correctness) {
-        // if testing correctness, n_rep = 1;
-        n_rep = 1;
-        std::cout << "COSMA(pxgemm_miniapp.cpp): warning: correctness checking enabled, setting n_rep to 1." << std::endl;
-    }
-
-    auto type = result["type"].as<std::string>();
-
-    char ta = transpose[0];
-    char tb = transpose[1];
-
-    std::vector<long> cosma_times(n_rep);
-    std::vector<long> scalapack_times(n_rep);
-
-    bool result_correct = true;
 
     // *******************************
     //   perform the multiplication
@@ -143,8 +226,9 @@ int main(int argc, char **argv) {
             }
 
             result_correct = benchmark_pxgemm<double>(params, MPI_COMM_WORLD, n_rep,
-                                     cosma_times, scalapack_times, 
-                                     test_correctness, exit_blacs);
+                                    algorithm,
+                                    cosma_times, scalapack_times, 
+                                    test_correctness, exit_blacs);
         } else if (type == "float") {
             // create the context here, so that
             // it doesn't have to be created later
@@ -173,6 +257,7 @@ int main(int argc, char **argv) {
             }
 
             result_correct = benchmark_pxgemm<float>(params, MPI_COMM_WORLD, n_rep,
+                                    algorithm,
                                     cosma_times, scalapack_times,
                                     test_correctness, exit_blacs);
 
@@ -204,8 +289,9 @@ int main(int argc, char **argv) {
             }
 
             result_correct = benchmark_pxgemm<std::complex<float>>(params, MPI_COMM_WORLD, n_rep,
-                                     cosma_times, scalapack_times,
-                                     test_correctness, exit_blacs);
+                                    algorithm,
+                                    cosma_times, scalapack_times,
+                                    test_correctness, exit_blacs);
         } else if (type == "zdouble") {
             // create the context here, so that
             // it doesn't have to be created later
@@ -234,8 +320,9 @@ int main(int argc, char **argv) {
             }
 
             result_correct = benchmark_pxgemm<std::complex<double>>(params, MPI_COMM_WORLD, n_rep,
-                                     cosma_times, scalapack_times,
-                                     test_correctness, exit_blacs);
+                                    algorithm,
+                                    cosma_times, scalapack_times,
+                                    test_correctness, exit_blacs);
         } else {
             throw std::runtime_error("COSMA(pxgemm_miniapp): unknown data type of matrix entries.");
         }

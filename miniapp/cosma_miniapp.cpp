@@ -106,14 +106,8 @@ bool run(const int m, const int n, const int k,
 }
 
 int main(int argc, char **argv) {
-    MPI_Init(&argc, &argv);
-
-    int P, rank;
-    MPI_Comm_size(MPI_COMM_WORLD, &P);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
     cxxopts::Options options("COSMA MINIAPP", 
-        "A miniapp computing: `C=A*B, where dim(A)=m x k, dim(B)=k x n, dim(C)=m x n");
+        "A miniapp computing: `C=A*B, where dim(A)=m*k, dim(B)=k*n, dim(C)=m*n");
     options.add_options()
         ("m,m_dim",
             "number of rows of A and C.", 
@@ -147,7 +141,38 @@ int main(int argc, char **argv) {
     auto steps = result["steps"].as<std::vector<std::string>>();
     auto n_rep = result["n_rep"].as<int>();
     auto type = result["type"].as<std::string>();
+    // transform to lower-case
+    std::transform(type.begin(), type.end(), type.begin(), 
+        [&](char c) {
+            return std::tolower(c);
+        }
+    );
+    // check if the type option takes a correct value
+    std::unordered_set<std::string> type_options = {
+        "float", "double", "zfloat", "zdouble"
+    };
+    if (type_options.find(type) == type_options.end()) {
+        std::cout << "COSMA (pxgemm_miniapp.cpp): ERROR: --type option: can only take the following values: " << std::endl;
+        for (const auto& el : type_options) {
+            std::cout << el << ", ";
+        }
+        std::cout << std::endl;
+        return 0;
+    }
+
     bool test_correctness = result["test"].as<bool>();
+    // some basic checks
+    if (test_correctness) {
+        // if testing correctness, n_rep = 1;
+        n_rep = 1;
+        std::cout << "COSMA(cosma_miniapp.cpp): WARNING: correctness checking enabled, setting `n_rep` to 1." << std::endl;
+    }
+
+    MPI_Init(&argc, &argv);
+
+    int P, rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &P);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     bool result_correct = true;
 
@@ -187,6 +212,7 @@ int main(int argc, char **argv) {
     }
     std::sort(times.begin(), times.end());
 
+    // time is only measured if correctness checking was disabled
     if (!test_correctness && rank == 0) {
         std::cout << "COSMA TIMES [ms] = ";
         for (auto &time : times) {
