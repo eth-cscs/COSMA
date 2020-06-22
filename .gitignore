@@ -6,4 +6,4 @@ exports
 doc
 .idea*
 CMakeLists.txt.user
-.vscode
+.vscode*
