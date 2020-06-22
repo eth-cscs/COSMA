@@ -134,6 +134,10 @@ int main(int argc, char **argv) {
         ;
 
     auto result = options.parse(argc, argv);
+    if (result.count("help")) {
+        std::cout << options.help() << std::endl;
+        return 0;
+    }
 
     auto m = result["m_dim"].as<int>();
     auto n = result["n_dim"].as<int>();

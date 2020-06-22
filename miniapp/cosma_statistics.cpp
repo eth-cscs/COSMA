@@ -14,7 +14,7 @@ using namespace cosma;
 int main( int argc, char **argv ) {
     cxxopts::Options options("COSMA STATISTICS",
                              "A miniapp computing communication volume \
-                             and local multiplication sizes. dim(A)=m x k, dim(B)=k x n; dim(C)=m x n.");
+                             and local multiplication sizes. dim(A)=m*k, dim(B)=k*n; dim(C)=m*n.");
     
     options.add_options()
         ("m,m_dim",
