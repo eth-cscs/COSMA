@@ -346,3 +346,12 @@ bool benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
 
     return correct;
 }
+
+template <typename T>
+bool test_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm,
+                 bool test_correctness = true, bool exit_blacs = false) {
+    std::vector<long> t1;
+    std::vector<long> t2;
+    int n_rep = 1;
+    return benchmark_pxgemm(params, comm, n_rep, t1, t2, true, exit_blacs);
+}

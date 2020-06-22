@@ -32,10 +32,11 @@ void process_token(const std::string &step_triplet,
     divisors.push_back(next_int(2, step_triplet));
 }
 
-cosma::Strategy parse_strategy(int m, int n, int k, int P,
-                               std::vector<std::string>& steps,
-                               long long memory_limit,
-                               bool overlap_comm_and_comp) {
+cosma::Strategy parse_strategy(const int m, const int n, 
+                               const int k, const int P,
+                               const std::vector<std::string>& steps,
+                               const long long memory_limit,
+                               const bool overlap_comm_and_comp) {
     if (steps.size() == 0) {
         cosma::Strategy strategy(m, n, k, P, memory_limit);
         if (overlap_comm_and_comp) {

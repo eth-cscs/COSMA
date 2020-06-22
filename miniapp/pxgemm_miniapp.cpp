@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
             cxxopts::value<int>()->default_value("0"))
         ("r,n_rep",
             "number of repetitions",
-            cxxopts::value<int>()->default_value("0"))
+            cxxopts::value<int>()->default_value("2"))
         ("t,type",
             "data type of matrix entries.",
             cxxopts::value<std::string>()->default_value("double"))
@@ -93,10 +93,10 @@ int main(int argc, char **argv) {
 
     auto n_rep = result["n_rep"].as<int>();
 
-    if (n_rep == 0) {
-        // if testing correctness, default value 1, otherwise 2
-        // to account for a warm-up run.
-        n_rep = (test_correctness ? 1 : 2);
+    if (test_correctness) {
+        // if testing correctness, n_rep = 1;
+        n_rep = 1;
+        std::cout << "COSMA(pxgemm_miniapp.cpp): warning: correctness checking enabled, setting n_rep to 1." << std::endl;
     }
 
     auto type = result["type"].as<std::string>();
