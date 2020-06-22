@@ -20,7 +20,6 @@ void test_matmul() {
 
     Strategy strategy(m, n, k, P, divs, dims, step_types);
 
-
     if (rank == 0) {
         std::cout << "Strategy = " << strategy << std::endl;
     }

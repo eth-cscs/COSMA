@@ -84,7 +84,7 @@ if (COSMA_WITH_PROFILING)
 endif ()
 
 option(OPTIONS_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
-add_subdirectory(libs/options)
+add_subdirectory(libs/cxxopts)
 
 option(GRID2GRID_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
 option(GRID2GRID_WITH_PROFILING "" ${COSMA_WITH_PROFILING})

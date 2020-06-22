@@ -37,7 +37,6 @@ template <typename Scalar>
 bool test_cosma(Strategy s,
          context<Scalar>& ctx,
          MPI_Comm comm = MPI_COMM_WORLD,
-         bool overlap = false,
          double epsilon = 1e-8,
          int tag = 0) {
     auto alpha = Scalar{1};
@@ -51,10 +50,6 @@ bool test_cosma(Strategy s,
     MPI_Comm_size(comm, &size);
 
     auto mpi_type = cosma::mpi_mapper<Scalar>::getType();
-
-    if (overlap) {
-        s.enable_overlapping_comm_and_comp();
-    }
 
     int m = s.m;
     int n = s.n;

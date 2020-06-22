@@ -15,7 +15,7 @@
     - [Julia language](#julia-language)
 - [Examples - Miniapps](#miniapps)
     - [Matrix Multiplication with COSMA](#matrix-multiplication)
-    - [COSMA pdgemm wrapper](#cosma-pdgemm-wrapper)
+    - [COSMA pxgemm wrapper](#cosma-pxgemm-wrapper)
 - [Tunable Parameters](#tunable-parameters)
     - [Parameters Overview](#parameters-overview)
     - [Controlling GPU memory](#controlling-gpu-memory)
@@ -204,60 +204,72 @@ The project contains a miniapp that produces two random matrices `A` and `B`,
 computes their product `C` with the COSMA algorithm and outputs the time of the
 multiplication.
 
-The miniapp consists of an executable `./build/miniapp/cosma-miniapp` which can
+The miniapp consists of an executable `./build/miniapp/cosma_miniapp` which can
 be run with the following command line (assuming we are in the root folder of
 the project):
 
-```
-mpirun --oversubscribe -np 4 ./build/miniapp/cosma-miniapp -m 1000 -n 1000 -k 1000 -P 4 -s pm2,sm2,pk2 -r 2
+```bash
+# set the number of threads to be used by each MPI rank
+export OMP_NUM_THREADS=18
+# if using CPU version with MKL backend, set MKL_NUM_THREADS as well
+export MKL_NUM_THREADS=18 
+# run the miniapp
+mpirun -np 4 ./build/miniapp/cosma_miniapp -m 1000 -n 1000 -k 1000 -r 2
 ```
 
-The flags have the following meaning:
-
-- `-m (--m_dimension)`: number of rows of matrices `A` and `C`
-- `-n (--n_dimension)`: number of columns of matrices `B` and `C`
-- `-k (--k_dimension)`: number of columns of matrix `A` and rows of matrix `B`
-- `-P (--processors)`: number of processors (i.e. ranks)
-- `-s (--steps, optional)`: string of triplets divided by comma defining the
+The overview of all supported options is given below:
+- `-m (--m_dim)` (default: `1000`): number of rows of matrices `A` and `C`.
+- `-n (--n_dim)` (default: `1000`): number of columns of matrices `B` and `C`.
+- `-k (--k_dim)` (default: `1000`): number of columns of matrix `A` and rows of matrix `B`.
+- `-s (--steps)` (optional): string of triplets divided by comma defining the
   splitting strategy. Each triplet defines one step of the algorithm. The first
   character in the triplet defines whether it is a parallel (p) or a sequential
   (s) step. The second character defines the dimension that is splitted in this
   step. The third parameter is an integer which defines the divisor. This
-  parameter can be omitted. In that case the default strategy will be used.
-- `-L (--memory, optional)`: memory limit, describes how many elements at most
-  each rank can own. If not set, infinite memory will be assumed and the default
-  strategy will only consist of parallel steps.
-- `-t (--topology, optional)`: if this flag is present, then ranks might be
-  relabelled such that the ranks which communicate are physically closer to each
-  other. This flag therefore determines whether the topology is
-  communication-aware.
-- `r (--n_rep, optional)`: the number of repetitions.
+  parameter can be omitted. In that case the default strategy will be used. An example of a possible value for the upper example: `--steps=sm2,pn2,pk2`.
+- `-r (--n_rep)` (optional, default: `2`): the number of repetitions.
+- `-t (--type)` (optional, default: `double`): data type of matrix entries. Can be one of: `float`, `double`, `zfloat` and `zdouble`. The last two correspond to complex numbers.
+- `--test` (optional): if present, the result of COSMA will be verified with the result of the available SCALAPACK.
+- `-h (--help) (optional)`: print available options.
 
-### COSMA pdgemm wrapper
+### COSMA pxgemm wrapper
 
 COSMA also contains a wrapper for ScaLAPACK `pxgemm` calls which offers scalapack interface (pxgemm functions with exactly the same signatures as ScaLAPACK). Running these functions will take care of transforming the matrices between ScaLAPACK and COSMA data layout, perform the multiplication using COSMA algorithm and transform the result back to the specified ScaLAPACK data layout.
 
-The miniapp consists of an executable `./build/miniapp/pdgemm-miniapp` which can
-be run with the following command line on Piz Daint (assuming we are in the root folder of
-the project):
+The miniapp consists of an executable `./build/miniapp/pxgemm_miniapp` which can be run as follows (assuming we are in the root folder of the project):
 
+```bash
+# set the number of threads to be used by each MPI rank
+export OMP_NUM_THREADS=18
+# if using CPU version with MKL backend, set MKL_NUM_THREADS as well
+export MKL_NUM_THREADS=18 
+# run the miniapp
+mpirun -np 4 ./build/miniapp/pxgemm_miniapp -m 1000 -n 1000 -k 1000 \
+                                            --block_a=128,128 \ 
+                                            --block_b=128,128 \
+                                            --block_c=128,128 \
+                                            --p_grid=2,2 \
+                                            --transpose=NN \
+                                            --type=double \
+                                            --algorithm=cosma
 ```
-OMP_NUM_THREADS=18 MKL_NUM_THREADS=18 srun -C mc -N 8 -n 16 ./build/miniapp/pdgemm-miniapp -m 1000 -n 1000 -k 1000 --block_a 128x128 --block_b 128x128 --block_c 128x128 -p 4 -q 4 --trans_a -r 2
-```
 
-The flags have the following meaning:
-
-- `-m (--m_dim)`: number of rows of matrices `A` and `C`
-- `-n (--n_dim)`: number of columns of matrices `B` and `C`
-- `-k (--k_dim)`: number of columns of matrix `A` and rows of matrix `B`
-- `-ba (--block_a)` (optional, default 128x128): block size for matrix A
-- `-bb (--block_b)` (optional, default 128x128): block size for matrix B
-- `-bc (--block_c)` (optional, default 128x128): block size for matrix C
-- `-ta (--trans_a)` (optional, default: no transpose): transpose A before multiplication
-- `-tb (--trans_b)` (optional, default: no transpose): transpose B before multiplication
-- `-p (--p_row)` (optional, default: 1): number of rows in a processor grid.
-- `-q (--q_row)` (optional, default: P): number of cols in a processor grid.
+The overview of all supported options is given below:
+- `-m (--m_dim)` (default: `1000`): number of rows of matrices `A` and `C`.
+- `-n (--n_dim)` (default: `1000`): number of columns of matrices `B` and `C`. 
+- `-k (--k_dim)` (default: `1000`): number of columns of matrix `A` and rows of matrix `B`.
+- `--block_a` (optional, default: `128,128`): 2D-block size for matrix A. 
+- `--block_b` (optional, default `128,128`): 2D-block size for matrix B.
+- `--block_c` (optional, default `128,128`): 2D-block size for matrix C.
+- `-p (--p_grid)` (optional, default: `1,P`): 2D-processor grid. By default `1xP` where `P` is the total number of MPI ranks.
+- `--transpose` (optional, default: `NN`): transpose/conjugate flags to A and B.
+- `--alpha` (optional, default: 1): alpha parameter in `C = alpha*A*B + beta*C`.
+- `--beta` (optional, default: 0): beta parameter in `C = alpha*A*B + beta*C`.
 - `-r (--n_rep)` (optional, default: 2): number of repetitions.
+- `-t (--type)` (optional, default: `double`): data type of matrix entries. Can be one of: `float`, `double`, `zfloat` and `zdouble`. The last two correspond to complex numbers.
+- `--test` (optional): if present, the result of COSMA will be verified with the result of the available SCALAPACK.
+- `--algorithm` (optional, default: `both`): defines which algorithm (`cosma`, `scalapack` or `both`) to run.
+- `-h (--help) (optional)`: print available options.
 
 ## Tunable Parameters
 

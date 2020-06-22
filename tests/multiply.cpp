@@ -123,7 +123,8 @@ TEST_P(MultiplyTestWithParams, multiply) {
         }
 
         // first run without overlapping communication and computation
-        bool no_overlap = test_cosma<double>(strategy, ctx, comm, false, epsilon, multiply_state::get_test_counter());
+        bool no_overlap = test_cosma<double>(strategy, ctx, comm, epsilon,
+                                             multiply_state::get_test_counter());
         ++multiply_state::get_test_counter();
 
         EXPECT_TRUE(no_overlap);
@@ -132,7 +133,8 @@ TEST_P(MultiplyTestWithParams, multiply) {
         MPI_Barrier(comm);
 
         // then run with the overlap of communication and computation
-        bool with_overlap = test_cosma<double>(strategy, ctx, comm, true, epsilon, multiply_state::get_test_counter());
+        strategy.enable_overlapping_comm_and_comp();
+        bool with_overlap = test_cosma<double>(strategy, ctx, comm, epsilon, multiply_state::get_test_counter());
         ++multiply_state::get_test_counter();
         EXPECT_TRUE(with_overlap);
 
