@@ -168,11 +168,12 @@ int main(int argc, char **argv) {
         std::cout << "COSMA(pxgemm_miniapp.cpp): WARNING: correctness checking enabled, setting `n_rep` to 1." << std::endl;
         if (algorithm != "both") {
             std::cout << "COSMA(pxgemm_miniapp.cpp): WARNING: correctness checking enabled, setting `algorithm` to `both`." << std::endl;
+            algorithm = "both";
         }
     }
 
-    std::vector<long> cosma_times(n_rep);
-    std::vector<long> scalapack_times(n_rep);
+    std::vector<long> cosma_times;
+    std::vector<long> scalapack_times;
 
     bool result_correct = true;
 
@@ -184,7 +185,7 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &P);
 
     // check if processor grid corresponds to P
-    if (p_grid[0] * p_grid[0] != P) {
+    if (p_grid[0] * p_grid[1] != P) {
         p_grid[0] = 1;
         p_grid[1] = P;
         if (rank == 0) {
@@ -342,17 +343,21 @@ int main(int argc, char **argv) {
     //   output times
     // *****************
     if (rank == 0) {
-        std::cout << "COSMA TIMES [ms] = ";
-        for (auto &time : cosma_times) {
-            std::cout << time << " ";
+        if (algorithm == "both" || algorithm == "cosma") {
+            std::cout << "COSMA TIMES [ms] = ";
+            for (auto &time : cosma_times) {
+                std::cout << time << " ";
+            }
+            std::cout << std::endl;
         }
-        std::cout << std::endl;
 
-        std::cout << "SCALAPACK TIMES [ms] = ";
-        for (auto &time : scalapack_times) {
-            std::cout << time << " ";
+        if (algorithm == "both" || algorithm == "scalapack") {
+            std::cout << "SCALAPACK TIMES [ms] = ";
+            for (auto &time : scalapack_times) {
+                std::cout << time << " ";
+            }
+            std::cout << std::endl;
         }
-        std::cout << std::endl;
     }
 
     if (test_correctness) {

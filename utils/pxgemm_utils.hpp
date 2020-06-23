@@ -186,10 +186,10 @@ bool benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
                     std::vector<long>& cosma_times, std::vector<long>& scalapack_times, 
                     bool test_correctness = false, bool exit_blacs = false) {
     assert(algorithm == "both" || algorithm == "cosma" || algorithm == "scalapack");
-    if (algorithm == "both" || "cosma") {
+    if (algorithm == "both" || algorithm == "cosma") {
         cosma_times.resize(n_rep);
     }
-    if (algorithm == "both" || "scalapack") {
+    if (algorithm == "both" || algorithm == "scalapack") {
         scalapack_times.resize(n_rep);
     }
 
@@ -271,10 +271,10 @@ bool benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
     try {
         a = std::vector<T>(size_a);
         b = std::vector<T>(size_b);
-        if (algorithm == "both" || "cosma") {
+        if (algorithm == "both" || algorithm == "cosma") {
             c_cosma = std::vector<T>(size_c);
         }
-        if (algorithm == "both" || "scalapack") {
+        if (algorithm == "both" || algorithm == "scalapack") {
             c_scalapack = std::vector<T>(size_c);
         }
     } catch (const std::bad_alloc& e) {
@@ -312,7 +312,7 @@ bool benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
             fill_randomly(c_scalapack);
         }
 
-        if (algorithm == "both" || "cosma") {
+        if (algorithm == "both" || algorithm == "cosma") {
             // ***********************************
             //       run COSMA PDGEMM
             // ***********************************
@@ -332,7 +332,7 @@ bool benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
             cosma_times[i] = time;
         }
 
-        if (algorithm == "both" || "scalapack") {
+        if (algorithm == "both" || algorithm == "scalapack") {
             // ***********************************
             //       run ScaLAPACK PDGEMM
             // ***********************************
@@ -353,10 +353,10 @@ bool benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
         }
     }
 
-    if (algorithm == "both" || "cosma") {
+    if (algorithm == "both" || algorithm == "cosma") {
         std::sort(cosma_times.rbegin(), cosma_times.rend());
     }
-    if (algorithm == "both" || "scalapack") {
+    if (algorithm == "both" || algorithm == "scalapack") {
         std::sort(scalapack_times.rbegin(), scalapack_times.rend());
     }
 
