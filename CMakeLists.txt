@@ -84,6 +84,11 @@ if (COSMA_WITH_PROFILING)
 endif ()
 
 option(OPTIONS_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
+
+# Do not install cxxopts when including it.
+option(CXXOPTS_BUILD_EXAMPLES OFF)
+option(CXXOPTS_BUILD_TESTS OFF)
+option(CXXOPTS_ENABLE_INSTALL OFF)
 add_subdirectory(libs/cxxopts)
 
 option(GRID2GRID_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
