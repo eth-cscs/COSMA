@@ -95,7 +95,7 @@ size_t cosma::memory_pool<T>::size() {
 template <typename T>
 void cosma::memory_pool<T>::reserve(size_t size) {
     // reserve a bit more
-    size += size / 10;
+    size += size / 20;
     if (size > 0 && size > pool_capacity_) {
         pool_capacity_ = size;
         try {

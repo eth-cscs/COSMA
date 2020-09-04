@@ -120,7 +120,7 @@ void local_multiply_cpu(
 }
 
 bool large_enough_for_gpu(int m, int n, int k) {
-    return m * n * k >= 1e9;
+    return m * n * k >= 1e7;
 }
 
 template <typename Scalar>
