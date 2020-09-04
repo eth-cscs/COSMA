@@ -20,7 +20,7 @@ if(NOT TARGET cosma)
                         environment_variables.cpp
     )
 
-    if (${BLAS_DEF} STREQUAL "COSMA_HAVE_GPU")
+    if (GPU)
         list(APPEND cosma_src_files "pinned_buffers.cpp")
     endif()
 

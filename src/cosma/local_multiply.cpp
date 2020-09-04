@@ -5,7 +5,9 @@
 #ifdef COSMA_HAVE_GPU
 #include <Tiled-MM/tiled_mm.hpp>
 #include <Tiled-MM/util.hpp>
-#else
+#endif
+
+#if defined(COSMA_WITH_BLAS) || defined(COSMA_WITH_MKL_BLAS)
 #include <cosma/blas.hpp>
 #endif
 
@@ -117,6 +119,10 @@ void local_multiply_cpu(
     }
 }
 
+bool large_enough_for_gpu(int m, int n, int k) {
+    return m * n * k >= 1e9;
+}
+
 template <typename Scalar>
 void local_multiply(cosma_context<Scalar>* ctx,
                     Scalar *matrixA,
@@ -134,6 +140,22 @@ void local_multiply(cosma_context<Scalar>* ctx,
 #endif
 
 #ifdef COSMA_HAVE_GPU
+    // consider using CPU if the problem is not large enough
+#if defined(COSMA_WITH_BLAS) || defined(COSMA_WITH_MKL_BLAS)
+    if (large_enough_for_gpu(m, n, k)) {
+        if (ctx->pin_host_buffers) {
+            ctx->get_memory_pool().pin(matrixA, m * k);
+            ctx->get_memory_pool().pin(matrixB, k * n);
+            ctx->get_memory_pool().pin(matrixC, m * n);
+        }
+        local_multiply(ctx->get_gpu_context(),
+                       matrixA, matrixB, matrixC,
+                       m, n, k, alpha, beta,
+                       false);
+    } else {
+        gemm(m, n, k, alpha, matrixA, m, matrixB, k, beta, matrixC, m);
+    }
+#else
     if (ctx->pin_host_buffers) {
         ctx->get_memory_pool().pin(matrixA, m * k);
         ctx->get_memory_pool().pin(matrixB, k * n);
@@ -143,6 +165,7 @@ void local_multiply(cosma_context<Scalar>* ctx,
                    matrixA, matrixB, matrixC,
                    m, n, k, alpha, beta,
                    false);
+#endif
 #else
     gemm(m, n, k, alpha, matrixA, m, matrixB, k, beta, matrixC, m);
 #endif
