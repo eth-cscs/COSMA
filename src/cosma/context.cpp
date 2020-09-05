@@ -13,6 +13,7 @@ gpu::mm_handle<Scalar>* cosma_context<Scalar>::get_gpu_context() {
 template <typename Scalar>
 cosma_context<Scalar>::cosma_context() {
     cpu_memory_limit = get_cpu_max_memory<Scalar>();
+    memory_pool_.amortization = get_memory_pool_amortization();
     adapt_to_scalapack_strategy = get_adapt_strategy();
     overlap_comm_and_comp = get_overlap_comm_and_comp();
     pin_host_buffers = get_memory_pinning();
@@ -30,6 +31,7 @@ cosma_context<Scalar>::cosma_context(size_t cpu_mem_limit, int streams, int tile
     adapt_to_scalapack_strategy = get_adapt_strategy();
     overlap_comm_and_comp = get_overlap_comm_and_comp();
     pin_host_buffers = get_memory_pinning();
+    memory_pool_.amortization = get_memory_pool_amortization();
     // do not reserve nor resize the memory pool
     // let this just serve as the upper bound when creating a strategy
     // because otherwise, it might reserve/resize to much more than the problem requires

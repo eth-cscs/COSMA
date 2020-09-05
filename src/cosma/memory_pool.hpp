@@ -44,6 +44,9 @@ public:
     bool already_pinned = false;
     bool resized = false;
 
+    // scaling factor for the buffer growth
+    float amortization;
+
 private:
     mpi_buffer_t pool_;
     size_t pool_size_ = 0;

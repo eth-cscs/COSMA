@@ -31,6 +31,15 @@ int cosma::get_int_env_var(std::string name, int default_value) {
     return value;
 }
 
+float cosma::get_float_env_var(std::string name, float default_value) {
+    char* var;
+    var = getenv(name.c_str());
+    float value = default_value;
+    if (var != nullptr)
+        value = std::atof(var);
+    return value;
+}
+
 int cosma::gpu_streams() {
     return get_int_env_var(env_var_names::gpu_n_streams,
                            env_var_defaults::gpu_n_streams);
@@ -64,6 +73,11 @@ bool cosma::get_overlap_comm_and_comp() {
 bool cosma::get_memory_pinning() {
     return get_bool_env_var(env_var_names::memory_pinning_enabled,
                             env_var_defaults::memory_pinning_enabled);
+}
+
+float cosma::get_memory_pool_amortization() {
+    return get_float_env_var(env_var_names::memory_pool_amortization,
+                           env_var_defaults::memory_pool_amortization);
 }
 
 // reads the memory limit in MB per rank
