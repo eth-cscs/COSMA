@@ -119,7 +119,7 @@ void local_multiply_cpu(
     }
 }
 
-bool large_enough_for_gpu(size_t gpu_min_problem_size, int m, int n, int k) {
+bool large_enough_for_gpu(double gpu_min_problem_size, int m, int n, int k) {
     return m * n * k >= gpu_min_problem_size;
 }
 

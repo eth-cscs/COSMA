@@ -40,6 +40,15 @@ float cosma::get_float_env_var(std::string name, float default_value) {
     return value;
 }
 
+double cosma::get_double_env_var(std::string name, double default_value) {
+    char* var;
+    var = getenv(name.c_str());
+    double value = default_value;
+    if (var != nullptr)
+        value = std::atof(var);
+    return value;
+}
+
 std::size_t cosma::get_ull_env_var(std::string name, size_t default_value) {
     char* var;
     var = getenv(name.c_str());
@@ -84,13 +93,13 @@ bool cosma::get_memory_pinning() {
                             env_var_defaults::memory_pinning_enabled);
 }
 
-size_t cosma::get_gpu_min_problem_size() {
-    return get_ull_env_var(env_var_names::gpu_min_problem_size,
+double cosma::get_gpu_min_problem_size() {
+    return get_double_env_var(env_var_names::gpu_min_problem_size,
                            env_var_defaults::gpu_min_problem_size);
 }
 
-float cosma::get_memory_pool_amortization() {
-    return get_float_env_var(env_var_names::memory_pool_amortization,
+double cosma::get_memory_pool_amortization() {
+    return get_double_env_var(env_var_names::memory_pool_amortization,
                            env_var_defaults::memory_pool_amortization);
 }
 

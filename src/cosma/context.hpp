@@ -36,7 +36,7 @@ public:
 
     bool pin_host_buffers = true;
 
-    size_t gpu_min_problem_size;
+    double gpu_min_problem_size;
 
 private:
     long long cpu_memory_limit = std::numeric_limits<long long>::max();

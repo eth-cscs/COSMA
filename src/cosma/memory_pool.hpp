@@ -45,7 +45,7 @@ public:
     bool resized = false;
 
     // scaling factor for the buffer growth
-    float amortization;
+    double amortization;
 
 private:
     mpi_buffer_t pool_;

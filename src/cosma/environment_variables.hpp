@@ -64,7 +64,7 @@ namespace env_var_defaults {
     const bool memory_pinning_enabled = true;
     // minimum problem size (m*n*k) that is to be run on GPU. 
     // Any problem size smaller than this constant will still be computed on CPU.
-    const size_t gpu_min_problem_size = 1e5;
+    const double gpu_min_problem_size = 1e7;
     // The scaling factor used for the memory-pool allocation size.(cpu-only).
     // If amortization = 1.2, then the memory allocator
     // will request 1.2x the requested size (thus, 20% more than needed).
@@ -75,7 +75,7 @@ namespace env_var_defaults {
     // a problem when the memory resource is tight.
     // There is just a single memory pool in COSMA and all the required 
     // memory is taken from this memory pool only.
-    const float memory_pool_amortization = 1.2f;
+    const double memory_pool_amortization = 1.2;
 };
 
 // checks if the specified environment variable is defined
@@ -97,6 +97,10 @@ size_t get_ull_env_var(std::string name, size_t default_value);
 // gets the value of the specified environment variable.
 // If the variable is not defined, the default value is returned
 float get_float_env_var(std::string name, float default_value);
+
+// gets the value of the specified environment variable.
+// If the variable is not defined, the default value is returned
+double get_double_env_var(std::string name, double default_value);
 
 // reads the environment variable corresponding to
 // the number of GPU streams per rank and returns
@@ -123,7 +127,7 @@ bool get_overlap_comm_and_comp();
 
 // reads the environment variable corresponding to 
 // the minimum problem size (=m*n*k) that is to be run on GPU.
-size_t get_gpu_min_problem_size();
+double get_gpu_min_problem_size();
 
 // reads the memory pool amortization (>= 1.0).
 // If amortization = 1.2, then the memory allocator
@@ -133,7 +137,7 @@ size_t get_gpu_min_problem_size();
 // However, higher amortization values also mean that 
 // potentially more memory is allocated than used which can be
 // a problem when the memory resource is tight.
-float get_memory_pool_amortization();
+double get_memory_pool_amortization();
 
 // reads the environment variable corresponding to
 // the memory limit in MB per rank, converts the limit 
