@@ -5,12 +5,11 @@
 #include <mpi.h>
 
 template <typename T>
-cosma::memory_pool<T>::memory_pool() {
-}
+cosma::memory_pool<T>::memory_pool() {}
 
 template <typename T>
 cosma::memory_pool<T>::memory_pool(size_t capacity) {
-    pool_.reserve(capacity);
+    reserve(capacity);
 }
 
 template <typename T>
@@ -95,7 +94,7 @@ size_t cosma::memory_pool<T>::size() {
 template <typename T>
 void cosma::memory_pool<T>::reserve(size_t size) {
     // reserve a bit more
-    size += size / 10;
+    size = (std::size_t) std::ceil(size * amortization);
     if (size > 0 && size > pool_capacity_) {
         pool_capacity_ = size;
         try {
@@ -116,7 +115,7 @@ void cosma::memory_pool<T>::reserve(size_t size) {
 template <typename T>
  void cosma::memory_pool<T>::reserve_additionally(size_t size) {
     // reserve a bit more
-    size += size / 10;
+    size = (std::size_t) std::ceil(size * amortization);
     if (size > 0 && pool_size_ + size > pool_capacity_) {
         pool_capacity_ = pool_size_ + size;
         try {

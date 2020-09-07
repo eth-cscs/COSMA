@@ -5,7 +5,9 @@
 #ifdef COSMA_HAVE_GPU
 #include <Tiled-MM/tiled_mm.hpp>
 #include <Tiled-MM/util.hpp>
-#else
+#endif
+
+#if defined(COSMA_WITH_BLAS) || defined(COSMA_WITH_MKL_BLAS)
 #include <cosma/blas.hpp>
 #endif
 

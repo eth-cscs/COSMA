@@ -20,7 +20,7 @@ if(NOT TARGET cosma)
                         environment_variables.cpp
     )
 
-    if (${BLAS_DEF} STREQUAL "COSMA_HAVE_GPU")
+    if (GPU)
         list(APPEND cosma_src_files "pinned_buffers.cpp")
     endif()
 
@@ -59,6 +59,27 @@ if(ScaLAPACK_TARGET AND NOT TARGET cosma_pxgemm)
         target_compile_definitions(cosma_pxgemm PRIVATE COSMA_WITH_PROFILING)
     endif()
     list(APPEND INSTALLED_TARGETS_LIST "cosma_pxgemm")
+endif()
+
+# this is a library exposing the prefixed scalapack API (with cosma/COSMA prefix)
+# it is aimed for users who don't want to overwrite the available scalapack API with cosma.
+# if ScaLAPACK is found and cosma_prefixed_pxgemm library is not already created
+# then create it here and link it to the profiler if needed
+if(ScaLAPACK_TARGET AND NOT TARGET cosma_prefixed_pxgemm)
+    add_library(cosma_prefixed_pxgemm scalapack.cpp
+                             pxgemm_params.hpp
+                             prefixed_pxgemm.cpp
+                             cosma_pxgemm.cpp
+    )
+    target_link_libraries(cosma_prefixed_pxgemm PUBLIC cosma 
+                                              ${BLAS_TARET}
+                                              ${ScaLAPACK_TARGET}
+    )
+    if(COSMA_WITH_PROFILING)
+        target_link_libraries(cosma_prefixed_pxgemm PRIVATE semiprof)
+        target_compile_definitions(cosma_prefixed_pxgemm PRIVATE COSMA_WITH_PROFILING)
+    endif()
+    list(APPEND INSTALLED_TARGETS_LIST "cosma_prefixed_pxgemm")
 endif()
 
 # the following library is aimed only for testing purposes

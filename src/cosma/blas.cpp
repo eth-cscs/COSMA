@@ -13,7 +13,7 @@ typedef CBLAS_ORDER CBLAS_LAYOUT;
 
 // The file is not needed if GPU is used
 //
-#ifndef COSMA_HAVE_GPU
+#if defined (COSMA_WITH_MKL_BLAS) || defined(COSMA_WITH_BLAS)
 namespace cosma {
 void gemm(const int M,
           const int N,

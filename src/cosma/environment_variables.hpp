@@ -26,6 +26,17 @@ namespace env_var_names {
     // (only used when GPU backend enabled)
     // which increases the efficiency
     const std::string memory_pinning_enabled = "COSMA_GPU_MEMORY_PINNING";
+    // The scaling factor used for the memory-pool allocation size.(cpu-only).
+    // If amortization = 1.2, then the memory allocator
+    // will request 1.2x the requested size (thus, 20% more than needed).
+    // Higher values better amortize the cost of memory buffers resizing
+    // which can occur when the algorithm is invoked for different matrix sizes.
+    // However, higher amortization values also mean that 
+    // potentially more memory is allocated than used which can be
+    // a problem when the memory resource is tight.
+    // There is just a single memory pool in COSMA and all the required 
+    // memory is taken from this memory pool only.
+    const std::string memory_pool_amortization = "COSMA_MEMORY_POOL_AMORTIZATION";
 };
 
 // default values of supported environment variables
@@ -48,6 +59,17 @@ namespace env_var_defaults {
     // (only used when GPU backend enabled)
     // which increases the efficiency
     const bool memory_pinning_enabled = true;
+    // The scaling factor used for the memory-pool allocation size.(cpu-only).
+    // If amortization = 1.2, then the memory allocator
+    // will request 1.2x the requested size (thus, 20% more than needed).
+    // Higher values better amortize the cost of memory buffers resizing
+    // which can occur when the algorithm is invoked for different matrix sizes.
+    // However, higher amortization values also mean that 
+    // potentially more memory is allocated than used which can be
+    // a problem when the memory resource is tight.
+    // There is just a single memory pool in COSMA and all the required 
+    // memory is taken from this memory pool only.
+    const double memory_pool_amortization = 1.2;
 };
 
 // checks if the specified environment variable is defined
@@ -61,6 +83,18 @@ bool get_bool_env_var(std::string name, bool default_value);
 // gets the value of the specified environment variable.
 // If the variable is not defined, the default value is returned
 int get_int_env_var(std::string name, int default_value);
+
+// gets the value of the specified environment variable.
+// If the variable is not defined, the default value is returned
+size_t get_ull_env_var(std::string name, size_t default_value);
+
+// gets the value of the specified environment variable.
+// If the variable is not defined, the default value is returned
+float get_float_env_var(std::string name, float default_value);
+
+// gets the value of the specified environment variable.
+// If the variable is not defined, the default value is returned
+double get_double_env_var(std::string name, double default_value);
 
 // reads the environment variable corresponding to
 // the number of GPU streams per rank and returns
@@ -84,6 +118,16 @@ bool get_adapt_strategy();
 // the overlap of communication and computation and returns
 // the default value if the variable is undefined
 bool get_overlap_comm_and_comp();
+
+// reads the memory pool amortization (>= 1.0).
+// If amortization = 1.2, then the memory allocator
+// will request 1.2x the requested size (thus, 20% more than needed).
+// Higher values better amortize the cost of memory buffers resizing
+// which can occur when the algorithm is invoked for different matrix sizes.
+// However, higher amortization values also mean that 
+// potentially more memory is allocated than used which can be
+// a problem when the memory resource is tight.
+double get_memory_pool_amortization();
 
 // reads the environment variable corresponding to
 // the memory limit in MB per rank, converts the limit 
