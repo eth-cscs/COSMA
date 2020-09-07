@@ -285,6 +285,7 @@ ENVIRONMENT VARIABLE | POSSIBLE VALUES | DESCRIPTION
 `COSMA_GPU_MEMORY_PINNING` | **ON**, OFF | If enabled, COSMA will pin parts of the host memory to speed up CPU-GPU memory transfers. Used only in the GPU backend.
 `COSMA_GPU_MAX_TILE_M`, `COSMA_GPU_MAX_TILE_N`, `COSMA_GPU_MAX_TILE_K` | integer (`size_t`), by default: **5000** | Tile sizes for each dimension, that are used to pipeline the local CPU matrices to GPU. `K` refers to the shared dimension and `MxN` refer to the dimensions of matrix `C`
 `COSMA_GPU_STREAMS` | integer (`size_t`), by default: **2** | The number of GPU streams that each rank should use.
+`COSMA_MEMORY_POOL_AMORTIZATION` | real (`double`), by default **1.2** | The growth factor for the memory pool. If equal to 1.2, then 1.2x the requested size is allocated (thus, 20% more than needed). Higher values better amortize the cost of the memory pool resizing which can occur when the algorithm is invoked for different matrix sizes. However, higher amortization values also mean that potentially more memory is allocated than used which can be a problem when the memory resource is tight.
 
 These are all optional parameters. They are used in runtime and hence changing any of those does not require the code to be recompiled.
 
