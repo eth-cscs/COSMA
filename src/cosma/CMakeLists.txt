@@ -69,7 +69,7 @@ if(ScaLAPACK_TARGET AND NOT TARGET cosma_prefixed_pxgemm)
     add_library(cosma_prefixed_pxgemm scalapack.cpp
                              pxgemm_params.hpp
                              prefixed_pxgemm.cpp
-                             pxgemm.cpp
+                             cosma_pxgemm.cpp
     )
     target_link_libraries(cosma_prefixed_pxgemm PUBLIC cosma 
                                               ${BLAS_TARET}
