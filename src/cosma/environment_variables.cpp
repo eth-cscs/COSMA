@@ -93,11 +93,6 @@ bool cosma::get_memory_pinning() {
                             env_var_defaults::memory_pinning_enabled);
 }
 
-double cosma::get_gpu_min_problem_size() {
-    return get_double_env_var(env_var_names::gpu_min_problem_size,
-                           env_var_defaults::gpu_min_problem_size);
-}
-
 double cosma::get_memory_pool_amortization() {
     return get_double_env_var(env_var_names::memory_pool_amortization,
                            env_var_defaults::memory_pool_amortization);

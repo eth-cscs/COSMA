@@ -26,9 +26,6 @@ namespace env_var_names {
     // (only used when GPU backend enabled)
     // which increases the efficiency
     const std::string memory_pinning_enabled = "COSMA_GPU_MEMORY_PINNING";
-    // minimum problem size (m*n*k) that is to be run on GPU. 
-    // Any problem size smaller than this constant will still be computed on CPU.
-    const std::string gpu_min_problem_size = "COSMA_GPU_MIN_PROBLEM_SIZE";
     // The scaling factor used for the memory-pool allocation size.(cpu-only).
     // If amortization = 1.2, then the memory allocator
     // will request 1.2x the requested size (thus, 20% more than needed).
@@ -62,9 +59,6 @@ namespace env_var_defaults {
     // (only used when GPU backend enabled)
     // which increases the efficiency
     const bool memory_pinning_enabled = true;
-    // minimum problem size (m*n*k) that is to be run on GPU. 
-    // Any problem size smaller than this constant will still be computed on CPU.
-    const double gpu_min_problem_size = 1e7;
     // The scaling factor used for the memory-pool allocation size.(cpu-only).
     // If amortization = 1.2, then the memory allocator
     // will request 1.2x the requested size (thus, 20% more than needed).
@@ -124,10 +118,6 @@ bool get_adapt_strategy();
 // the overlap of communication and computation and returns
 // the default value if the variable is undefined
 bool get_overlap_comm_and_comp();
-
-// reads the environment variable corresponding to 
-// the minimum problem size (=m*n*k) that is to be run on GPU.
-double get_gpu_min_problem_size();
 
 // reads the memory pool amortization (>= 1.0).
 // If amortization = 1.2, then the memory allocator
