@@ -105,11 +105,11 @@ Strategy::Strategy(int mm,
 
 std::tuple<long long, long long, long long>
 Strategy::initial_memory(long long m, long long n, long long k, int P) {
-    return {
+  return std::make_tuple(
             math_utils::divide_and_round_up(m * k, P),
             math_utils::divide_and_round_up(k * n, P),
             math_utils::divide_and_round_up(m * n, P)
-    };
+    );
 }
 
 bool Strategy::add_step(long long& prev_m, long long& prev_n, long long& prev_k, 
@@ -241,7 +241,11 @@ std::tuple<long long, long long, long long>
 maximum_memory(long long m, long long n, long long k, 
                int divm, int divn, int divk, int P) {
     using dim_pair = std::tuple<long long, int, char>;
-    std::vector<dim_pair> dims = {{m, divm, 'B'}, {n, divn, 'A'}, {k, divk, 'C'}};
+    std::vector<dim_pair> dims = {
+      std::make_tuple(m, divm, 'B'),
+      std::make_tuple(n, divn, 'A'),
+      std::make_tuple(k, divk, 'C')
+    };
     std::sort(dims.begin(), dims.end(),
               [](const dim_pair& a, const dim_pair& b) -> bool {
                   return std::get<0>(a) > std::get<0>(b) ||
@@ -275,7 +279,7 @@ maximum_memory(long long m, long long n, long long k,
             std::get<0>(dim) /= div;
         }
     }
-    return {memory_A, memory_B, memory_C};
+    return std::make_tuple(memory_A, memory_B, memory_C);
 }
 
 long long memory_with_buffer_optimization(std::vector<long long>& memory_A,
