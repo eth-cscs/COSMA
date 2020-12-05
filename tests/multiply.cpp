@@ -129,9 +129,6 @@ TEST_P(MultiplyTestWithParams, multiply) {
 
         EXPECT_TRUE(no_overlap);
 
-        // wait for no-overlap to finish
-        MPI_Barrier(comm);
-
         // then run with the overlap of communication and computation
         strategy.enable_overlapping_comm_and_comp();
         bool with_overlap = test_cosma<double>(strategy, ctx, comm, epsilon, multiply_state::get_test_counter());
