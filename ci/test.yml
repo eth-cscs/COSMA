@@ -46,7 +46,7 @@ scalar_matmul:
   extends: .daint
   stage: test
   resource_group: daint-job
-  script: test.mapper
+  script: test.scalar_matmul
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 8
@@ -55,7 +55,7 @@ multiply_using_layout:
   extends: .daint
   stage: test
   resource_group: daint-job
-  script: test.mapper
+  script: test.multiply_using_layout
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 4
