@@ -116,6 +116,11 @@ git clone --recursive https://github.com/eth-cscs/COSMA cosma && cd cosma
 # build and install COSMA
 ##############################
 mkdir build && cd build
+
+# set up the compiler, e.g. with:
+export CC=`which cc`
+export CXX=`which CC`
+
 # choose BLAS and SCALAPACK versions you want to use
 # COSMA_BLAS can be: MKL, OpenBLAS, CRAY_LIBSCI, CUDA, ROCM, CUSTOM
 # COSMA_SCALAPACK can be MKL, CRAY_LIBSCI, CUSTOM
