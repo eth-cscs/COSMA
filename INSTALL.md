@@ -10,6 +10,10 @@ cd COSMA
 mkdir build
 cd build
 
+# set up the compiler, e.g. with:
+export CC=`which cc`
+export CXX=`which CC`
+
 # Choose which BLAS and SCALAPACK backends to use (e.g. MKL)
 cmake -DCOSMA_BLAS=MKL -DCOSMA_SCALAPACK=MKL ..
 
