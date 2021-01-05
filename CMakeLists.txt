@@ -51,7 +51,7 @@ if (NOT ${COSMA_BLAS} STREQUAL "CUDA" AND NOT ${COSMA_BLAS} STREQUAL "ROCM" AND 
   endif()
 endif()
 
-project(cosma VERSION 2.3.0 LANGUAGES CXX)
+project(cosma VERSION 2.3.0 LANGUAGES CXX C)
 
 # preserve rpaths when installing and make the install folder relocatable
 # use `CMAKE_SKIP_INSTALL_RPATH` to skip this
@@ -146,6 +146,9 @@ elseif (${COSMA_SCALAPACK} STREQUAL "CUSTOM")
 else  ()
     message(STATUS "Building with no ScaLAPACK interface support.")
 endif ()
+if (ScaLAPACK_TARGET)
+    enable_language(Fortran)
+endif()
 
 # COSMA
 #
