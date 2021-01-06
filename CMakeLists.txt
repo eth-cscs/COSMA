@@ -51,7 +51,7 @@ if (NOT ${COSMA_BLAS} STREQUAL "CUDA" AND NOT ${COSMA_BLAS} STREQUAL "ROCM" AND 
   endif()
 endif()
 
-project(cosma VERSION 2.3.0 LANGUAGES CXX C)
+project(cosma VERSION 2.3.0 LANGUAGES CXX)
 
 # preserve rpaths when installing and make the install folder relocatable
 # use `CMAKE_SKIP_INSTALL_RPATH` to skip this
@@ -73,7 +73,7 @@ endif()
 
 # Dependencies
 #
-find_package(MPI REQUIRED)
+find_package(MPI COMPONENTS CXX REQUIRED)
 adjust_mpiexec_flags()
 
 # Bundled dependencies
@@ -115,7 +115,7 @@ endif()
 # For this reason, we use MATCHES to also match entries like "MKL,CUDA" for BLAS
 if (${COSMA_BLAS} MATCHES "MKL")
     find_package(MKL REQUIRED COMPONENTS BLAS_32BIT_OMP)
-    set(BLAS_TARGET "mkl::blas_32bit_omp")
+    set(BLAS_TARGET "mkl::mkl_intel_32bit_omp_dyn")
     set(BLAS_DEF "COSMA_WITH_MKL_BLAS")
 elseif (${COSMA_BLAS} MATCHES "CRAY_LIBSCI")
     find_package(CRAY_LIBSCI REQUIRED)
@@ -136,7 +136,7 @@ endif()
 set(ScaLAPACK_TARGET "")
 if (${COSMA_SCALAPACK} STREQUAL "MKL")
     find_package(MKL REQUIRED COMPONENTS SCALAPACK_32BIT_OMP)
-    set(ScaLAPACK_TARGET "mkl::scalapack_32bit_omp")
+    set(ScaLAPACK_TARGET "mkl::scalapack_${MPI_TYPE}_intel_32bit_omp_dyn")
 elseif (${COSMA_SCALAPACK} STREQUAL "CRAY_LIBSCI")
     find_package(CRAY_LIBSCI REQUIRED)
     set(ScaLAPACK_TARGET "${CRAY_LIBSCI_LIBRARIES}")
@@ -146,9 +146,6 @@ elseif (${COSMA_SCALAPACK} STREQUAL "CUSTOM")
 else  ()
     message(STATUS "Building with no ScaLAPACK interface support.")
 endif ()
-if (ScaLAPACK_TARGET)
-    enable_language(Fortran)
-endif()
 
 # COSMA
 #
