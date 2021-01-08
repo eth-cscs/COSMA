@@ -73,7 +73,7 @@ endif()
 
 # Dependencies
 #
-find_package(MPI COMPONENTS CXX REQUIRED)
+find_package(MPI REQUIRED)
 adjust_mpiexec_flags()
 
 # Bundled dependencies
@@ -114,7 +114,7 @@ endif()
 # BLAS LIBRARIES below can be used together with the GPU backend
 # For this reason, we use MATCHES to also match entries like "MKL,CUDA" for BLAS
 if (${COSMA_BLAS} MATCHES "MKL")
-    find_package(MKL REQUIRED COMPONENTS BLAS_32BIT_OMP)
+    find_package(MKL REQUIRED)
     set(BLAS_TARGET "mkl::mkl_intel_32bit_omp_dyn")
     set(BLAS_DEF "COSMA_WITH_MKL_BLAS")
 elseif (${COSMA_BLAS} MATCHES "CRAY_LIBSCI")
@@ -135,7 +135,7 @@ endif()
 #
 set(ScaLAPACK_TARGET "")
 if (${COSMA_SCALAPACK} STREQUAL "MKL")
-    find_package(MKL REQUIRED COMPONENTS SCALAPACK_32BIT_OMP)
+    find_package(MKL REQUIRED)
     set(ScaLAPACK_TARGET "mkl::scalapack_${MPI_TYPE}_intel_32bit_omp_dyn")
 elseif (${COSMA_SCALAPACK} STREQUAL "CRAY_LIBSCI")
     find_package(CRAY_LIBSCI REQUIRED)

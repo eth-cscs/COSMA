@@ -4,7 +4,7 @@
 # Copyright (c) 2018-2019, ETH Zurich
 # BSD 3-Clause License. All rights reserved.
 #
-# Author: Teodor Nikolov (teodor.nikolov22@gmail.com)
+# Author: Teodor Nikolov (tnikolov@cscs.ch)
 #
 #[=======================================================================[.rst:
 FindMKL
@@ -74,13 +74,13 @@ BLACS targets:
 
   mkl::blacs_[mpich|ompi]_[gf|intel]_[32bit|64bit]_[seq|omp|tbb]_[st|dyn] e.g.
 
-  mkl::blacs_intel_mpich_32bit_seq_st
+  mkl::blacs_mpich_intel_32bit_seq_st
 
 ScaLAPACK targets:
 
   mkl::scalapack_[mpich|ompi]_[gf|intel]_[32bit|64bit]_[seq|omp|tbb]_[st|dyn] e.g.
 
-  mkl::scalapack_intel_mpich_64bit_omp_dyn
+  mkl::scalapack_mpich_intel_64bit_omp_dyn
 
 Result variables
 ^^^^^^^^^^^^^^^^
@@ -306,4 +306,3 @@ foreach(_libtype "ST" "DYN")
         endforeach()
     endforeach()
 endforeach()
-
