@@ -19,7 +19,7 @@ if(NOT TARGET cosma::cosma)
     set(COSMA_SCALAPACK "@COSMA_SCALAPACK@")
 
     if (${COSMA_BLAS} STREQUAL "MKL")
-        find_package(MKL COMPONENTS BLAS_32BIT_OMP)
+        find_package(MKL)
     elseif (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
         set(TILEMM_GPU_BACKEND ${COSMA_BLAS} CACHE STRING FORCE "")
         find_dependency(Tiled-MM) # bundled
@@ -35,7 +35,7 @@ if(NOT TARGET cosma::cosma)
     endif ()
 
     if (${COSMA_SCALAPACK} STREQUAL "MKL")
-        find_package(MKL COMPONENTS SCALAPACK_32BIT_OMP)
+        find_package(MKL)
     elseif (${COSMA_SCALAPACK} STREQUAL "CRAY_LIBSCI")
         find_package(CRAY_LIBSCI REQUIRED)
     elseif (${COSMA_SCALAPACK} STREQUAL "CUSTOM")
