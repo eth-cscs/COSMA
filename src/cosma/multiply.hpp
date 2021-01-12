@@ -8,7 +8,7 @@
 
 #include <mpi.h>
 
-#include <grid2grid/transform.hpp>
+#include <costa/grid2grid/transform.hpp>
 
 namespace cosma {
 
@@ -20,7 +20,7 @@ namespace cosma {
 
 /*
  * Takes matrices given in an arbitrary grid-like data layouts
- * grid2grid represents the abstract representation of the target layout
+ * COSTA represents the abstract representation of the target layout
  * where target layout is the initial data layout for matrices A and B
  * and the final data layout for matrix C.
  * this function will perform the transformations between the target
@@ -29,9 +29,9 @@ namespace cosma {
  * but is very general as it can work with any grid-like data layout.
  */
 template <typename Scalar>
-void multiply_using_layout(grid2grid::grid_layout<Scalar> &A_layout,
-                           grid2grid::grid_layout<Scalar> &B_layout,
-                           grid2grid::grid_layout<Scalar> &C_layout,
+void multiply_using_layout(costa::grid_layout<Scalar> &A_layout,
+                           costa::grid_layout<Scalar> &B_layout,
+                           costa::grid_layout<Scalar> &C_layout,
                            Scalar alpha,
                            Scalar beta,
                            MPI_Comm comm);

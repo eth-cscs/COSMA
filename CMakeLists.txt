@@ -38,7 +38,7 @@ if(NOT COSMA_BLAS IN_LIST BACKEND_LIST)
 endif()
 
 # check if scalapack backend is valid
-message(STATUS "Selected ScaLAPACK backend for COSMA: ${COSMA_SCALAPACK}")
+message(STATUS "Selected SCALAPACK backend for COSMA: ${COSMA_SCALAPACK}")
 unset(BACKEND_LIST)
 get_property(BACKEND_LIST CACHE COSMA_SCALAPACK PROPERTY STRINGS)
 if(COSMA_SCALAPACK AND NOT COSMA_SCALAPACK IN_LIST BACKEND_LIST)
@@ -47,7 +47,7 @@ endif()
 
 if (NOT ${COSMA_BLAS} STREQUAL "CUDA" AND NOT ${COSMA_BLAS} STREQUAL "ROCM" AND NOT ${COSMA_BLAS} STREQUAL "OPENBLAS")
   if (COSMA_SCALAPACK AND NOT ${COSMA_BLAS} STREQUAL ${COSMA_SCALAPACK})
-      message(FATAL_ERROR "ScaLAPACK backend MUST match BLAS backend if no GPU backend is used!")
+      message(FATAL_ERROR "SCALAPACK backend MUST match BLAS backend if no GPU backend is used!")
   endif()
 endif()
 
@@ -91,10 +91,6 @@ option(CXXOPTS_BUILD_TESTS OFF)
 option(CXXOPTS_ENABLE_INSTALL OFF)
 add_subdirectory(libs/cxxopts)
 
-option(GRID2GRID_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
-option(GRID2GRID_WITH_PROFILING "" ${COSMA_WITH_PROFILING})
-add_subdirectory(libs/grid2grid)
-
 # BLAS providers
 #
 set(BLAS_TARGET "")
@@ -131,21 +127,26 @@ elseif (${COSMA_BLAS} MATCHES "OPENBLAS")
     set(BLAS_DEF "COSMA_WITH_BLAS")
 endif()
 
-# (optional) ScaLAPACK providers
+# (optional) SCALAPACK providers
 #
-set(ScaLAPACK_TARGET "")
+set(SCALAPACK_TARGET "")
 if (${COSMA_SCALAPACK} STREQUAL "MKL")
     find_package(MKL REQUIRED)
-    set(ScaLAPACK_TARGET "mkl::scalapack_${MPI_TYPE}_intel_32bit_omp_dyn")
+    set(SCALAPACK_TARGET "mkl::scalapack_${MPI_TYPE}_intel_32bit_omp_dyn")
 elseif (${COSMA_SCALAPACK} STREQUAL "CRAY_LIBSCI")
     find_package(CRAY_LIBSCI REQUIRED)
-    set(ScaLAPACK_TARGET "${CRAY_LIBSCI_LIBRARIES}")
+    set(SCALAPACK_TARGET "${CRAY_LIBSCI_LIBRARIES}")
 elseif (${COSMA_SCALAPACK} STREQUAL "CUSTOM")
     find_package(SCALAPACK REQUIRED)
-    set(ScaLAPACK_TARGET "${SCALAPACK_LIBRARIES}")
+    set(SCALAPACK_TARGET "${SCALAPACK_LIBRARIES}")
 else  ()
-    message(STATUS "Building with no ScaLAPACK interface support.")
+    message(STATUS "Building with no SCALAPACK interface support.")
 endif ()
+
+option(COSTA_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
+option(COSTA_WITH_PROFILING "" ${COSMA_WITH_PROFILING})
+set(COSTA_SCALAPACK ${COSMA_SCALAPACK})
+add_subdirectory(libs/costa)
 
 # COSMA
 #

@@ -1,0 +1,10 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=@CMAKE_INSTALL_PREFIX@
+libdir=@CMAKE_INSTALL_FULL_LIBDIR@
+includedir=@CMAKE_INSTALL_FULL_INCLUDEDIR@
+
+Name: costa
+Description: Distributed communication-optimal shuffle and transpose algorithm 
+Version: @costa_VERSION@
+Libs: -L${libdir} -lcosta
+Cflags: -I${includedir}

@@ -7,7 +7,7 @@
 #include <cosma/mapper.hpp>
 #include <cosma/strategy.hpp>
 
-#include <grid2grid/transform.hpp>
+#include <costa/grid2grid/transform.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -168,7 +168,7 @@ class CosmaMatrix {
 
     void set_current_matrix(scalar_t *mat);
 
-    grid2grid::grid_layout<scalar_t> get_grid_layout();
+    costa::grid_layout<scalar_t> get_grid_layout();
 
     void allocate_communication_buffers();
     void free_communication_buffers();

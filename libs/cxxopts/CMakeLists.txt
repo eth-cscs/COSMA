@@ -53,8 +53,10 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "[Cc]lang" OR CMAKE_CXX_COMPILER_ID MATCHES
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wextra -Wshadow")
 endif()
 
-add_library(cxxopts INTERFACE)
-add_library(cxxopts::cxxopts ALIAS cxxopts)
+if (NOT TARGET cxxopts)
+    add_library(cxxopts INTERFACE)
+    add_library(cxxopts::cxxopts ALIAS cxxopts)
+endif()
 
 # optionally, enable unicode support using the ICU library
 set(CXXOPTS_USE_UNICODE_HELP FALSE CACHE BOOL "Use ICU Unicode library")

@@ -366,7 +366,7 @@ int Mapper::owner(Interval2D& block) {
     return rank;
 }
 
-grid2grid::assigned_grid2D Mapper::get_layout_grid() {
+costa::assigned_grid2D Mapper::get_layout_grid() {
     // **************************
     // create grid2D
     // **************************
@@ -383,7 +383,7 @@ grid2grid::assigned_grid2D Mapper::get_layout_grid() {
         cols_split.push_back(tick + 1);
     }
 
-    grid2grid::grid2D grid(std::move(rows_split), std::move(cols_split));
+    costa::grid2D grid(std::move(rows_split), std::move(cols_split));
 
     int n_blocks_row = grid.n_rows;
     int n_blocks_col = grid.n_cols;
@@ -407,7 +407,7 @@ grid2grid::assigned_grid2D Mapper::get_layout_grid() {
     }
 
     // create an assigned grid2D
-    grid2grid::assigned_grid2D assigned_grid(
+    costa::assigned_grid2D assigned_grid(
         std::move(grid), std::move(owners), P_);
 
     return assigned_grid;

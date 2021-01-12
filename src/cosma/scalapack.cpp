@@ -1,15 +1,15 @@
 #include <cosma/scalapack.hpp>
 
-grid2grid::scalapack::ordering cosma::scalapack::rank_ordering(int ctxt, int P) {
+costa::scalapack::ordering cosma::scalapack::rank_ordering(int ctxt, int P) {
     // check whether rank grid is row-major or col-major
-    auto ordering = grid2grid::scalapack::ordering::column_major;
+    auto ordering = costa::scalapack::ordering::column_major;
     if (P > 1) {
         int prow, pcol;
         // check the coordinates of rank 1 to see
         // if the rank grid is row-major or col-major
         blacs::Cblacs_pcoord(ctxt, 1, &prow, &pcol);
         if (prow == 0 && pcol == 1) {
-            ordering = grid2grid::scalapack::ordering::row_major;
+            ordering = costa::scalapack::ordering::row_major;
         }
     }
     return ordering;
