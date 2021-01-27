@@ -114,14 +114,9 @@ void multiply_using_layout(cosma_context<T> *ctx,
     auto cosma_grid_c = mapper_c.get_layout_grid();
 
     // total communication volume for transformation of layouts
-    auto comm_vol = costa::communication_volume(A.grid, cosma_grid_a);
-    comm_vol += costa::communication_volume(B.grid, cosma_grid_b);
-
-    if (std::abs(beta) > 0) {
-        comm_vol += costa::communication_volume(C.grid, cosma_grid_c);
-    }
-
-    comm_vol += costa::communication_volume(cosma_grid_c, C.grid);
+    auto comm_vol = costa::communication_volume(A.grid, cosma_grid_a, 'N');
+    comm_vol += costa::communication_volume(B.grid, cosma_grid_b, 'N');
+    comm_vol += costa::communication_volume(cosma_grid_c, C.grid, 'N');
 
     // compute the optimal rank reordering that minimizes the communication
     // volume
@@ -162,22 +157,13 @@ void multiply_using_layout(cosma_context<T> *ctx,
     costa::transformer<T> transf(comm);
     transf.schedule(A, cosma_layout_a);
     transf.schedule(B, cosma_layout_b);
-    // costa::transform<T>(B, cosma_layout_b, comm);
-    // transform all scheduled transformations together
-
-    // transform C (if needed) from scalapack to cosma only if beta > 0
-    if (std::abs(beta) > 0) {
-        // costa::transform<T>(C, cosma_layout_c, comm);
-        transf.schedule(C, cosma_layout_c);
-    }
-
     // transform all scheduled transformations together
     transf.transform();
 
     // perform cosma multiplication
     // auto ctx = cosma::make_context<T>();
     multiply<T>(
-        ctx, A_cosma, B_cosma, C_cosma, strategy, reordered_comm, alpha, beta);
+        ctx, A_cosma, B_cosma, C_cosma, strategy, reordered_comm, T{1}, T{0});
 
     // construct cosma layout again, to avoid outdated
     // pointers when the memory pool has been used
@@ -185,7 +171,7 @@ void multiply_using_layout(cosma_context<T> *ctx,
     cosma_layout_c = C_cosma.get_grid_layout();
     cosma_layout_c.reorder_ranks(rank_permutation);
     // transform the result back
-    transf.schedule(cosma_layout_c, C);
+    transf.schedule(cosma_layout_c, C, 'N', alpha, beta);
     transf.transform();
 
     // free up the reordered communicator

@@ -83,8 +83,6 @@ if (COSMA_WITH_PROFILING)
     add_subdirectory(libs/semiprof)
 endif ()
 
-option(OPTIONS_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
-
 # Do not install cxxopts when including it.
 option(CXXOPTS_BUILD_EXAMPLES OFF)
 option(CXXOPTS_BUILD_TESTS OFF)
@@ -145,7 +143,7 @@ endif ()
 
 option(COSTA_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
 option(COSTA_WITH_PROFILING "" ${COSMA_WITH_PROFILING})
-set(COSTA_SCALAPACK ${COSMA_SCALAPACK})
+set(COSTA_SCALAPACK ${COSMA_SCALAPACK} CACHE STRING "")
 add_subdirectory(libs/costa)
 
 # COSMA

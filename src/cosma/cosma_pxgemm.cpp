@@ -202,10 +202,6 @@ void pxgemm(const char transa,
     auto cosma_grid_b = mapper_b.get_layout_grid();
     auto cosma_grid_c = mapper_c.get_layout_grid();
 
-    // if (rank == 0) {
-    //     std::cout << "COSMA grid for A before reordering: " << cosma_grid_a << std::endl;
-    // }
-
     PE(transform_init);
     // get abstract layout descriptions for ScaLAPACK layout
     auto scalapack_layout_a = costa::get_scalapack_layout<T>(
@@ -247,14 +243,10 @@ void pxgemm(const char transa,
 
     PE(transform_reordering_matching);
     // total communication volume for transformation of layouts
-    auto comm_vol = costa::communication_volume(scalapack_layout_a.grid, cosma_grid_a);
-    comm_vol += costa::communication_volume(scalapack_layout_b.grid, cosma_grid_b);
-
-    if (std::abs(beta) > 0) {
-        comm_vol += costa::communication_volume(scalapack_layout_c.grid, cosma_grid_c);
-    }
-
-    comm_vol += costa::communication_volume(cosma_grid_c, scalapack_layout_c.grid);
+    // costa::comm_volume comm_vol;
+    auto comm_vol = costa::communication_volume(scalapack_layout_a.grid, cosma_grid_a, trans_a);
+    comm_vol += costa::communication_volume(scalapack_layout_b.grid, cosma_grid_b, trans_b);
+    comm_vol += costa::communication_volume(cosma_grid_c, scalapack_layout_c.grid, 'N');
 
     // compute the optimal rank reordering that minimizes the communication volume
     bool reordered = false;
@@ -312,13 +304,8 @@ void pxgemm(const char transa,
 #endif
     // transform A and B from scalapack to cosma layout
     costa::transformer<T> transf(comm);
-    transf.schedule(scalapack_layout_a, cosma_layout_a, trans_a);
-    transf.schedule(scalapack_layout_b, cosma_layout_b, trans_b);
-
-    // transform C from scalapack to cosma only if beta > 0
-    if (std::abs(beta) > 0) {
-        transf.schedule(scalapack_layout_c, cosma_layout_c, 'N');
-    }
+    transf.schedule(scalapack_layout_a, cosma_layout_a, trans_a, T{1}, T{0});
+    transf.schedule(scalapack_layout_b, cosma_layout_b, trans_b, T{1}, T{0});
 
     transf.transform();
 
@@ -327,7 +314,7 @@ void pxgemm(const char transa,
 #endif
 
     // perform cosma multiplication
-    multiply<T>(A, B, C, strategy, reordered_comm, alpha, beta);
+    multiply<T>(A, B, C, strategy, reordered_comm, T{1}, T{0});
     // construct cosma layout again, to avoid outdated
     // pointers when the memory pool has been used
     // in case it resized during multiply
@@ -339,7 +326,7 @@ void pxgemm(const char transa,
 #endif
     // costa::transform the result from cosma back to scalapack
     // costa::transform<T>(cosma_layout_c, scalapack_layout_c, comm);
-    transf.schedule(cosma_layout_c, scalapack_layout_c, 'N');
+    transf.schedule(cosma_layout_c, scalapack_layout_c, 'N', alpha, beta);
 
     transf.transform();
 
