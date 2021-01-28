@@ -6,7 +6,7 @@ Mapper::Mapper(char label,
                const Strategy& strategy,
                int rank)
     : label_(label)
-    , strategy_(strategy)
+    , strategy_(&strategy)
     , m_(strategy.n_rows(label))
     , n_(strategy.n_cols(label))
     , P_(strategy.P)
@@ -350,7 +350,7 @@ std::vector<std::size_t>& Mapper::local_blocks_offsets() {
 }
 
 std::vector<Interval2D> Mapper::local_blocks() {
-    if (rank_ < strategy_.P)
+    if (rank_ < strategy_->P)
         return rank_to_range_[rank_];
     return {};
 }
@@ -434,7 +434,7 @@ char Mapper::label() const {
 }
 
 const Strategy& Mapper::strategy() const {
-    return strategy_;
+    return *strategy_;
 }
 
 void Mapper::reorder_rank(int new_rank) {

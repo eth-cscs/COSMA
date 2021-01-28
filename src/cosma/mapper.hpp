@@ -83,7 +83,7 @@ class Mapper {
     /// Maximum number of rank in the global communicator
     size_t P_;
     int rank_;
-    const Strategy& strategy_;
+    const Strategy* strategy_;
 
     // rank -> list of submatrices that this rank owns
     // the number of submatrices that this rank owns
