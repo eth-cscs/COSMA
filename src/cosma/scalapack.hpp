@@ -2,7 +2,7 @@
 
 #include <cosma/blacs.hpp>
 
-#include <grid2grid/scalapack_layout.hpp>
+#include <costa/grid2grid/scalapack_layout.hpp>
 
 #include <cassert>
 
@@ -46,7 +46,7 @@ struct rank_src {
     }
 };
 
-grid2grid::scalapack::ordering rank_ordering(int ctxt, int P);
+costa::scalapack::ordering rank_ordering(int ctxt, int P);
 
 // gets the grid context from descriptors of A, B and C and compares
 // if all three matrices belong to the same context

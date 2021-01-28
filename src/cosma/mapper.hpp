@@ -3,7 +3,7 @@
 #include <cosma/interval.hpp>
 #include <cosma/strategy.hpp>
 
-#include <grid2grid/transform.hpp>
+#include <costa/grid2grid/transform.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -57,7 +57,7 @@ class Mapper {
     // returns a rank owning given block
     int owner(Interval2D& block);
 
-    grid2grid::assigned_grid2D get_layout_grid();
+    costa::assigned_grid2D get_layout_grid();
 
     int m() const;
     int n() const;

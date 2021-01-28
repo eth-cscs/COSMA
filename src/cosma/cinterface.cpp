@@ -1,4 +1,4 @@
-#include <grid2grid/grid2D.hpp>
+#include <costa/grid2grid/grid2D.hpp>
 
 #include <cosma/cinterface.hpp>
 #include <cosma/multiply.hpp>
@@ -8,11 +8,11 @@
 namespace cosma {
 
 template <class T>
-grid2grid::grid_layout<T> grid_from_clayout(int n_ranks,
+costa::grid_layout<T> grid_from_clayout(int n_ranks,
                                             const ::layout *layout) {
 
     // Create the local blocks
-    std::vector<grid2grid::block<T>> loc_blks;
+    std::vector<costa::block<T>> loc_blks;
 
     // Create blocks
     for (int i = 0; i < layout->nlocalblocks; ++i) {
@@ -22,10 +22,10 @@ grid2grid::grid_layout<T> grid_from_clayout(int n_ranks,
         auto ptr = reinterpret_cast<T *>(block.data);
         auto stride = block.ld;
 
-        grid2grid::block_coordinates coord{row, col};
-        grid2grid::interval rows{layout->rowsplit[row],
-                                 layout->rowsplit[row + 1]};
-        grid2grid::interval cols{layout->colsplit[col],
+        costa::block_coordinates coord{row, col};
+        costa::interval rows{layout->rowsplit[row],
+                             layout->rowsplit[row + 1]};
+        costa::interval cols{layout->colsplit[col],
                                  layout->colsplit[col + 1]};
         loc_blks.emplace_back(rows, cols, coord, ptr, stride);
     }

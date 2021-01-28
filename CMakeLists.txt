@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 #
 set(MASTER_PROJECT OFF)
 if(NOT DEFINED PROJECT_NAME)
-  set(MASTER_PROJECT ON)
+    set(MASTER_PROJECT ON)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -34,21 +34,21 @@ set_property(CACHE COSMA_SCALAPACK PROPERTY STRINGS
 message(STATUS "Selected BLAS backend for COSMA: ${COSMA_BLAS}")
 get_property(BACKEND_LIST CACHE COSMA_BLAS PROPERTY STRINGS)
 if(NOT COSMA_BLAS IN_LIST BACKEND_LIST)
-  message(FATAL_ERROR "Invalid value for COSMA_BLAS!")
+    message(FATAL_ERROR "Invalid value for COSMA_BLAS!")
 endif()
 
 # check if scalapack backend is valid
-message(STATUS "Selected ScaLAPACK backend for COSMA: ${COSMA_SCALAPACK}")
+message(STATUS "Selected SCALAPACK backend for COSMA: ${COSMA_SCALAPACK}")
 unset(BACKEND_LIST)
 get_property(BACKEND_LIST CACHE COSMA_SCALAPACK PROPERTY STRINGS)
 if(COSMA_SCALAPACK AND NOT COSMA_SCALAPACK IN_LIST BACKEND_LIST)
-  message(FATAL_ERROR "Invalid value for COSMA_SCALAPACK!")
+    message(FATAL_ERROR "Invalid value for COSMA_SCALAPACK!")
 endif()
 
 if (NOT ${COSMA_BLAS} STREQUAL "CUDA" AND NOT ${COSMA_BLAS} STREQUAL "ROCM" AND NOT ${COSMA_BLAS} STREQUAL "OPENBLAS")
-  if (COSMA_SCALAPACK AND NOT ${COSMA_BLAS} STREQUAL ${COSMA_SCALAPACK})
-      message(FATAL_ERROR "ScaLAPACK backend MUST match BLAS backend if no GPU backend is used!")
-  endif()
+    if (COSMA_SCALAPACK AND NOT ${COSMA_BLAS} STREQUAL ${COSMA_SCALAPACK})
+        message(FATAL_ERROR "SCALAPACK backend MUST match BLAS backend if no GPU backend is used!")
+    endif()
 endif()
 
 project(cosma VERSION 2.3.0 LANGUAGES CXX)
@@ -57,18 +57,18 @@ project(cosma VERSION 2.3.0 LANGUAGES CXX)
 # use `CMAKE_SKIP_INSTALL_RPATH` to skip this
 # https://spack.readthedocs.io/en/latest/workflows.html#write-the-cmake-build
 list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES 
-          "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" isSystemDir)
+    "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" isSystemDir)
 # skip RPATH if SIRIUS is installed to system directories
 if(isSystemDir STREQUAL "-1")
-  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-  if(APPLE)
-    set(basePoint @loader_path)
-  else()
-    set(basePoint $ORIGIN)
-  endif()
-  file(RELATIVE_PATH relDir ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
-                            ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
-  set(CMAKE_INSTALL_RPATH ${basePoint} ${basePoint}/${relDir})
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+    if(APPLE)
+        set(basePoint @loader_path)
+    else()
+        set(basePoint $ORIGIN)
+    endif()
+    file(RELATIVE_PATH relDir ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
+        ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+    set(CMAKE_INSTALL_RPATH ${basePoint} ${basePoint}/${relDir})
 endif()
 
 # Dependencies
@@ -83,17 +83,13 @@ if (COSMA_WITH_PROFILING)
     add_subdirectory(libs/semiprof)
 endif ()
 
-option(OPTIONS_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
-
 # Do not install cxxopts when including it.
-option(CXXOPTS_BUILD_EXAMPLES OFF)
-option(CXXOPTS_BUILD_TESTS OFF)
-option(CXXOPTS_ENABLE_INSTALL OFF)
-add_subdirectory(libs/cxxopts)
-
-option(GRID2GRID_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
-option(GRID2GRID_WITH_PROFILING "" ${COSMA_WITH_PROFILING})
-add_subdirectory(libs/grid2grid)
+if (COSMA_WITH_TESTS OR COSMA_WITH_APPS)
+    option(CXXOPTS_BUILD_EXAMPLES OFF)
+    option(CXXOPTS_BUILD_TESTS OFF)
+    option(CXXOPTS_ENABLE_INSTALL OFF)
+    add_subdirectory(libs/cxxopts)
+endif()
 
 # BLAS providers
 #
@@ -131,21 +127,26 @@ elseif (${COSMA_BLAS} MATCHES "OPENBLAS")
     set(BLAS_DEF "COSMA_WITH_BLAS")
 endif()
 
-# (optional) ScaLAPACK providers
+# (optional) SCALAPACK providers
 #
-set(ScaLAPACK_TARGET "")
+set(SCALAPACK_TARGET "")
 if (${COSMA_SCALAPACK} STREQUAL "MKL")
     find_package(MKL REQUIRED)
-    set(ScaLAPACK_TARGET "mkl::scalapack_${MPI_TYPE}_intel_32bit_omp_dyn")
+    set(SCALAPACK_TARGET "mkl::scalapack_${MPI_TYPE}_intel_32bit_omp_dyn")
 elseif (${COSMA_SCALAPACK} STREQUAL "CRAY_LIBSCI")
     find_package(CRAY_LIBSCI REQUIRED)
-    set(ScaLAPACK_TARGET "${CRAY_LIBSCI_LIBRARIES}")
+    set(SCALAPACK_TARGET "${CRAY_LIBSCI_LIBRARIES}")
 elseif (${COSMA_SCALAPACK} STREQUAL "CUSTOM")
     find_package(SCALAPACK REQUIRED)
-    set(ScaLAPACK_TARGET "${SCALAPACK_LIBRARIES}")
+    set(SCALAPACK_TARGET "${SCALAPACK_LIBRARIES}")
 else  ()
-    message(STATUS "Building with no ScaLAPACK interface support.")
+    message(STATUS "Building with no SCALAPACK interface support.")
 endif ()
+
+option(COSTA_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
+option(COSTA_WITH_PROFILING "" ${COSMA_WITH_PROFILING})
+set(COSTA_SCALAPACK ${COSMA_SCALAPACK} CACHE STRING "")
+add_subdirectory(libs/COSTA)
 
 # COSMA
 #
@@ -156,9 +157,9 @@ if(COSMA_WITH_INSTALL)
     include(GNUInstallDirs)
 
     install(DIRECTORY "${cosma_SOURCE_DIR}/src/cosma"
-            DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-            FILES_MATCHING
-                PATTERN "*.hpp")
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+        FILES_MATCHING
+        PATTERN "*.hpp")
 
     write_basic_package_version_file(
         "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
@@ -166,20 +167,20 @@ if(COSMA_WITH_INSTALL)
         COMPATIBILITY SameMajorVersion)
 
     configure_file("${cosma_SOURCE_DIR}/cmake/cosma.pc.in"
-                   "${cosma_BINARY_DIR}/cosma.pc"
-                   @ONLY)
+        "${cosma_BINARY_DIR}/cosma.pc"
+        @ONLY)
 
     configure_file("${cosma_SOURCE_DIR}/cmake/cosmaConfig.cmake.in"
-                   "${cosma_BINARY_DIR}/cosmaConfig.cmake"
-                   @ONLY)
+        "${cosma_BINARY_DIR}/cosmaConfig.cmake"
+        @ONLY)
 
     install(FILES "${cosma_BINARY_DIR}/cosmaConfig.cmake"
-                  "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
-                  "${cosma_SOURCE_DIR}/cmake/FindMKL.cmake"
-            DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
+        "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
+        "${cosma_SOURCE_DIR}/cmake/FindMKL.cmake"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
 
     install(FILES "${cosma_BINARY_DIR}/cosma.pc"
-            DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 endif()
 
 if(COSMA_WITH_TESTS)

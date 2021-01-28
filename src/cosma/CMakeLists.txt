@@ -28,7 +28,7 @@ if(NOT TARGET cosma)
     target_include_directories(cosma PUBLIC $<BUILD_INTERFACE:${cosma_SOURCE_DIR}/src>)
     target_compile_features(cosma PUBLIC cxx_std_14)
     target_link_libraries(cosma PUBLIC MPI::MPI_CXX
-                                       grid2grid
+                                       costa
                                 PRIVATE ${BLAS_TARGET}
     )
     target_compile_definitions(cosma PRIVATE ${BLAS_DEF}
@@ -42,17 +42,18 @@ if(NOT TARGET cosma)
     list(APPEND INSTALLED_TARGETS_LIST "cosma")
 endif()
 
-# if ScaLAPACK is found and cosma_pxgemm library is not already created
+# if SCALAPACK is found and cosma_pxgemm library is not already created
 # then create it here and link it to the profiler if needed
-if(ScaLAPACK_TARGET AND NOT TARGET cosma_pxgemm)
+if(SCALAPACK_TARGET AND NOT TARGET cosma_pxgemm)
     add_library(cosma_pxgemm scalapack.cpp
                              pxgemm_params.hpp
                              cosma_pxgemm.cpp
                              pxgemm.cpp
     )
     target_link_libraries(cosma_pxgemm PUBLIC cosma 
+                                              costa_scalapack
                                               ${BLAS_TARET}
-                                              ${ScaLAPACK_TARGET}
+                                              ${SCALAPACK_TARGET}
     )
     if(COSMA_WITH_PROFILING)
         target_link_libraries(cosma_pxgemm PRIVATE semiprof)
@@ -63,17 +64,18 @@ endif()
 
 # this is a library exposing the prefixed scalapack API (with cosma/COSMA prefix)
 # it is aimed for users who don't want to overwrite the available scalapack API with cosma.
-# if ScaLAPACK is found and cosma_prefixed_pxgemm library is not already created
+# if SCALAPACK is found and cosma_prefixed_pxgemm library is not already created
 # then create it here and link it to the profiler if needed
-if(ScaLAPACK_TARGET AND NOT TARGET cosma_prefixed_pxgemm)
+if(SCALAPACK_TARGET AND NOT TARGET cosma_prefixed_pxgemm)
     add_library(cosma_prefixed_pxgemm scalapack.cpp
                              pxgemm_params.hpp
                              prefixed_pxgemm.cpp
                              cosma_pxgemm.cpp
     )
     target_link_libraries(cosma_prefixed_pxgemm PUBLIC cosma 
+                                              costa_prefixed_scalapack
                                               ${BLAS_TARET}
-                                              ${ScaLAPACK_TARGET}
+                                              ${SCALAPACK_TARGET}
     )
     if(COSMA_WITH_PROFILING)
         target_link_libraries(cosma_prefixed_pxgemm PRIVATE semiprof)
@@ -86,14 +88,15 @@ endif()
 # it provides templated cosma::pxgemm call without
 # pxgemm.h, so that pxgemm calls of scalapack are not overwritten
 # and can still be compared to scalapack for correctness check
-if(ScaLAPACK_TARGET AND NOT TARGET cosma_pxgemm_cpp)
+if(SCALAPACK_TARGET AND NOT TARGET cosma_pxgemm_cpp)
     add_library(cosma_pxgemm_cpp scalapack.cpp
                                  pxgemm_params.hpp
                                  cosma_pxgemm.cpp
     )
     target_link_libraries(cosma_pxgemm_cpp PUBLIC cosma 
+                                              costa
                                               ${BLAS_TARET}
-                                              ${ScaLAPACK_TARGET}
+                                              ${SCALAPACK_TARGET}
     )
     if(COSMA_WITH_PROFILING)
         target_link_libraries(cosma_pxgemm_cpp PRIVATE semiprof)

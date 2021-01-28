@@ -7,8 +7,8 @@
 #include <cosma/profiler.hpp>
 #include <cosma/pxgemm_params.hpp>
 
-#include <grid2grid/ranks_reordering.hpp>
-#include <grid2grid/transformer.hpp>
+#include <costa/grid2grid/ranks_reordering.hpp>
+#include <costa/grid2grid/transformer.hpp>
 
 namespace cosma {
 template <typename T>
@@ -105,7 +105,7 @@ void pxgemm(const char transa,
     // check whether rank grid is row-major or col-major
     auto ordering = scalapack::rank_ordering(ctxt, P);
     char grid_order = 
-        ordering == grid2grid::scalapack::ordering::column_major ? 'C' : 'R';
+        ordering == costa::scalapack::ordering::column_major ? 'C' : 'R';
 
 #ifdef DEBUG
     if (rank == 0) {
@@ -202,13 +202,9 @@ void pxgemm(const char transa,
     auto cosma_grid_b = mapper_b.get_layout_grid();
     auto cosma_grid_c = mapper_c.get_layout_grid();
 
-    // if (rank == 0) {
-    //     std::cout << "COSMA grid for A before reordering: " << cosma_grid_a << std::endl;
-    // }
-
     PE(transform_init);
     // get abstract layout descriptions for ScaLAPACK layout
-    auto scalapack_layout_a = grid2grid::get_scalapack_grid<T>(
+    auto scalapack_layout_a = costa::get_scalapack_layout<T>(
         lld_a,
         {mat_dim_a.rows, mat_dim_a.cols},
         {ia, ja},
@@ -216,12 +212,11 @@ void pxgemm(const char transa,
         {b_dim_a.rows, b_dim_a.cols},
         {procrows, proccols},
         ordering,
-        trans_a,
         {rank_src_a.row_src, rank_src_a.col_src},
         a,
         rank);
 
-    auto scalapack_layout_b = grid2grid::get_scalapack_grid<T>(
+    auto scalapack_layout_b = costa::get_scalapack_layout<T>(
         lld_b,
         {mat_dim_b.rows, mat_dim_b.cols},
         {ib, jb},
@@ -229,12 +224,11 @@ void pxgemm(const char transa,
         {b_dim_b.rows, b_dim_b.cols},
         {procrows, proccols},
         ordering,
-        trans_b,
         {rank_src_b.row_src, rank_src_b.col_src},
         b,
         rank);
 
-    auto scalapack_layout_c = grid2grid::get_scalapack_grid<T>(
+    auto scalapack_layout_c = costa::get_scalapack_layout<T>(
         lld_c,
         {mat_dim_c.rows, mat_dim_c.cols},
         {ic, jc},
@@ -242,7 +236,6 @@ void pxgemm(const char transa,
         {b_dim_c.rows, b_dim_c.cols},
         {procrows, proccols},
         ordering,
-        'N',
         {rank_src_c.row_src, rank_src_c.col_src},
         c,
         rank);
@@ -250,18 +243,14 @@ void pxgemm(const char transa,
 
     PE(transform_reordering_matching);
     // total communication volume for transformation of layouts
-    auto comm_vol = grid2grid::communication_volume(scalapack_layout_a.grid, cosma_grid_a);
-    comm_vol += grid2grid::communication_volume(scalapack_layout_b.grid, cosma_grid_b);
-
-    if (std::abs(beta) > 0) {
-        comm_vol += grid2grid::communication_volume(scalapack_layout_c.grid, cosma_grid_c);
-    }
-
-    comm_vol += grid2grid::communication_volume(cosma_grid_c, scalapack_layout_c.grid);
+    // costa::comm_volume comm_vol;
+    auto comm_vol = costa::communication_volume(scalapack_layout_a.grid, cosma_grid_a, trans_a);
+    comm_vol += costa::communication_volume(scalapack_layout_b.grid, cosma_grid_b, trans_b);
+    comm_vol += costa::communication_volume(cosma_grid_c, scalapack_layout_c.grid, 'N');
 
     // compute the optimal rank reordering that minimizes the communication volume
     bool reordered = false;
-    std::vector<int> rank_permutation = grid2grid::optimal_reordering(comm_vol, P, reordered);
+    std::vector<int> rank_permutation = costa::optimal_reordering(comm_vol, P, reordered);
     PL();
 
     // create reordered communicator, which has same ranks
@@ -314,14 +303,9 @@ void pxgemm(const char transa,
     std::cout << "Transforming the input matrices A and B from Scalapack -> COSMA" << std::endl;
 #endif
     // transform A and B from scalapack to cosma layout
-    grid2grid::transformer<T> transf(comm);
-    transf.schedule(scalapack_layout_a, cosma_layout_a);
-    transf.schedule(scalapack_layout_b, cosma_layout_b);
-
-    // transform C from scalapack to cosma only if beta > 0
-    if (std::abs(beta) > 0) {
-        transf.schedule(scalapack_layout_c, cosma_layout_c);
-    }
+    costa::transformer<T> transf(comm);
+    transf.schedule(scalapack_layout_a, cosma_layout_a, trans_a, T{1}, T{0});
+    transf.schedule(scalapack_layout_b, cosma_layout_b, trans_b, T{1}, T{0});
 
     transf.transform();
 
@@ -330,7 +314,7 @@ void pxgemm(const char transa,
 #endif
 
     // perform cosma multiplication
-    multiply<T>(A, B, C, strategy, reordered_comm, alpha, beta);
+    multiply<T>(A, B, C, strategy, reordered_comm, T{1}, T{0});
     // construct cosma layout again, to avoid outdated
     // pointers when the memory pool has been used
     // in case it resized during multiply
@@ -340,20 +324,20 @@ void pxgemm(const char transa,
 #ifdef DEBUG
     std::cout << "Transforming the result C back from COSMA to ScaLAPACK" << std::endl;
 #endif
-    // grid2grid::transform the result from cosma back to scalapack
-    // grid2grid::transform<T>(cosma_layout_c, scalapack_layout_c, comm);
-    transf.schedule(cosma_layout_c, scalapack_layout_c);
+    // costa::transform the result from cosma back to scalapack
+    // costa::transform<T>(cosma_layout_c, scalapack_layout_c, comm);
+    transf.schedule(cosma_layout_c, scalapack_layout_c, 'N', alpha, beta);
 
     transf.transform();
 
 #ifdef DEBUG
     if (rank == 0) {
-        auto reordered_vol = grid2grid::communication_volume(scalapack_layout_a.grid, cosma_layout_a.grid);
-        reordered_vol += grid2grid::communication_volume(scalapack_layout_b.grid, cosma_layout_b.grid);
+        auto reordered_vol = costa::communication_volume(scalapack_layout_a.grid, cosma_layout_a.grid);
+        reordered_vol += costa::communication_volume(scalapack_layout_b.grid, cosma_layout_b.grid);
         if (std::abs(beta) > 0) {
-            reordered_vol += grid2grid::communication_volume(scalapack_layout_c.grid, cosma_layout_c.grid);
+            reordered_vol += costa::communication_volume(scalapack_layout_c.grid, cosma_layout_c.grid);
         }
-        reordered_vol += grid2grid::communication_volume(cosma_layout_c.grid, scalapack_layout_c.grid);
+        reordered_vol += costa::communication_volume(cosma_layout_c.grid, scalapack_layout_c.grid);
 
         // std::cout << "Detailed comm volume: " << comm_vol << std::endl;
         // std::cout << "Detailed comm volume reordered: " << reordered_vol << std::endl;
@@ -423,10 +407,10 @@ void scale_matrix(const int* descc, T* c,
     // check whether rank grid is row-major or col-major
     auto ordering = scalapack::rank_ordering(ctxt, P);
     char grid_order = 
-        ordering == grid2grid::scalapack::ordering::column_major ? 'C' : 'R';
+        ordering == costa::scalapack::ordering::column_major ? 'C' : 'R';
 
-    // create grid2grid object describing the given scalapack layout
-    auto layout = grid2grid::get_scalapack_grid<T>(
+    // create costa object describing the given scalapack layout
+    auto layout = costa::get_scalapack_layout<T>(
         lld_c,
         {mat_dim_c.rows, mat_dim_c.cols},
         {ic, jc},
@@ -434,7 +418,6 @@ void scale_matrix(const int* descc, T* c,
         {b_dim_c.rows, b_dim_c.cols},
         {procrows, proccols},
         ordering,
-        'N',
         {rank_src_c.row_src, rank_src_c.col_src},
         c,
         rank);
