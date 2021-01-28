@@ -390,7 +390,7 @@ void CosmaMatrix<T>::set_current_matrix(scalar_t *mat) {
 }
 
 template <typename T>
-grid2grid::grid_layout<T> CosmaMatrix<T>::get_grid_layout() {
+costa::grid_layout<T> CosmaMatrix<T>::get_grid_layout() {
     // **************************
     // get an assigned grid2D
     // **************************
@@ -400,20 +400,20 @@ grid2grid::grid_layout<T> CosmaMatrix<T>::get_grid_layout() {
     // create local memory view
     // **************************
     // get coordinates of current rank in a rank decomposition
-    std::vector<grid2grid::block<T>> loc_blocks;
+    std::vector<costa::block<T>> loc_blocks;
     for (auto matrix_id = 0u; matrix_id < mapper_.local_blocks().size();
          ++matrix_id) {
         Interval2D range = mapper_.local_blocks()[matrix_id];
         int offset = mapper_.local_blocks_offsets()[matrix_id];
 
-        grid2grid::interval row_interval(range.rows.first(),
+        costa::interval row_interval(range.rows.first(),
                                          range.rows.last() + 1);
-        grid2grid::interval col_interval(range.cols.first(),
+        costa::interval col_interval(range.cols.first(),
                                          range.cols.last() + 1);
 
         int stride = row_interval.length();
 
-        grid2grid::block<T> b(assigned_grid,
+        costa::block<T> b(assigned_grid,
                               row_interval,
                               col_interval,
                               matrix_pointer() + offset,
@@ -423,7 +423,7 @@ grid2grid::grid_layout<T> CosmaMatrix<T>::get_grid_layout() {
 
         loc_blocks.push_back(b);
     }
-    grid2grid::local_blocks<T> local_memory(std::move(loc_blocks));
+    costa::local_blocks<T> local_memory(std::move(loc_blocks));
 
     return {std::move(assigned_grid), std::move(local_memory)};
 }

@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
             cxxopts::value<int>()->default_value("1000"))
         ("s,steps", 
             "Division steps that the algorithm should perform.",
-            cxxopts::value<std::vector<std::string>>())
+            cxxopts::value<std::vector<std::string>>()->default_value(""))
         ("r,n_rep",
             "number of repetitions.", 
             cxxopts::value<int>()->default_value("2"))

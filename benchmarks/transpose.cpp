@@ -1,5 +1,5 @@
-#include <grid2grid/memory_utils.hpp>
-#include <grid2grid/tiling_manager.hpp>
+#include <costa/grid2grid/memory_utils.hpp>
+#include <costa/grid2grid/tiling_manager.hpp>
 #include <mkl.h>
 #include <chrono>
 #include <limits>
@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
     auto  dest_stride = n_cols; // 10000;
     bool conjugate = false;
 
-    grid2grid::memory::tiling_manager<double> tiling;
+    costa::memory::tiling_manager<double> tiling;
 
     std::vector<long> g2g_times;
     std::vector<long> mkl_times;
@@ -40,10 +40,10 @@ int main(int argc, char** argv) {
 
         for (int rep = 0; rep < n_rep; ++rep) {
             // ***********************************
-            // transpose with grid2grid
+            // transpose with costa 
             // ***********************************
             auto start = std::chrono::steady_clock::now();
-            grid2grid::memory::copy_and_transpose<double>(src.data(), n_rows[i], n_cols[i], src_stride[i],
+            costa::memory::copy_and_transpose<double>(src.data(), n_rows[i], n_cols[i], src_stride[i],
                                                   dest_g2g.data(), dest_stride[i], false, tiling);
             auto end = std::chrono::steady_clock::now();
             g2g_time = std::min(g2g_time, (long) std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
@@ -79,9 +79,9 @@ int main(int argc, char** argv) {
     }
 
     // ***********************************
-    // output grid2grid timings
+    // output COSTA timings
     // ***********************************
-    std::cout << "grid2grid times: " << std::endl;
+    std::cout << "COSTA times: " << std::endl;
     for (int i = 0; i < g2g_times.size(); ++i) {
         std::cout << g2g_times[i] << ", ";
     }

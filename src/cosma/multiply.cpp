@@ -1,8 +1,8 @@
 #include <cosma/local_multiply.hpp>
 #include <cosma/multiply.hpp>
 #include <cosma/profiler.hpp>
-#include <grid2grid/ranks_reordering.hpp>
-#include <grid2grid/transformer.hpp>
+#include <costa/grid2grid/ranks_reordering.hpp>
+#include <costa/grid2grid/transformer.hpp>
 
 #include <complex>
 
@@ -53,9 +53,9 @@ void parallel(cosma_context<Scalar> *ctx,
               Scalar beta);
 
 template <typename T>
-void multiply_using_layout(grid2grid::grid_layout<T> &A,
-                           grid2grid::grid_layout<T> &B,
-                           grid2grid::grid_layout<T> &C,
+void multiply_using_layout(costa::grid_layout<T> &A,
+                           costa::grid_layout<T> &B,
+                           costa::grid_layout<T> &C,
                            T alpha,
                            T beta,
                            MPI_Comm comm) {
@@ -65,9 +65,9 @@ void multiply_using_layout(grid2grid::grid_layout<T> &A,
 
 template <typename T>
 void multiply_using_layout(cosma_context<T> *ctx,
-                           grid2grid::grid_layout<T> &A,
-                           grid2grid::grid_layout<T> &B,
-                           grid2grid::grid_layout<T> &C,
+                           costa::grid_layout<T> &A,
+                           costa::grid_layout<T> &B,
+                           costa::grid_layout<T> &C,
                            T alpha,
                            T beta,
                            MPI_Comm comm) {
@@ -114,20 +114,15 @@ void multiply_using_layout(cosma_context<T> *ctx,
     auto cosma_grid_c = mapper_c.get_layout_grid();
 
     // total communication volume for transformation of layouts
-    auto comm_vol = grid2grid::communication_volume(A.grid, cosma_grid_a);
-    comm_vol += grid2grid::communication_volume(B.grid, cosma_grid_b);
-
-    if (std::abs(beta) > 0) {
-        comm_vol += grid2grid::communication_volume(C.grid, cosma_grid_c);
-    }
-
-    comm_vol += grid2grid::communication_volume(cosma_grid_c, C.grid);
+    auto comm_vol = costa::communication_volume(A.grid, cosma_grid_a, 'N');
+    comm_vol += costa::communication_volume(B.grid, cosma_grid_b, 'N');
+    comm_vol += costa::communication_volume(cosma_grid_c, C.grid, 'N');
 
     // compute the optimal rank reordering that minimizes the communication
     // volume
     bool reordered = false;
     std::vector<int> rank_permutation =
-        grid2grid::optimal_reordering(comm_vol, P, reordered);
+        costa::optimal_reordering(comm_vol, P, reordered);
     // create reordered communicator, which has same ranks
     // but relabelled as given by the rank_permutation
     // (to avoid the communication during layout transformation)
@@ -159,25 +154,16 @@ void multiply_using_layout(cosma_context<T> *ctx,
     cosma_layout_c.reorder_ranks(rank_permutation);
 
     // schedule A and B transforms together from given layout to cosma layout
-    grid2grid::transformer<T> transf(comm);
+    costa::transformer<T> transf(comm);
     transf.schedule(A, cosma_layout_a);
     transf.schedule(B, cosma_layout_b);
-    // grid2grid::transform<T>(B, cosma_layout_b, comm);
-    // transform all scheduled transformations together
-
-    // transform C (if needed) from scalapack to cosma only if beta > 0
-    if (std::abs(beta) > 0) {
-        // grid2grid::transform<T>(C, cosma_layout_c, comm);
-        transf.schedule(C, cosma_layout_c);
-    }
-
     // transform all scheduled transformations together
     transf.transform();
 
     // perform cosma multiplication
     // auto ctx = cosma::make_context<T>();
     multiply<T>(
-        ctx, A_cosma, B_cosma, C_cosma, strategy, reordered_comm, alpha, beta);
+        ctx, A_cosma, B_cosma, C_cosma, strategy, reordered_comm, T{1}, T{0});
 
     // construct cosma layout again, to avoid outdated
     // pointers when the memory pool has been used
@@ -185,7 +171,7 @@ void multiply_using_layout(cosma_context<T> *ctx,
     cosma_layout_c = C_cosma.get_grid_layout();
     cosma_layout_c.reorder_ranks(rank_permutation);
     // transform the result back
-    transf.schedule(cosma_layout_c, C);
+    transf.schedule(cosma_layout_c, C, 'N', alpha, beta);
     transf.transform();
 
     // free up the reordered communicator
@@ -883,67 +869,67 @@ using zfloat_t = std::complex<float>;
 using zdouble_t = std::complex<double>;
 
 // explicit instantiation for multiply_using_layout without context
-template void multiply_using_layout<double>(grid2grid::grid_layout<double> &A,
-                                            grid2grid::grid_layout<double> &B,
-                                            grid2grid::grid_layout<double> &C,
+template void multiply_using_layout<double>(costa::grid_layout<double> &A,
+                                            costa::grid_layout<double> &B,
+                                            costa::grid_layout<double> &C,
                                             double alpha,
                                             double beta,
                                             MPI_Comm comm);
 
-template void multiply_using_layout<float>(grid2grid::grid_layout<float> &A,
-                                           grid2grid::grid_layout<float> &B,
-                                           grid2grid::grid_layout<float> &C,
+template void multiply_using_layout<float>(costa::grid_layout<float> &A,
+                                           costa::grid_layout<float> &B,
+                                           costa::grid_layout<float> &C,
                                            float alpha,
                                            float beta,
                                            MPI_Comm comm);
 
 template void
-multiply_using_layout<zdouble_t>(grid2grid::grid_layout<zdouble_t> &A,
-                                 grid2grid::grid_layout<zdouble_t> &B,
-                                 grid2grid::grid_layout<zdouble_t> &C,
+multiply_using_layout<zdouble_t>(costa::grid_layout<zdouble_t> &A,
+                                 costa::grid_layout<zdouble_t> &B,
+                                 costa::grid_layout<zdouble_t> &C,
                                  zdouble_t alpha,
                                  zdouble_t beta,
                                  MPI_Comm comm);
 
 template void
-multiply_using_layout<zfloat_t>(grid2grid::grid_layout<zfloat_t> &A,
-                                grid2grid::grid_layout<zfloat_t> &B,
-                                grid2grid::grid_layout<zfloat_t> &C,
+multiply_using_layout<zfloat_t>(costa::grid_layout<zfloat_t> &A,
+                                costa::grid_layout<zfloat_t> &B,
+                                costa::grid_layout<zfloat_t> &C,
                                 zfloat_t alpha,
                                 zfloat_t beta,
                                 MPI_Comm comm);
 
 // explicit instantiation for multiply_using_layout with context
 template void multiply_using_layout<double>(cosma_context<double> *ctx,
-                                            grid2grid::grid_layout<double> &A,
-                                            grid2grid::grid_layout<double> &B,
-                                            grid2grid::grid_layout<double> &C,
+                                            costa::grid_layout<double> &A,
+                                            costa::grid_layout<double> &B,
+                                            costa::grid_layout<double> &C,
                                             double alpha,
                                             double beta,
                                             MPI_Comm comm);
 
 template void multiply_using_layout<float>(cosma_context<float> *ctx,
-                                           grid2grid::grid_layout<float> &A,
-                                           grid2grid::grid_layout<float> &B,
-                                           grid2grid::grid_layout<float> &C,
+                                           costa::grid_layout<float> &A,
+                                           costa::grid_layout<float> &B,
+                                           costa::grid_layout<float> &C,
                                            float alpha,
                                            float beta,
                                            MPI_Comm comm);
 
 template void
 multiply_using_layout<zdouble_t>(cosma_context<zdouble_t> *ctx,
-                                 grid2grid::grid_layout<zdouble_t> &A,
-                                 grid2grid::grid_layout<zdouble_t> &B,
-                                 grid2grid::grid_layout<zdouble_t> &C,
+                                 costa::grid_layout<zdouble_t> &A,
+                                 costa::grid_layout<zdouble_t> &B,
+                                 costa::grid_layout<zdouble_t> &C,
                                  zdouble_t alpha,
                                  zdouble_t beta,
                                  MPI_Comm comm);
 
 template void
 multiply_using_layout<zfloat_t>(cosma_context<zfloat_t> *ctx,
-                                grid2grid::grid_layout<zfloat_t> &A,
-                                grid2grid::grid_layout<zfloat_t> &B,
-                                grid2grid::grid_layout<zfloat_t> &C,
+                                costa::grid_layout<zfloat_t> &A,
+                                costa::grid_layout<zfloat_t> &B,
+                                costa::grid_layout<zfloat_t> &C,
                                 zfloat_t alpha,
                                 zfloat_t beta,
                                 MPI_Comm comm);
