@@ -58,7 +58,7 @@ project(cosma VERSION 2.3.0 LANGUAGES CXX)
 # https://spack.readthedocs.io/en/latest/workflows.html#write-the-cmake-build
 list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES 
     "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" isSystemDir)
-# skip RPATH if SIRIUS is installed to system directories
+# skip RPATH if COSMA is installed to system directories
 if(isSystemDir STREQUAL "-1")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
     if(APPLE)
@@ -69,6 +69,11 @@ if(isSystemDir STREQUAL "-1")
     file(RELATIVE_PATH relDir ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
         ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
     set(CMAKE_INSTALL_RPATH ${basePoint} ${basePoint}/${relDir})
+endif()
+
+# include this, so that all path variables are set up before adding the library subdirectory
+if(COSMA_WITH_INSTALL)
+    include(GNUInstallDirs)
 endif()
 
 # Dependencies

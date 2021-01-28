@@ -20,14 +20,14 @@ function(add_cosma_mpi_test test_name num_procs)
              COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${num_procs}
                      ${MPIEXEC_PREFLAGS} ./${tgt_} ${MPIEXEC_POSTFLAGS})
     add_dependencies(tests ${tgt_})
-    install(TARGETS ${tgt_} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}")
+    install(TARGETS ${tgt_} DESTINATION "${CMAKE_INSTALL_BINDIR}")
 endfunction()
 
 add_executable(test.mapper mapper.cpp)
 target_link_libraries(test.mapper PRIVATE main_gtest gtest cosma)
 add_test(NAME test.mapper COMMAND test.mapper)
 add_dependencies(tests test.mapper)
-install(TARGETS test.mapper RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}")
+install(TARGETS test.mapper DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
 if(COSMA_SCALAPACK)
     add_cosma_mpi_test(pdgemm 16 cosma_pxgemm_cpp)
