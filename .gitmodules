@@ -7,3 +7,6 @@
 [submodule "libs/semiprof"]
 	path = libs/semiprof
 	url = https://github.com/kabicm/semiprof
+[submodule "libs/COSTA"]
+	path = libs/COSTA
+	url = https://github.com/eth-cscs/COSTA
