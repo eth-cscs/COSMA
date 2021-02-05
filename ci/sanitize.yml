@@ -1,7 +1,7 @@
 include:
   - local: /ci/test.yml
 
-image: $CI_REGISTRY_IMAGE/deploy-cpu-asan:$CI_COMMIT_SHA
+image: $CSCS_REGISTRY_IMAGE/deploy-cpu-asan:$CI_COMMIT_SHA
 
 variables:
   ALLOCATION_NAME: cosma-test-sanitizer-cpu-$CI_PIPELINE_ID
