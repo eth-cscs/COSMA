@@ -15,7 +15,7 @@ stages:
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
   before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker login -u $CSCS_REGISTRY_USER -p $CSCS_REGISTRY_PASSWORD $CSCS_REGISTRY
   script:
     - docker build --network=host --cache-from $BUILD_IMAGE --build-arg BUILDKIT_INLINE_CACHE=1 -t $BUILD_IMAGE -f $BUILD_DOCKERFILE .
     - docker push $BUILD_IMAGE
@@ -27,26 +27,26 @@ build sanitizer cpu:
   extends: .build_common
   variables:
     BUILD_DOCKERFILE: docker/asan/build-env.Dockerfile
-    BUILD_IMAGE: $CI_REGISTRY_IMAGE/build-env-asan:latest
+    BUILD_IMAGE: $CSCS_REGISTRY_IMAGE/build-env-asan:latest
     DEPLOY_DOCKERFILE: docker/asan/deploy.Dockerfile
-    DEPLOY_IMAGE: $CI_REGISTRY_IMAGE/deploy-cpu-asan:$CI_COMMIT_SHA
+    DEPLOY_IMAGE: $CSCS_REGISTRY_IMAGE/deploy-cpu-asan:$CI_COMMIT_SHA
 
 build cpu:
   extends: .build_common
   variables:
     BUILD_DOCKERFILE: docker/cpu-release/build-env.Dockerfile
-    BUILD_IMAGE: $CI_REGISTRY_IMAGE/build-env-cpu:latest
+    BUILD_IMAGE: $CSCS_REGISTRY_IMAGE/build-env-cpu:latest
     DEPLOY_DOCKERFILE: docker/cpu-release/deploy.Dockerfile
-    DEPLOY_IMAGE: $CI_REGISTRY_IMAGE/deploy-cpu:$CI_COMMIT_SHA
+    DEPLOY_IMAGE: $CSCS_REGISTRY_IMAGE/deploy-cpu:$CI_COMMIT_SHA
 
 
 build gpu:
   extends: .build_common
   variables:
     BUILD_DOCKERFILE: docker/gpu/build-env.Dockerfile
-    BUILD_IMAGE: $CI_REGISTRY_IMAGE/build-env-gpu:latest
+    BUILD_IMAGE: $CSCS_REGISTRY_IMAGE/build-env-gpu:latest
     DEPLOY_DOCKERFILE: docker/gpu/deploy.Dockerfile
-    DEPLOY_IMAGE: $CI_REGISTRY_IMAGE/deploy-gpu:$CI_COMMIT_SHA
+    DEPLOY_IMAGE: $CSCS_REGISTRY_IMAGE/deploy-gpu:$CI_COMMIT_SHA
 
 sanitize:
   stage: test
