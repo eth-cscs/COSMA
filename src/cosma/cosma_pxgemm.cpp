@@ -9,6 +9,7 @@
 
 #include <costa/grid2grid/ranks_reordering.hpp>
 #include <costa/grid2grid/transformer.hpp>
+#include <costa/grid2grid/utils.hpp>
 
 namespace cosma {
 template <typename T>
@@ -247,6 +248,10 @@ void pxgemm(const char transa,
     auto comm_vol = costa::communication_volume(scalapack_layout_a.grid, cosma_grid_a, trans_a);
     comm_vol += costa::communication_volume(scalapack_layout_b.grid, cosma_grid_b, trans_b);
     comm_vol += costa::communication_volume(cosma_grid_c, scalapack_layout_c.grid, 'N');
+
+    // take topology into account when computing the communication volume
+    auto topology = costa::topology_cost(comm);
+    comm_vol.apply_topology(topology);
 
     // compute the optimal rank reordering that minimizes the communication volume
     bool reordered = false;
