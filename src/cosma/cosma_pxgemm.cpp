@@ -159,6 +159,7 @@ void pxgemm(const char transa,
       that COSMA should start with and then continue with finding 
       the communication-optimal strategy.
      */
+    bool strategy_adapted = false;
     if (P > 1 && get_context_instance<T>()->adapt_to_scalapack_strategy) {
         adapt_strategy_to_block_cyclic_grid(divisors, dimensions, step_type,
                                             m, n, k, P,
@@ -169,6 +170,9 @@ void pxgemm(const char transa,
                                             procrows, proccols,
                                             grid_order
                                             );
+        if (step_type != "") {
+            strategy_adapted = true;
+        }
     }
 
     // get CPU memory limit
@@ -241,27 +245,37 @@ void pxgemm(const char transa,
         rank);
     PL();
 
-    PE(transform_reordering_matching);
-    // total communication volume for transformation of layouts
-    // costa::comm_volume comm_vol;
-    auto comm_vol = costa::communication_volume(scalapack_layout_a.grid, cosma_grid_a, trans_a);
-    comm_vol += costa::communication_volume(scalapack_layout_b.grid, cosma_grid_b, trans_b);
-    comm_vol += costa::communication_volume(cosma_grid_c, scalapack_layout_c.grid, 'N');
-
-    // compute the optimal rank reordering that minimizes the communication volume
+    // by default, no process-relabeling is assumed.
     bool reordered = false;
-    std::vector<int> rank_permutation = costa::optimal_reordering(comm_vol, P, reordered);
-    PL();
-
-    // create reordered communicator, which has same ranks
-    // but relabelled as given by the rank_permutation
-    // (to avoid the communication during layout transformation)
-    PE(transform_reordering_comm);
+    std::vector<int> rank_permutation;
     MPI_Comm reordered_comm = comm;
-    if (reordered) {
-        MPI_Comm_split(comm, 0, rank_permutation[rank], &reordered_comm);
+
+    if (!strategy_adapted) {
+        PE(transform_reordering_matching);
+        // total communication volume for transformation of layouts
+        // costa::comm_volume comm_vol;
+        auto comm_vol = costa::communication_volume(scalapack_layout_a.grid, cosma_grid_a, trans_a);
+        comm_vol += costa::communication_volume(scalapack_layout_b.grid, cosma_grid_b, trans_b);
+        comm_vol += costa::communication_volume(cosma_grid_c, scalapack_layout_c.grid, 'N');
+
+        // compute the optimal rank reordering that minimizes the communication volume
+        rank_permutation = costa::optimal_reordering(comm_vol, P, reordered);
+        PL();
+
+        // create reordered communicator, which has same ranks
+        // but relabelled as given by the rank_permutation
+        // (to avoid the communication during layout transformation)
+        PE(transform_reordering_comm);
+        if (reordered) {
+            MPI_Comm_split(comm, 0, rank_permutation[rank], &reordered_comm);
+        }
+        PL();
+    } else {
+        // if the strategy is adapted, then no process-relabeling occurs.
+        for (int i = 0; i < P; ++i) {
+            rank_permutation[i] = i;
+        }
     }
-    PL();
 
 #ifdef DEBUG
     if (rank == 0) {
