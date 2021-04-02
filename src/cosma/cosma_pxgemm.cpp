@@ -271,9 +271,10 @@ void pxgemm(const char transa,
         }
         PL();
     } else {
+        rank_permutation.reserve(P);
         // if the strategy is adapted, then no process-relabeling occurs.
         for (int i = 0; i < P; ++i) {
-            rank_permutation[i] = i;
+            rank_permutation.push_back(i);
         }
     }
 
