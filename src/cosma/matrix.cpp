@@ -425,7 +425,7 @@ costa::grid_layout<T> CosmaMatrix<T>::get_grid_layout() {
     }
     costa::local_blocks<T> local_memory(std::move(loc_blocks));
 
-    return {std::move(assigned_grid), std::move(local_memory)};
+    return {std::move(assigned_grid), std::move(local_memory), 'C'};
 }
 
 // allocates initial buffers (turns off dryrun)

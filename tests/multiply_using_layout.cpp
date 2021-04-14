@@ -54,6 +54,8 @@ TEST(MultiplyUsingLayout, ) {
     constexpr int k = 80;
     constexpr scalar_t alpha = 1;
     constexpr scalar_t beta = 1;
+    char transa = 'N';
+    char transb = 'N';
 
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -93,7 +95,7 @@ TEST(MultiplyUsingLayout, ) {
         // is not the default context (singleton) that multiply_using_layout is using
         // because the pointers A_grid, B_grid and C_grid must be persistent 
         // throughout the whole execution of multiply_using_layout
-        cosma::multiply_using_layout(A_grid, B_grid, C_grid, alpha, beta, comm);
+        cosma::multiply_using_layout(A_grid, B_grid, C_grid, alpha, beta, transa, transb, comm);
 
         cosma::multiply(A, B, C_act, strategy, comm, alpha, beta);
 

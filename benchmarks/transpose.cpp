@@ -1,5 +1,5 @@
 #include <costa/grid2grid/memory_utils.hpp>
-#include <costa/grid2grid/tiling_manager.hpp>
+#include <costa/grid2grid/threads_workspace.hpp>
 #include <mkl.h>
 #include <chrono>
 #include <limits>
@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
     auto  dest_stride = n_cols; // 10000;
     bool conjugate = false;
 
-    costa::memory::tiling_manager<double> tiling;
+    costa::memory::threads_workspace<double> workspace(256);
 
     std::vector<long> g2g_times;
     std::vector<long> mkl_times;
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
             // ***********************************
             auto start = std::chrono::steady_clock::now();
             costa::memory::copy_and_transpose<double>(src.data(), n_rows[i], n_cols[i], src_stride[i],
-                                                  dest_g2g.data(), dest_stride[i], false, tiling);
+                                                  dest_g2g.data(), dest_stride[i], false, workspace);
             auto end = std::chrono::steady_clock::now();
             g2g_time = std::min(g2g_time, (long) std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
 

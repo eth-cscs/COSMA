@@ -62,8 +62,8 @@ TEST_P(PdgemmTestWithParams, pdgemm) {
 
         cosma::Strategy::min_dim_size = 32;
         bool correct = test_pxgemm<double>(state, comm);
-
         EXPECT_TRUE(correct);
+
         MPI_Comm_free(&comm);
     }
 };
@@ -297,6 +297,8 @@ INSTANTIATE_TEST_CASE_P(
             0, 0  // matrix C
         },
 
+        cosma::pxgemm_params<double>{4, 4, 4, 2, 2, 2, 2, 1, 'T', 'N', 1.0, 0.0},
+
         // scaling matrix C checking (alpha = 0)
         cosma::pxgemm_params<double>{
             // matrix dimensions
@@ -401,10 +403,16 @@ INSTANTIATE_TEST_CASE_P(
         cosma::pxgemm_params<double>{8, 4, 8, 2, 2, 2, 3, 2, 'T', 'N', 0.5, 0.0},
 
         // too many resources
+        cosma::pxgemm_params<double>{2, 2, 8, 2, 2, 4, 2, 1, 'T', 'N', 1.0, 0.0},
+        cosma::pxgemm_params<double>{4, 4, 24, 4, 4, 8, 2, 1, 'T', 'N', 1.0, 0.0},
+        cosma::pxgemm_params<double>{16, 16, 96, 16, 16, 32, 2, 1, 'T', 'N', 1.0, 0.0},
         cosma::pxgemm_params<double>{16, 16, 96, 32, 32, 32, 2, 8, 'T', 'N', 0.5, 0.5},
         cosma::pxgemm_params<double>{13, 13, 448, 13, 13, 13, 2, 7, 'T', 'N', 0.5, 0.5},
         cosma::pxgemm_params<double>{13, 13, 448, 13, 13, 13, 2, 7, 'N', 'N', 1.0, 0.5},
 
+        cosma::pxgemm_params<double>{3, 3, 7, 3, 3, 3, 1, 1, 'T', 'N', 1.0, 0.0},
+        cosma::pxgemm_params<double>{5, 5, 11, 5, 5, 5, 2, 1, 'T', 'N', 1.0, 0.0},
+        cosma::pxgemm_params<double>{26, 13, 448, 13, 13, 13, 2, 1, 'T', 'N', 1.0, 0.5},
         cosma::pxgemm_params<double>{26, 13, 448, 13, 13, 13, 2, 7, 'T', 'N', 1.0, 0.5},
 
         // adapt strategy to scalapack grid when P = 1
@@ -438,6 +446,44 @@ INSTANTIATE_TEST_CASE_P(
 
             // proc grid
             1, 1, 'C',
+
+            // proc srcs
+            0, 0, // matrix A
+            0, 0, // matrix B
+            0, 0  // matrix C
+        },
+
+        // detailed pdgemm call with ia, ja = 1
+        cosma::pxgemm_params<double>{
+            // matrix dimensions
+            1280, 1280, // matrix A
+            1280, 1280, // matrix B
+            1280, 1280, // matrix C
+
+            // block sizes
+            32, 32, // matrix A
+            32, 32, // matrix B
+            32, 32, // matrix C
+
+            // submatrices ij
+            1, 1, // matrix A
+            1, 1, // matrix B
+            1, 1, // matrix C
+
+            // problem size
+            512, 32, 736,
+
+            // transpose flags
+            'N', 'T',
+
+            // scaling flags
+            1.0, 0.0,
+
+            // leading dims
+            640, 640, 640,
+
+            // proc grid
+            2, 4, 'R',
 
             // proc srcs
             0, 0, // matrix A

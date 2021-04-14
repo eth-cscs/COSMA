@@ -10,9 +10,9 @@ set(executables "ubench-allgather"
                 "blocking_vs_non_blocking"
                 "dgemm_perf_model")
 
-if (${COSMA_BLAS} STREQUAL "MKL")
-    list(APPEND executables "transpose")
-endif()
+# if (${COSMA_BLAS} STREQUAL "MKL")
+#     list(APPEND executables "transpose")
+# endif()
 
 foreach(exec ${executables})
     add_executable(${exec} "${exec}.cpp")

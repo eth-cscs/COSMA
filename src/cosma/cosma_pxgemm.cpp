@@ -218,6 +218,7 @@ void pxgemm(const char transa,
         ordering,
         {rank_src_a.row_src, rank_src_a.col_src},
         a,
+        'C',
         rank);
 
     auto scalapack_layout_b = costa::get_scalapack_layout<T>(
@@ -230,6 +231,7 @@ void pxgemm(const char transa,
         ordering,
         {rank_src_b.row_src, rank_src_b.col_src},
         b,
+        'C',
         rank);
 
     auto scalapack_layout_c = costa::get_scalapack_layout<T>(
@@ -242,6 +244,7 @@ void pxgemm(const char transa,
         ordering,
         {rank_src_c.row_src, rank_src_c.col_src},
         c,
+        'C',
         rank);
     PL();
 
@@ -320,6 +323,7 @@ void pxgemm(const char transa,
     // transform A and B from scalapack to cosma layout
     costa::transformer<T> transf(comm);
     transf.schedule(scalapack_layout_a, cosma_layout_a, trans_a, T{1}, T{0});
+    // transf.transform();
     transf.schedule(scalapack_layout_b, cosma_layout_b, trans_b, T{1}, T{0});
 
     transf.transform();
@@ -435,6 +439,7 @@ void scale_matrix(const int* descc, T* c,
         ordering,
         {rank_src_c.row_src, rank_src_c.col_src},
         c,
+        'C',
         rank);
     PL();
 

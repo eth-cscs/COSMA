@@ -41,13 +41,14 @@ costa::grid_layout<T> grid_from_clayout(int n_ranks,
     for (int i = 0; i < layout->rowblocks; ++i) {
         owners_matrix[i].resize(layout->colblocks);
         for (int j = 0; j < layout->colblocks; ++j)
-            owners_matrix[i][j] = layout->owners[j * layout->rowblocks + i];
+            owners_matrix[i][j] = layout->owners[i * layout->colblocks + j];
     }
 
     return {{{std::move(rows_split), std::move(cols_split)},
              std::move(owners_matrix),
              n_ranks},
-            {std::move(loc_blks)}};
+            {std::move(loc_blks)},
+            'C'};
 }
 
 template <class T>
@@ -69,12 +70,9 @@ void xmultiply_using_layout(MPI_Comm comm,
     auto cosma_layout_b = grid_from_clayout<T>(P, layout_b);
     auto cosma_layout_c = grid_from_clayout<T>(P, layout_c);
 
-    cosma_layout_a.transpose_or_conjugate(std::toupper(*transa));
-    cosma_layout_b.transpose_or_conjugate(std::toupper(*transb));
-
     // perform cosma multiplication
     cosma::multiply_using_layout<T>(
-        cosma_layout_a, cosma_layout_b, cosma_layout_c, *alpha, *beta, comm);
+        cosma_layout_a, cosma_layout_b, cosma_layout_c, *alpha, *beta, *transa, *transb, comm);
 }
 } // namespace cosma
 

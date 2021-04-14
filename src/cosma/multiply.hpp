@@ -34,6 +34,8 @@ void multiply_using_layout(costa::grid_layout<Scalar> &A_layout,
                            costa::grid_layout<Scalar> &C_layout,
                            Scalar alpha,
                            Scalar beta,
+                           char transa,
+                           char transb,
                            MPI_Comm comm);
 
 /*

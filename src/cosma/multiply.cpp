@@ -58,9 +58,11 @@ void multiply_using_layout(costa::grid_layout<T> &A,
                            costa::grid_layout<T> &C,
                            T alpha,
                            T beta,
+                           char transa,
+                           char transb,
                            MPI_Comm comm) {
     multiply_using_layout<T>(
-        get_context_instance<T>(), A, B, C, alpha, beta, comm);
+        get_context_instance<T>(), A, B, C, alpha, beta, transa, transb, comm);
 }
 
 template <typename T>
@@ -70,6 +72,8 @@ void multiply_using_layout(cosma_context<T> *ctx,
                            costa::grid_layout<T> &C,
                            T alpha,
                            T beta,
+                           char transa,
+                           char transb,
                            MPI_Comm comm) {
     assert(A.num_cols() == B.num_rows());
 
@@ -91,6 +95,9 @@ void multiply_using_layout(cosma_context<T> *ctx,
         C.scale_by(beta);
         return;
     }
+
+    char trans_a = std::toupper(transa);
+    char trans_b = std::toupper(transb);
 
     int rank, P;
     MPI_Comm_rank(comm, &rank);
@@ -155,8 +162,8 @@ void multiply_using_layout(cosma_context<T> *ctx,
 
     // schedule A and B transforms together from given layout to cosma layout
     costa::transformer<T> transf(comm);
-    transf.schedule(A, cosma_layout_a);
-    transf.schedule(B, cosma_layout_b);
+    transf.schedule(A, cosma_layout_a, trans_a, T{1}, T{0});
+    transf.schedule(B, cosma_layout_b, trans_b, T{1}, T{0});
     // transform all scheduled transformations together
     transf.transform();
 
@@ -874,6 +881,8 @@ template void multiply_using_layout<double>(costa::grid_layout<double> &A,
                                             costa::grid_layout<double> &C,
                                             double alpha,
                                             double beta,
+                                            char transa,
+                                            char transb,
                                             MPI_Comm comm);
 
 template void multiply_using_layout<float>(costa::grid_layout<float> &A,
@@ -881,6 +890,8 @@ template void multiply_using_layout<float>(costa::grid_layout<float> &A,
                                            costa::grid_layout<float> &C,
                                            float alpha,
                                            float beta,
+                                           char transa,
+                                           char transb,
                                            MPI_Comm comm);
 
 template void
@@ -889,6 +900,8 @@ multiply_using_layout<zdouble_t>(costa::grid_layout<zdouble_t> &A,
                                  costa::grid_layout<zdouble_t> &C,
                                  zdouble_t alpha,
                                  zdouble_t beta,
+                                 char transa,
+                                 char transb,
                                  MPI_Comm comm);
 
 template void
@@ -897,6 +910,8 @@ multiply_using_layout<zfloat_t>(costa::grid_layout<zfloat_t> &A,
                                 costa::grid_layout<zfloat_t> &C,
                                 zfloat_t alpha,
                                 zfloat_t beta,
+                                char transa,
+                                char transb,
                                 MPI_Comm comm);
 
 // explicit instantiation for multiply_using_layout with context
@@ -906,6 +921,8 @@ template void multiply_using_layout<double>(cosma_context<double> *ctx,
                                             costa::grid_layout<double> &C,
                                             double alpha,
                                             double beta,
+                                            char transa,
+                                            char transb,
                                             MPI_Comm comm);
 
 template void multiply_using_layout<float>(cosma_context<float> *ctx,
@@ -914,6 +931,8 @@ template void multiply_using_layout<float>(cosma_context<float> *ctx,
                                            costa::grid_layout<float> &C,
                                            float alpha,
                                            float beta,
+                                           char transa,
+                                           char transb,
                                            MPI_Comm comm);
 
 template void
@@ -923,6 +942,8 @@ multiply_using_layout<zdouble_t>(cosma_context<zdouble_t> *ctx,
                                  costa::grid_layout<zdouble_t> &C,
                                  zdouble_t alpha,
                                  zdouble_t beta,
+                                 char transa,
+                                 char transb,
                                  MPI_Comm comm);
 
 template void
@@ -932,6 +953,8 @@ multiply_using_layout<zfloat_t>(cosma_context<zfloat_t> *ctx,
                                 costa::grid_layout<zfloat_t> &C,
                                 zfloat_t alpha,
                                 zfloat_t beta,
+                                char transa,
+                                char transb,
                                 MPI_Comm comm);
 
 // Explicit instantiations for short `multiply`
