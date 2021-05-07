@@ -86,7 +86,7 @@ External dependencies:
 Some dependencies are bundled as submodules and need not be installed explicitly:
 
 - `TiledMM` - cublasXt GEMM replacement, that is also ported to AMD GPUs.
-- `grid2grid` - distributed matrix grid layout transformer.
+- `COSTA` - distributed matrix reshuffle and transpose algorithm.
 - `semiprof` - profiling utlility
 - `gtest_mpi` - MPI utlility wrapper over GoogleTest (unit testing library)
 
@@ -133,7 +133,7 @@ make install
 2) Link your code to COSMA:
     - **CPU-only** version of COSMA:
        - link your code to:
-       > -L<installation dir>/cosma/lib64 -lcosma_pxgemm -lcosma -lgrid2grid 
+       > -L<installation dir>/cosma/lib64 -lcosma_pxgemm -lcosma -lcosta_scalapack 
  
        - then link to the BLAS and ScaLAPACK you built COSMA with (see `COSMA_BLAS` and `COSMA_SCALAPACK` flags in cmake):
        > -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_scalapack_lp64 -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lmkl_blacs_intelmpi_lp64 -lgomp -lpthread -lm
@@ -141,7 +141,7 @@ make install
     
    - using **GPU-accelerated** version of COSMA: 
        - link your code to:
-       >-L<installation dir>/cosma/lib64 -lcosma_pxgemm -lcosma -lgrid2grid -lTiled-MM
+       >-L<installation dir>/cosma/lib64 -lcosma_pxgemm -lcosma -lcosta_scalapack -lTiled-MM
        
        - link to the GPU backend you built COSMA with (see `COSMA_BLAS` flag in cmake):
        >-lcublas -lcudart -lrt
@@ -398,4 +398,3 @@ This work was funded in part by:
 <img align="left" height="50" src="./docs/max-logo.jpg"> | [**MaX**](http://www.max-centre.eu): **Materials design at the Exascale** (Horizon2020, grant agreement MaX CoE, No. 824143.)
 
 We thank Thibault Notargiacomo, Sam Yates, Benjamin Cumming and Simon Pintarelli for their generous contribution to the project: great ideas, useful advices and fruitful discussions.
-
