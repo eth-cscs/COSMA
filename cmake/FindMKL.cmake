@@ -124,35 +124,39 @@ set(_mkl_libpath_suffix "lib/intel64")
 if(CMAKE_SIZEOF_VOID_P EQUAL 4) # 32 bit
     set(_mkl_libpath_suffix "lib/ia32")
 endif()
-list(APPEND _mkl_libpath_suffix "lib")
 
 if(WIN32)
-    string(APPEND _mkl_libpath_suffix "_win")
+    list(APPEND _mkl_libpath_suffix "${_mkl_libpath_suffix}_win")
     set(_mkl_libname_prefix "")
     set(_mkl_shared_lib "_dll.lib")
     set(_mkl_static_lib ".lib")
 elseif(APPLE)
+    list(APPEND _mkl_libpath_suffix "${_mkl_libpath_suffix}_mac")
     set(_mkl_libname_prefix "lib")
     set(_mkl_shared_lib ".dylib")
     set(_mkl_static_lib ".a")
 else() # LINUX
-    string(APPEND _mkl_libpath_suffix "_lin")
+    list(APPEND _mkl_libpath_suffix "${_mkl_libpath_suffix}_lin")
     set(_mkl_libname_prefix "lib")
     set(_mkl_shared_lib ".so")
     set(_mkl_static_lib ".a")
 endif()
+set(_mkl_search_paths "${MKL_ROOT}"
+                      "${MKL_ROOT}/lib"
+                      "${MKL_ROOT}/mkl"
+                      "${MKL_ROOT}/compiler")
 
 # Functions: finds both static and shared MKL libraries
 #
 function(__mkl_find_library _varname _libname)
     find_library(${_varname}_DYN
           NAMES ${_mkl_libname_prefix}${_libname}${_mkl_shared_lib}
-          HINTS ${MKL_ROOT}
+          HINTS ${_mkl_search_paths}
           PATH_SUFFIXES ${_mkl_libpath_suffix})
     mark_as_advanced(${_varname}_DYN)
     find_library(${_varname}_ST
           NAMES ${_mkl_libname_prefix}${_libname}${_mkl_static_lib}
-          HINTS ${MKL_ROOT}
+          HINTS ${_mkl_search_paths}
           PATH_SUFFIXES ${_mkl_libpath_suffix})
     mark_as_advanced(${_varname}_ST)
 endfunction()
