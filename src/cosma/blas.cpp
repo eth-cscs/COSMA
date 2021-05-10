@@ -4,16 +4,20 @@
 #include <mkl.h>
 #endif
 
+#ifdef COSMA_WITH_BLIS_BLAS
+#include <blis.h>
+#endif
+
 #ifdef COSMA_WITH_BLAS
 #include <cblas.h>
 // this is for backward compatibility,
-// in case CLBAS_LAYOUT is not defined
+// in case CBLAS_LAYOUT is not defined
 typedef CBLAS_ORDER CBLAS_LAYOUT;
 #endif
 
 // The file is not needed if GPU is used
 //
-#if defined (COSMA_WITH_MKL_BLAS) || defined(COSMA_WITH_BLAS)
+#if defined(COSMA_WITH_MKL_BLAS) || defined(COSMA_WITH_BLIS_BLAS) || defined(COSMA_WITH_BLAS)
 namespace cosma {
 void gemm(const int M,
           const int N,
