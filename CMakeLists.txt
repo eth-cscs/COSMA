@@ -105,7 +105,7 @@ set(GPU OFF)
 # these are only GPU-backends
 if (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
     option(TILEDMM_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
-    set(TILEMM_GPU_BACKEND ${COSMA_BLAS} CACHE STRING FORCE "")
+    set(TILEDMM_GPU_BACKEND ${COSMA_BLAS} CACHE STRING "GPU backend" FORCE)
     add_subdirectory(libs/Tiled-MM)
     set(BLAS_TARGET "Tiled-MM")
     set(BLAS_DEF "COSMA_HAVE_GPU")
