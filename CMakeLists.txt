@@ -138,8 +138,6 @@ elseif (${COSMA_BLAS} MATCHES "CUSTOM")
     find_package(BLAS REQUIRED)
     set(BLAS_TARGET "${BLAS_LIBRARIES}")
     set(BLAS_DEF "COSMA_WITH_BLAS")
-else ()
-    message(FATAL_ERROR "Unknown BLAS backend specified!")
 endif()
 
 # (optional) SCALAPACK providers
