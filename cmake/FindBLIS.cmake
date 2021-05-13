@@ -58,19 +58,19 @@ find_library(
     BLIS_LIBRARIES
     NAMES "blis"
     HINTS ${_BLIS_PATHS}
-    PATH_SUFFIXES "blis/lib" "blis/lib64" "blis"
+    PATH_SUFFIXES "lib" "lib64" "blis/lib" "blis/lib64" "blis"
 )
 find_path(
     BLIS_INCLUDE_DIRS
     NAMES "blis.h"
     HINTS ${_BLIS_PATHS}
-    PATH_SUFFIXES "blis" "blis/include" "include/blis"
+    PATH_SUFFIXES "include" "blis" "blis/include" "include/blis"
 )
 find_path(
     BLIS_CBLAS_INCLUDE_DIRS
     NAMES "cblas_blis.h" "cblas-blis.h" "cblas.h" 
     HINTS ${_BLIS_PATHS}
-    PATH_SUFFIXES "blis" "blis/include" "include/blis"
+    PATH_SUFFIXES "include" "blis" "blis/include" "include/blis"
 )
 
 # check if found
