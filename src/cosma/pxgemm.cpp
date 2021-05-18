@@ -3,7 +3,7 @@
 
 extern "C" {
 #include <cosma/pxgemm.h>
-#include "interpose.h"
+#include <cosma/interpose.h>
 
 bool is_problem_too_small(int m, int n, int k) {
     static const int cosma_dim_threshold = cosma::get_cosma_dim_threshold();

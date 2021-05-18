@@ -23,7 +23,6 @@ cosma_context<Scalar>::cosma_context() {
                                          gpu_max_tile_n(),
                                          gpu_max_tile_k());
 #endif
-    min_local_dimension = get_min_local_dimension();
 }
 
 template <typename Scalar>
@@ -44,7 +43,6 @@ cosma_context<Scalar>::cosma_context(size_t cpu_mem_limit, int streams, int tile
                  "used in the CPU version."
               << std::endl;
 #endif
-    min_local_dimension = get_min_local_dimension();
 }
 
 template <typename Scalar>

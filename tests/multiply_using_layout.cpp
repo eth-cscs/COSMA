@@ -8,6 +8,7 @@
 #include <cmath>
 #include <limits>
 
+
 MPI_Comm subcommunicator(int new_P, MPI_Comm comm = MPI_COMM_WORLD) {
     // original size
     int P;
@@ -62,6 +63,7 @@ TEST(MultiplyUsingLayout, ) {
     MPI_Comm comm = subcommunicator(nprocs, MPI_COMM_WORLD);
 
     if (rank < nprocs) {
+        cosma::Strategy::min_dim_size = 32;
         cosma::Strategy strategy(m, n, k, nprocs);
 
         // create a separate context

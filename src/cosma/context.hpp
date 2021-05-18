@@ -36,8 +36,6 @@ public:
 
     bool pin_host_buffers = true;
 
-    int min_local_dimension;
-
 private:
     long long cpu_memory_limit = std::numeric_limits<long long>::max();
     memory_pool<Scalar> memory_pool_;

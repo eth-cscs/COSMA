@@ -43,7 +43,6 @@ bool run(const int m, const int n, const int k,
 
     // specified by the environment variable COSMA_CPU_MAX_MEMORY
     long long memory_limit = cosma::get_cpu_max_memory<T>();
-    cosma::Strategy::min_dim_size = cosma::get_min_local_dimension();
 
     if (!test_correctness) {
         // specified by the env var COSMA_OVERLAP_COMM_AND_COMP

@@ -1,7 +1,8 @@
 #include <cosma/strategy.hpp>
+#include <cosma/environment_variables.hpp>
 
 namespace cosma {
-int Strategy::min_dim_size = 1;
+int Strategy::min_dim_size = get_min_local_dimension();
 
 std::size_t Strategy::n_steps() const {
     return divisors.size();
