@@ -14,9 +14,9 @@ RUN mkdir /COSMA/build && cd /COSMA/build && \
       -DCOSMA_SCALAPACK=CUSTOM \
       -DCMAKE_BUILD_TYPE=Debug \
       -DCMAKE_CXX_FLAGS_DEBUG="-g -Og -fno-omit-frame-pointer -fsanitize=address,undefined" \
-      -DCMAKE_INSTALL_PREFIX=/usr && \
+      -DCMAKE_INSTALL_PREFIX=/root/COSMA-build && \
       make -j$(nproc) && \
-      make DESTDIR=/root/COSMA-build install && \
+      make install && \
       rm -rf /COSMA
 
 RUN /root/libtree/libtree \

@@ -10,7 +10,6 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(cmake/build_type.cmake)
 include(cmake/adjust_mpiexec_flags.cmake)
-include(GNUInstallDirs)
 
 # Options
 #
@@ -90,6 +89,8 @@ if (${COSMA_BLAS} STREQUAL "MKL" OR ${COSMA_BLAS} STREQUAL "CRAY_LIBSCI")
 endif()
 
 project(cosma VERSION 2.4.0 LANGUAGES CXX)
+
+include(GNUInstallDirs)
 
 # preserve rpaths when installing and make the install folder relocatable
 # use `CMAKE_SKIP_INSTALL_RPATH` to skip this

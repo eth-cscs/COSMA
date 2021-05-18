@@ -14,9 +14,9 @@ RUN mkdir /COSMA/build && cd /COSMA/build && \
       -DCOSMA_BLAS=CUDA \
       -DCOSMA_SCALAPACK=CUSTOM \
       -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_INSTALL_PREFIX=/usr && \
+      -DCMAKE_INSTALL_PREFIX=/root/COSMA-build && \
       make -j$(nproc) && \
-      make DESTDIR=/root/COSMA-build install && \
+      make && \
       rm -rf /COSMA
 
 # Run linuxdeploy, and add a bunch of libs that are dlopen'ed by mkl

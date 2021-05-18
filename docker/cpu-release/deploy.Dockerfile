@@ -9,13 +9,12 @@ RUN COMPILERVARS_ARCHITECTURE=intel64 /opt/intel/bin/compilervars.sh && \
     mkdir /COSMA/build && cd /COSMA/build && \
     CC=mpicc CXX=mpicxx cmake .. \
       -DCOSMA_WITH_TESTS=ON \
-      -DCUDA_PATH=/usr/local/cuda \
       -DCOSMA_BLAS=MKL \
       -DCOSMA_SCALAPACK=MKL \
       -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_INSTALL_PREFIX=/usr && \
+      -DCMAKE_INSTALL_PREFIX=/root/COSMA-build && \
       make -j$(nproc) && \
-      make DESTDIR=/root/COSMA-build install && \
+      make install && \
       rm -rf /COSMA
 
 ENV MKL_LIB=/opt/intel/compilers_and_libraries/linux/mkl/lib/intel64
