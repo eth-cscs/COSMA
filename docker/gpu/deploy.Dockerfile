@@ -24,12 +24,12 @@ RUN /root/libtree/libtree \
       -d /root/COSMA.bundle/ \
       --chrpath \
       --strip \
-      /root/COSMA-build/usr/bin/test.cosma \
-      /root/COSMA-build/usr/bin/test.mapper \
-      /root/COSMA-build/usr/bin/test.multiply \
-      /root/COSMA-build/usr/bin/test.multiply_using_layout \
-      /root/COSMA-build/usr/bin/test.pdgemm \
-      /root/COSMA-build/usr/bin/test.scalar_matmul
+      /root/COSMA-build/bin/test.cosma \
+      /root/COSMA-build/bin/test.mapper \
+      /root/COSMA-build/bin/test.multiply \
+      /root/COSMA-build/bin/test.multiply_using_layout \
+      /root/COSMA-build/bin/test.pdgemm \
+      /root/COSMA-build/bin/test.scalar_matmul
 
 FROM ubuntu:18.04
 

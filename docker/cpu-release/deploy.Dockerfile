@@ -21,12 +21,12 @@ ENV MKL_LIB=/opt/intel/compilers_and_libraries/linux/mkl/lib/intel64
 
 # Run linuxdeploy, and add a bunch of libs that are dlopen'ed by mkl
 RUN /root/libtree/libtree --chrpath --strip -d /root/COSMA.bundle/ \
-      /root/COSMA-build/usr/bin/test.cosma \
-      /root/COSMA-build/usr/bin/test.mapper \
-      /root/COSMA-build/usr/bin/test.multiply \
-      /root/COSMA-build/usr/bin/test.multiply_using_layout \
-      /root/COSMA-build/usr/bin/test.pdgemm \
-      /root/COSMA-build/usr/bin/test.scalar_matmul \
+      /root/COSMA-build/bin/test.cosma \
+      /root/COSMA-build/bin/test.mapper \
+      /root/COSMA-build/bin/test.multiply \
+      /root/COSMA-build/bin/test.multiply_using_layout \
+      /root/COSMA-build/bin/test.pdgemm \
+      /root/COSMA-build/bin/test.scalar_matmul \
       # MKL dlopen's some of their libs, so we have to explicitly copy them over
       ${MKL_LIB}/libmkl_avx.so \
       ${MKL_LIB}/libmkl_avx2.so \
