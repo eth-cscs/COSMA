@@ -10,6 +10,7 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(cmake/build_type.cmake)
 include(cmake/adjust_mpiexec_flags.cmake)
+include(GNUInstallDirs)
 
 # Options
 #
@@ -106,11 +107,6 @@ if(isSystemDir STREQUAL "-1")
     file(RELATIVE_PATH relDir ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
         ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
     set(CMAKE_INSTALL_RPATH ${basePoint} ${basePoint}/${relDir})
-endif()
-
-# include this, so that all path variables are set up before adding the library subdirectory
-if(COSMA_WITH_INSTALL)
-    include(GNUInstallDirs)
 endif()
 
 # Dependencies
