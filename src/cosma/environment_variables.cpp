@@ -98,6 +98,11 @@ double cosma::get_memory_pool_amortization() {
                            env_var_defaults::memory_pool_amortization);
 }
 
+int cosma::get_min_local_dimension() {
+    return get_int_env_var(env_var_names::min_local_dimension,
+                           env_var_defaults::min_local_dimension);
+}
+
 // reads the memory limit in MB per rank
 // and converts the limit to #elements that each rank is allowed to use
 template <typename T>

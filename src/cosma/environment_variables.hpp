@@ -37,6 +37,11 @@ namespace env_var_names {
     // There is just a single memory pool in COSMA and all the required 
     // memory is taken from this memory pool only.
     const std::string memory_pool_amortization = "COSMA_MEMORY_POOL_AMORTIZATION";
+    // minimum local matrix size -- if P is too large, so that after
+    // splitting the local matrix size get lower than this, 
+    // then P will be reduced so that the problem size
+    // never gets smaller than specified by this variable
+    const std::string min_local_dimension = "COSMA_MIN_LOCAL_DIMENSION";
 };
 
 // default values of supported environment variables
@@ -70,6 +75,11 @@ namespace env_var_defaults {
     // There is just a single memory pool in COSMA and all the required 
     // memory is taken from this memory pool only.
     const double memory_pool_amortization = 1.2;
+    // minimum local matrix size -- if P is too large, so that after
+    // splitting the local matrix size get lower than this, 
+    // then P will be reduced so that the problem size
+    // never gets smaller than specified by this variable
+    const int min_local_dimension = 32;
 };
 
 // checks if the specified environment variable is defined
@@ -137,4 +147,6 @@ template <typename T>
 long long get_cpu_max_memory();
 
 bool get_memory_pinning();
+
+int get_min_local_dimension();
 }
