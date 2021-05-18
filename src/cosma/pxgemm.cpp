@@ -1,9 +1,9 @@
 #include <cosma/cosma_pxgemm.hpp>
-#include "interpose.h"
 #include <cosma/environment_variables.hpp>
 
 extern "C" {
 #include <cosma/pxgemm.h>
+#include "interpose.h"
 
 bool is_problem_too_small(int m, int n, int k) {
     static const int cosma_dim_threshold = cosma::get_cosma_dim_threshold();
