@@ -59,12 +59,13 @@ if(NOT COSMA_BLAS IN_LIST BACKEND_LIST)
     message(FATAL_ERROR "Invalid value for COSMA_BLAS!")
 endif()
 
+# this does not have to be the case: sometimes we might link COSMA to OPENBLAS, but use NETLIB'S SCALAPACK with NETLIB's blas
 # COSMA BLAS and SCALAPACK BLAS can only differ if the GPU version of COSMA is used
-if(NOT ${SCALAPACK_BLAS} STREQUAL ${COSMA_BLAS}) 
-    if((NOT ${COSMA_BLAS} STREQUAL "CUDA") AND (NOT ${COSMA_BLAS} STREQUAL "ROCM"))
-        message(FATAL_ERROR "SCALAPACK must be linked to the same BLAS library as COSMA if the CPU version of COSMA is used!")
-    endif()
-endif()
+# if(NOT ${SCALAPACK_BLAS} STREQUAL ${COSMA_BLAS}) 
+#     if((NOT ${COSMA_BLAS} STREQUAL "CUDA") AND (NOT ${COSMA_BLAS} STREQUAL "ROCM"))
+#         message(FATAL_ERROR "SCALAPACK must be linked to the same BLAS library as COSMA if the CPU version of COSMA is used!")
+#     endif()
+# endif()
 
 # check if scalapack backend is valid
 message(STATUS "Selected SCALAPACK backend for COSMA: ${COSMA_SCALAPACK}")
