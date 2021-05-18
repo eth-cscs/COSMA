@@ -1,68 +1,27 @@
 #include <cosma/cosma_pxgemm.hpp>
+#include "interpose.h"
+#include <cosma/environment_variables.hpp>
 
 extern "C" {
 #include <cosma/pxgemm.h>
 
-// Reimplement ScaLAPACK signatures functions
-void pdgemm(const char* trans_a,
-            const char* trans_b,
-            const int* m,
-            const int* n,
-            const int* k,
-            const double* alpha,
-            const double *a,
-            const int* ia,
-            const int* ja,
-            const int* desca,
-            const double *b,
-            const int* ib,
-            const int* jb,
-            const int *descb,
-            const double* beta,
-            double *c,
-            const int* ic,
-            const int* jc,
-            const int* descc) {
-    cosma::pxgemm<double>(*trans_a,
-                  *trans_b,
-                  *m,
-                  *n,
-                  *k,
-                  *alpha,
-                  a,
-                  *ia,
-                  *ja,
-                  desca,
-                  b,
-                  *ib,
-                  *jb,
-                  descb,
-                  *beta,
-                  c,
-                  *ic,
-                  *jc,
-                  descc);
+bool is_problem_too_small(int m, int n, int k) {
+    static const int cosma_dim_threshold = cosma::get_cosma_dim_threshold();
+    return std::min(m, std::min(n, k)) < cosma_dim_threshold;
 }
 
-void psgemm(const char* trans_a,
-             const char* trans_b,
-             const int* m,
-             const int* n,
-             const int* k,
-             const float* alpha,
-             const float* a,
-             const int* ia,
-             const int* ja,
-             const int* desca,
-             const float* b,
-             const int* ib,
-             const int* jb,
-             const int* descb,
-             const float* beta,
-             float* c,
-             const int* ic,
-             const int* jc,
-             const int* descc) {
+// Reimplement ScaLAPACK signatures functions
+INTERPOSE_C_VOID(psgemm_,
+        (const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
+        const float* alpha, const float* a, const int* ia, const int* ja, const int* desca,
+        const float* b, const int* ib, const int* jb, const int* descb, const float* beta,
+        float* c, const int* ic, const int* jc, const int* descc),
+        (trans_a, trans_b, m, n, k, alpha, a, ia, ja, desca, b, ib, jb, descb, beta, c, ic, jc, descc)
+        ) {
+    if (is_problem_too_small(*m, *n, *k)) {
+        Real__psgemm_(trans_a, trans_b, m, n, k, alpha, a, ia, ja, desca, b, ib, jb, descb, beta, c, ic, jc, descc);
+        return;
+    }
     cosma::pxgemm<float>(*trans_a,
                  *trans_b,
                  *m,
@@ -84,26 +43,50 @@ void psgemm(const char* trans_a,
                  descc);
 }
 
-void pcgemm(const char* trans_a,
-            const char* trans_b,
-            const int* m,
-            const int* n,
-            const int* k,
-            const float * alpha,
-            const float * a,
-            const int* ia,
-            const int* ja,
-            const int *desca,
-            const float * b,
-            const int* ib,
-            const int* jb,
-            const int *descb,
-            const float * beta,
-            float  *c,
-            const int* ic,
-            const int* jc,
-            const int *descc) {
+INTERPOSE_C_VOID(pdgemm_, 
+        (const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
+        const double* alpha, const double* a, const int* ia, const int* ja, const int* desca,
+        const double* b, const int* ib, const int* jb, const int* descb, const double* beta,
+        double* c, const int* ic, const int* jc, const int* descc),
+        (trans_a, trans_b, m, n, k, alpha, a, ia, ja, desca, b, ib, jb, descb, beta, c, ic, jc, descc)
+        ){
+    if (is_problem_too_small(*m, *n, *k)) {
+        Real__pdgemm_(trans_a, trans_b, m, n, k, alpha, a, ia, ja, desca, b, ib, jb, descb, beta, c, ic, jc, descc);
+        return;
+    }
+    cosma::pxgemm<double>(*trans_a,
+                  *trans_b,
+                  *m,
+                  *n,
+                  *k,
+                  *alpha,
+                  a,
+                  *ia,
+                  *ja,
+                  desca,
+                  b,
+                  *ib,
+                  *jb,
+                  descb,
+                  *beta,
+                  c,
+                  *ic,
+                  *jc,
+                  descc);
+}
 
+INTERPOSE_C_VOID(pcgemm_, 
+        (const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
+        const float * alpha, const float * a, const int* ia,
+        const int* ja, const int* desca, const float * b, const int* ib,
+        const int* jb, const int* descb, const float * beta,
+        float * c, const int* ic, const int* jc, const int* descc),
+        (trans_a, trans_b, m, n, k, alpha, a, ia, ja, desca, b, ib, jb, descb, beta, c, ic, jc, descc)
+        ){
+    if (is_problem_too_small(*m, *n, *k)) {
+        Real__pcgemm_(trans_a, trans_b, m, n, k, alpha, a, ia, ja, desca, b, ib, jb, descb, beta, c, ic, jc, descc);
+        return;
+    }
     cosma::pxgemm<std::complex<float>>(*trans_a,
                     *trans_b,
                     *m,
@@ -125,26 +108,18 @@ void pcgemm(const char* trans_a,
                     descc);
 }
 
-void pzgemm(const char* trans_a,
-            const char* trans_b,
-            const int* m,
-            const int* n,
-            const int* k,
-            const double * alpha,
-            const double * a,
-            const int* ia,
-            const int* ja,
-            const int *desca,
-            const double  *b,
-            const int* ib,
-            const int* jb,
-            const int* descb,
-            const double * beta,
-            double * c,
-            const int* ic,
-            const int* jc,
-            const int *descc) {
-
+INTERPOSE_C_VOID(pzgemm_, 
+        (const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
+        const double * alpha, const double * a, const int* ia,
+        const int* ja, const int* desca, const double * b, const int* ib,
+        const int* jb, const int* descb, const double * beta,
+        double * c, const int* ic, const int* jc, const int* descc),
+        (trans_a, trans_b, m, n, k, alpha, a, ia, ja, desca, b, ib, jb, descb, beta, c, ic, jc, descc)
+        ){
+    if (is_problem_too_small(*m, *n, *k)) {
+        Real__pzgemm_(trans_a, trans_b, m, n, k, alpha, a, ia, ja, desca, b, ib, jb, descb, beta, c, ic, jc, descc);
+        return;
+    }
     cosma::pxgemm<std::complex<double>>(*trans_a,
                      *trans_b,
                      *m,
@@ -170,44 +145,43 @@ void pzgemm(const char* trans_a,
 // Same as previously, but with added underscore at the end.
 // This is used for fortran interfaces, in case fortran expects these symbols
 // *********************************************************************************
-
-void psgemm_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void psgemm(const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
         const float* alpha, const float* a, const int* ia, const int* ja, const int* desca,
         const float* b, const int* ib, const int* jb, const int* descb, const float* beta,
         float* c, const int* ic, const int* jc, const int* descc) {
-    psgemm(trans_a, transb, m, n, k,
+    psgemm_(trans_a, trans_b, m, n, k,
            alpha, a, ia, ja, desca,
            b, ib, jb, descb,
            beta, c, ic, jc, descc);
 }
 
-void pdgemm_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void pdgemm(const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
         const double* alpha, const double* a, const int* ia, const int* ja, const int* desca,
         const double* b, const int* ib, const int* jb, const int* descb, const double* beta,
         double* c, const int* ic, const int* jc, const int* descc) {
-    pdgemm(trans_a, transb, m, n, k,
+    pdgemm_(trans_a, trans_b, m, n, k,
            alpha, a, ia, ja, desca,
            b, ib, jb, descb,
            beta, c, ic, jc, descc);
 }
 
-void pcgemm_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void pcgemm(const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
         const float * alpha, const float * a, const int* ia,
         const int* ja, const int* desca, const float * b, const int* ib,
         const int* jb, const int* descb, const float * beta,
         float * c, const int* ic, const int* jc, const int* descc) {
-    pcgemm(trans_a, transb, m, n, k,
+    pcgemm_(trans_a, trans_b, m, n, k,
            alpha, a, ia, ja, desca,
            b, ib, jb, descb,
            beta, c, ic, jc, descc);
 }
 
-void pzgemm_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void pzgemm(const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
         const double * alpha, const double * a, const int* ia,
         const int* ja, const int* desca, const double * b, const int* ib,
         const int* jb, const int* descb, const double * beta,
         double * c, const int* ic, const int* jc, const int* descc) {
-    pzgemm(trans_a, transb, m, n, k,
+    pzgemm_(trans_a, trans_b, m, n, k,
            alpha, a, ia, ja, desca,
            b, ib, jb, descb,
            beta, c, ic, jc, descc);
@@ -218,43 +192,43 @@ void pzgemm_(const char* trans_a, const char* transb, const int* m, const int* n
 // This is used for fortran interfaces, in case fortran expects these symbols
 // *********************************************************************************
 
-void psgemm__(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void PSGEMM_(const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
         const float* alpha, const float* a, const int* ia, const int* ja, const int* desca,
         const float* b, const int* ib, const int* jb, const int* descb, const float* beta,
         float* c, const int* ic, const int* jc, const int* descc) {
-    psgemm(trans_a, transb, m, n, k,
+    psgemm_(trans_a, trans_b, m, n, k,
            alpha, a, ia, ja, desca,
            b, ib, jb, descb,
            beta, c, ic, jc, descc);
 }
 
-void pdgemm__(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void PDGEMM_(const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
         const double* alpha, const double* a, const int* ia, const int* ja, const int* desca,
         const double* b, const int* ib, const int* jb, const int* descb, const double* beta,
         double* c, const int* ic, const int* jc, const int* descc) {
-    pdgemm(trans_a, transb, m, n, k,
+    pdgemm_(trans_a, trans_b, m, n, k,
            alpha, a, ia, ja, desca,
            b, ib, jb, descb,
            beta, c, ic, jc, descc);
 }
 
-void pcgemm__(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void PCGEMM_(const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
         const float * alpha, const float * a, const int* ia,
         const int* ja, const int* desca, const float * b, const int* ib,
         const int* jb, const int* descb, const float * beta,
         float * c, const int* ic, const int* jc, const int* descc) {
-    pcgemm(trans_a, transb, m, n, k,
+    pcgemm_(trans_a, trans_b, m, n, k,
            alpha, a, ia, ja, desca,
            b, ib, jb, descb,
            beta, c, ic, jc, descc);
 }
 
-void pzgemm__(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void PZGEMM_(const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
         const double * alpha, const double * a, const int* ia,
         const int* ja, const int* desca, const double * b, const int* ib,
         const int* jb, const int* descb, const double * beta,
         double * c, const int* ic, const int* jc, const int* descc) {
-    pzgemm(trans_a, transb, m, n, k,
+    pzgemm_(trans_a, trans_b, m, n, k,
            alpha, a, ia, ja, desca,
            b, ib, jb, descb,
            beta, c, ic, jc, descc);
@@ -265,43 +239,43 @@ void pzgemm__(const char* trans_a, const char* transb, const int* m, const int* 
 // This is used for fortran interfaces, in case fortran expects these symbols
 // *********************************************************************************
 
-void PSGEMM(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void PSGEMM(const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
         const float* alpha, const float* a, const int* ia, const int* ja, const int* desca,
         const float* b, const int* ib, const int* jb, const int* descb, const float* beta,
         float* c, const int* ic, const int* jc, const int* descc) {
-    psgemm(trans_a, transb, m, n, k,
+    psgemm_(trans_a, trans_b, m, n, k,
            alpha, a, ia, ja, desca,
            b, ib, jb, descb,
            beta, c, ic, jc, descc);
 }
 
-void PDGEMM(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void PDGEMM(const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
         const double* alpha, const double* a, const int* ia, const int* ja, const int* desca,
         const double* b, const int* ib, const int* jb, const int* descb, const double* beta,
         double* c, const int* ic, const int* jc, const int* descc) {
-    pdgemm(trans_a, transb, m, n, k,
+    pdgemm_(trans_a, trans_b, m, n, k,
            alpha, a, ia, ja, desca,
            b, ib, jb, descb,
            beta, c, ic, jc, descc);
 }
 
-void PCGEMM(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void PCGEMM(const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
         const float * alpha, const float * a, const int* ia,
         const int* ja, const int* desca, const float * b, const int* ib,
         const int* jb, const int* descb, const float * beta,
         float * c, const int* ic, const int* jc, const int* descc) {
-    pcgemm(trans_a, transb, m, n, k,
+    pcgemm_(trans_a, trans_b, m, n, k,
            alpha, a, ia, ja, desca,
            b, ib, jb, descb,
            beta, c, ic, jc, descc);
 }
 
-void PZGEMM(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void PZGEMM(const char* trans_a, const char* trans_b, const int* m, const int* n, const int* k,
         const double * alpha, const double * a, const int* ia,
         const int* ja, const int* desca, const double * b, const int* ib,
         const int* jb, const int* descb, const double * beta,
         double * c, const int* ic, const int* jc, const int* descc) {
-    pzgemm(trans_a, transb, m, n, k,
+    pzgemm_(trans_a, trans_b, m, n, k,
            alpha, a, ia, ja, desca,
            b, ib, jb, descb,
            beta, c, ic, jc, descc);

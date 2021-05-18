@@ -42,6 +42,9 @@ namespace env_var_names {
     // then P will be reduced so that the problem size
     // never gets smaller than specified by this variable
     const std::string min_local_dimension = "COSMA_MIN_LOCAL_DIMENSION";
+    // if any dimension is smaller than this threshold, it will be dispatched to SCALAPACK
+    // since it's too "thin" for COSMA in that case
+    const std::string cosma_dim_threshold = "COSMA_DIM_THRESHOLD";
 };
 
 // default values of supported environment variables
@@ -80,6 +83,9 @@ namespace env_var_defaults {
     // then P will be reduced so that the problem size
     // never gets smaller than specified by this variable
     const int min_local_dimension = 32;
+    // if any dimension is smaller than this threshold, it will be dispatched to SCALAPACK
+    // since it's too "thin" for COSMA in that case
+    const int cosma_dim_threshold = 200;
 };
 
 // checks if the specified environment variable is defined
@@ -149,4 +155,6 @@ long long get_cpu_max_memory();
 bool get_memory_pinning();
 
 int get_min_local_dimension();
+int get_cosma_dim_threshold();
+
 }

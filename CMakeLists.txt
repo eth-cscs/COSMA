@@ -18,7 +18,8 @@ option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
 option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT})
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
 option(COSMA_WITH_PROFILING "Enable profiling." OFF)
-option(BUILD_SHARED_LIBS "Build shared libraries." OFF)
+# this has to be the case if scalapack is used
+option(BUILD_SHARED_LIBS "Build shared libraries." ON)
 
 set(COSMA_BLAS "MKL" CACHE STRING
     "Blas backend. Can be MKL, OPENBLAS, CRAY_LIBSCI, BLIS, ATLAS, CUDA, ROCM or CUSTOM")
@@ -37,6 +38,13 @@ set(COSMA_SCALAPACK "OFF" CACHE STRING
     "Blas backend. Can be MKL, CRAY_LIBSCI, CUSTOM or OFF.")
 set_property(CACHE COSMA_SCALAPACK PROPERTY STRINGS
     "OFF" "MKL" "CRAY_LIBSCI" "CUSTOM")
+
+# if using scalapack, then enforce building as a shared library
+# so that the function interpose can work
+if (COSMA_SCALAPACK AND NOT BUILD_SHARED_LIBS)
+    message(FATAL_ERROR "When SCALAPACK wrappers are used, COSMA has to be compiled as a shared library. Rerun cmake adding -DBUILD_SHARED_LIBS=ON.")
+endif()
+
 
 # if SCALAPACK BLAS is not defined, then set it to be the same
 # as the scalapack provider
