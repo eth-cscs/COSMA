@@ -104,6 +104,7 @@ void multiply_using_layout(cosma_context<T> *ctx,
     MPI_Comm_size(comm, &P);
 
     // find an optimal strategy for this problem
+    cosma::Strategy::min_dim_size = ctx->min_local_dimension;
     Strategy strategy(m, n, k, P);
     // enable overlapping communication and computation if turned on
     if (get_context_instance<T>()->overlap_comm_and_comp) {

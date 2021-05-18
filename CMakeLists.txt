@@ -18,17 +18,39 @@ option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
 option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT})
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
 option(COSMA_WITH_PROFILING "Enable profiling." OFF)
-option(BUILD_SHARED_LIBS "Build shared libraries." OFF)
+# this has to be the case if scalapack is used
+option(BUILD_SHARED_LIBS "Build shared libraries." ON)
 
 set(COSMA_BLAS "MKL" CACHE STRING
-    "Blas backend. Can be MKL, OPENBLAS, CRAY_LIBSCI, CUSTOM, CUDA or ROCM.")
+    "Blas backend. Can be MKL, OPENBLAS, CRAY_LIBSCI, BLIS, ATLAS, CUDA, ROCM or CUSTOM")
 set_property(CACHE COSMA_BLAS PROPERTY STRINGS
-    "MKL" "OPENBLAS" "CRAY_LIBSCI" "CUSTOM" "CUDA" "ROCM")
+    "MKL" "OPENBLAS" "CRAY_LIBSCI" "BLIS" "ATLAS" "CUDA" "ROCM" "CUSTOM")
+
+# the blas library that SCALAPACK is linked to
+# this is not used by COSMA, it's just to enable 
+# the proper linking to SCALAPACK and its dependencies
+set(SCALAPACK_BLAS "OFF" CACHE STRING
+    "Blas backend. Can be MKL, OPENBLAS, CRAY_LIBSCI, BLIS, ATLAS, CUSTOM or OFF.")
+set_property(CACHE SCALAPACK_BLAS PROPERTY STRINGS
+    "OFF" "MKL" "OPENBLAS" "CRAY_LIBSCI" "BLIS" "ATLAS" "CUSTOM")
 
 set(COSMA_SCALAPACK "OFF" CACHE STRING
     "Blas backend. Can be MKL, CRAY_LIBSCI, CUSTOM or OFF.")
 set_property(CACHE COSMA_SCALAPACK PROPERTY STRINGS
     "OFF" "MKL" "CRAY_LIBSCI" "CUSTOM")
+
+# if using scalapack, then enforce building as a shared library
+# so that the function interpose can work
+if (COSMA_SCALAPACK AND NOT BUILD_SHARED_LIBS)
+    message(FATAL_ERROR "When SCALAPACK wrappers are used, COSMA has to be compiled as a shared library. Rerun cmake adding -DBUILD_SHARED_LIBS=ON.")
+endif()
+
+
+# if SCALAPACK BLAS is not defined, then set it to be the same
+# as the scalapack provider
+if (COSMA_SCALAPACK AND NOT SCALAPACK_BLAS) 
+    set(SCALAPACK_BLAS ${COSMA_SCALAPACK})
+endif()
 
 # check if blas backend is valid
 message(STATUS "Selected BLAS backend for COSMA: ${COSMA_BLAS}")
@@ -36,6 +58,14 @@ get_property(BACKEND_LIST CACHE COSMA_BLAS PROPERTY STRINGS)
 if(NOT COSMA_BLAS IN_LIST BACKEND_LIST)
     message(FATAL_ERROR "Invalid value for COSMA_BLAS!")
 endif()
+
+# this does not have to be the case: sometimes we might link COSMA to OPENBLAS, but use NETLIB'S SCALAPACK with NETLIB's blas
+# COSMA BLAS and SCALAPACK BLAS can only differ if the GPU version of COSMA is used
+# if(NOT ${SCALAPACK_BLAS} STREQUAL ${COSMA_BLAS}) 
+#     if((NOT ${COSMA_BLAS} STREQUAL "CUDA") AND (NOT ${COSMA_BLAS} STREQUAL "ROCM"))
+#         message(FATAL_ERROR "SCALAPACK must be linked to the same BLAS library as COSMA if the CPU version of COSMA is used!")
+#     endif()
+# endif()
 
 # check if scalapack backend is valid
 message(STATUS "Selected SCALAPACK backend for COSMA: ${COSMA_SCALAPACK}")
@@ -45,13 +75,20 @@ if(COSMA_SCALAPACK AND NOT COSMA_SCALAPACK IN_LIST BACKEND_LIST)
     message(FATAL_ERROR "Invalid value for COSMA_SCALAPACK!")
 endif()
 
-if (NOT ${COSMA_BLAS} STREQUAL "CUDA" AND NOT ${COSMA_BLAS} STREQUAL "ROCM" AND NOT ${COSMA_BLAS} STREQUAL "OPENBLAS")
+message(STATUS "The BLAS backend that SCALAPACK is linked to: ${SCALAPACK_BLAS}")
+unset(BACKEND_LIST)
+get_property(BACKEND_LIST CACHE SCALAPACK_BLAS PROPERTY STRINGS)
+if(NOT SCALAPACK_BLAS IN_LIST BACKEND_LIST)
+    message(FATAL_ERROR "Invalid value for SCALAPACK_BLAS!")
+endif()
+
+if (${COSMA_BLAS} STREQUAL "MKL" OR ${COSMA_BLAS} STREQUAL "CRAY_LIBSCI")
     if (COSMA_SCALAPACK AND NOT ${COSMA_BLAS} STREQUAL ${COSMA_SCALAPACK})
-        message(FATAL_ERROR "SCALAPACK backend MUST match BLAS backend if no GPU backend is used!")
+        message(FATAL_ERROR "SCALAPACK backend MUST match the BLAS backend if MKL or CRAY_LIBSCI are used!")
     endif()
 endif()
 
-project(cosma VERSION 2.3.0 LANGUAGES CXX)
+project(cosma VERSION 2.4.0 LANGUAGES CXX)
 
 # preserve rpaths when installing and make the install folder relocatable
 # use `CMAKE_SKIP_INSTALL_RPATH` to skip this
@@ -101,11 +138,13 @@ endif()
 set(BLAS_TARGET "")
 set(BLAS_DEF "")
 set(GPU OFF)
+# BLAS provider that SCALAPACK is linked to
+set(SCALAPACK_BLAS_TARGET "")
 
 # these are only GPU-backends
 if (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
     option(TILEDMM_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
-    set(TILEMM_GPU_BACKEND ${COSMA_BLAS} CACHE STRING FORCE "")
+    set(TILEDMM_GPU_BACKEND ${COSMA_BLAS} CACHE STRING "GPU backend" FORCE)
     add_subdirectory(libs/Tiled-MM)
     set(BLAS_TARGET "Tiled-MM")
     set(BLAS_DEF "COSMA_HAVE_GPU")
@@ -122,14 +161,47 @@ elseif (${COSMA_BLAS} MATCHES "CRAY_LIBSCI")
     find_package(CRAY_LIBSCI REQUIRED)
     set(BLAS_TARGET "${CRAY_LIBSCI_LIBRARIES}")
     set(BLAS_DEF "COSMA_WITH_BLAS")
+elseif (${COSMA_BLAS} MATCHES "OPENBLAS")
+    find_package(OPENBLAS REQUIRED)
+    set(BLAS_TARGET "OPENBLAS::openblas")
+    set(BLAS_DEF "COSMA_WITH_BLAS")
+elseif (${COSMA_BLAS} MATCHES "BLIS")
+    find_package(BLIS REQUIRED)
+    set(BLAS_TARGET "BLIS::blis")
+    set(BLAS_DEF "COSMA_WITH_BLIS_BLAS")
+elseif (${COSMA_BLAS} MATCHES "ATLAS")
+    find_package(ATLAS REQUIRED)
+    set(BLAS_TARGET "ATLAS::atlas")
+    set(BLAS_DEF "COSMA_WITH_BLAS")
 elseif (${COSMA_BLAS} MATCHES "CUSTOM")
     find_package(BLAS REQUIRED)
     set(BLAS_TARGET "${BLAS_LIBRARIES}")
     set(BLAS_DEF "COSMA_WITH_BLAS")
-elseif (${COSMA_BLAS} MATCHES "OPENBLAS")
-    find_package(OpenBLAS REQUIRED)
-    set(BLAS_TARGET "openblas")
-    set(BLAS_DEF "COSMA_WITH_BLAS")
+endif()
+
+# BLAS LIBRARY that SCALAPACK is linked to
+if (${SCALAPACK_BLAS} MATCHES "MKL")
+    find_package(MKL REQUIRED)
+    set(SCALAPACK_BLAS_TARGET "mkl::mkl_intel_32bit_omp_dyn")
+elseif (${SCALAPACK_BLAS} MATCHES "CRAY_LIBSCI")
+    find_package(CRAY_LIBSCI REQUIRED)
+    set(SCALAPACK_BLAS_TARGET "${CRAY_LIBSCI_LIBRARIES}")
+elseif (${SCALAPACK_BLAS} MATCHES "OPENBLAS")
+    find_package(OPENBLAS REQUIRED)
+    set(SCALAPACK_BLAS_TARGET "OPENBLAS::openblas")
+elseif (${SCALAPACK_BLAS} MATCHES "BLIS")
+    find_package(BLIS REQUIRED)
+    set(SCALAPACK_BLAS_TARGET "BLIS::blis")
+elseif (${SCALAPACK_BLAS} MATCHES "ATLAS")
+    find_package(ATLAS REQUIRED)
+    set(SCALAPACK_BLAS_TARGET "ATLAS::atlas")
+elseif (${SCALAPACK_BLAS} MATCHES "CUSTOM")
+    find_package(BLAS REQUIRED)
+    set(SCALAPACK_BLAS_TARGET "${BLAS_LIBRARIES}")
+endif()
+
+if (NOT ${SCALAPACK_BLAS} STREQUAL ${COSMA_BLAS}) 
+    set(BLAS_TARGET "${BLAS_TARGET}" "${SCALAPACK_BLAS_TARGET}")
 endif()
 
 # (optional) SCALAPACK providers

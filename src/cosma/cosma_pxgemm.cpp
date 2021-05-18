@@ -177,6 +177,7 @@ void pxgemm(const char transa,
 
     // get CPU memory limit
     auto cpu_memory_limit = get_context_instance<T>()->get_cpu_memory_limit();
+    cosma::Strategy::min_dim_size = get_context_instance<T>()->min_local_dimension;
     Strategy strategy(m, n, k, P,
                       divisors, dimensions, step_type,
                       cpu_memory_limit);

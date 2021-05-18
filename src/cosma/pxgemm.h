@@ -57,23 +57,23 @@ void pzgemm_(const char* trans_a, const char* transb, const int* m, const int* n
 // This is used for fortran interfaces, in case fortran expects these symbols
 // *********************************************************************************
 
-void psgemm__(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void PSGEMM_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
         const float* alpha, const float* a, const int* ia, const int* ja, const int* desca,
         const float* b, const int* ib, const int* jb, const int* descb, const float* beta,
         float* c, const int* ic, const int* jc, const int* descc);
 
-void pdgemm__(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void PDGEMM_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
         const double* alpha, const double* a, const int* ia, const int* ja, const int* desca,
         const double* b, const int* ib, const int* jb, const int* descb, const double* beta,
         double* c, const int* ic, const int* jc, const int* descc);
 
-void pcgemm__(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void PCGEMM_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
         const float * alpha, const float * a, const int* ia,
         const int* ja, const int* desca, const float * b, const int* ib,
         const int* jb, const int* descb, const float * beta,
         float * c, const int* ic, const int* jc, const int* descc);
 
-void pzgemm__(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void PZGEMM_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
         const double * alpha, const double * a, const int* ia,
         const int* ja, const int* desca, const double * b, const int* ib,
         const int* jb, const int* descb, const double * beta,

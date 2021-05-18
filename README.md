@@ -58,6 +58,7 @@ The paper and other materials on COSMA are available under the following link:
 - **C/Fortran Interface:** written in `C++`, but provides `C` and `Fortran` interfaces.
 - **Custom Types:** fully templatized types.
 - **GPU acceleration:** supports both **NVIDIA** and **AMD** GPUs.
+- **Supported BLAS (CPU) backends:** MKL, LibSci, NETLIB, BLIS, ATLAS. 
 - **Custom Data Layout Support:** natively uses its own blocked data layout of matrices, but supports arbitrary grid-like data layout of matrices.
 - **Tranposition/Conjugation Support:** matrices `A` and `B` can be transposed and/or conjugated.
 - **Communication and Computation Overlap:** supports overlapping of communication and computation.
@@ -78,6 +79,8 @@ External dependencies:
 - `BLAS`: when the problem becomes local, COSMA uses provided `?gemm` backend, which can be one of the following:
      - `MKL` (default) 
      - `OPENBLAS`
+     - `BLIS`
+     - `ATLAS`
      - `CRAY_LIBSCI`: `Cray-libsci` or `Cray-libsci_acc` (GPU-accelerated)
      - `CUDA`: `cublas` is used for NVIDIA GPUs
      - `ROCM`: `rocBLAS` is used for AMD GPUs
@@ -86,7 +89,7 @@ External dependencies:
 Some dependencies are bundled as submodules and need not be installed explicitly:
 
 - `TiledMM` - cublasXt GEMM replacement, that is also ported to AMD GPUs.
-- `grid2grid` - distributed matrix grid layout transformer.
+- `COSTA` - distributed matrix reshuffle and transpose algorithm.
 - `semiprof` - profiling utlility
 - `gtest_mpi` - MPI utlility wrapper over GoogleTest (unit testing library)
 
@@ -133,7 +136,7 @@ make install
 2) Link your code to COSMA:
     - **CPU-only** version of COSMA:
        - link your code to:
-       > -L<installation dir>/cosma/lib64 -lcosma_pxgemm -lcosma -lgrid2grid 
+       > -L<installation dir>/cosma/lib64 -lcosma_pxgemm -lcosma -lcosta_scalapack 
  
        - then link to the BLAS and ScaLAPACK you built COSMA with (see `COSMA_BLAS` and `COSMA_SCALAPACK` flags in cmake):
        > -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_scalapack_lp64 -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lmkl_blacs_intelmpi_lp64 -lgomp -lpthread -lm
@@ -141,7 +144,7 @@ make install
     
    - using **GPU-accelerated** version of COSMA: 
        - link your code to:
-       >-L<installation dir>/cosma/lib64 -lcosma_pxgemm -lcosma -lgrid2grid -lTiled-MM
+       >-L<installation dir>/cosma/lib64 -lcosma_pxgemm -lcosma -lcosta_scalapack -lTiled-MM
        
        - link to the GPU backend you built COSMA with (see `COSMA_BLAS` flag in cmake):
        >-lcublas -lcudart -lrt
@@ -291,6 +294,8 @@ ENVIRONMENT VARIABLE | POSSIBLE VALUES | DESCRIPTION
 `COSMA_GPU_MAX_TILE_M`, `COSMA_GPU_MAX_TILE_N`, `COSMA_GPU_MAX_TILE_K` | integer (`size_t`), by default: **5000** | Tile sizes for each dimension, that are used to pipeline the local CPU matrices to GPU. `K` refers to the shared dimension and `MxN` refer to the dimensions of matrix `C`
 `COSMA_GPU_STREAMS` | integer (`size_t`), by default: **2** | The number of GPU streams that each rank should use.
 `COSMA_MEMORY_POOL_AMORTIZATION` | real (`double`), by default **1.2** | The growth factor for the memory pool. If equal to 1.2, then 1.2x the requested size is allocated (thus, 20% more than needed). Higher values better amortize the cost of the memory pool resizing which can occur when the algorithm is invoked for different matrix sizes. However, higher amortization values also mean that potentially more memory is allocated than used which can be a problem when the memory resource is tight.
+`COSMA_MIN_LOCAL_DIMENSION` | integer (`size_t`), by default: **32** | If any matrix dimension becomes smaller than this threshold (after splitting the matrices among the available MPI ranks), then the actual number of ranks is reduced so that all matrix dimensions stay at or above this limit.
+`COSMA_DIM_THRESHOLD` | integer (`size_t`), by default: **200** | In SCALAPACK wrappers, if any matrix dimension is less than this threshold, the problem is considered too small and is dispatched to SCALAPACK for computation. This only affects the SCALAPACK wrappers.
 
 These are all optional parameters. They are used in runtime and hence changing any of those does not require the code to be recompiled.
 
@@ -398,4 +403,3 @@ This work was funded in part by:
 <img align="left" height="50" src="./docs/max-logo.jpg"> | [**MaX**](http://www.max-centre.eu): **Materials design at the Exascale** (Horizon2020, grant agreement MaX CoE, No. 824143.)
 
 We thank Thibault Notargiacomo, Sam Yates, Benjamin Cumming and Simon Pintarelli for their generous contribution to the project: great ideas, useful advices and fruitful discussions.
-
