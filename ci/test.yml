@@ -7,6 +7,7 @@ stages:
   - cleanup
 
 variables:
+  GIT_STRATEGY: none
   SLURM_TIMELIMIT: '15:00'
   USE_MPI: 'YES'
   DISABLE_AFTER_SCRIPT: 'YES'
