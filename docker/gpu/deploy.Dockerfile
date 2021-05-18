@@ -16,7 +16,7 @@ RUN mkdir /COSMA/build && cd /COSMA/build && \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INSTALL_PREFIX=/root/COSMA-build && \
       make -j$(nproc) && \
-      make && \
+      make install && \
       rm -rf /COSMA
 
 # Run linuxdeploy, and add a bunch of libs that are dlopen'ed by mkl
