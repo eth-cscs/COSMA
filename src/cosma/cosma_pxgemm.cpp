@@ -6,6 +6,7 @@
 #include <cosma/cosma_pxgemm.hpp>
 #include <cosma/profiler.hpp>
 #include <cosma/pxgemm_params.hpp>
+#include <cosma/environment_variables.hpp>
 
 #include <costa/grid2grid/ranks_reordering.hpp>
 #include <costa/grid2grid/transformer.hpp>
@@ -637,6 +638,11 @@ void adapt_strategy_to_block_cyclic_grid(// these will contain the suggested str
             }
         }
     }
+}
+
+bool is_problem_too_small(int m, int n, int k) {
+    static const int cosma_dim_threshold = cosma::get_cosma_dim_threshold();
+    return std::min(m, std::min(n, k)) < cosma_dim_threshold;
 }
 
 // explicit instantiation for pxgemm

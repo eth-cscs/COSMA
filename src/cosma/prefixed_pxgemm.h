@@ -56,24 +56,23 @@ void cosma_pzgemm_(const char* trans_a, const char* transb, const int* m, const 
 // Same as previously, but with double underscore at the end.
 // This is used for fortran interfaces, in case fortran expects these symbols
 // *********************************************************************************
-
-void cosma_psgemm__(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void COSMA_PSGEMM_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
         const float* alpha, const float* a, const int* ia, const int* ja, const int* desca,
         const float* b, const int* ib, const int* jb, const int* descb, const float* beta,
         float* c, const int* ic, const int* jc, const int* descc);
 
-void cosma_pdgemm__(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void COSMA_PDGEMM_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
         const double* alpha, const double* a, const int* ia, const int* ja, const int* desca,
         const double* b, const int* ib, const int* jb, const int* descb, const double* beta,
         double* c, const int* ic, const int* jc, const int* descc);
 
-void cosma_pcgemm__(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void COSMA_PCGEMM_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
         const float * alpha, const float * a, const int* ia,
         const int* ja, const int* desca, const float * b, const int* ib,
         const int* jb, const int* descb, const float * beta,
         float * c, const int* ic, const int* jc, const int* descc);
 
-void cosma_pzgemm__(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
+void COSMA_PZGEMM_(const char* trans_a, const char* transb, const int* m, const int* n, const int* k,
         const double * alpha, const double * a, const int* ia,
         const int* ja, const int* desca, const double * b, const int* ib,
         const int* jb, const int* descb, const double * beta,

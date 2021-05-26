@@ -1,14 +1,8 @@
 #include <cosma/cosma_pxgemm.hpp>
-#include <cosma/environment_variables.hpp>
 
 extern "C" {
 #include <cosma/pxgemm.h>
 #include <cosma/interpose.h>
-
-bool is_problem_too_small(int m, int n, int k) {
-    static const int cosma_dim_threshold = cosma::get_cosma_dim_threshold();
-    return std::min(m, std::min(n, k)) < cosma_dim_threshold;
-}
 
 // Reimplement ScaLAPACK signatures functions
 INTERPOSE_C_VOID(psgemm_,
@@ -18,7 +12,7 @@ INTERPOSE_C_VOID(psgemm_,
         float* c, const int* ic, const int* jc, const int* descc),
         (trans_a, trans_b, m, n, k, alpha, a, ia, ja, desca, b, ib, jb, descb, beta, c, ic, jc, descc)
         ) {
-    if (is_problem_too_small(*m, *n, *k)) {
+    if (cosma::is_problem_too_small(*m, *n, *k)) {
         Real__psgemm_(trans_a, trans_b, m, n, k, alpha, a, ia, ja, desca, b, ib, jb, descb, beta, c, ic, jc, descc);
         return;
     }
@@ -50,7 +44,7 @@ INTERPOSE_C_VOID(pdgemm_,
         double* c, const int* ic, const int* jc, const int* descc),
         (trans_a, trans_b, m, n, k, alpha, a, ia, ja, desca, b, ib, jb, descb, beta, c, ic, jc, descc)
         ){
-    if (is_problem_too_small(*m, *n, *k)) {
+    if (cosma::is_problem_too_small(*m, *n, *k)) {
         Real__pdgemm_(trans_a, trans_b, m, n, k, alpha, a, ia, ja, desca, b, ib, jb, descb, beta, c, ic, jc, descc);
         return;
     }
@@ -83,7 +77,7 @@ INTERPOSE_C_VOID(pcgemm_,
         float * c, const int* ic, const int* jc, const int* descc),
         (trans_a, trans_b, m, n, k, alpha, a, ia, ja, desca, b, ib, jb, descb, beta, c, ic, jc, descc)
         ){
-    if (is_problem_too_small(*m, *n, *k)) {
+    if (cosma::is_problem_too_small(*m, *n, *k)) {
         Real__pcgemm_(trans_a, trans_b, m, n, k, alpha, a, ia, ja, desca, b, ib, jb, descb, beta, c, ic, jc, descc);
         return;
     }
@@ -116,7 +110,7 @@ INTERPOSE_C_VOID(pzgemm_,
         double * c, const int* ic, const int* jc, const int* descc),
         (trans_a, trans_b, m, n, k, alpha, a, ia, ja, desca, b, ib, jb, descb, beta, c, ic, jc, descc)
         ){
-    if (is_problem_too_small(*m, *n, *k)) {
+    if (cosma::is_problem_too_small(*m, *n, *k)) {
         Real__pzgemm_(trans_a, trans_b, m, n, k, alpha, a, ia, ja, desca, b, ib, jb, descb, beta, c, ic, jc, descc);
         return;
     }

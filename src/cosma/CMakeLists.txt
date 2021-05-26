@@ -44,7 +44,8 @@ endif()
 
 # if SCALAPACK is found and cosma_pxgemm library is not already created
 # then create it here and link it to the profiler if needed
-if(SCALAPACK_TARGET AND NOT TARGET cosma_pxgemm)
+# build as a shared library is necessary here because of the function interposing
+if(SCALAPACK_TARGET AND NOT TARGET cosma_pxgemm AND BUILD_SHARED_LIBS)
     add_library(cosma_pxgemm scalapack.cpp
                              pxgemm_params.hpp
                              cosma_pxgemm.cpp

@@ -71,4 +71,9 @@ void scale_matrix(const int* descc, T* c,
                   const int ic, const int jc,
                   const int m, const int n,
                   const T beta);
+
+
+// checks if the problem is too small for COSMA
+bool is_problem_too_small(int m, int n, int k);
+
 } // namespace cosma

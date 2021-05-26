@@ -82,7 +82,7 @@ namespace env_var_defaults {
     // splitting the local matrix size get lower than this, 
     // then P will be reduced so that the problem size
     // never gets smaller than specified by this variable
-    const int min_local_dimension = 32;
+    const int min_local_dimension = 200;
     // if any dimension is smaller than this threshold, it will be dispatched to SCALAPACK
     // since it's too "thin" for COSMA in that case
     const int cosma_dim_threshold = 200;
