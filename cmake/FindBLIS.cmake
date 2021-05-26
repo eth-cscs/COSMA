@@ -46,13 +46,13 @@
 #   BLIS::blis
 
 #set paths to look for library from ROOT variables.If new policy is set, find_library() automatically uses them.
-if(NOT POLICY CMP0074)
-    set(_BLIS_PATHS ${BLIS_ROOT} 
-                    $ENV{BLIS_ROOT} 
-                    $ENV{BLISROOT}
-                    $ENV{BLIS_DIR}
-                    $ENV{BLISDIR})
-endif()
+# if(NOT POLICY CMP0074)
+set(_BLIS_PATHS ${BLIS_ROOT} 
+                $ENV{BLIS_ROOT} 
+                $ENV{BLISROOT}
+                $ENV{BLIS_DIR}
+                $ENV{BLISDIR})
+# endif()
 
 find_library(
     BLIS_LIBRARIES

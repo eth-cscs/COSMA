@@ -46,13 +46,13 @@
 #   ATLAS::atlas
 
 #set paths to look for library from ROOT variables.If new policy is set, find_library() automatically uses them.
-if(NOT POLICY CMP0074)
-    set(_ATLAS_PATHS ${ATLAS_ROOT}
-                     $ENV{ATLAS_ROOT}
-                     $ENV{ATLASROOT}
-                     $ENV{ATLAS_DIR}
-                     $ENV{ATLASDIR})
-endif()
+# if(NOT POLICY CMP0074)
+set(_ATLAS_PATHS ${ATLAS_ROOT}
+                 $ENV{ATLAS_ROOT}
+                 $ENV{ATLASROOT}
+                 $ENV{ATLAS_DIR}
+                 $ENV{ATLASDIR})
+# endif()
 
 find_library(
     ATLAS_LIBRARIES

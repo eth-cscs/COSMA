@@ -1,15 +1,14 @@
 # find OPENBLAS
-# workaround for missing openblas cmake config file in fedora
 
 include(FindPackageHandleStandardArgs)
 
-if(NOT POLICY CMP0074)
-    set(_OPENBLAS_PATHS ${OPENBLAS_ROOT} 
-        $ENV{OPENBLAS_ROOT} 
-        $ENV{OPENBLASROOT}
-        $ENV{OPENBLAS_DIR}
-        $ENV{OPENBLASDIR})
-endif()
+# if(NOT POLICY CMP0074)
+set(_OPENBLAS_PATHS ${OPENBLAS_ROOT} 
+    $ENV{OPENBLAS_ROOT} 
+    $ENV{OPENBLASROOT}
+    $ENV{OPENBLAS_DIR}
+    $ENV{OPENBLASDIR})
+# endif()
 
 find_path(OPENBLAS_INCLUDE_DIR
     NAMES "cblas-openblas.h" "cblas_openblas.h" "cblas.h"

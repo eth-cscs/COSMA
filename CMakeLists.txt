@@ -18,8 +18,7 @@ option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
 option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT})
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
 option(COSMA_WITH_PROFILING "Enable profiling." OFF)
-# this has to be the case if scalapack is used
-option(BUILD_SHARED_LIBS "Build shared libraries." ON)
+option(BUILD_SHARED_LIBS "Build shared libraries." OFF)
 
 set(COSMA_BLAS "MKL" CACHE STRING
     "Blas backend. Can be MKL, OPENBLAS, CRAY_LIBSCI, BLIS, ATLAS, CUDA, ROCM or CUSTOM")
@@ -41,9 +40,9 @@ set_property(CACHE COSMA_SCALAPACK PROPERTY STRINGS
 
 # if using scalapack, then enforce building as a shared library
 # so that the function interpose can work
-if (COSMA_SCALAPACK AND NOT BUILD_SHARED_LIBS)
-    message(FATAL_ERROR "When SCALAPACK wrappers are used, COSMA has to be compiled as a shared library. Rerun cmake adding -DBUILD_SHARED_LIBS=ON.")
-endif()
+#if (COSMA_SCALAPACK AND NOT BUILD_SHARED_LIBS)
+#    message(FATAL_ERROR "When SCALAPACK wrappers are used, COSMA has to be compiled as a shared library. Rerun cmake adding -DBUILD_SHARED_LIBS=ON.")
+# endif()
 
 
 # if SCALAPACK BLAS is not defined, then set it to be the same
@@ -88,7 +87,7 @@ if (${COSMA_BLAS} STREQUAL "MKL" OR ${COSMA_BLAS} STREQUAL "CRAY_LIBSCI")
     endif()
 endif()
 
-project(cosma VERSION 2.4.0 LANGUAGES CXX)
+project(cosma VERSION 2.4.0 LANGUAGES CXX C)
 
 include(GNUInstallDirs)
 
@@ -197,9 +196,7 @@ elseif (${SCALAPACK_BLAS} MATCHES "CUSTOM")
     set(SCALAPACK_BLAS_TARGET "${BLAS_LIBRARIES}")
 endif()
 
-if (NOT ${SCALAPACK_BLAS} STREQUAL ${COSMA_BLAS}) 
-    set(BLAS_TARGET "${BLAS_TARGET}" "${SCALAPACK_BLAS_TARGET}")
-endif()
+set(SCALAPACK_DEPENDENCIES "${SCALAPACK_BLAS_TARGET}")
 
 # (optional) SCALAPACK providers
 #

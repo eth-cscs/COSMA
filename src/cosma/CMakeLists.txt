@@ -54,6 +54,7 @@ if(SCALAPACK_TARGET AND NOT TARGET cosma_pxgemm)
                                               costa_scalapack
                                               ${BLAS_TARET}
                                               ${SCALAPACK_TARGET}
+                                              ${SCALAPACK_DEPENDENCIES}
     )
     if(COSMA_WITH_PROFILING)
         target_link_libraries(cosma_pxgemm PRIVATE semiprof)
@@ -76,6 +77,7 @@ if(SCALAPACK_TARGET AND NOT TARGET cosma_prefixed_pxgemm)
                                               costa_prefixed_scalapack
                                               ${BLAS_TARET}
                                               ${SCALAPACK_TARGET}
+                                              ${SCALAPACK_DEPENDENCIES}
     )
     if(COSMA_WITH_PROFILING)
         target_link_libraries(cosma_prefixed_pxgemm PRIVATE semiprof)
@@ -97,6 +99,7 @@ if(SCALAPACK_TARGET AND NOT TARGET cosma_pxgemm_cpp)
                                               costa
                                               ${BLAS_TARET}
                                               ${SCALAPACK_TARGET}
+                                              ${SCALAPACK_DEPENDENCIES}
     )
     if(COSMA_WITH_PROFILING)
         target_link_libraries(cosma_pxgemm_cpp PRIVATE semiprof)
