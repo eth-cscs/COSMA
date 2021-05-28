@@ -53,7 +53,7 @@ if(SCALAPACK_TARGET AND NOT TARGET cosma_pxgemm AND BUILD_SHARED_LIBS)
     )
     target_link_libraries(cosma_pxgemm PUBLIC cosma 
                                               costa_scalapack
-                                              ${BLAS_TARET}
+                                              ${BLAS_TARGET}
                                               ${SCALAPACK_TARGET}
                                               ${SCALAPACK_DEPENDENCIES}
     )
@@ -76,7 +76,7 @@ if(SCALAPACK_TARGET AND NOT TARGET cosma_prefixed_pxgemm)
     )
     target_link_libraries(cosma_prefixed_pxgemm PUBLIC cosma 
                                               costa_prefixed_scalapack
-                                              ${BLAS_TARET}
+                                              ${BLAS_TARGET}
                                               ${SCALAPACK_TARGET}
                                               ${SCALAPACK_DEPENDENCIES}
     )
@@ -98,7 +98,7 @@ if(SCALAPACK_TARGET AND NOT TARGET cosma_pxgemm_cpp)
     )
     target_link_libraries(cosma_pxgemm_cpp PUBLIC cosma 
                                               costa
-                                              ${BLAS_TARET}
+                                              ${BLAS_TARGET}
                                               ${SCALAPACK_TARGET}
                                               ${SCALAPACK_DEPENDENCIES}
     )
