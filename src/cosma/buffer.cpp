@@ -103,19 +103,28 @@ void Buffer<T>::allocate_communication_buffers(bool dry_run) {
 }
 
 template <typename T>
-size_t Buffer<T>::total_size() {
-    size_t total_size = 0;
+std::vector<std::size_t> Buffer<T>::get_all_buffer_sizes() {
+    std::vector<std::size_t> buffer_sizes;
     if (rank_ < strategy_->P) {
         if (buff_sizes_.size() >= 1) {
-            total_size += std::max((size_t) buff_sizes_[0], mapper_->initial_size());
+            buffer_sizes.push_back(std::max(
+                                       (size_t) buff_sizes_[0],
+                                       mapper_->initial_size()
+                                   )
+                                  );
         }
         for (int i = 1; i < buff_sizes_.size(); ++i) {
-            total_size += buff_sizes_[i];
+            buffer_sizes.push_back(buff_sizes_[i]);
         }
-        total_size += (max_reduce_buffer_size_ > 0 ? max_reduce_buffer_size_ : 0);
-        total_size += (max_reshuffle_buffer_size_ > 0 ? max_reshuffle_buffer_size_ : 0);
+        if (max_reduce_buffer_size_ > 0) {
+            buffer_sizes.push_back(max_reduce_buffer_size_);
+        }
+        if (max_reshuffle_buffer_size_ > 0) {
+            buffer_sizes.push_back(max_reshuffle_buffer_size_);
+        }
     }
-    return total_size;
+
+    return buffer_sizes;
 }
 
 template <typename T>

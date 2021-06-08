@@ -152,9 +152,22 @@ double get_memory_pool_amortization();
 template <typename T>
 long long get_cpu_max_memory();
 
+// whether host matrix buffers should be pinned or not
+// this is only used in the GPU backend to increase
+// the transfer speed between CPU and GPU
 bool get_memory_pinning();
 
+// if, after the matrices are split among ranks,
+// any dimension becomes less than this threashold,
+// then the total number of ranks is going to be reduced
+// so that no dimension gets less than this threshold
+// after splitting.
 int get_min_local_dimension();
+
+// if initial dimension (before splitting) is less
+// than this threshold, the problem is considered too small
+// and is dispatched to SCALAPACK
+// This is only used for pxgemm wrappers.
 int get_cosma_dim_threshold();
 
 }

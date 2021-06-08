@@ -204,4 +204,23 @@ int math_utils::cantor_pairing(const int i, const int j) {
     int sum = i + j;
     return (sum * (sum + 1)) / 2 + j;
 }
+
+// check if the number is a power of 2
+bool math_utils::is_power_of_2(std::size_t n) {
+    return !(n & (n - 1));
+}
+
+// find the next power of 2 that is > than n
+std::size_t 
+math_utils::next_greater_power_of_2(std::size_t n, std::size_t power_of_2) {
+    return n == 0
+               ? power_of_2 
+               : next_greater_power_of_2(n - (n & power_of_2), power_of_2 << 1);
+}
+
+// find the next power of 2 that is >= n
+std::size_t 
+math_utils::next_power_of_2(std::size_t n) {
+    return is_power_of_2(n) ? n : next_greater_power_of_2(n);
+}
 } // namespace cosma

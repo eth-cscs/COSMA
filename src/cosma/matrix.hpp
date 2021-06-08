@@ -177,8 +177,11 @@ class CosmaMatrix {
 
     int rank() const;
 
-    // total memory = initial memory + communication memory
-    size_t total_required_memory();
+    // returns an array of all buffer sizes
+    // that are used for this matrix.
+    // This includes the buffer for initial matrices
+    // as well as additional communication buffers.
+    std::vector<size_t> required_memory();
 
     // turns off dry-run mode, allocate initial buffers
     void allocate();

@@ -1,15 +1,15 @@
 #pragma once
 #include <vector>
 #include <cosma/pinned_buffers.hpp>
+#include <cosma/aligned_allocator.hpp>
 
 namespace cosma {
 template <typename T>
 class memory_pool {
 public:
-    using mpi_buffer_t = std::vector<T>;
+    using aligned_vector_t = std::vector<T, aligned_allocator<T>>;
 
     memory_pool();
-    memory_pool(size_t capacity);
 
     ~memory_pool();
 
@@ -34,8 +34,7 @@ public:
     void turn_on_output();
 
     size_t size();
-    void reserve(size_t size);
-    void reserve_additionally(size_t size);
+    void reserve(std::vector<size_t>& buffer_sizes);
 
     void pin(T* ptr, std::size_t size);
     void unpin_all();
@@ -48,7 +47,7 @@ public:
     double amortization;
 
 private:
-    mpi_buffer_t pool_;
+    aligned_vector_t pool_;
     size_t pool_size_ = 0;
     size_t pool_capacity_ = 0;
     size_t n_buffers_ = 0;

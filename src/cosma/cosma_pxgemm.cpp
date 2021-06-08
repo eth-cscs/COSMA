@@ -300,9 +300,22 @@ void pxgemm(const char transa,
     CosmaMatrix<T> C(std::move(mapper_c), rank_permutation[rank], dont_allocate);
 
     // avoid resizing the buffer by reserving immediately the total required memory
-    get_context_instance<T>()->get_memory_pool().reserve(A.total_required_memory()
-                                                       + B.total_required_memory()
-                                                       + C.total_required_memory());
+    // collect sizes of all buffers that are going to be allocated for each matrix
+    auto A_buffers = A.required_memory();
+    auto B_buffers = B.required_memory();
+    auto C_buffers = C.required_memory();
+
+    std::vector<std::size_t> buffer_sizes;
+    int n_buffers = A_buffers.size() + B_buffers.size() + C_buffers.size();
+    if (n_buffers > 0) {
+        buffer_sizes.reserve(n_buffers);
+        std::copy(A_buffers.begin(), A_buffers.end(), std::back_inserter(buffer_sizes));
+        std::copy(B_buffers.begin(), B_buffers.end(), std::back_inserter(buffer_sizes));
+        std::copy(C_buffers.begin(), C_buffers.end(), std::back_inserter(buffer_sizes));
+
+        // allocate all buffers in the memory pool
+        get_context_instance<T>()->get_memory_pool().reserve(buffer_sizes);
+    }
 
     // turn off dryrun mode, allocate memory for all matrices
     A.allocate();
