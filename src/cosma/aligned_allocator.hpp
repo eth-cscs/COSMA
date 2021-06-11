@@ -6,8 +6,6 @@
 #include <exception>
 #include <iostream>
 #include <limits>
-#include <stdlib.h>
-#include <unistd.h>
 #include <cosma/math_utils.hpp>
 #include <cosma/environment_variables.hpp>
 
@@ -29,18 +27,11 @@ public:
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
 
-    // Usually, the page size is 4096 bytes and the cache-line size is 64 bytes.
-    // We take the alignment to be the maximum of these two.
-    // (although the page size would probably be enough).
-    // The alignment that is >= cache-line size is required for 
-    // pinning the memory using HIP.
+    // the alignement can be specified by the environment variable
+    // or take its default value otherwise.
+    // The default sizes, as well as the environment variable names
+    // are defined in <cosma/environment_variables.hpp>
     static std::size_t get_alignment() {
-        /*
-        static std::size_t alignment = std::max(
-                                           sysconf(_SC_PAGE_SIZE), 
-                                           sysconf(_SC_LEVEL1_DCACHE_LINESIZE)
-                                       );
-        */
         static std::size_t alignment = cosma::get_cosma_cpu_memory_alignment();
         return alignment;
     }
