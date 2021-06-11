@@ -295,7 +295,7 @@ ENVIRONMENT VARIABLE | POSSIBLE VALUES | DESCRIPTION
 `COSMA_GPU_STREAMS` | integer (`size_t`), by default: **2** | The number of GPU streams that each rank should use.
 `COSMA_MEMORY_POOL_AMORTIZATION` | real (`double`), by default **1.2** | The growth factor for the memory pool. If equal to 1.2, then 1.2x the requested size is allocated (thus, 20% more than needed). Higher values better amortize the cost of the memory pool resizing which can occur when the algorithm is invoked for different matrix sizes. However, higher amortization values also mean that potentially more memory is allocated than used which can be a problem when the memory resource is tight.
 `COSMA_MIN_LOCAL_DIMENSION` | integer (`size_t`), by default: **200** | If any matrix dimension becomes smaller than this threshold (after splitting the matrices among the available MPI ranks), then the actual number of ranks is reduced so that all matrix dimensions stay at or above this limit.
-`COSMA_DIM_THRESHOLD` | integer (`size_t`), by default: **200** | In SCALAPACK wrappers, if any matrix dimension is less than this threshold, the problem is considered too small and is dispatched to SCALAPACK for computation. This only affects the SCALAPACK wrappers.
+`COSMA_DIM_THRESHOLD` | integer (`size_t`), by default: **0** | In SCALAPACK wrappers, if any matrix dimension is less than this threshold, the problem is considered too small and is dispatched to SCALAPACK for computation. This only affects the SCALAPACK wrappers.
 
 These are all optional parameters. They are used in runtime and hence changing any of those does not require the code to be recompiled.
 

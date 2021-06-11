@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <cosma/math_utils.hpp>
+#include <cosma/environment_variables.hpp>
 
 /*
  * A custom allocator that:
@@ -40,7 +41,7 @@ public:
                                            sysconf(_SC_LEVEL1_DCACHE_LINESIZE)
                                        );
         */
-        static std::size_t alignment = sysconf(_SC_PAGE_SIZE);
+        static std::size_t alignment = cosma::get_cosma_cpu_memory_alignment();
         return alignment;
     }
 
