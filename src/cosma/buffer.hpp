@@ -61,8 +61,8 @@ public:
     void free_initial_buffers(bool dry_run = false);
     void free_communication_buffers(bool dry_run = false);
 
-    // total required memory
-    size_t total_size();
+    // get an array of all sizes that this matrix will require
+    std::vector<size_t> get_all_buffer_sizes();
 
     // increases the index of the current buffer
     void advance_buffer();

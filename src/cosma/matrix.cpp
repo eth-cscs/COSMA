@@ -462,10 +462,10 @@ int CosmaMatrix<T>::rank() const {
 
 // total memory = initial memory + communication memory
 template <typename T>
-size_t CosmaMatrix<T>::total_required_memory() {
+std::vector<size_t> CosmaMatrix<T>::required_memory() {
     if (rank_ < P_)
-        return buffer_.total_size();
-    return 0;
+        return buffer_.get_all_buffer_sizes();
+    return std::vector<std::size_t>{};
 }
 
 // Explicit instantiations

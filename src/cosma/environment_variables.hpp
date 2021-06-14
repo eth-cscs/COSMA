@@ -1,3 +1,4 @@
+#pragma once
 #include <string>
 #include <limits>
 #include <complex>
@@ -45,6 +46,8 @@ namespace env_var_names {
     // if any dimension is smaller than this threshold, it will be dispatched to SCALAPACK
     // since it's too "thin" for COSMA in that case
     const std::string cosma_dim_threshold = "COSMA_DIM_THRESHOLD";
+    // number of bytes to which all host buffers are aligned
+    const std::string cosma_cpu_memory_alignment = "COSMA_CPU_MEMORY_ALIGNMENT";
 };
 
 // default values of supported environment variables
@@ -85,7 +88,9 @@ namespace env_var_defaults {
     const int min_local_dimension = 200;
     // if any dimension is smaller than this threshold, it will be dispatched to SCALAPACK
     // since it's too "thin" for COSMA in that case
-    const int cosma_dim_threshold = 200;
+    const int cosma_dim_threshold = 0;
+    // cpu memory alignment
+    const int cosma_cpu_memory_alignment = 256;
 };
 
 // checks if the specified environment variable is defined
@@ -152,9 +157,25 @@ double get_memory_pool_amortization();
 template <typename T>
 long long get_cpu_max_memory();
 
+// whether host matrix buffers should be pinned or not
+// this is only used in the GPU backend to increase
+// the transfer speed between CPU and GPU
 bool get_memory_pinning();
 
+// if, after the matrices are split among ranks,
+// any dimension becomes less than this threashold,
+// then the total number of ranks is going to be reduced
+// so that no dimension gets less than this threshold
+// after splitting.
 int get_min_local_dimension();
+
+// if initial dimension (before splitting) is less
+// than this threshold, the problem is considered too small
+// and is dispatched to SCALAPACK
+// This is only used for pxgemm wrappers.
 int get_cosma_dim_threshold();
+
+// number of bytes to which all the buffers should be aligned
+int get_cosma_cpu_memory_alignment();
 
 }

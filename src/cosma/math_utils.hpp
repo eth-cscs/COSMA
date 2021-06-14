@@ -18,6 +18,15 @@ long long divide_and_round_up(long long x, long long y);
 // round to next multiple
 int next_multiple_of(int n_to_round, int multiple);
 
+// check if the number is a power of 2
+bool is_power_of_2(std::size_t n);
+
+// find the next power of 2 that is > than n
+std::size_t next_greater_power_of_2(std::size_t n, std::size_t power_of_2 = 1);
+
+// find the next power of 2 that is >= n
+std::size_t next_power_of_2(std::size_t n);
+
 // find all divisors of n
 std::vector<int> find_divisors(int n);
 // Finds the divisors dm, dn and dk for m, n and k respectively, such that

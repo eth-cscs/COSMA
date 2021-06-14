@@ -108,6 +108,11 @@ int cosma::get_cosma_dim_threshold() {
                            env_var_defaults::cosma_dim_threshold);
 }
 
+int cosma::get_cosma_cpu_memory_alignment() {
+    return get_int_env_var(env_var_names::cosma_cpu_memory_alignment,
+                           env_var_defaults::cosma_cpu_memory_alignment);
+}
+
 // reads the memory limit in MB per rank
 // and converts the limit to #elements that each rank is allowed to use
 template <typename T>
