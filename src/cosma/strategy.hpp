@@ -27,8 +27,8 @@ class Strategy {
     // minimum problem size per rank
     // the total number of ranks will be reduced
     // if the problem size per rank is too small
-    // by default = 1000
-    static int min_dim_size;
+    // by default = 200
+    int get_min_dim_size();
 
     // the actual minimum problem size
     // that is induced by given strategy

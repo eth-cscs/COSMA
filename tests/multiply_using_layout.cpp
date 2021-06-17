@@ -63,7 +63,7 @@ TEST(MultiplyUsingLayout, ) {
     MPI_Comm comm = subcommunicator(nprocs, MPI_COMM_WORLD);
 
     if (rank < nprocs) {
-        cosma::Strategy::min_dim_size = 32;
+        // cosma::Strategy::min_dim_size = 32;
         cosma::Strategy strategy(m, n, k, nprocs);
 
         // create a separate context

@@ -11,6 +11,10 @@ ENV FORCE_UNSAFE_CONFIGURE 1
 ENV MPICH_VERSION ${MPICH_VERSION}
 ENV MKL_VERSION ${MKL_VERSION}
 
+# reduce the minimum local dimension to allow all mpi ranks to take part 
+# in testing
+ENV COSMA_MIN_LOCAL_DIMENSION=32
+
 # Install basic tools
 RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     software-properties-common \

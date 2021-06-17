@@ -116,7 +116,7 @@ TEST_P(MultiplyTestWithParams, multiply) {
     }
 
     if (rank < P) {
-        Strategy::min_dim_size = 32;
+        // Strategy::min_dim_size = 32;
         Strategy strategy(m, n, k, P, state.divs, state.dims, state.step_types);
         if (rank == 0) {
             std::cout << "Strategy = " << strategy << std::endl;

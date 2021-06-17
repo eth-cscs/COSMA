@@ -44,7 +44,7 @@ TEST(strategy, rpa_128) {
     int P = nodes * ranks_per_node;
     // memory_limit /= ranks_per_node;
 
-    Strategy::min_dim_size = 32;
+    // Strategy::min_dim_size = 32;
     Strategy strategy(m, n, k, P, memory_limit);
 
     std::cout << "Strategy = " << strategy << std::endl;
@@ -71,7 +71,7 @@ TEST(strategy, nested_sequential_parallel) {
     int P = nodes * ranks_per_node;
     // memory_limit /= ranks_per_node;
 
-    Strategy::min_dim_size = 32;
+    // Strategy::min_dim_size = 32;
     Strategy strategy(m, n, k, P, memory_limit);
 
     std::cout << "Strategy = " << strategy << std::endl;

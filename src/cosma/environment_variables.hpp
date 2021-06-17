@@ -89,8 +89,8 @@ namespace env_var_defaults {
     // if any dimension is smaller than this threshold, it will be dispatched to SCALAPACK
     // since it's too "thin" for COSMA in that case
     const int cosma_dim_threshold = 0;
-    // cpu memory alignment
-    const int cosma_cpu_memory_alignment = 256;
+    // cpu memory alignment (currently disabled)
+    const int cosma_cpu_memory_alignment = 0; // 256;
 };
 
 // checks if the specified environment variable is defined

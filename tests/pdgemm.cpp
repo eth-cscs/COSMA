@@ -60,7 +60,7 @@ TEST_P(PdgemmTestWithParams, pdgemm) {
             std::cout << state << std::endl;
         }
 
-        cosma::Strategy::min_dim_size = 32;
+        // cosma::Strategy::min_dim_size = 32;
         bool correct = test_pxgemm<double>(state, comm);
         EXPECT_TRUE(correct);
 

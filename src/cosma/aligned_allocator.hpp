@@ -31,8 +31,8 @@ public:
     // or take its default value otherwise.
     // The default sizes, as well as the environment variable names
     // are defined in <cosma/environment_variables.hpp>
-    static std::size_t get_alignment() {
-        static std::size_t alignment = cosma::get_cosma_cpu_memory_alignment();
+    static int get_alignment() {
+        static int alignment = cosma::get_cosma_cpu_memory_alignment();
         return alignment;
     }
 
@@ -45,6 +45,7 @@ public:
     // of length n and data type T.
     static std::size_t get_alignment_padding(std::size_t n) {
         auto alignment = get_alignment();
+        assert(alignment > 0);
         // Calculate the remainder in bytes (since the alignment is in bytes)
         auto remainder = (n * sizeof(T)) % alignment;
 
@@ -60,6 +61,10 @@ public:
     // returns nullptr on failure
     T* aligned_malloc(std::size_t size) {
         auto alignment = get_alignment();
+        // if alignment is disabled, use the standard malloc
+        if (alignment <= 0) {
+            return reinterpret_cast<T*>(malloc(size*sizeof(T)));
+        }
         // check if the requested size is a multiple of the alignment
         assert(get_alignment_padding(size) == 0);
         // check if the alignment is >= min_alignment for this data type T

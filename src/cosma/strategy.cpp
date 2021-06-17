@@ -2,7 +2,10 @@
 #include <cosma/environment_variables.hpp>
 
 namespace cosma {
-int Strategy::min_dim_size = get_min_local_dimension();
+int Strategy::get_min_dim_size() {
+    static int min_dim_size = get_min_local_dimension();
+    return min_dim_size;
+}
 
 std::size_t Strategy::n_steps() const {
     return divisors.size();
@@ -133,11 +136,11 @@ bool Strategy::add_step(long long& prev_m, long long& prev_n, long long& prev_k,
     // try to correct it (by finding the smaller divisor)
     // or completely ignore this step 
     // if such a divisor cannot be found
-    if (*dim1/divisor < min_dim_size) {
+    if (*dim1/divisor < get_min_dim_size()) {
         // try to find smaller divisor
-        int new_d = *dim1 / min_dim_size;
+        int new_d = *dim1 / get_min_dim_size();
         // check if this divisor is feasible
-        if (new_d > 1 && *dim1 / new_d >= min_dim_size) {
+        if (new_d > 1 && *dim1 / new_d >= get_min_dim_size()) {
             split_dimension += dim_label;
             step_type += step;
             divisors.push_back(new_d);
@@ -380,7 +383,7 @@ void Strategy::square_strategy(bool& incomplete_strategy) {
 
     int divm, divn, divk;
     std::tie(divm, divn, divk) = 
-        math_utils::balanced_divisors(m, n, k, P, min_dim_size);
+        math_utils::balanced_divisors(m, n, k, P, get_min_dim_size());
 
     long long additional_memory_A = 0;
     long long additional_memory_B = 0;
@@ -428,7 +431,7 @@ void Strategy::square_strategy(bool& incomplete_strategy) {
         }
 
         std::tie(divm, divn, divk) = 
-            math_utils::balanced_divisors(m, n, k, P, min_dim_size);
+            math_utils::balanced_divisors(m, n, k, P, get_min_dim_size());
 
         std::tie(additional_memory_A, additional_memory_B, additional_memory_C) 
             = maximum_memory(m, n, k, divm, divn, divk, P);

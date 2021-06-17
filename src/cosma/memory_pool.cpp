@@ -14,23 +14,27 @@ cosma::memory_pool<T>::~memory_pool() {
 
 template <typename T>
 size_t cosma::memory_pool<T>::get_buffer_id(size_t size) {
+    auto alignment = aligned_allocator<T>::get_alignment();
     assert(size > 0);
 
     // take the alignment into account
-    size += aligned_allocator<T>::get_alignment_padding(size);
+    if (alignment > 0) {
+        size += aligned_allocator<T>::get_alignment_padding(size);
+    }
 
     size_t offset = pool_size_;
     pool_size_ += size;
     ++n_buffers_;
 
-    assert(aligned_allocator<T>::get_alignment_padding(offset) == 0);
-    assert(aligned_allocator<T>::get_alignment_padding(pool_size_) == 0);
+    assert(alignment <= 0 || aligned_allocator<T>::get_alignment_padding(offset) == 0);
+    assert(alignment <= 0 || aligned_allocator<T>::get_alignment_padding(pool_size_) == 0);
     return offset;
 }
 
 template <typename T>
 T* cosma::memory_pool<T>::get_buffer_pointer(size_t id) {
-    assert(aligned_allocator<T>::get_alignment_padding(id) == 0);
+    auto alignment = aligned_allocator<T>::get_alignment();
+    assert(alignment <= 0 || aligned_allocator<T>::get_alignment_padding(id) == 0);
     if (pool_size_ > pool_capacity_) {
         resize(pool_size_);
     }
@@ -40,9 +44,12 @@ T* cosma::memory_pool<T>::get_buffer_pointer(size_t id) {
 
 template <typename T>
 void cosma::memory_pool<T>::free_buffer(T* ptr, size_t size) {
+    auto alignment = aligned_allocator<T>::get_alignment();
     // take the alignment into account
-    size += aligned_allocator<T>::get_alignment_padding(size);
-    assert(aligned_allocator<T>::get_alignment_padding(size) == 0);
+    if (alignment > 0) {
+        size += aligned_allocator<T>::get_alignment_padding(size);
+        assert(aligned_allocator<T>::get_alignment_padding(size) == 0);
+    }
 
     // std::cout << "freeing buffer of size " << size << ", current size =  " << pool_size_ << std::endl;
     assert(pool_size_ >= size);
@@ -50,16 +57,17 @@ void cosma::memory_pool<T>::free_buffer(T* ptr, size_t size) {
     --n_buffers_;
     // check if this buffer was on top of the memory pool
     assert(pool_.data() + pool_size_ == ptr);
-    assert(aligned_allocator<T>::get_alignment_padding(pool_size_) == 0);
+    assert(alignment <= 0 || aligned_allocator<T>::get_alignment_padding(pool_size_) == 0);
     // std::fill(ptr, ptr + size, T{});
 }
 
 template <typename T>
 void cosma::memory_pool<T>::resize(size_t capacity) {
+    auto alignment = aligned_allocator<T>::get_alignment();
     // resizing should always happen after reserve. 
     // The reserve should take care that the reserved
     // memory is already aligned.
-    assert(aligned_allocator<T>::get_alignment_padding(capacity) == 0);
+    assert(alignment <= 0 || aligned_allocator<T>::get_alignment_padding(capacity) == 0);
 
     this->unpin_all();
     resized = true;
@@ -106,21 +114,27 @@ size_t cosma::memory_pool<T>::size() {
 
 template <typename T>
 void cosma::memory_pool<T>::reserve(std::vector<size_t>& buffer_sizes) {
+    auto alignment = aligned_allocator<T>::get_alignment();
     // total size of all buffers after aligning
     std::size_t size = 0;
     for (auto& buffer_size : buffer_sizes) {
-        buffer_size += aligned_allocator<T>::get_alignment_padding(buffer_size);
+        if (alignment > 0) {
+            buffer_size += aligned_allocator<T>::get_alignment_padding(buffer_size);
+        }
         size += buffer_size;
     }
 
     // reserve a bit more for amortized resizing
     size = (std::size_t) std::ceil(size * amortization);
     // take the alignment into account 
-    size += aligned_allocator<T>::get_alignment_padding(size);
+    if (alignment > 0) {
+        std::cout << "alignment = " << alignment << std::endl;
+        size += aligned_allocator<T>::get_alignment_padding(size);
+    }
 
     if (size > 0 && size > pool_capacity_) {
         pool_capacity_ = size;
-        assert(aligned_allocator<T>::get_alignment_padding(pool_capacity_) == 0);
+        assert(alignment <= 0 || aligned_allocator<T>::get_alignment_padding(pool_capacity_) == 0);
         try {
             pool_.reserve(pool_capacity_);
         } catch (const std::bad_alloc& e) {
@@ -138,9 +152,12 @@ void cosma::memory_pool<T>::reserve(std::vector<size_t>& buffer_sizes) {
 
 template <typename T>
 void cosma::memory_pool<T>::pin(T* ptr, std::size_t size) {
-    size += aligned_allocator<T>::get_alignment_padding(size);
+    auto alignment = aligned_allocator<T>::get_alignment();
+    if (alignment > 0) {
+        size += aligned_allocator<T>::get_alignment_padding(size);
+    }
     // check if it's aligned
-    assert(aligned_allocator<T>::get_alignment_padding(size) == 0);
+    assert(alignment <=0 || aligned_allocator<T>::get_alignment_padding(size) == 0);
 #ifdef COSMA_HAVE_GPU
     if (!already_pinned) {
         pinned_buffers_list.add(ptr, size);

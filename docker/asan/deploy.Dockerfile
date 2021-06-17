@@ -7,6 +7,10 @@ ARG BLAS
 # Build COSMA
 COPY . /COSMA
 
+# reduce the minimum local dimension to allow all mpi ranks to take part 
+# in testing
+ENV COSMA_MIN_LOCAL_DIMENSION=32
+
 RUN mkdir /COSMA/build && cd /COSMA/build && \
     CC=mpicc CXX=mpicxx cmake .. \
       -DCOSMA_WITH_TESTS=ON \
