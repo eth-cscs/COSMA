@@ -1,6 +1,6 @@
 #include <cosma/blas.hpp>
 
-extern "C" {
+// extern "C" {
 #ifdef COSMA_WITH_MKL_BLAS
 #include <mkl.h>
 #endif
@@ -15,7 +15,7 @@ extern "C" {
 // in case CBLAS_LAYOUT is not defined
 typedef CBLAS_ORDER CBLAS_LAYOUT;
 #endif
-}
+// }
 
 // The file is not needed if GPU is used
 //

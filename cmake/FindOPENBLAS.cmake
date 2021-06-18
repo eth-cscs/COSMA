@@ -10,7 +10,7 @@ set(_OPENBLAS_PATHS ${OPENBLAS_ROOT}
     $ENV{OPENBLASDIR})
 # endif()
 
-find_path(OPENBLAS_INCLUDE_DIR
+find_path(OPENBLAS_INCLUDE_DIRS
     NAMES "cblas-openblas.h" "cblas_openblas.h" "cblas.h"
     PATH_SUFFIXES "openblas" "openblas/include" "include" "include/openblas"
     HINTS ${_OPENBLAS_PATHS}
@@ -24,7 +24,7 @@ find_library(OPENBLAS_LIBRARIES
 
 find_package_handle_standard_args(OPENBLAS 
     DEFAULT_MSG 
-    OPENBLAS_LIBRARIES OPENBLAS_INCLUDE_DIR)
+    OPENBLAS_LIBRARIES OPENBLAS_INCLUDE_DIRS)
 
 if(OPENBLAS_FOUND)
     if(NOT TARGET OPENBLAS::openblas)
