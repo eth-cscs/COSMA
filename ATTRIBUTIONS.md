@@ -2,7 +2,7 @@
 
 COSMA uses the following external projects:
 - [COSTA](https://github.com/eth-cscs/COSTA): used for transforming between COSMA and SCALAPACK matrix data layouts and for transposing distributed matrices. Licensed under the [BSD-3-Clause License](https://github.com/eth-cscs/COSTA/blob/master/LICENSE).
-- [Tiled-MM](https://github.com/kabicm/Tiled-MM): used for performing `dgemm` calls with the GPU-backend. Licensed under the [BSD-3-Clause License](https://github.com/kabicm/Tiled-MM/blob/master/LICENSE).
+- [Tiled-MM](https://github.com/eth-cscs/Tiled-MM): used for performing `dgemm` calls with the GPU-backend. Licensed under the [BSD-3-Clause License](https://github.com/eth-cscs/Tiled-MM/blob/master/LICENSE).
 - [semiprof](https://github.com/bcumming/semiprof): used for profiling the code. Licensed under the [BSD-3-Clause License](https://github.com/bcumming/semiprof/blob/master/LICENSE).
 - [options](https://github.com/kabicm/options): used for parsing the command line options. Licensed under the [BSD-3-Clause License](https://github.com/kabicm/options/blob/master/LICENCE).
 - [cxxopts](https://github.com/jarro2783/cxxopts): user for parsing the command line options. Licensed under the [MIT License](https://github.com/jarro2783/cxxopts/blob/master/LICENSE).

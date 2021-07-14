@@ -1,6 +1,6 @@
 [submodule "libs/Tiled-MM"]
 	path = libs/Tiled-MM
-	url = https://github.com/kabicm/Tiled-MM.git
+	url = https://github.com/eth-cscs/Tiled-MM.git
 [submodule "libs/gtest_mpi"]
 	path = libs/gtest_mpi
 	url = https://github.com/teonnik/gtest_mpi.git
