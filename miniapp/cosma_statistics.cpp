@@ -15,7 +15,6 @@ int main( int argc, char **argv ) {
     cxxopts::Options options("COSMA STATISTICS",
                              "A miniapp computing communication volume \
                              and local multiplication sizes. dim(A)=m*k, dim(B)=k*n; dim(C)=m*n.");
-    
     options.add_options()
         ("m,m_dim",
             "number of rows of A and C.", 
@@ -31,7 +30,7 @@ int main( int argc, char **argv ) {
             cxxopts::value<int>()->default_value("1"))
         ("s,steps", 
             "Division steps that the algorithm should perform.",
-            cxxopts::value<std::vector<std::string>>())
+            cxxopts::value<std::vector<std::string>>()->default_value(""))
         ("h,help", "Print usage.")
     ;
 
@@ -42,7 +41,6 @@ int main( int argc, char **argv ) {
     auto k = result["k_dim"].as<int>();
     auto P = result["n_proc"].as<int>();
     auto steps = result["steps"].as<std::vector<std::string>>();
-    auto type = result["type"].as<std::string>();
 
     bool overlap_comm_and_comp = cosma::get_overlap_comm_and_comp();
     long long memory_limit = cosma::get_cpu_max_memory<double>();
@@ -51,6 +49,8 @@ int main( int argc, char **argv ) {
                                               steps,
                                               memory_limit,
                                               overlap_comm_and_comp);
+
+    std::cout << "Strategy: \n" << strategy << std::endl;
 
     int n_rep = 1;
     multiply(strategy, n_rep);
