@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
         "float", "double", "zfloat", "zdouble"
     };
     if (type_options.find(type) == type_options.end()) {
-        std::cout << "COSMA (pxgemm_miniapp.cpp): ERROR: --type option: can only take the following values: " << std::endl;
+        std::cout << "COSMA (cosma_miniapp.cpp): ERROR: --type option: can only take the following values: " << std::endl;
         for (const auto& el : type_options) {
             std::cout << el << ", ";
         }

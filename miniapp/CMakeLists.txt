@@ -1,7 +1,7 @@
 ################
 #  Build test  #
 ################
-set(executables "cosma_miniapp" "cosma_statistics")
+set(executables "layout_miniapp" "cosma_miniapp" "cosma_statistics")
 
 foreach(exec ${executables})
     add_executable(${exec} "${exec}.cpp")
