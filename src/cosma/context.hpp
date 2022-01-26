@@ -20,11 +20,13 @@ public:
     ~cosma_context();
 
     void register_state(int rank, const Strategy& strategy);
+    int register_comm(MPI_Comm comm);
 
     memory_pool<Scalar>& get_memory_pool();
 #ifdef COSMA_HAVE_GPU
     gpu::mm_handle<Scalar>* get_gpu_context();
 #endif
+    MPI_Comm get_mpi_comm();
 
     long long get_cpu_memory_limit();
 
@@ -43,6 +45,8 @@ private:
     std::unique_ptr<gpu::mm_handle<Scalar>> gpu_ctx_;
     // gpu::mm_handle<Scalar> gpu_ctx_;
 #endif
+    MPI_Comm mpi_comm_;
+
     bool output = false;
     int prev_rank = -1;
     Strategy prev_strategy;

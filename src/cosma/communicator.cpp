@@ -165,9 +165,22 @@ MPI_Comm communicator::active_comm(int step) {
     return comm_ring_[comm_index];
 }
 
+#if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_RCCL)
+ncclComm_t communicator::active_nccl_comm(int step) {
+    int comm_index = step_to_comm_index_[step];
+    return nccl_comm_ring_[comm_index];
+}
+#endif
+
 int communicator::comm_size() { return comm_size_; }
 
 void communicator::free_comm(MPI_Comm &comm) { MPI_Comm_free(&comm); }
+
+#if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_RCCL)
+void communicator::free_nccl_comm(ncclComm_t comm) {
+    ncclCommDestroy(comm);
+}
+#endif
 
 void communicator::free_group(MPI_Group &group) { MPI_Group_free(&group); }
 
@@ -225,6 +238,23 @@ void communicator::split_communicators(MPI_Comm comm) {
             MPI_Comm comm_ring, comm_subproblem;
             MPI_Comm_split(comm, group, offset, &comm_subproblem);
             MPI_Comm_split(comm, offset, group, &comm_ring);
+
+#if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_RCCL)
+            // Make a nccl communicator using comm_ring
+            // Assuming there is only one rank per GPU
+            int my_rank, my_nranks;
+            MPI_Comm_rank (comm_ring, &my_rank);
+            MPI_Comm_size (comm_ring, &my_nranks);
+            ncclUniqueId ncclId;
+            if (my_rank == 0) {
+                    NCCLCHECK(ncclGetUniqueId(&ncclId));
+                }
+                MPI_Bcast(&ncclId, sizeof(ncclId), MPI_BYTE, 0, comm_ring);
+                ncclComm_t nccl_comm;
+                NCCLCHECK(ncclCommInitRank(&nccl_comm, my_nranks, ncclId, my_rank));
+                nccl_comm_ring_.push_back(nccl_comm);
+#endif
+
             comm_ring_.push_back(comm_ring);
             comm_subproblem_.push_back(comm_subproblem);
             comm = comm_subproblem;
@@ -264,7 +294,25 @@ void communicator::create_communicators(MPI_Comm comm) {
             int group, offset;
             std::tie(group, offset) = group_and_offset(P, div, rank_);
 
-            comm_ring_.emplace_back(create_comm_ring(comm, P, offset, div));
+            MPI_Comm newcomm = create_comm_ring(comm, P, offset, div);
+            comm_ring_.emplace_back(newcomm);
+
+#if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_RCCL)
+            // Make a nccl communicator using newcomm
+            // Assuming there is only one rank per GPU
+            int my_rank, my_nranks;
+            MPI_Comm_rank (newcomm, &my_rank);
+            MPI_Comm_size (newcomm, &my_nranks);
+            ncclUniqueId ncclId;
+            if (my_rank == 0) {
+                NCCLCHECK(ncclGetUniqueId(&ncclId));
+            }
+            MPI_Bcast(&ncclId, sizeof(ncclId), MPI_BYTE, 0, newcomm);
+            ncclComm_t nccl_comm;
+            NCCLCHECK(ncclCommInitRank(&nccl_comm, my_nranks, ncclId, my_rank));
+            nccl_comm_ring_.push_back(nccl_comm);
+#endif
+
             comm_subproblem_.emplace_back(create_comm_subproblem(comm, P, newP));
 
             comm = comm_subproblem_.back();
@@ -315,6 +363,12 @@ void communicator::free_comms() {
     for (int i = comm_ring_.size() - 1; i >= 0; --i) {
         free_comm(comm_ring_[i]);
     }
+#if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_RCCL)
+    for (int i = nccl_comm_ring_.size() - 1; i >= 0; --i) {
+        free_nccl_comm(nccl_comm_ring_[i]);
+    }
+#endif
+
     if (using_reduced_comm_) {
         free_comm(full_comm_);
     }
@@ -356,7 +410,14 @@ void communicator::reduce(Interval &P,
                           Scalar beta,
                           int step) {
     MPI_Comm comm = active_comm(step);
+    void *nccl_comm_ptr = NULL;
+#if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_RCCL)
+    ncclComm_t nccl_comm = active_nccl_comm(step);
+    nccl_comm_ptr = &nccl_comm;
+#endif
+
     two_sided_communicator::reduce(comm,
+                                   nccl_comm_ptr,
                                    rank(),
                                    strategy_->divisor(step),
                                    P,

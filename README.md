@@ -370,6 +370,14 @@ _p_   preprocessing                3       0.012       0.012    11.3
 
 The precentage is always relative to the first level above. All time measurements are in seconds.
 
+When using AMD GPUs, you can instrument the code with ROCTX ranges by setting cmake option `-DCOSMA_WITH_OFFLOAD_PROFILING=ON` and instrumenting the code with COSMA_RE and COSMA_RL calls. This enables region labels in the timelines collected using `rocprof --hip-trace --roctx-trace` options. ROCTX regions may be nested.
+
+## Using ROCm Communication Collectives Library (RCCL)
+
+Use `-DCOSMA_WITH_RCCL=ON` if you are running COSMA with GPU support for BLAS calls. This allows using rcclReduceScatter instead of performing the operation using MPI.
+
+Set `RCCL_HOME` environment variable to point to your own RCCL library installation if needed.
+
 ## Authors
 
 - Grzegorz Kwasniewski, Marko Kabic, Maciej Besta, Joost VandeVondele, Raffaele Solca, Torsten Hoefler

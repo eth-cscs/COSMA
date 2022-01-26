@@ -133,12 +133,12 @@ void multiply_using_layout(cosma_context<T> *ctx,
     // create reordered communicator, which has same ranks
     // but relabelled as given by the rank_permutation
     // (to avoid the communication during layout transformation)
-    PE(transform_reordering_comm);
+    COSMA_PE(transform_reordering_comm);
     MPI_Comm reordered_comm = comm;
     if (reordered) {
         MPI_Comm_split(comm, 0, rank_permutation[rank], &reordered_comm);
     }
-    PL();
+    COSMA_PL();
 
     CosmaMatrix<T> A_cosma(ctx, std::move(mapper_a), rank_permutation[rank]);
     CosmaMatrix<T> B_cosma(ctx, std::move(mapper_b), rank_permutation[rank]);
@@ -192,11 +192,11 @@ void multiply_using_layout(cosma_context<T> *ctx,
     transf.transform();
 
     // free up the reordered communicator
-    PE(transform_reordering_comm);
+    COSMA_PE(transform_reordering_comm);
     if (reordered) {
         MPI_Comm_free(&reordered_comm);
     }
-    PL();
+    COSMA_PL();
 
 }
 
@@ -240,13 +240,14 @@ void multiply(cosma_context<Scalar> *ctx,
     if (strategy.m == 0 || strategy.n == 0 || strategy.k == 0) {
         return;
     }
+    static communicator* cosma_comm_ptr=NULL;
 
     Interval mi = Interval(0, strategy.m - 1);
     Interval ni = Interval(0, strategy.n - 1);
     Interval ki = Interval(0, strategy.k - 1);
     Interval Pi = Interval(0, strategy.P - 1);
 
-    PE(preprocessing_allocation);
+    COSMA_PE(preprocessing_allocation);
 
     // allocate buffers used for communication
     matrixA.allocate_communication_buffers();
@@ -265,16 +266,21 @@ void multiply(cosma_context<Scalar> *ctx,
     // the current rank
     assert(matrixA.rank() == matrixB.rank());
     assert(matrixB.rank() == matrixC.rank());
-    PL();
 
-    PE(preprocessing_communicators);
-    communicator cosma_comm = communicator(&strategy, comm);
-    PL();
+    COSMA_PL();
 
-    if (!cosma_comm.is_idle()) {
+    int ret = ctx->register_comm(comm);
+    if (ret == 0) {
+        if (cosma_comm_ptr != NULL) {
+            delete cosma_comm_ptr;
+        }
+        COSMA_RE(preprocessing_communicators);
+        cosma_comm_ptr = new communicator(&strategy, comm);
+        COSMA_RL();
+    }
+    if (!cosma_comm_ptr->is_idle()) {
         // register strategy in the context
-        ctx->register_state(cosma_comm.rank(), strategy);
-
+        ctx->register_state(cosma_comm_ptr->rank(), strategy);
         multiply(ctx,
                  matrixA,
                  matrixB,
@@ -285,7 +291,7 @@ void multiply(cosma_context<Scalar> *ctx,
                  Pi,
                  0,
                  strategy,
-                 cosma_comm,
+                 *cosma_comm_ptr,
                  alpha,
                  beta);
     }
@@ -293,13 +299,13 @@ void multiply(cosma_context<Scalar> *ctx,
     // deallocate buffers used for communication
     // since its a stack allocator, we deallocate
     // in the opposite order than when we allocated
-    PE(preprocessing_allocation);
+    COSMA_PE(preprocessing_allocation);
     matrixC.free_communication_buffers();
     matrixB.free_communication_buffers();
     matrixA.free_communication_buffers();
-    PL();
+    COSMA_PL();
 
-    if (cosma_comm.rank() == 0) {
+    if (cosma_comm_ptr->rank() == 0) {
         PP();
     }
 }
@@ -318,7 +324,7 @@ void multiply(cosma_context<Scalar> *ctx,
               communicator &comm,
               Scalar alpha,
               Scalar beta) {
-    PE(multiply_other);
+    COSMA_PE(multiply_other);
 #ifdef DEBUG
     std::cout << "matrix A, buffer index = " << matrixA.buffer_index()
               << std::endl;
@@ -355,9 +361,10 @@ void multiply(cosma_context<Scalar> *ctx,
     int offsetA = matrixA.shift(bucketA[comm.relative_rank(P)]);
     int offsetB = matrixB.shift(bucketB[comm.relative_rank(P)]);
     int offsetC = matrixC.shift(bucketC[comm.relative_rank(P)]);
-    PL();
+    COSMA_PL();
 
     if (strategy.final_step(step) || strategy.empty()) {
+        COSMA_RE(local_multiply);
         local_multiply(ctx,
                        matrixA.current_matrix(),
                        matrixB.current_matrix(),
@@ -367,6 +374,7 @@ void multiply(cosma_context<Scalar> *ctx,
                        k.length(),
                        alpha,
                        beta);
+        COSMA_RL();
     } else {
         if (strategy.parallel_step(step)) {
             if (strategy.should_overlap_comm_and_comp(step)) {
@@ -384,6 +392,7 @@ void multiply(cosma_context<Scalar> *ctx,
                 // parallel(matrixA, matrixB, matrixC, m, n, k, P, step,
                 // strategy, comm, beta);
             } else {
+                COSMA_RE(parallel);
                 parallel(ctx,
                          matrixA,
                          matrixB,
@@ -397,8 +406,10 @@ void multiply(cosma_context<Scalar> *ctx,
                          comm,
                          alpha,
                          beta);
+                COSMA_RL();
             }
         } else {
+            COSMA_RE(sequential);
             sequential(ctx,
                        matrixA,
                        matrixB,
@@ -412,10 +423,11 @@ void multiply(cosma_context<Scalar> *ctx,
                        comm,
                        alpha,
                        beta);
+            COSMA_RL();
         }
     }
 
-    PE(multiply_other);
+    COSMA_PE(multiply_other);
     // shift the pointers of the current matrix back
     matrixA.unshift(offsetA);
     matrixB.unshift(offsetB);
@@ -425,7 +437,7 @@ void multiply(cosma_context<Scalar> *ctx,
     matrixA.set_seq_buckets(P, bucketA);
     matrixB.set_seq_buckets(P, bucketB);
     matrixC.set_seq_buckets(P, bucketC);
-    PL();
+    COSMA_PL();
 }
 
 /*
@@ -633,7 +645,7 @@ void parallel(cosma_context<Scalar> *ctx,
               communicator &comm,
               Scalar alpha,
               Scalar beta) {
-    PE(multiply_other);
+    COSMA_PE(multiply_other);
     int divisor = strategy.divisor(step);
     int divisor_m = strategy.divisor_m(step);
     int divisor_n = strategy.divisor_n(step);
@@ -720,7 +732,7 @@ void parallel(cosma_context<Scalar> *ctx,
 
     // pack the data for the next substep
     expanded_mat.set_current_matrix(expanded_matrix);
-    PL();
+    COSMA_PL();
 
     // if divided along m or n then copy original matrix inside communication
     // ring to get the expanded matrix (all ranks inside communication ring
@@ -859,6 +871,7 @@ void parallel(cosma_context<Scalar> *ctx,
 
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
+        COSMA_RE(reduce_for_C);
         Scalar *reduce_buffer = expanded_mat.reduce_buffer_ptr();
         comm.reduce(P,
                     expanded_matrix,
@@ -872,14 +885,15 @@ void parallel(cosma_context<Scalar> *ctx,
                     alpha,
                     beta,
                     step);
+        COSMA_RL();
     }
 
-    PE(multiply_other);
+    COSMA_PE(multiply_other);
     // after the memory is freed, the buffer sizes are back to the previous
     // values (the values at the beginning of this parallel step)
     expanded_mat.set_sizes(
         newP, size_before_expansion, newP.first() - P.first());
-    PL();
+    COSMA_PL();
 }
 
 using zfloat_t = std::complex<float>;

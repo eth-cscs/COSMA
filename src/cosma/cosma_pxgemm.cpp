@@ -32,6 +32,8 @@ void pxgemm(const char transa,
            const int ic,
            const int jc,
            const int *descc) {
+    COSMA_RE(pxgemm);
+
     // **********************************
     //           CORNER CASES
     // **********************************
@@ -53,7 +55,7 @@ void pxgemm(const char transa,
     // clear the profiler
     PC();
     // start profiling
-    PE(init);
+    COSMA_PE(init);
     char trans_a = std::toupper(transa);
     char trans_b = std::toupper(transb);
 
@@ -148,9 +150,9 @@ void pxgemm(const char transa,
     std::vector<int> divisors;
     std::string step_type = "";
     std::string dimensions = "";
-    PL();
+    COSMA_PL();
 
-    PE(strategy);
+    COSMA_PE(strategy);
     /*
       If the matrix is very large, then its reshuffling is expensive.
       For this reason, try to adapt the strategy to the scalapack layout
@@ -185,9 +187,9 @@ void pxgemm(const char transa,
     if (get_context_instance<T>()->overlap_comm_and_comp) {
         strategy.enable_overlapping_comm_and_comp();
     }
-    PL();
+    COSMA_PL();
 
-    PE(init);
+    COSMA_PE(init);
 
 #ifdef DEBUG
     if (rank == 0) {
@@ -197,7 +199,7 @@ void pxgemm(const char transa,
     MPI_Barrier(comm);
 #endif
 
-    PL();
+    COSMA_PL();
     // create COSMA mappers
     Mapper mapper_a('A', strategy, rank);
     Mapper mapper_b('B', strategy, rank);
@@ -207,7 +209,7 @@ void pxgemm(const char transa,
     auto cosma_grid_b = mapper_b.get_layout_grid();
     auto cosma_grid_c = mapper_c.get_layout_grid();
 
-    PE(transform_init);
+    COSMA_PE(transform_init);
     // get abstract layout descriptions for ScaLAPACK layout
     auto scalapack_layout_a = costa::get_scalapack_layout<T>(
         lld_a,
@@ -247,7 +249,7 @@ void pxgemm(const char transa,
         c,
         'C',
         rank);
-    PL();
+    COSMA_PL();
 
     // by default, no process-relabeling is assumed.
     bool reordered = false;
@@ -255,7 +257,7 @@ void pxgemm(const char transa,
     MPI_Comm reordered_comm = comm;
 
     if (!strategy_adapted) {
-        PE(transform_reordering_matching);
+        COSMA_PE(transform_reordering_matching);
         // total communication volume for transformation of layouts
         // costa::comm_volume comm_vol;
         auto comm_vol = costa::communication_volume(scalapack_layout_a.grid, cosma_grid_a, trans_a);
@@ -264,16 +266,16 @@ void pxgemm(const char transa,
 
         // compute the optimal rank reordering that minimizes the communication volume
         rank_permutation = costa::optimal_reordering(comm_vol, P, reordered);
-        PL();
+        COSMA_PL();
 
         // create reordered communicator, which has same ranks
         // but relabelled as given by the rank_permutation
         // (to avoid the communication during layout transformation)
-        PE(transform_reordering_comm);
+        COSMA_PE(transform_reordering_comm);
         if (reordered) {
             MPI_Comm_split(comm, 0, rank_permutation[rank], &reordered_comm);
         }
-        PL();
+        COSMA_PL();
     } else {
         rank_permutation.reserve(P);
         // if the strategy is adapted, then no process-relabeling occurs.
@@ -335,19 +337,23 @@ void pxgemm(const char transa,
     std::cout << "Transforming the input matrices A and B from Scalapack -> COSMA" << std::endl;
 #endif
     // transform A and B from scalapack to cosma layout
+    COSMA_RE(scalapack_to_cosma);
     costa::transformer<T> transf(comm);
     transf.schedule(scalapack_layout_a, cosma_layout_a, trans_a, T{1}, T{0});
     // transf.transform();
     transf.schedule(scalapack_layout_b, cosma_layout_b, trans_b, T{1}, T{0});
 
     transf.transform();
+    COSMA_RL();
 
 #ifdef DEBUG
     std::cout << "COSMA multiply" << std::endl;
 #endif
 
     // perform cosma multiplication
+    COSMA_RE(multiply);
     multiply<T>(A, B, C, strategy, reordered_comm, T{1}, T{0});
+    COSMA_RL();
     // construct cosma layout again, to avoid outdated
     // pointers when the memory pool has been used
     // in case it resized during multiply
@@ -359,9 +365,11 @@ void pxgemm(const char transa,
 #endif
     // costa::transform the result from cosma back to scalapack
     // costa::transform<T>(cosma_layout_c, scalapack_layout_c, comm);
+    COSMA_RE(cosma_to_scalapack);
     transf.schedule(cosma_layout_c, scalapack_layout_c, 'N', alpha, beta);
 
     transf.transform();
+    COSMA_RL();
 
 #ifdef DEBUG
     if (rank == 0) {
@@ -384,11 +392,13 @@ void pxgemm(const char transa,
 
     }
 #endif
-    PE(transform_reordering_comm);
+    COSMA_PE(transform_reordering_comm);
     if (reordered) {
         MPI_Comm_free(&reordered_comm);
     }
-    PL();
+    COSMA_PL();
+
+    COSMA_RL(); // pxgemm
 }
 
 // scales the submatrix of C by beta
@@ -403,7 +413,7 @@ void scale_matrix(const int* descc, T* c,
     PC();
 
     // start profiling
-    PE(init);
+    COSMA_PE(init);
 
     // blas context
     int ctxt = scalapack::get_grid_context(descc);
@@ -455,12 +465,12 @@ void scale_matrix(const int* descc, T* c,
         c,
         'C',
         rank);
-    PL();
+    COSMA_PL();
 
-    PE(multiply_computation);
+    COSMA_PE(multiply_computation);
     // scale the elements in the submatrix given by the layout
     layout.scale_by(beta);
-    PL();
+    COSMA_PL();
 }
 
 // returns A, B or C, depending on which flag was set to true.

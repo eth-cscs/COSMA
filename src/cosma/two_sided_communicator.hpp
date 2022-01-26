@@ -39,6 +39,7 @@ void copy(MPI_Comm comm,
 
 template <typename Scalar>
 void reduce(MPI_Comm comm,
+            void *nccl_comm_ptr,
             int rank,
             int div,
             Interval &P,

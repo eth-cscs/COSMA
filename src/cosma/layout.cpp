@@ -9,7 +9,7 @@ Layout::Layout(Mapper* mapper):
     P_(mapper->P()),
     rank_(mapper->rank()),
     mapper_(mapper) {
-    PE(preprocessing_matrices_layout);
+    COSMA_PE(preprocessing_matrices_layout);
     initial_size_ = std::vector<int>(P_);
     bucket_size_ = std::vector<std::vector<int>>(P_, std::vector<int>());
     pointer_ = std::vector<int>(P_);
@@ -25,7 +25,7 @@ Layout::Layout(Mapper* mapper):
         }
         initial_size_[p] = sum;
     }
-    PL();
+    COSMA_PL();
 }
 
 int Layout::size() { 

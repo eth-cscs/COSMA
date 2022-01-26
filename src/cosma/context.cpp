@@ -11,6 +11,10 @@ gpu::mm_handle<Scalar>* cosma_context<Scalar>::get_gpu_context() {
 }
 #endif
 template <typename Scalar>
+MPI_Comm cosma_context<Scalar>::get_mpi_comm() {
+    return mpi_comm_;
+}
+template <typename Scalar>
 cosma_context<Scalar>::cosma_context() {
     cpu_memory_limit = get_cpu_max_memory<Scalar>();
     memory_pool_.amortization = get_memory_pool_amortization();
@@ -23,6 +27,7 @@ cosma_context<Scalar>::cosma_context() {
                                          gpu_max_tile_n(),
                                          gpu_max_tile_k());
 #endif
+    mpi_comm_ = MPI_COMM_NULL;
 }
 
 template <typename Scalar>
@@ -36,6 +41,7 @@ cosma_context<Scalar>::cosma_context(size_t cpu_mem_limit, int streams, int tile
     // let this just serve as the upper bound when creating a strategy
     // because otherwise, it might reserve/resize to much more than the problem requires
     // memory_pool_.resize(cpu_mem_limit);
+    mpi_comm_ = MPI_COMM_NULL;
 #ifdef COSMA_HAVE_GPU
     gpu_ctx_ = gpu::make_context<Scalar>(streams, tile_m, tile_n, tile_k);
 #else
@@ -83,6 +89,27 @@ void cosma_context<Scalar>::register_state(int rank, const Strategy& strategy) {
         memory_pool_.already_pinned = true;
     }
 #endif
+}
+
+template <typename Scalar>
+int cosma_context<Scalar>::register_comm(MPI_Comm comm) {
+    if (comm == MPI_COMM_NULL) {
+        printf ("Cannot register MPI_COMM_NULL comm in cosma_context, aborting..\n");
+        exit(-1);
+    }
+    if (mpi_comm_ == MPI_COMM_NULL) {
+        mpi_comm_ = comm;
+        return 0;
+    } else {
+        int ret;
+        MPI_Comm_compare(mpi_comm_, comm, &ret);
+        if (ret != MPI_IDENT) {
+            mpi_comm_ = comm;
+            return 0;
+        } else {
+            return 1;
+        }
+    }
 }
 
 template <typename Scalar>

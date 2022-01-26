@@ -129,7 +129,7 @@ void local_multiply(cosma_context<Scalar>* ctx,
                     int k,
                     Scalar alpha,
                     Scalar beta) {
-    PE(multiply_computation);
+    COSMA_PE(multiply_computation);
 #ifdef DEBUG
     auto t_start =
         debug_gemm_start(matrixA, matrixB, matrixC, m, n, k, alpha, beta);
@@ -148,7 +148,7 @@ void local_multiply(cosma_context<Scalar>* ctx,
 #else
     gemm(m, n, k, alpha, matrixA, m, matrixB, k, beta, matrixC, m);
 #endif
-    PL();
+    COSMA_PL();
 
 #ifdef DEBUG
     auto t_end =

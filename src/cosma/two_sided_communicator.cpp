@@ -17,6 +17,9 @@
 #include <stdlib.h>
 #include <thread>
 #include <tuple>
+#if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_RCCL)
+#include <rccl.h>
+#endif
 
 namespace cosma {
 
@@ -48,7 +51,7 @@ void copy(MPI_Comm comm,
           std::vector<std::vector<int>> &size_before,
           std::vector<int> &total_before,
           int total_after) {
-    PE(multiply_communication_other);
+    COSMA_PE(multiply_communication_other);
     // int div = strategy_->divisor(step);
     // MPI_Comm subcomm = active_comm(step);
     int gp, off;
@@ -76,10 +79,10 @@ void copy(MPI_Comm comm,
 
     int n_blocks = size_before[relative_rank].size();
     Scalar *receive_pointer = n_blocks > 1 ? reshuffle_buffer : out;
-    PL();
+    COSMA_PL();
 
     auto mpi_type = mpi_mapper<Scalar>::getType();
-    PE(multiply_communication_copy);
+    COSMA_PE(multiply_communication_copy);
     if (same_size) {
         MPI_Allgather(in,
                       local_size,
@@ -98,9 +101,9 @@ void copy(MPI_Comm comm,
                        mpi_type,
                        comm);
     }
-    PL();
+    COSMA_PL();
 
-    PE(multiply_communication_other);
+    COSMA_PE(multiply_communication_other);
     if (n_blocks > 1) {
         int index = 0;
         std::vector<int> block_offset(div);
@@ -118,7 +121,7 @@ void copy(MPI_Comm comm,
             }
         }
     }
-    PL();
+    COSMA_PL();
 #ifdef DEBUG
     std::cout << "Content of the copied matrix in rank " << rank
               << " is now: " << std::endl;
@@ -132,6 +135,7 @@ void copy(MPI_Comm comm,
 
 template <typename Scalar>
 void reduce(MPI_Comm comm,
+            void *nccl_comm_ptr,
             int rank,
             int div,
             Interval &P,
@@ -144,7 +148,7 @@ void reduce(MPI_Comm comm,
             std::vector<std::vector<int>> &c_expanded,
             std::vector<int> &c_total_expanded,
             Scalar beta) {
-    PE(multiply_communication_other);
+    COSMA_PE(multiply_communication_other);
     // int div = strategy_->divisor(step);
     // MPI_Comm subcomm = active_comm(step);
 
@@ -167,6 +171,7 @@ void reduce(MPI_Comm comm,
         block_offset[i] = sum;
         sum += c_expanded[off][i];
     }
+
 
     std::vector<int> recvcnts(div);
 
@@ -193,11 +198,13 @@ void reduce(MPI_Comm comm,
     }
 
     Scalar *receive_pointer = beta != Scalar{0} ? reduce_buffer : C;
-    PL();
+    COSMA_PL();
 
     auto mpi_type = mpi_mapper<Scalar>::getType();
-    PE(multiply_communication_reduce);
+    COSMA_PE(multiply_communication_reduce);
 
+#if !defined(COSMA_HAVE_GPU) || !defined(COSMA_WITH_RCCL)
+    COSMA_RE(MPI_reduce_scatter);
     if (same_size) {
         MPI_Reduce_scatter_block(send_pointer,
                            receive_pointer,
@@ -213,16 +220,59 @@ void reduce(MPI_Comm comm,
                            MPI_SUM,
                            comm);
     }
-    PL();
+    COSMA_RL();
+#endif
 
-    PE(multiply_communication_other);
+#if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_RCCL)
+    // first transfer send_pointer to GPU
+    Scalar *d_send_pointer=NULL, *d_receive_pointer=NULL;
+    int nranks;
+    MPI_Comm_size(comm, &nranks);
+    COSMA_RE(send_buf_to_GPU);
+    hipMalloc((void **)&d_send_pointer, nranks*recvcnts[0]*sizeof(Scalar));
+    hipMalloc((void **)&d_receive_pointer, recvcnts[0]*sizeof(Scalar));
+    hipMemcpy(d_send_pointer, send_pointer, nranks*recvcnts[0]*sizeof(Scalar), hipMemcpyHostToDevice);
+    COSMA_RL();
+
+    ncclComm_t nccl_comm = *((ncclComm_t *)nccl_comm_ptr);
+
+    COSMA_RE(ncclReduceScatter);
+    if (same_size) {
+        ncclReduceScatter (d_send_pointer,
+                           d_receive_pointer,
+                           recvcnts[0],
+                           ncclDouble,
+                           ncclSum,
+                           nccl_comm,
+                           NULL);
+    } else {
+        MPI_Reduce_scatter(send_pointer,
+                           receive_pointer,
+                           recvcnts.data(),
+                           mpi_type,
+                           MPI_SUM,
+                           comm);
+    }
+    COSMA_RL();
+
+    // now tranfer GPU buffer result to receive_pointer
+    COSMA_RE(get_buf_from_GPU);
+    hipMemcpy(receive_pointer, d_receive_pointer, recvcnts[0]*sizeof(Scalar), hipMemcpyDeviceToHost);
+    hipFree(d_send_pointer);
+    hipFree(d_receive_pointer);
+    COSMA_RL();
+#endif
+
+    COSMA_PL();
+
+    COSMA_PE(multiply_communication_other);
     if (beta != Scalar{0}) {
         // sum up receiving_buffer with C
         for (int el = 0; el < recvcnts[gp]; ++el) {
             C[el] = beta * C[el] + reduce_buffer[el];
         }
     }
-    PL();
+    COSMA_PL();
 }
 
 template void copy<float>(MPI_Comm comm,
@@ -272,6 +322,7 @@ copy<std::complex<double>>(MPI_Comm comm,
                            int total_after);
 
 template void reduce<float>(MPI_Comm comm,
+                            void *nccl_comm_ptr,
                             int rank,
                             int div,
                             Interval &P,
@@ -286,6 +337,7 @@ template void reduce<float>(MPI_Comm comm,
                             float beta);
 
 template void reduce<double>(MPI_Comm comm,
+                             void *nccl_comm_ptr,
                              int rank,
                              int div,
                              Interval &P,
@@ -301,6 +353,7 @@ template void reduce<double>(MPI_Comm comm,
 
 template void
 reduce<std::complex<float>>(MPI_Comm comm,
+                            void *nccl_comm_ptr,
                             int rank,
                             int div,
                             Interval &P,
@@ -316,6 +369,7 @@ reduce<std::complex<float>>(MPI_Comm comm,
 
 template void
 reduce<std::complex<double>>(MPI_Comm comm,
+                             void *nccl_comm_ptr,
                              int rank,
                              int div,
                              Interval &P,

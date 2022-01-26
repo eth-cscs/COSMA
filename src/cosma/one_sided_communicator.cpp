@@ -174,7 +174,7 @@ void comm_task_mn_split_polling(int divisor,
                                 std::vector<int> &displacements,
                                 std::atomic_int &ready,
                                 MPI_Comm comm) {
-    PE(multiply_communication_other);
+    COSMA_PE(multiply_communication_other);
     // copy the matrix that wasn't divided in this step
     int local_size = m.length() * k.subinterval(divisor, gp).length();
 
@@ -188,8 +188,8 @@ void comm_task_mn_split_polling(int divisor,
         int rank = (gp + dist) % divisor;
         int b_size = m.length() * k.subinterval(divisor, rank).length();
 
-        PL();
-        PE(multiply_communication_copy);
+        COSMA_PL();
+        COSMA_PE(multiply_communication_copy);
         MPI_Request req;
         MPI_Rget(expanded_matrix + m.length() * displacements[rank],
                  b_size,
@@ -210,15 +210,15 @@ void comm_task_mn_split_polling(int divisor,
                 ready++;
             }
         }
-        PL();
+        COSMA_PL();
 
-        PE(multiply_communication_other);
+        COSMA_PE(multiply_communication_other);
         dist++;
     }
 
     MPI_Win_unlock_all(win);
     MPI_Win_free(&win);
-    PL();
+    COSMA_PL();
 }
 
 template <typename Scalar>
@@ -232,7 +232,7 @@ void comm_task_mn_split_busy_waiting(int divisor,
                                      std::atomic_int &ready,
                                      MPI_Comm comm) {
     // copy the matrix that wasn't divided in this step
-    PE(multiply_communication_other);
+    COSMA_PE(multiply_communication_other);
     int local_size = m.length() * k.subinterval(divisor, gp).length();
 
     MPI_Win win = create_window(comm, original_matrix, local_size, false);
@@ -254,11 +254,11 @@ void comm_task_mn_split_busy_waiting(int divisor,
     while (dist < divisor) {
         int rank = (gp + dist) % divisor;
         int b_size = m.length() * k.subinterval(divisor, rank).length();
-        PL();
+        COSMA_PL();
 #ifdef DEBUG
         std::cout << "Getting a piece from rank " << rank << std::endl;
 #endif
-        PE(multiply_communication_copy);
+        COSMA_PE(multiply_communication_copy);
         MPI_Get(expanded_matrix + m.length() * displacements[rank],
                 b_size,
                 mpi_type,
@@ -273,16 +273,16 @@ void comm_task_mn_split_busy_waiting(int divisor,
         // then it also means that after flush
         // it will also be completed remotely
         MPI_Win_flush_local(rank, win);
-        PL();
+        COSMA_PL();
 
-        PE(multiply_communication_other);
+        COSMA_PE(multiply_communication_other);
         dist++;
         ready++;
     }
 
     MPI_Win_unlock_all(win);
     MPI_Win_free(&win);
-    PL();
+    COSMA_PL();
 }
 
 /* OVERLAP OF M SPLIT WITH OPENMP
@@ -290,7 +290,7 @@ void comm_task_mn_split_busy_waiting(int divisor,
     void overlap_m_split(context& ctx, MPI_Comm comm, int rank, int
 divisor, CosmaMatrix& matrixA, CosmaMatrix& matrixB, CosmaMatrix& matrixC,
             Interval& m, Interval& n, Interval& k, Interval& P, Scalar beta)
-{ PE(multiply_communication_copy);
+{ COSMA_PE(multiply_communication_copy);
 
         int gp, off;
         std::tie(gp, off) = P.locate_in_subinterval(divisor, rank);
@@ -353,11 +353,11 @@ displacements_n[gp];
             matrixB.set_current_matrix(pointer_b);
             matrixC.set_current_matrix(pointer_c);
 
-            PL();
+            COSMA_PL();
             local_multiply(ctx, matrixA.current_matrix(),
 matrixB.current_matrix(), matrixC.current_matrix(), newm.length(),
                     n.subinterval(divisor, gp).length(), k.length(), beta);
-            PE(multiply_communication_copy);
+            COSMA_PE(multiply_communication_copy);
         }
 
 #pragma omp single nowait
@@ -385,7 +385,7 @@ displacements_n[rank];
                     matrixB.set_current_matrix(pointer_b);
                     matrixC.set_current_matrix(pointer_c);
 
-                    PL();
+                    COSMA_PL();
                     local_multiply_cpu(matrixA.current_matrix(),
 matrixB.current_matrix(), matrixC.current_matrix(), newm.length(),
                             n.subinterval(divisor, rank).length(),
@@ -394,7 +394,7 @@ k.length(), beta);
 matrixB.current_matrix(),
                     //         matrixC.current_matrix(), newm.length(),
                     //         n.subinterval(divisor, rank).length(),
-k.length(), beta); PE(multiply_communication_copy);
+k.length(), beta); COSMA_PE(multiply_communication_copy);
                 }
             }
 #pragma omp taskwait
@@ -407,7 +407,7 @@ k.length(), beta); PE(multiply_communication_copy);
         expanded_mat.set_buffer_index(buffer_idx);
         matrixC.set_current_matrix(prev_c);
 
-        PL();
+        COSMA_PL();
     }
 */
 // ***********************************
@@ -428,7 +428,7 @@ void overlap_m_split(bool use_busy_waiting,
                      Interval &P,
                      Scalar alpha,
                      Scalar beta) {
-    PE(multiply_communication_other);
+    COSMA_PE(multiply_communication_other);
     int gp, off;
     std::tie(gp, off) = P.locate_in_subinterval(divisor, rank);
 
@@ -481,7 +481,7 @@ void overlap_m_split(bool use_busy_waiting,
     matrixB.set_current_matrix(pointer_b);
     matrixC.set_current_matrix(pointer_c);
 
-    PL();
+    COSMA_PL();
     local_multiply(ctx,
                    matrixA.current_matrix(),
                    matrixB.current_matrix(),
@@ -491,7 +491,7 @@ void overlap_m_split(bool use_busy_waiting,
                    k.length(),
                    alpha,
                    beta);
-    PE(multiply_communication_other);
+    COSMA_PE(multiply_communication_other);
 
     int dist = 1;
     while (dist < divisor) {
@@ -506,7 +506,7 @@ void overlap_m_split(bool use_busy_waiting,
             matrixB.set_current_matrix(pointer_b);
             matrixC.set_current_matrix(pointer_c);
 
-            PL();
+            COSMA_PL();
             local_multiply(ctx,
                            matrixA.current_matrix(),
                            matrixB.current_matrix(),
@@ -516,7 +516,7 @@ void overlap_m_split(bool use_busy_waiting,
                            k.length(),
                            alpha,
                            beta);
-            PE(multiply_communication_copy);
+            COSMA_PE(multiply_communication_copy);
             ready--;
             dist++;
         }
@@ -527,7 +527,7 @@ void overlap_m_split(bool use_busy_waiting,
     matrixC.set_current_matrix(prev_c);
 
     comm_thread.join();
-    PL();
+    COSMA_PL();
 }
 
 // ***********************************
@@ -548,7 +548,7 @@ void overlap_n_split(bool use_busy_waiting,
                      Interval &P,
                      Scalar alpha,
                      Scalar beta) {
-    PE(multiply_communication_other);
+    COSMA_PE(multiply_communication_other);
     int gp, off;
     std::tie(gp, off) = P.locate_in_subinterval(divisor, rank);
 
@@ -624,7 +624,7 @@ void overlap_n_split(bool use_busy_waiting,
             matrixB.set_current_matrix(pointer_b);
 
             Scalar new_beta = dist == 0 ? beta : Scalar(1);
-            PL();
+            COSMA_PL();
             local_multiply(ctx,
                            matrixA.current_matrix(),
                            matrixB.current_matrix(),
@@ -634,7 +634,7 @@ void overlap_n_split(bool use_busy_waiting,
                            k.subinterval(divisor, idx).length(),
                            alpha,
                            new_beta);
-            PE(multiply_communication_other);
+            COSMA_PE(multiply_communication_other);
 
             dist++;
             ready--;
@@ -647,7 +647,7 @@ void overlap_n_split(bool use_busy_waiting,
     expanded_mat.set_current_matrix(original_matrix);
     matrixB.set_current_matrix(prev_b);
 
-    PL();
+    COSMA_PL();
 }
 
 template <typename Scalar>
@@ -665,7 +665,7 @@ void comm_task_k_split(int divisor,
                        std::mutex &mtx,
                        std::condition_variable &cv,
                        MPI_Comm comm) {
-    PE(multiply_communication_other);
+    COSMA_PE(multiply_communication_other);
 
     int local_size = m.length() * n.subinterval(divisor, gp).length();
     MPI_Win win = create_window(comm, recv_buffer, local_size, false);
@@ -691,8 +691,8 @@ void comm_task_k_split(int divisor,
                 expanded_matrix + m.length() * displacements[idx];
             int b_size = m.length() * n.subinterval(divisor, idx).length();
 
-            PL();
-            PE(multiply_communication_reduce);
+            COSMA_PL();
+            COSMA_PE(multiply_communication_reduce);
             MPI_Win_lock(MPI_LOCK_EXCLUSIVE, idx, 0, win);
             MPI_Accumulate(pointer_c,
                            b_size,
@@ -704,14 +704,14 @@ void comm_task_k_split(int divisor,
                            MPI_SUM,
                            win);
             MPI_Win_unlock(idx, win);
-            PL();
-            PE(multiply_communication_other);
+            COSMA_PL();
+            COSMA_PE(multiply_communication_other);
             i++;
         }
     }
 
     MPI_Win_free(&win);
-    PL();
+    COSMA_PL();
 }
 
 template <typename Scalar>
@@ -749,7 +749,7 @@ void compute(cosma_context<Scalar> *ctx,
     // B.set_current_matrix(b);
     // C.set_current_matrix(c);
 
-    PL();
+    COSMA_PL();
     local_multiply(ctx,
                    A.current_matrix(),
                    B.current_matrix(),
@@ -759,7 +759,7 @@ void compute(cosma_context<Scalar> *ctx,
                    k.length(),
                    alpha,
                    beta);
-    PE(multiply_communication_other);
+    COSMA_PE(multiply_communication_other);
 }
 
 // ***********************************
@@ -779,7 +779,7 @@ void overlap_k_split(cosma_context<Scalar> *ctx,
                      Interval &P,
                      Scalar alpha,
                      Scalar beta) {
-    PE(multiply_communication_other);
+    COSMA_PE(multiply_communication_other);
     // int divisor = strategy.divisor(step);
     int gp, off;
     std::tie(gp, off) = P.locate_in_subinterval(divisor, rank);
@@ -1007,7 +1007,7 @@ void overlap_k_split(cosma_context<Scalar> *ctx,
         }
     }
 
-    PL();
+    COSMA_PL();
 }
 
 template <typename Scalar>

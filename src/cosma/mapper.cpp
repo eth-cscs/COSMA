@@ -11,7 +11,7 @@ Mapper::Mapper(char label,
     , n_(strategy.n_cols(label))
     , P_(strategy.P)
     , rank_(rank) {
-    PE(preprocessing_matrices_mapper_sizes);
+    COSMA_PE(preprocessing_matrices_mapper_sizes);
     skip_ranges_ = std::vector<int>(P_);
     rank_to_range_ =
         std::vector<std::vector<Interval2D>>(P_, std::vector<Interval2D>());
@@ -37,9 +37,9 @@ Mapper::Mapper(char label,
                       << std::endl;
         }
     }
-    PL();
+    COSMA_PL();
 
-    PE(preprocessing_matrices_mapper_coordinates);
+    COSMA_PE(preprocessing_matrices_mapper_coordinates);
     // both partitions start with 0
     row_partition_set_ = std::set<int>{-1};
     col_partition_set_ = std::set<int>{-1};
@@ -53,7 +53,7 @@ Mapper::Mapper(char label,
 #ifdef DEBUG
     output_layout();
 #endif
-    PL();
+    COSMA_PL();
     // if (rank_ >= P_) {
     //     return;
     // }

@@ -22,7 +22,7 @@ Buffer<T>::Buffer(cosma_context<T>* ctxt,
     , mapper_(mapper)
     , layout_(layout) {
 
-    PE(preprocessing_matrices_buffer);
+    COSMA_PE(preprocessing_matrices_buffer);
     compute_n_buckets();
 
     max_base_buffer_size_ = 0;
@@ -49,7 +49,7 @@ Buffer<T>::Buffer(cosma_context<T>* ctxt,
     }
 
     allocate_initial_buffers(dry_run);
-    PL();
+    COSMA_PL();
 }
 
 template <typename T>

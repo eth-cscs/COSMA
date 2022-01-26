@@ -12,6 +12,22 @@
 #include <stdlib.h>
 #include <tuple>
 
+#if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_RCCL)
+#include <unistd.h>
+#include <rccl.h>
+#define NCCLCHECK(cmd) do {                         \
+  ncclResult_t res = cmd;                           \
+  if (res != ncclSuccess) {                         \
+    char hostname[1024];                            \
+    gethostname(hostname, 1024);                    \
+    printf("%s: Test NCCL failure %s:%d '%s'\n",    \
+         hostname,                                  \
+        __FILE__,__LINE__,ncclGetErrorString(res)); \
+        exit(EXIT_FAILURE);                         \
+  }                                                 \
+} while(0)
+#endif
+
 namespace cosma {
 class communicator {
   public:
@@ -187,6 +203,10 @@ class communicator {
 
     // communicator active in step
     MPI_Comm active_comm(int step);
+#if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_RCCL)
+    ncclComm_t active_nccl_comm(int step);
+#endif
+
     MPI_Comm full_comm();
 
     // size of the initial communicator
@@ -199,6 +219,9 @@ class communicator {
 
     // wrappers around MPI_Comm_free and MPI_Group_free
     static void free_comm(MPI_Comm &comm);
+#if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_RCCL)
+    static void free_nccl_comm(ncclComm_t nccl_comm);
+#endif
     static void free_group(MPI_Group &comm_group);
 
     // wrapper around MPI_Finalize
@@ -225,6 +248,9 @@ class communicator {
   protected:
     // hierarchy of communicators used throughout the algorithm
     std::vector<MPI_Comm> comm_ring_;
+#if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_RCCL)
+    std::vector<ncclComm_t> nccl_comm_ring_;
+#endif
     std::vector<MPI_Comm> comm_subproblem_;
     int rank_;
     const Strategy *strategy_;

@@ -18,6 +18,8 @@ option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
 option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT})
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
 option(COSMA_WITH_PROFILING "Enable profiling." OFF)
+option(COSMA_WITH_OFFLOAD_PROFILING "Enable GPU profiling with ranges." OFF)
+option(COSMA_WITH_RCCL "Enable RCCL collectives." OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries." OFF)
 
 set(COSMA_BLAS "MKL" CACHE STRING
@@ -145,6 +147,10 @@ if (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
     set(BLAS_TARGET "Tiled-MM")
     set(BLAS_DEF "COSMA_HAVE_GPU")
     set(GPU ON)
+    if (${COSMA_BLAS} STREQUAL "ROCM")
+        include(cmake/FindHIPLIBS.cmake)
+        find_package(HIPLIBS REQUIRED)
+    endif()
 endif()
 
 # BLAS LIBRARIES below can be used together with the GPU backend
