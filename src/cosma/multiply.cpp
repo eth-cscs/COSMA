@@ -6,6 +6,10 @@
 
 #include <complex>
 
+#ifdef COSMA_HAVE_GPU
+#include <cosma/gpu/utils.hpp>
+#endif
+
 namespace cosma {
 template <typename Scalar>
 void multiply(cosma_context<Scalar> *ctx,
@@ -860,6 +864,22 @@ void parallel(cosma_context<Scalar> *ctx,
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
         Scalar *reduce_buffer = expanded_mat.reduce_buffer_ptr();
+#ifdef COSMA_HAVE_GPU
+        comm.nccl_reduce(
+                    ctx,
+                    P,
+                    expanded_matrix,
+                    original_matrix,
+                    reshuffle_buffer,
+                    reduce_buffer,
+                    size_before_expansion,
+                    total_before_expansion,
+                    size_after_expansion,
+                    total_after_expansion,
+                    alpha,
+                    beta,
+                    step);
+#else
         comm.reduce(P,
                     expanded_matrix,
                     original_matrix,
@@ -872,6 +892,7 @@ void parallel(cosma_context<Scalar> *ctx,
                     alpha,
                     beta,
                     step);
+#endif
     }
 
     PE(multiply_other);

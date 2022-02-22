@@ -137,6 +137,8 @@ set(GPU OFF)
 # BLAS provider that SCALAPACK is linked to
 set(SCALAPACK_BLAS_TARGET "")
 
+set(NCCL_TARGET "")
+
 # these are only GPU-backends
 if (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
     option(TILEDMM_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
@@ -145,6 +147,15 @@ if (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
     set(BLAS_TARGET "Tiled-MM")
     set(BLAS_DEF "COSMA_HAVE_GPU")
     set(GPU ON)
+
+    if (${COSMA_BLAS} STREQUAL "CUDA")
+        find_package(NCCL)
+        set(NCCL_TARGET "${NCCL_LIBRARIES}")
+        message("NCCL INCLUDE DIRS = ${NCCL_INCLUDE_DIRS}")
+        message("NCCL LIBRARIES = ${NCCL_LIBRARIES}")
+        # set(NCCL_TARGET "${NCCL_LIBRARIES}")
+    endif()
+
 endif()
 
 # BLAS LIBRARIES below can be used together with the GPU backend

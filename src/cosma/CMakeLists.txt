@@ -25,10 +25,14 @@ if(NOT TARGET cosma)
     endif()
 
     add_library(cosma ${cosma_src_files})
-    target_include_directories(cosma PUBLIC $<BUILD_INTERFACE:${cosma_SOURCE_DIR}/src>)
+    target_include_directories(cosma PUBLIC 
+        $<BUILD_INTERFACE:${cosma_SOURCE_DIR}/src>
+        ${NCCL_INCLUDE_DIRS}
+        )
     target_compile_features(cosma PUBLIC cxx_std_14)
     target_link_libraries(cosma PUBLIC MPI::MPI_CXX
                                        costa
+                                       ${NCCL_TARGET}
                                 PRIVATE ${BLAS_TARGET}
     )
     target_compile_definitions(cosma PRIVATE ${BLAS_DEF}

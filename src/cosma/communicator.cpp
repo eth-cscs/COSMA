@@ -1,8 +1,10 @@
+#include <complex>
+
 #include <cosma/communicator.hpp>
 #include <cosma/one_sided_communicator.hpp>
 #include <cosma/two_sided_communicator.hpp>
 
-#include <complex>
+#include <cosma/gpu/utils.hpp>
 
 namespace cosma {
 bool communicator::use_busy_waiting = true;
@@ -369,6 +371,40 @@ void communicator::reduce(Interval &P,
                                    c_expanded,
                                    c_total_expanded,
                                    beta);
+}
+
+template <typename Scalar>
+void communicator::nccl_reduce(cosma_context<Scalar> *ctx,
+                          Interval &P,
+                          Scalar *in,
+                          Scalar *out,
+                          Scalar *reshuffle_buffer,
+                          Scalar *reduce_buffer,
+                          std::vector<std::vector<int>> &c_current,
+                          std::vector<int> &c_total_current,
+                          std::vector<std::vector<int>> &c_expanded,
+                          std::vector<int> &c_total_expanded,
+                          Scalar alpha,
+                          Scalar beta,
+                          int step) {
+    auto nccl_comm = active_nccl_comm(step);
+    auto mpi_comm = active_comm(step);
+    nccl_reduce(mpi_comm,
+                nccl_comm,
+                rank(),
+                strategy_->divisor(step),
+                P,
+                in,  // LC
+                out, // C
+                reshuffle_buffer,
+                reduce_buffer,
+                ctx->get_device_send_buffer(),
+                ctx->get_device_receive_buffer(),
+                c_current,
+                c_total_current,
+                c_expanded,
+                c_total_expanded,
+                beta);
 }
 
 template <typename Scalar>
