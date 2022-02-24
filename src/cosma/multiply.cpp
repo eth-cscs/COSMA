@@ -1,3 +1,4 @@
+#include <cosma/math_utils.hpp>
 #include <cosma/local_multiply.hpp>
 #include <cosma/multiply.hpp>
 #include <cosma/profiler.hpp>
@@ -22,7 +23,7 @@ void multiply(cosma_context<Scalar> *ctx,
               Interval &P,
               size_t step,
               const Strategy &strategy,
-              communicator &comm,
+              communicator *comm,
               Scalar alpha,
               Scalar beta);
 
@@ -37,7 +38,7 @@ void sequential(cosma_context<Scalar> *ctx,
                 Interval &P,
                 size_t step,
                 const Strategy &strategy,
-                communicator &comm,
+                communicator *comm,
                 Scalar alpha,
                 Scalar beta);
 
@@ -52,7 +53,7 @@ void parallel(cosma_context<Scalar> *ctx,
               Interval &P,
               size_t step,
               const Strategy &strategy,
-              communicator &comm,
+              communicator *comm,
               Scalar alpha,
               Scalar beta);
 
@@ -271,14 +272,10 @@ void multiply(cosma_context<Scalar> *ctx,
     assert(matrixB.rank() == matrixC.rank());
     PL();
 
-    PE(preprocessing_communicators);
-    communicator cosma_comm = communicator(&strategy, comm);
-    PL();
+    // register reusable objects in the context
+    ctx->register_state(comm, strategy);
 
-    if (!cosma_comm.is_idle()) {
-        // register strategy in the context
-        ctx->register_state(cosma_comm.rank(), strategy);
-
+    if (!ctx->get_cosma_comm->is_idle()) {
         multiply(ctx,
                  matrixA,
                  matrixB,
@@ -289,7 +286,7 @@ void multiply(cosma_context<Scalar> *ctx,
                  Pi,
                  0,
                  strategy,
-                 cosma_comm,
+                 ctx->get_cosma_comm(),
                  alpha,
                  beta);
     }
@@ -303,7 +300,7 @@ void multiply(cosma_context<Scalar> *ctx,
     matrixA.free_communication_buffers();
     PL();
 
-    if (cosma_comm.rank() == 0) {
+    if (ctx->get_cosma_comm->rank() == 0) {
         PP();
     }
 }
@@ -319,7 +316,7 @@ void multiply(cosma_context<Scalar> *ctx,
               Interval &P,
               size_t step,
               const Strategy &strategy,
-              communicator &comm,
+              communicator *comm,
               Scalar alpha,
               Scalar beta) {
     PE(multiply_other);
@@ -447,7 +444,7 @@ void sequential(cosma_context<Scalar> *ctx,
                 Interval &P,
                 size_t step,
                 const Strategy &strategy,
-                communicator &comm,
+                communicator *comm,
                 Scalar alpha,
                 Scalar beta) {
     // split the dimension but not the processors, all P processors are taking
@@ -634,7 +631,7 @@ void parallel(cosma_context<Scalar> *ctx,
               Interval &P,
               size_t step,
               const Strategy &strategy,
-              communicator &comm,
+              communicator *comm,
               Scalar alpha,
               Scalar beta) {
     PE(multiply_other);

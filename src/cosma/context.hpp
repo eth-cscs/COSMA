@@ -3,6 +3,7 @@
 #include <memory>
 #include <cosma/memory_pool.hpp>
 #include <cosma/strategy.hpp>
+// #include <cosma/communicator.hpp>
 
 #include <mpi.h>
 
@@ -12,6 +13,9 @@
 
 namespace cosma {
 
+// forward-declaration
+class communicator;
+
 template <typename Scalar>
 class cosma_context {
 public:
@@ -19,12 +23,15 @@ public:
     cosma_context(size_t cpu_mem_limit, int streams, int tile_m, int tile_n, int tile_k);
     ~cosma_context();
 
-    void register_state(int rank, const Strategy& strategy);
+    void register_state(MPI_Comm comm, 
+                        const Strategy& strategy);
 
     memory_pool<Scalar>& get_memory_pool();
 #ifdef COSMA_HAVE_GPU
     gpu::mm_handle<Scalar>* get_gpu_context();
 #endif
+
+    cosma::communicator* get_cosma_comm();
 
     long long get_cpu_memory_limit();
 
@@ -44,8 +51,8 @@ private:
     // gpu::mm_handle<Scalar> gpu_ctx_;
 #endif
     bool output = false;
-    int prev_rank = -1;
     Strategy prev_strategy;
+    std::unique_ptr<cosma::communicator> prev_cosma_comm;
 };
 
 template <typename Scalar>

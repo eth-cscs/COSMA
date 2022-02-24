@@ -1,6 +1,9 @@
 #pragma once
+#include <complex>
 #include <cosma/gpu/gpu_runtime_api.hpp>
 #include <cosma/gpu/nccl_mapper.hpp>
+#include <cosma/profiler.hpp>
+#include <cosma/mpi_mapper.hpp>
 
 #if defined(TILED_MM_CUDA)
 #include <nccl.h>
@@ -91,6 +94,12 @@ namespace gpu {
                 runtime_api::flag::MemcpyDeviceToHost, stream);
         check_runtime_status(status);
     }
+
+    template<class T>
+    struct is_complex : std::false_type {};
+
+    template<class T>
+    struct is_complex<std::complex<T>> : std::true_type {};
 
     template <typename Scalar>
     void nccl_reduce(

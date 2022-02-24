@@ -1,10 +1,8 @@
 #pragma once
-#include <cosma/context.hpp>
 #include <cosma/interval.hpp>
-#include <cosma/local_multiply.hpp>
-#include <cosma/math_utils.hpp>
 #include <cosma/matrix.hpp>
 #include <cosma/strategy.hpp>
+#include <cosma/context.hpp>
 
 #include <algorithm>
 #include <iostream>
@@ -13,6 +11,11 @@
 #include <tuple>
 
 namespace cosma {
+
+// forward-declaration
+// template <typename T>
+// class cosma_context;
+
 class communicator {
   public:
     communicator() = default;
