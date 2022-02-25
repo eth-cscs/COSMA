@@ -23,9 +23,9 @@
 
 namespace cosma {
 namespace gpu {
-    static void check_nccl_status(ncclResult_t result);
+    void check_nccl_status(ncclResult_t result);
 
-    static ncclComm_t mpi_to_nccl_comm(MPI_Comm comm);
+    ncclComm_t mpi_to_nccl_comm(MPI_Comm comm);
 
     void free_nccl_comm(ncclComm_t nccl_comm);
 
