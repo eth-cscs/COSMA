@@ -12,6 +12,14 @@ void cosma::gpu::check_nccl_status(ncclResult_t result) {
     }
 }
 
+void cosma::gpu::check_runtime_status(runtime_api::StatusType status) {
+    if(status !=  runtime_api::status::Success) {
+        std::cerr << "error: GPU API call : "
+        << runtime_api::get_error_string(status) << std::endl;
+        throw(std::runtime_error("GPU ERROR"));
+    }
+}
+
 ncclComm_t cosma::gpu::mpi_to_nccl_comm(MPI_Comm comm) {
     if (comm == MPI_COMM_NULL) {
         return nullptr;

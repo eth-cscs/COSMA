@@ -76,19 +76,29 @@ cosma::communicator* cosma_context<Scalar>::get_cosma_comm() {
 template <typename Scalar>
 void cosma_context<Scalar>::register_state(MPI_Comm comm,
                                            const Strategy& strategy) {
-    MPI_Comm prev_comm = prev_cosma_comm->full_comm();
-    int comm_compare;
-    MPI_Comm_compare(prev_comm, comm, &comm_compare);
-    bool same_comm = comm_compare == MPI_CONGRUENT || 
-                     comm_compare == MPI_IDENT;
+    bool same_comm = false;
 
-    // if same_comm and same strategy -> reuse the communicators
-    if (!same_comm || strategy != prev_strategy) {
+    if (!prev_cosma_comm || prev_cosma_comm->full_comm() == MPI_COMM_NULL) {
         prev_strategy = strategy;
 
         PE(preprocessing_communicators);
         prev_cosma_comm = std::make_unique<cosma::communicator>(&strategy, comm);
         PL();
+    } else {
+        MPI_Comm prev_comm = prev_cosma_comm->full_comm();
+        int comm_compare;
+        MPI_Comm_compare(prev_comm, comm, &comm_compare);
+        bool same_comm = comm_compare == MPI_CONGRUENT || 
+                         comm_compare == MPI_IDENT;
+
+        // if same_comm and same strategy -> reuse the communicators
+        if (!same_comm || strategy != prev_strategy) {
+            prev_strategy = strategy;
+
+            PE(preprocessing_communicators);
+            prev_cosma_comm = std::make_unique<cosma::communicator>(&strategy, comm);
+            PL();
+        }
     }
 
     // if this rank is not taking part in multiply, return

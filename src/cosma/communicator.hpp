@@ -247,8 +247,8 @@ class communicator {
     int rank_;
     const Strategy *strategy_;
     std::vector<int> step_to_comm_index_;
-    MPI_Comm full_comm_;
-    int comm_size_;
+    MPI_Comm full_comm_ = MPI_COMM_NULL;
+    int comm_size_ = 0;
     // if true then not all processors were used
     // this usually happens if given number of processors
     // cannot be decomposed nicely (e.g. if P is prime)

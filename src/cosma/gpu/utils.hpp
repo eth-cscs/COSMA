@@ -29,17 +29,7 @@ namespace gpu {
 
     void free_nccl_comm(ncclComm_t nccl_comm);
 
-    // copy n*T from host to device
-    template <typename T>
-    void copy_to_device(const T* from, T* to, size_t n) {
-        runtime_api::memcpy(to, from, n*sizeof(T), runtime_api::flag::MemcpyHostToDevice);
-    }
-
-    // copy n*T from device to host
-    template <typename T>
-    void copy_to_host(const T* from, T* to, size_t n) {
-        runtime_api::memcpy(to, from, n*sizeof(T), runtime_api::flag::MemcpyDeviceToHost);
-    }
+    void check_runtime_status(runtime_api::StatusType status);
 
     // copy n*T from host to device
     // If a cuda stream is passed as the final argument the copy will be performed
@@ -56,7 +46,7 @@ namespace gpu {
         //}
 
         auto status = runtime_api::memcpy_async(to, from, n * sizeof(T),
-                runtime_api::flag::MemcpyHostToDevice, stream);
+                                                runtime_api::flag::MemcpyHostToDevice, stream);
         check_runtime_status(status);
     }
 
@@ -67,7 +57,7 @@ namespace gpu {
     template <typename T>
     void copy_to_host_async(const T* from, T* to, size_t n, runtime_api::StreamType stream=NULL) {
         auto status = runtime_api::memcpy_async(to, from, n * sizeof(T),
-                runtime_api::flag::MemcpyDeviceToHost, stream);
+                                                runtime_api::flag::MemcpyDeviceToHost, stream);
         check_runtime_status(status);
     }
 
@@ -149,6 +139,8 @@ namespace gpu {
         Scalar *receive_pointer = beta != Scalar{0} ? reduce_buffer : C;
         PL();
 
+        bool nccl_run = false;
+
         PE(multiply_communication_reduce);
         // nccl doesnt support complex numbers
         if (same_size) {
@@ -164,7 +156,7 @@ namespace gpu {
 
                 auto stream = ctx->nccl_stream.stream();
 
-                copy_to_device(send_pointer, d_send_pointer, div * recvcnts[0]);
+                gpu::copy_to_device_async(send_pointer, d_send_pointer, div * recvcnts[0], stream);
                 ncclReduceScatter(d_send_pointer,
                         d_receive_pointer,
                         recvcnts[0],
@@ -172,7 +164,9 @@ namespace gpu {
                         ncclSum,
                         nccl_comm,
                         stream);
-                copy_to_host(d_receive_pointer, receive_pointer, recvcnts[0]);
+                gpu::copy_to_host_async(d_receive_pointer, receive_pointer, recvcnts[0], stream);
+
+                nccl_run = true;
 
             } else {
                 auto mpi_type = mpi_mapper<Scalar>::getType();
@@ -196,6 +190,11 @@ namespace gpu {
 
         PE(multiply_communication_other);
         if (beta != Scalar{0}) {
+            // wait for all operation on this stream to finish
+            if (nccl_run) {
+                auto stream = ctx->nccl_stream.stream();
+                gpu::runtime_api::stream_synchronize(stream);
+            }
             // sum up receiving_buffer with C
             for (int el = 0; el < recvcnts[gp]; ++el) {
                 C[el] = beta * C[el] + reduce_buffer[el];
