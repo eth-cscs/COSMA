@@ -1,14 +1,17 @@
 #pragma once
-#include <cosma/interval.hpp>
-#include <cosma/matrix.hpp>
-#include <cosma/strategy.hpp>
-#include <cosma/context.hpp>
 
 #include <algorithm>
 #include <iostream>
 #include <mpi.h>
 #include <stdlib.h>
 #include <tuple>
+
+#include <cosma/interval.hpp>
+#include <cosma/matrix.hpp>
+#include <cosma/strategy.hpp>
+#include <cosma/context.hpp>
+
+#include <nccl.h>
 
 namespace cosma {
 
@@ -190,6 +193,10 @@ class communicator {
 
     // communicator active in step
     MPI_Comm active_comm(int step);
+#ifdef COSMA_HAVE_GPU
+    // nccl communicator active in step
+    ncclComm_t active_nccl_comm(int step);
+#endif
     MPI_Comm full_comm();
 
     // size of the initial communicator
@@ -225,10 +232,18 @@ class communicator {
     static int rank_inside_ring(Interval &P, int div, int global_rank);
     static int rank_outside_ring(Interval &P, int div, int off, int gp);
 
+    // returns the current strategy
+    const Strategy* get_strategy();
+
   protected:
     // hierarchy of communicators used throughout the algorithm
     std::vector<MPI_Comm> comm_ring_;
     std::vector<MPI_Comm> comm_subproblem_;
+    // equivalents of mpi communicators, but for nccl
+#ifdef COSMA_HAVE_GPU
+    std::vector<ncclComm_t> nccl_comm_ring_;
+    std::vector<ncclComm_t> nccl_comm_subproblem_;
+#endif
     int rank_;
     const Strategy *strategy_;
     std::vector<int> step_to_comm_index_;

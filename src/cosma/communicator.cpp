@@ -167,6 +167,13 @@ MPI_Comm communicator::active_comm(int step) {
     return comm_ring_[comm_index];
 }
 
+#ifdef COSMA_HAVE_GPU
+ncclComm_t communicator::active_nccl_comm(int step) {
+    int comm_index = step_to_comm_index_[step];
+    return nccl_comm_ring_[comm_index];
+}
+#endif
+
 int communicator::comm_size() { return comm_size_; }
 
 void communicator::free_comm(MPI_Comm &comm) { MPI_Comm_free(&comm); }
@@ -227,8 +234,13 @@ void communicator::split_communicators(MPI_Comm comm) {
             MPI_Comm comm_ring, comm_subproblem;
             MPI_Comm_split(comm, group, offset, &comm_subproblem);
             MPI_Comm_split(comm, offset, group, &comm_ring);
+
             comm_ring_.push_back(comm_ring);
             comm_subproblem_.push_back(comm_subproblem);
+
+            nccl_comm_ring_.push_back(gpu::mpi_to_nccl_comm(comm_ring_.back()));
+            nccl_comm_subproblem_.push_back(gpu::mpi_to_nccl_comm(comm_subproblem_.back()));
+
             comm = comm_subproblem;
             P = newP;
         }
@@ -268,6 +280,9 @@ void communicator::create_communicators(MPI_Comm comm) {
 
             comm_ring_.emplace_back(create_comm_ring(comm, P, offset, div));
             comm_subproblem_.emplace_back(create_comm_subproblem(comm, P, newP));
+
+            nccl_comm_ring_.emplace_back(gpu::mpi_to_nccl_comm(comm_ring_.back()));
+            nccl_comm_subproblem_.emplace_back(gpu::mpi_to_nccl_comm(comm_subproblem_.back()));
 
             comm = comm_subproblem_.back();
             P = newP;
@@ -313,9 +328,11 @@ MPI_Comm communicator::create_comm_subproblem(MPI_Comm comm,
 void communicator::free_comms() {
     for (int i = comm_subproblem_.size() - 1; i >= 0; --i) {
         free_comm(comm_subproblem_[i]);
+        gpu::free_nccl_comm(nccl_comm_subproblem_[i]);
     }
     for (int i = comm_ring_.size() - 1; i >= 0; --i) {
         free_comm(comm_ring_[i]);
+        gpu::free_nccl_comm(nccl_comm_ring_[i]);
     }
     if (using_reduced_comm_) {
         free_comm(full_comm_);
@@ -374,40 +391,6 @@ void communicator::reduce(Interval &P,
 }
 
 template <typename Scalar>
-void communicator::nccl_reduce(cosma_context<Scalar> *ctx,
-                          Interval &P,
-                          Scalar *in,
-                          Scalar *out,
-                          Scalar *reshuffle_buffer,
-                          Scalar *reduce_buffer,
-                          std::vector<std::vector<int>> &c_current,
-                          std::vector<int> &c_total_current,
-                          std::vector<std::vector<int>> &c_expanded,
-                          std::vector<int> &c_total_expanded,
-                          Scalar alpha,
-                          Scalar beta,
-                          int step) {
-    auto nccl_comm = active_nccl_comm(step);
-    auto mpi_comm = active_comm(step);
-    nccl_reduce(mpi_comm,
-                nccl_comm,
-                rank(),
-                strategy_->divisor(step),
-                P,
-                in,  // LC
-                out, // C
-                reshuffle_buffer,
-                reduce_buffer,
-                ctx->get_device_send_buffer(),
-                ctx->get_device_receive_buffer(),
-                c_current,
-                c_total_current,
-                c_expanded,
-                c_total_expanded,
-                beta);
-}
-
-template <typename Scalar>
 void communicator::overlap_comm_and_comp(cosma_context<Scalar> *ctx,
                                          CosmaMatrix<Scalar> &matrixA,
                                          CosmaMatrix<Scalar> &matrixB,
@@ -434,6 +417,10 @@ void communicator::overlap_comm_and_comp(cosma_context<Scalar> *ctx,
                                                   step,
                                                   alpha,
                                                   beta);
+}
+
+const Strategy* communicator::get_strategy() {
+    return strategy_;
 }
 
 // Explicit instantiations for `copy`

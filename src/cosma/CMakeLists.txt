@@ -2,6 +2,7 @@ set(INSTALLED_TARGETS_LIST "")
 if(NOT TARGET cosma)
     set(cosma_src_files blas.cpp
                         buffer.cpp
+                        gpu/utils.cpp
                         communicator.cpp
                         context.cpp
                         interval.cpp

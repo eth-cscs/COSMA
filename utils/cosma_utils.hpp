@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <random>
+#include <cosma/local_multiply.hpp>
 #include <cosma/multiply.hpp>
 #include <cosma/mpi_mapper.hpp>
 

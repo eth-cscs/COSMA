@@ -1,5 +1,10 @@
 #pragma once
 #include <complex>
+#include <vector>
+#include <iostream>
+
+#include <cosma/interval.hpp>
+#include <cosma/context.hpp>
 #include <cosma/gpu/gpu_runtime_api.hpp>
 #include <cosma/gpu/nccl_mapper.hpp>
 #include <cosma/profiler.hpp>
@@ -18,40 +23,11 @@
 
 namespace cosma {
 namespace gpu {
-    static void check_nccl_status(ncclResult_t result) {
-        if (result != ncclSuccess) {
-            std::cerr << "[NCCL ERROR]: " << runtime_api::get_error_string(result) << std::endl;
-            throw(std::runtime_error("NCCL ERROR"));
-        }
-    }
+    static void check_nccl_status(ncclResult_t result);
 
-    static ncclComm_t mpi_to_nccl_comm(MPI_Comm comm) {
-        if (comm == MPI_COMM_NULL) {
-            return nullptr;
-        }
-        int my_rank, n_ranks;
-        MPI_Comm_rank(comm, &my_rank);
-        MPI_Comm_size(comm, &n_ranks);
+    static ncclComm_t mpi_to_nccl_comm(MPI_Comm comm);
 
-        ncclUniqueId id;
-        if (my_rank == 0) {
-            auto status = ncclGetUniqueId(&id);
-            check_nccl_status(status);
-        }
-
-        MPI_Bcast(&id, sizeof(id), MPI_BYTE, 0, comm);
-
-        ncclComm_t nccl_comm;
-        auto status = ncclCommInitRank(&nccl_comm, n_ranks, id, my_rank);
-        check_nccl_status(status);
-
-        return nccl_comm;
-    }
-
-    void free_nccl_comm(ncclComm_t nccl_comm) {
-        auto status = ncclCommDestroy(nccl_comm);
-        check_nccl_status(status);
-    }
+    void free_nccl_comm(ncclComm_t nccl_comm);
 
     // copy n*T from host to device
     template <typename T>
@@ -103,23 +79,25 @@ namespace gpu {
 
     template <typename Scalar>
     void nccl_reduce(
-                MPI_Comm comm,
-                ncclComm_t nccl_comm,
-                int rank,
-                int div,
+                cosma_context<Scalar> *ctx,
                 Interval &P,
                 Scalar *LC, // expanded_matrix
                 Scalar *C,  // original matrix
                 Scalar *reshuffle_buffer,
                 Scalar *reduce_buffer,
-                Scalar * d_send_buffer,
-                Scalar * d_receive_buffer,
                 std::vector<std::vector<int>> &c_current,
                 std::vector<int> &c_total_current,
                 std::vector<std::vector<int>> &c_expanded,
                 std::vector<int> &c_total_expanded,
                 Scalar beta,
-                runtime_api::StreamType stream) {
+                size_t step) {
+
+        auto mpi_comm = ctx->get_cosma_comm()->active_comm(step);
+        auto nccl_comm = ctx->get_cosma_comm()->active_nccl_comm(step);
+
+        int rank = ctx->get_cosma_comm()->rank();
+        int div = ctx->get_cosma_comm()->get_strategy()->divisor(step);
+
         PE(multiply_communication_other);
         // int div = strategy_->divisor(step);
         // MPI_Comm subcomm = active_comm(step);
@@ -177,7 +155,16 @@ namespace gpu {
             if (!is_complex<Scalar>()) {
                 auto nccl_type = nccl_mapper<Scalar>::getType();
 
-                copy_to_device(send_pointer, d_send_pointer, nranks * recvcnts[0]);
+                // this will only resize the buffer if not already allocated
+                ctx->get_memory_pool().allocate_device_send_buffer(div * recvcnts[0]);
+                Scalar* d_send_pointer = ctx->get_memory_pool().device_send_buffer.data();
+
+                ctx->get_memory_pool().allocate_device_receive_buffer(recvcnts[0]);
+                Scalar* d_receive_pointer = ctx->get_memory_pool().device_receive_buffer.data();
+
+                auto stream = ctx->nccl_stream.stream();
+
+                copy_to_device(send_pointer, d_send_pointer, div * recvcnts[0]);
                 ncclReduceScatter(d_send_pointer,
                         d_receive_pointer,
                         recvcnts[0],
@@ -194,7 +181,7 @@ namespace gpu {
                        recvcnts[0],
                        mpi_type,
                        MPI_SUM,
-                       comm);
+                       mpi_comm);
             }
         } else {
             auto mpi_type = mpi_mapper<Scalar>::getType();
@@ -203,7 +190,7 @@ namespace gpu {
                     recvcnts.data(),
                     mpi_type,
                     MPI_SUM,
-                    comm);
+                    mpi_comm);
         }
         PL();
 

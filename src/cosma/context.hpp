@@ -3,12 +3,14 @@
 #include <memory>
 #include <cosma/memory_pool.hpp>
 #include <cosma/strategy.hpp>
+
 // #include <cosma/communicator.hpp>
 
 #include <mpi.h>
 
 #ifdef COSMA_HAVE_GPU
 #include <Tiled-MM/tiled_mm.hpp>
+#include <Tiled-MM/device_stream.hpp>
 #endif
 
 namespace cosma {
@@ -42,6 +44,10 @@ public:
     bool overlap_comm_and_comp = false;
 
     bool pin_host_buffers = true;
+
+#ifdef COSMA_HAVE_GPU
+    gpu::device_stream nccl_stream;
+#endif
 
 private:
     long long cpu_memory_limit = std::numeric_limits<long long>::max();

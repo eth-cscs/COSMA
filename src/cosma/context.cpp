@@ -1,7 +1,10 @@
-#include <cosma/context.hpp>
-#include <cosma/environment_variables.hpp>
 #include <complex>
 #include <stdlib.h>
+
+#include <cosma/communicator.hpp>
+#include <cosma/context.hpp>
+#include <cosma/environment_variables.hpp>
+#include <cosma/profiler.hpp>
 
 namespace cosma {
 #ifdef COSMA_HAVE_GPU
@@ -67,7 +70,7 @@ long long cosma_context<Scalar>::get_cpu_memory_limit() {
 
 template <typename Scalar>
 cosma::communicator* cosma_context<Scalar>::get_cosma_comm() {
-    return prev_comm.get();
+    return prev_cosma_comm.get();
 }
 
 template <typename Scalar>
@@ -84,7 +87,7 @@ void cosma_context<Scalar>::register_state(MPI_Comm comm,
         prev_strategy = strategy;
 
         PE(preprocessing_communicators);
-        prev_cosma_comm = std::make_unique(strategy, comm);
+        prev_cosma_comm = std::make_unique<cosma::communicator>(&strategy, comm);
         PL();
     }
 
