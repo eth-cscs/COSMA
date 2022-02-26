@@ -2,7 +2,6 @@ set(INSTALLED_TARGETS_LIST "")
 if(NOT TARGET cosma)
     set(cosma_src_files blas.cpp
                         buffer.cpp
-                        gpu/utils.cpp
                         communicator.cpp
                         context.cpp
                         interval.cpp
@@ -23,21 +22,33 @@ if(NOT TARGET cosma)
 
     if (GPU)
         list(APPEND cosma_src_files "pinned_buffers.cpp")
+        if (COSMA_WITH_NCCL) 
+            list(APPEND cosma_src_files "gpu/utils.cpp")
+        endif()
     endif()
 
     add_library(cosma ${cosma_src_files})
+
     target_include_directories(cosma PUBLIC 
         $<BUILD_INTERFACE:${cosma_SOURCE_DIR}/src>
-        ${NCCL_INCLUDE_DIRS}
-        )
+    )
+    if (COSMA_WITH_NCCL)
+        target_include_directories(cosma PUBLIC ${NCCL_INCLUDE_DIRS})
+    endif()
+
     target_compile_features(cosma PUBLIC cxx_std_14)
     target_link_libraries(cosma PUBLIC MPI::MPI_CXX
                                        costa
-                                       ${NCCL_TARGET}
                                 PRIVATE ${BLAS_TARGET}
     )
-    target_compile_definitions(cosma PRIVATE ${BLAS_DEF}
-    )
+    if (COSMA_WITH_NCCL) 
+        target_link_libraries(cosma PUBLIC ${NCCL_TARGET})
+    endif()
+
+    target_compile_definitions(cosma PRIVATE ${BLAS_DEF})
+    if (COSMA_WITH_NCCL) 
+        target_compile_definitions(cosma PRIVATE ${NCCL_DEF})
+    endif()
 
     if(COSMA_WITH_PROFILING)
         target_link_libraries(cosma PRIVATE semiprof)

@@ -18,6 +18,7 @@ option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
 option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT})
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
 option(COSMA_WITH_PROFILING "Enable profiling." OFF)
+option(COSMA_WITH_NCCL "Use NCCL as communication backend." OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries." OFF)
 
 set(COSMA_BLAS "MKL" CACHE STRING
@@ -37,6 +38,11 @@ set(COSMA_SCALAPACK "OFF" CACHE STRING
     "Blas backend. Can be MKL, CRAY_LIBSCI, CUSTOM or OFF.")
 set_property(CACHE COSMA_SCALAPACK PROPERTY STRINGS
     "OFF" "MKL" "CRAY_LIBSCI" "CUSTOM")
+
+set(GPU_BACKENDS "CUDA" "ROCM")
+if (COSMA_WITH_NCCL AND NOT COSMA_BLAS IN_LIST GPU_BACKENDS) 
+    message(FATAL_ERROR "NCCL can only be used with the GPU backend.")
+endif()
 
 # if using scalapack, then enforce building as a shared library
 # so that the function interpose can work
@@ -138,6 +144,7 @@ set(GPU OFF)
 set(SCALAPACK_BLAS_TARGET "")
 
 set(NCCL_TARGET "")
+set(NCCL_DEF "")
 
 # these are only GPU-backends
 if (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
@@ -148,14 +155,26 @@ if (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
     set(BLAS_DEF "COSMA_HAVE_GPU")
     set(GPU ON)
 
-    if (${COSMA_BLAS} STREQUAL "CUDA")
-        find_package(NCCL)
-        set(NCCL_TARGET "${NCCL_LIBRARIES}")
-        message("NCCL INCLUDE DIRS = ${NCCL_INCLUDE_DIRS}")
-        message("NCCL LIBRARIES = ${NCCL_LIBRARIES}")
-        # set(NCCL_TARGET "${NCCL_LIBRARIES}")
+    if (COSMA_WITH_NCCL)
+        set(NCCL_DEF "COSMA_WITH_NCCL")
+        if (${COSMA_BLAS} STREQUAL "CUDA")
+            find_package(CUDA)
+            find_package(NCCL)
+            set(NCCL_TARGET "${NCCL_LIBRARIES}")
+            message("NCCL INCLUDE DIRS = ${NCCL_INCLUDE_DIRS}")
+            message("NCCL LIBRARIES = ${NCCL_LIBRARIES}")
+            # set(NCCL_TARGET "${NCCL_LIBRARIES}")
+        elseif (${COSMA_BLAS} STREQUAL "ROCM")
+            find_package(HIPLIBS)
+            find_package(RCCL)
+            set(NCCL_TARGET "${NCCL_LIBRARIES}")
+            message("NCCL INCLUDE DIRS = ${NCCL_INCLUDE_DIRS}")
+            message("NCCL LIBRARIES = ${NCCL_LIBRARIES}")
+            # set(NCCL_TARGET "${NCCL_LIBRARIES}")
+        else()
+            message(FATAL_ERROR "COSMA_WITH_NCCL specified, but no GPU backend chosen.")
+        endif()
     endif()
-
 endif()
 
 # BLAS LIBRARIES below can be used together with the GPU backend
@@ -277,4 +296,5 @@ endif()
 
 if(COSMA_WITH_BENCHMARKS AND NOT COSMA_WITH_OPENBLAS)
     add_subdirectory(benchmarks)
+
 endif()

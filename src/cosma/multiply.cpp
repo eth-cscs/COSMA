@@ -868,7 +868,7 @@ void parallel(cosma_context<Scalar> *ctx,
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
         Scalar *reduce_buffer = expanded_mat.reduce_buffer_ptr();
-#ifdef COSMA_HAVE_GPU
+#ifdef COSMA_WITH_NCCL
         if (!is_complex<Scalar>()) {
             cosma::gpu::nccl_reduce(ctx,
                                     P,

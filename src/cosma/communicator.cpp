@@ -167,7 +167,7 @@ MPI_Comm communicator::active_comm(int step) {
     return comm_ring_[comm_index];
 }
 
-#ifdef COSMA_HAVE_GPU
+#ifdef COSMA_WITH_NCCL
 ncclComm_t communicator::active_nccl_comm(int step) {
     int comm_index = step_to_comm_index_[step];
     return nccl_comm_ring_[comm_index];
@@ -244,8 +244,10 @@ void communicator::split_communicators(MPI_Comm comm) {
             comm_ring_.push_back(comm_ring);
             comm_subproblem_.push_back(comm_subproblem);
 
+#ifdef COSMA_WITH_NCCL
             nccl_comm_ring_.push_back(gpu::mpi_to_nccl_comm(comm_ring_.back()));
             nccl_comm_subproblem_.push_back(gpu::mpi_to_nccl_comm(comm_subproblem_.back()));
+#endif
 
             comm = comm_subproblem;
             P = newP;
@@ -287,8 +289,10 @@ void communicator::create_communicators(MPI_Comm comm) {
             comm_ring_.emplace_back(create_comm_ring(comm, P, offset, div));
             comm_subproblem_.emplace_back(create_comm_subproblem(comm, P, newP));
 
+#ifdef COSMA_WITH_NCCL
             nccl_comm_ring_.emplace_back(gpu::mpi_to_nccl_comm(comm_ring_.back()));
             nccl_comm_subproblem_.emplace_back(gpu::mpi_to_nccl_comm(comm_subproblem_.back()));
+#endif
 
             comm = comm_subproblem_.back();
             P = newP;
@@ -334,11 +338,15 @@ MPI_Comm communicator::create_comm_subproblem(MPI_Comm comm,
 void communicator::free_comms() {
     for (int i = comm_subproblem_.size() - 1; i >= 0; --i) {
         free_comm(comm_subproblem_[i]);
+#ifdef COSMA_WITH_NCCL
         gpu::free_nccl_comm(nccl_comm_subproblem_[i]);
+#endif
     }
     for (int i = comm_ring_.size() - 1; i >= 0; --i) {
         free_comm(comm_ring_[i]);
+#ifdef COSMA_WITH_NCCL
         gpu::free_nccl_comm(nccl_comm_ring_[i]);
+#endif
     }
     if (using_reduced_comm_) {
         free_comm(full_comm_);

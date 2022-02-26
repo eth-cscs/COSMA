@@ -11,7 +11,13 @@
 #include <cosma/strategy.hpp>
 #include <cosma/context.hpp>
 
+#if defined(COSMA_WITH_NCCL) && defined(TILED_MM_CUDA)
 #include <nccl.h>
+#endif
+
+#if defined(COSMA_WITH_NCCL) && defined(TILED_MM_ROCM)
+#include <rccl.h>
+#endif
 
 namespace cosma {
 
@@ -193,7 +199,7 @@ class communicator {
 
     // communicator active in step
     MPI_Comm active_comm(int step);
-#ifdef COSMA_HAVE_GPU
+#ifdef COSMA_WITH_NCCL
     // nccl communicator active in step
     ncclComm_t active_nccl_comm(int step);
 #endif
@@ -240,7 +246,7 @@ class communicator {
     std::vector<MPI_Comm> comm_ring_;
     std::vector<MPI_Comm> comm_subproblem_;
     // equivalents of mpi communicators, but for nccl
-#ifdef COSMA_HAVE_GPU
+#ifdef COSMA_WITH_NCCL
     std::vector<ncclComm_t> nccl_comm_ring_;
     std::vector<ncclComm_t> nccl_comm_subproblem_;
 #endif
