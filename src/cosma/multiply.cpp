@@ -588,6 +588,13 @@ T which_is_expanded(T &&A,
     return std::forward<T>(C);
 }
 
+// check if the type in template is std::complex or not
+template<typename T>
+struct is_complex : std::false_type {};
+
+template<typename T>
+struct is_complex<std::complex<T>> : std::true_type {};
+
 /*
  In a parallel step one of the dimensions is split into "div" pieces.
  Also, ranks P are split into "div" groups of "newP" processors
@@ -862,18 +869,33 @@ void parallel(cosma_context<Scalar> *ctx,
     if (strategy.split_k(step)) {
         Scalar *reduce_buffer = expanded_mat.reduce_buffer_ptr();
 #ifdef COSMA_HAVE_GPU
-        cosma::gpu::nccl_reduce(ctx,
-                                P,
-                                expanded_matrix,
-                                original_matrix,
-                                reshuffle_buffer,
-                                reduce_buffer,
-                                size_before_expansion,
-                                total_before_expansion,
-                                size_after_expansion,
-                                total_after_expansion,
-                                beta,
-                                step);
+        if (!is_complex<Scalar>()) {
+            cosma::gpu::nccl_reduce(ctx,
+                                    P,
+                                    expanded_matrix,
+                                    original_matrix,
+                                    reshuffle_buffer,
+                                    reduce_buffer,
+                                    size_before_expansion,
+                                    total_before_expansion,
+                                    size_after_expansion,
+                                    total_after_expansion,
+                                    beta,
+                                    step);
+        } else {
+            comm->reduce(P,
+                        expanded_matrix,
+                        original_matrix,
+                        reshuffle_buffer,
+                        reduce_buffer,
+                        size_before_expansion,
+                        total_before_expansion,
+                        size_after_expansion,
+                        total_after_expansion,
+                        alpha,
+                        beta,
+                        step);
+        }
 #else
         comm->reduce(P,
                     expanded_matrix,

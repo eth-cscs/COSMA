@@ -61,12 +61,6 @@ namespace gpu {
         check_runtime_status(status);
     }
 
-    template<class T>
-    struct is_complex : std::false_type {};
-
-    template<class T>
-    struct is_complex<std::complex<T>> : std::true_type {};
-
     template <typename Scalar>
     void nccl_reduce(
                 cosma_context<Scalar> *ctx,
@@ -104,13 +98,25 @@ namespace gpu {
         // rank 1 and so on...
         int n_blocks = c_expanded[off].size();
         std::vector<int> block_offset(n_blocks);
-        Scalar *send_pointer = n_blocks > 1 ? reshuffle_buffer : LC;
 
         int sum = 0;
+        int max_block_size = 0;
         for (int i = 0; i < n_blocks; ++i) {
             block_offset[i] = sum;
             sum += c_expanded[off][i];
+            // the max block size (used to determine the padding)
+            max_block_size = std::max(max_block_size, c_expanded[off][i]);
         }
+
+        // this will only resize the buffer if not already allocated
+        ctx->get_memory_pool().allocate_device_send_buffer(div * max_block_size);
+        Scalar* d_send_pointer = ctx->get_memory_pool().device_send_buffer.data();
+
+        ctx->get_memory_pool().allocate_device_receive_buffer(max_block_size);
+        Scalar* d_receive_pointer = ctx->get_memory_pool().device_receive_buffer.data();
+
+        auto stream = ctx->nccl_stream.stream();
+
 
         std::vector<int> recvcnts(div);
 
@@ -121,80 +127,36 @@ namespace gpu {
             int target = P.locate_in_interval(div, i, off);
             recvcnts[i] = c_total_current[target];
 
-            same_size = same_size && recvcnts[i] == recvcnts[0];
-
-            if (n_blocks > 1) {
-                for (int block = 0; block < n_blocks; ++block) {
-                    int b_offset = block_offset[block];
-                    int b_size = c_current[target][block];
-                    std::copy(LC + b_offset,
-                              LC + b_offset + b_size,
-                              reshuffle_buffer + index);
-                    index += b_size;
-                    block_offset[block] += b_size;
-                }
+            for (int block = 0; block < n_blocks; ++block) {
+                int b_offset = block_offset[block];
+                int b_size = c_current[target][block];
+                // reshuffle directly into the gpu buffer
+                gpu::copy_to_device_async(LC + b_offset, d_send_pointer + index, b_size, stream);
+                index += max_block_size;
+                block_offset[block] += b_size;
             }
         }
 
         Scalar *receive_pointer = beta != Scalar{0} ? reduce_buffer : C;
         PL();
 
-        bool nccl_run = false;
-
         PE(multiply_communication_reduce);
-        // nccl doesnt support complex numbers
-        if (same_size) {
-            if (!is_complex<Scalar>()) {
-                auto nccl_type = nccl_mapper<Scalar>::getType();
+        auto nccl_type = nccl_mapper<Scalar>::getType();
+        ncclReduceScatter(d_send_pointer,
+                d_receive_pointer,
+                max_block_size,
+                nccl_type,
+                ncclSum,
+                nccl_comm,
+                stream);
+        gpu::copy_to_host_async(d_receive_pointer, receive_pointer, recvcnts[gp], stream);
 
-                // this will only resize the buffer if not already allocated
-                ctx->get_memory_pool().allocate_device_send_buffer(div * recvcnts[0]);
-                Scalar* d_send_pointer = ctx->get_memory_pool().device_send_buffer.data();
-
-                ctx->get_memory_pool().allocate_device_receive_buffer(recvcnts[0]);
-                Scalar* d_receive_pointer = ctx->get_memory_pool().device_receive_buffer.data();
-
-                auto stream = ctx->nccl_stream.stream();
-
-                gpu::copy_to_device_async(send_pointer, d_send_pointer, div * recvcnts[0], stream);
-                ncclReduceScatter(d_send_pointer,
-                        d_receive_pointer,
-                        recvcnts[0],
-                        nccl_type,
-                        ncclSum,
-                        nccl_comm,
-                        stream);
-                gpu::copy_to_host_async(d_receive_pointer, receive_pointer, recvcnts[0], stream);
-
-                nccl_run = true;
-
-            } else {
-                auto mpi_type = mpi_mapper<Scalar>::getType();
-                MPI_Reduce_scatter_block(send_pointer,
-                       receive_pointer,
-                       recvcnts[0],
-                       mpi_type,
-                       MPI_SUM,
-                       mpi_comm);
-            }
-        } else {
-            auto mpi_type = mpi_mapper<Scalar>::getType();
-            MPI_Reduce_scatter(send_pointer,
-                    receive_pointer,
-                    recvcnts.data(),
-                    mpi_type,
-                    MPI_SUM,
-                    mpi_comm);
-        }
+        // wait for the result on the host
+        gpu::runtime_api::stream_synchronize(stream);
         PL();
 
         PE(multiply_communication_other);
         if (beta != Scalar{0}) {
-            // wait for all operation on this stream to finish
-            if (nccl_run) {
-                auto stream = ctx->nccl_stream.stream();
-                gpu::runtime_api::stream_synchronize(stream);
-            }
             // sum up receiving_buffer with C
             for (int el = 0; el < recvcnts[gp]; ++el) {
                 C[el] = beta * C[el] + reduce_buffer[el];

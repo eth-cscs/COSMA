@@ -176,7 +176,13 @@ ncclComm_t communicator::active_nccl_comm(int step) {
 
 int communicator::comm_size() { return comm_size_; }
 
-void communicator::free_comm(MPI_Comm &comm) { MPI_Comm_free(&comm); }
+void communicator::free_comm(MPI_Comm &comm) { 
+    int mpi_finalized;
+    MPI_Finalized(&mpi_finalized);
+    if (!mpi_finalized) {
+        MPI_Comm_free(&comm); 
+    }
+}
 
 void communicator::free_group(MPI_Group &group) { MPI_Group_free(&group); }
 
