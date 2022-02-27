@@ -4,7 +4,9 @@
 #include <cosma/one_sided_communicator.hpp>
 #include <cosma/two_sided_communicator.hpp>
 
+#if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_NCCL)
 #include <cosma/gpu/utils.hpp>
+#endif
 
 namespace cosma {
 bool communicator::use_busy_waiting = true;
