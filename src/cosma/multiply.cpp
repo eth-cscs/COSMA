@@ -7,7 +7,7 @@
 
 #include <complex>
 
-#ifdef COSMA_HAVE_GPU
+#if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_NCCL)
 #include <cosma/gpu/utils.hpp>
 #endif
 
