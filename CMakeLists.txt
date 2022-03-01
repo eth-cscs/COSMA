@@ -120,14 +120,6 @@ endif()
 find_package(MPI REQUIRED)
 adjust_mpiexec_flags()
 
-# OpenMP
-find_package(OpenMP COMPONENTS CXX REQUIRED)
-if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-endif()
-
 # Bundled dependencies
 #
 if (COSMA_WITH_PROFILING)
