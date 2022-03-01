@@ -38,7 +38,6 @@ if(NOT TARGET cosma)
 
     target_compile_features(cosma PUBLIC cxx_std_14)
     target_link_libraries(cosma PUBLIC MPI::MPI_CXX
-                                       OpenMP::OpenMP_CXX
                                        costa
                                 PRIVATE ${BLAS_TARGET}
     )
