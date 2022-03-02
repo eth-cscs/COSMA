@@ -1,6 +1,7 @@
 FROM nvidia/cuda:11.6.0-devel-ubuntu20.04
 
 WORKDIR /root
+SHELL ["/bin/bash", "-c"]
 
 ARG MPICH_VERSION=4.0.1
 ARG OPENBLAS_VERSION=0.3.20

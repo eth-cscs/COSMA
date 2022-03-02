@@ -1,6 +1,7 @@
 FROM ubuntu:20.04
 
 WORKDIR /root
+SHELL ["/bin/bash", "-c"]
 
 ARG MPICH_VERSION=4.0.1
 
