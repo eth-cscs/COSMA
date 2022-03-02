@@ -53,6 +53,7 @@ RUN wget -qO - http://www.netlib.org/scalapack/scalapack-${NETLIB_SCALAPACK_VERS
     ldconfig
 
 # Add deployment tooling
-RUN wget -q https://github.com/haampie/libtree/releases/download/v3.0.3/libtree_x86_64.tar.gz && \
-    tar -xzf libtree_x86_64.tar.gz && \
-    rm libtree_x86_64.tar.gz
+RUN mkdir -p /opt/libtree && \
+    curl -Lfso /opt/libtree/libtree https://github.com/haampie/libtree/releases/download/v3.0.3/libtree_x86_64 && \
+    chmod +x /opt/libtree/libtree
+
