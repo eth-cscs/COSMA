@@ -5,7 +5,7 @@ FROM $BUILD_ENV as builder
 # Build COSMA
 COPY . /COSMA
 
-RUN COMPILERVARS_ARCHITECTURE=intel64 /opt/intel/bin/compilervars.sh && \
+RUN source /opt/intel/bin/compilervars.sh intel64 && \
     mkdir /COSMA/build && cd /COSMA/build && \
     CC=mpicc CXX=mpicxx cmake .. \
       -DCOSMA_WITH_TESTS=ON \

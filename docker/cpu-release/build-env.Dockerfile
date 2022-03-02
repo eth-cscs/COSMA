@@ -39,7 +39,7 @@ RUN wget -qO - https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-P
     apt-add-repository 'deb https://apt.repos.intel.com/mkl all main' && \
     apt-get install -y -qq --no-install-recommends intel-mkl-64bit-${MKL_VERSION} && \
     rm -rf /var/lib/apt/lists/* && \
-    echo "/opt/intel/lib/intel64\n/opt/intel/compilers_and_libraries/linux/mkl/lib/intel64" >> /etc/ld.so.conf.d/intel.conf && \
+    echo -e "/opt/intel/lib/intel64\n/opt/intel/compilers_and_libraries/linux/mkl/lib/intel64" >> /etc/ld.so.conf.d/intel.conf && \
     ldconfig
 
 # Add deployment tooling
