@@ -48,7 +48,7 @@ RUN /root/libtree/libtree --chrpath --strip -d /root/COSMA.bundle/ \
       ${MKL_LIB}/libmkl_vml_mc.so \
       ${MKL_LIB}/libmkl_vml_mc3.so
 
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 COPY --from=builder /root/COSMA.bundle /root/COSMA.bundle
 

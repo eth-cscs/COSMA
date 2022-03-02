@@ -33,7 +33,7 @@ RUN /root/libtree/libtree \
       /root/COSMA-build/bin/test.pdgemm \
       /root/COSMA-build/bin/test.scalar_matmul
 
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 COPY --from=builder /root/COSMA.bundle /root/COSMA.bundle
 

@@ -31,12 +31,12 @@ RUN /root/libtree/libtree \
       /root/COSMA-build/bin/test.pdgemm \
       /root/COSMA-build/bin/test.scalar_matmul
 
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
-# This is the only thing necessary really from nvidia/cuda's ubuntu18.04 runtime image
+# This is the only thing necessary really from nvidia/cuda's ubuntu20.04 runtime image
 ENV NVIDIA_VISIBLE_DEVICES all
 ENV NVIDIA_DRIVER_CAPABILITIES compute,utility
-ENV NVIDIA_REQUIRE_CUDA "cuda>=10.1 brand=tesla,driver>=384,driver<385 brand=tesla,driver>=396,driver<397 brand=tesla,driver>=410,driver<411"
+ENV NVIDIA_REQUIRE_CUDA "cuda>=10.1"
 
 COPY --from=builder /root/COSMA.bundle /root/COSMA.bundle
 
