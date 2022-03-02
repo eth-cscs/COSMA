@@ -16,7 +16,7 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 # Install cmake
-RUN wget -qO- "https://cmake.org/files/v3.22/cmake-3.22.1-Linux-x86_64.tar.gz" | tar --strip-components=1 -xz -C /usr/local
+RUN wget -qO- "https://cmake.org/files/v3.22/cmake-3.22.1-linux-x86_64.tar.gz" | tar --strip-components=1 -xz -C /usr/local
 
 # Install MPICH ABI compatible with Cray's lib on Piz Daint
 RUN wget -q https://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPICH_VERSION}.tar.gz && \
