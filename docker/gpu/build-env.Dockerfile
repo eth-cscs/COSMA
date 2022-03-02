@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.6-devel-ubuntu20.04
+FROM nvidia/cuda:11.6.0-devel-ubuntu20.04
 
 WORKDIR /root
 
