@@ -48,9 +48,12 @@ RUN /root/libtree/libtree --chrpath --strip -d /root/COSMA.bundle/ \
       ${MKL_LIB}/libmkl_vml_mc.so \
       ${MKL_LIB}/libmkl_vml_mc3.so
 
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 COPY --from=builder /root/COSMA.bundle /root/COSMA.bundle
+
+# Automatically print stacktraces on segfault
+ENV LD_PRELOAD=/lib/x86_64-linux-gnu/libSegFault.so
 
 # Make it easy to call our binaries.
 ENV PATH="/root/COSMA.bundle/usr/bin:$PATH"

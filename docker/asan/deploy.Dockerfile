@@ -33,7 +33,10 @@ RUN /root/libtree/libtree \
       /root/COSMA-build/bin/test.pdgemm \
       /root/COSMA-build/bin/test.scalar_matmul
 
-FROM ubuntu:18.04
+FROM ubuntu:20.04
+
+# Automatically print stacktraces on segfault
+ENV LD_PRELOAD=/lib/x86_64-linux-gnu/libSegFault.so
 
 COPY --from=builder /root/COSMA.bundle /root/COSMA.bundle
 

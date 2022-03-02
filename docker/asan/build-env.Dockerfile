@@ -1,8 +1,8 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 WORKDIR /root
 
-ARG MPICH_VERSION=3.3.2
+ARG MPICH_VERSION=4.0.1
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV FORCE_UNSAFE_CONFIGURE 1
@@ -16,7 +16,7 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 # Install cmake
-RUN wget -qO- "https://cmake.org/files/v3.17/cmake-3.17.0-Linux-x86_64.tar.gz" | tar --strip-components=1 -xz -C /usr/local
+RUN wget -qO- "https://cmake.org/files/v3.22/cmake-3.22.1-Linux-x86_64.tar.gz" | tar --strip-components=1 -xz -C /usr/local
 
 # Install MPICH ABI compatible with Cray's lib on Piz Daint
 RUN wget -q https://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPICH_VERSION}.tar.gz && \
@@ -27,7 +27,7 @@ RUN wget -q https://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPIC
     rm -rf /root/mpich-${MPICH_VERSION}.tar.gz /root/mpich-${MPICH_VERSION}
 
 # Install OpenBLAS
-ARG OPENBLAS_VERSION=0.3.9
+ARG OPENBLAS_VERSION=0.3.20
 RUN wget -qO - https://github.com/xianyi/OpenBLAS/archive/v${OPENBLAS_VERSION}.tar.gz -O openblas.tar.gz && \
     tar -xzf openblas.tar.gz && \
     cd OpenBLAS-${OPENBLAS_VERSION}/ && \
@@ -36,7 +36,7 @@ RUN wget -qO - https://github.com/xianyi/OpenBLAS/archive/v${OPENBLAS_VERSION}.t
     rm -rf /root/openblas.tar.gz /root/OpenBLAS-${OPENBLAS_VERSION}/ && \
     ldconfig
 
-ARG NETLIB_SCALAPACK_VERSION=2.1.0
+ARG NETLIB_SCALAPACK_VERSION=2.2.0
 
 RUN wget -qO - http://www.netlib.org/scalapack/scalapack-${NETLIB_SCALAPACK_VERSION}.tgz -O scalapack.tar.gz && \
     tar -xzf scalapack.tar.gz && \
@@ -53,6 +53,6 @@ RUN wget -qO - http://www.netlib.org/scalapack/scalapack-${NETLIB_SCALAPACK_VERS
     ldconfig
 
 # Add deployment tooling
-RUN wget -q https://github.com/haampie/libtree/releases/download/v1.1.2/libtree_x86_64.tar.gz && \
+RUN wget -q https://github.com/haampie/libtree/releases/download/v3.0.3/libtree_x86_64.tar.gz && \
     tar -xzf libtree_x86_64.tar.gz && \
     rm libtree_x86_64.tar.gz
