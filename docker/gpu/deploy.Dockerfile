@@ -8,7 +8,7 @@ ARG BLAS
 COPY . /COSMA
 
 RUN mkdir /COSMA/build && cd /COSMA/build && \
-    CC=mpicc CXX=mpicxx cmake .. \
+    CC=mpicc CXX=mpicxx CXXFLAGS="-march=haswell" cmake .. \
       -DCOSMA_WITH_TESTS=ON \
       -DCUDA_PATH=/usr/local/cuda \
       -DCOSMA_BLAS=CUDA \

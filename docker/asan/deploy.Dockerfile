@@ -12,7 +12,7 @@ COPY . /COSMA
 ENV COSMA_MIN_LOCAL_DIMENSION=32
 
 RUN mkdir /COSMA/build && cd /COSMA/build && \
-    CC=mpicc CXX=mpicxx cmake .. \
+    CC=mpicc CXX=mpicxx CXXFLAGS="-march=haswell" cmake .. \
       -DCOSMA_WITH_TESTS=ON \
       -DCOSMA_BLAS=OPENBLAS \
       -DCOSMA_SCALAPACK=CUSTOM \
