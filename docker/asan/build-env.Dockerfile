@@ -31,8 +31,8 @@ ARG OPENBLAS_VERSION=0.3.9
 RUN wget -qO - https://github.com/xianyi/OpenBLAS/archive/v${OPENBLAS_VERSION}.tar.gz -O openblas.tar.gz && \
     tar -xzf openblas.tar.gz && \
     cd OpenBLAS-${OPENBLAS_VERSION}/ && \
-    make DEBUG=1 -j$(nproc) && \
-    make install NO_STATIC=1 PREFIX=/usr/local/ && \
+    make TARGET=HASWELL NO_STATIC=1 DEBUG=1 -j$(nproc) && \
+    make install TARGET=HASWELL NO_STATIC=1 PREFIX=/usr/local/ && \
     rm -rf /root/openblas.tar.gz /root/OpenBLAS-${OPENBLAS_VERSION}/ && \
     ldconfig
 
