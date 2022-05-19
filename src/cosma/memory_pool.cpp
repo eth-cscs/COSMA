@@ -128,7 +128,6 @@ void cosma::memory_pool<T>::reserve(std::vector<size_t>& buffer_sizes) {
     size = (std::size_t) std::ceil(size * amortization);
     // take the alignment into account 
     if (alignment > 0) {
-        std::cout << "alignment = " << alignment << std::endl;
         size += aligned_allocator<T>::get_alignment_padding(size);
     }
 
