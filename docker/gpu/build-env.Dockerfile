@@ -40,8 +40,8 @@ RUN wget -q https://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPIC
 RUN wget -qO - https://github.com/xianyi/OpenBLAS/archive/v${OPENBLAS_VERSION}.tar.gz -O openblas.tar.gz && \
     tar -xzf openblas.tar.gz && \
     cd OpenBLAS-${OPENBLAS_VERSION}/ && \
-    make -j$(nproc) && \
-    make install NO_STATIC=1 PREFIX=/usr/local/ && \
+    make TARGET=HASWELL NO_STATIC=1 -j$(nproc) && \
+    make install TARGET=HASWELL NO_STATIC=1 PREFIX=/usr/local/ && \
     rm -rf /root/openblas.tar.gz /root/OpenBLAS-${OPENBLAS_VERSION}/ && \
     ldconfig
 
