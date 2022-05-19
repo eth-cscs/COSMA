@@ -61,6 +61,13 @@ namespace gpu {
         check_runtime_status(status);
     }
 
+    template <typename T>
+    void copy_device_to_device_async(const T* from, T* to, size_t n, runtime_api::StreamType stream=NULL) {
+        auto status = runtime_api::memcpy_async(to, from, n * sizeof(T),
+                                                runtime_api::flag::MemcpyDeviceToDevice, stream);
+        check_runtime_status(status);
+    }
+
     template <typename Scalar>
     void nccl_reduce(
                 cosma_context<Scalar> *ctx,
@@ -108,15 +115,19 @@ namespace gpu {
             max_block_size = std::max(max_block_size, c_expanded[off][i]);
         }
 
+        // here is the result of matrix multiplication on GPU
+        Scalar* d_LC = ctx->get_gpu_context()->get_full_device_buffer_c().data();
+
         // this will only resize the buffer if not already allocated
         ctx->get_memory_pool().allocate_device_send_buffer(div * max_block_size);
-        Scalar* d_send_pointer = ctx->get_memory_pool().device_send_buffer.data();
+        Scalar* d_reshuffle_buffer = ctx->get_memory_pool().device_send_buffer.data();
+
+        Scalar *d_send_pointer = n_blocks > 1 ? d_reshuffle_buffer : d_LC;
 
         ctx->get_memory_pool().allocate_device_receive_buffer(max_block_size);
         Scalar* d_receive_pointer = ctx->get_memory_pool().device_receive_buffer.data();
 
         auto stream = ctx->nccl_stream.stream();
-
 
         std::vector<int> recvcnts(div);
 
@@ -127,13 +138,17 @@ namespace gpu {
             int target = P.locate_in_interval(div, i, off);
             recvcnts[i] = c_total_current[target];
 
-            for (int block = 0; block < n_blocks; ++block) {
-                int b_offset = block_offset[block];
-                int b_size = c_current[target][block];
-                // reshuffle directly into the gpu buffer
-                gpu::copy_to_device_async(LC + b_offset, d_send_pointer + index, b_size, stream);
-                index += max_block_size;
-                block_offset[block] += b_size;
+            if (n_blocks > 1) {
+                for (int block = 0; block < n_blocks; ++block) {
+                    int b_offset = block_offset[block];
+                    int b_size = c_current[target][block];
+                    // reshuffle directly into the gpu buffer
+                    gpu::copy_device_to_device_async(d_LC + b_offset, 
+                                                     d_send_pointer + index, 
+                                                     b_size, stream);
+                    index += max_block_size;
+                    block_offset[block] += b_size;
+                }
             }
         }
 

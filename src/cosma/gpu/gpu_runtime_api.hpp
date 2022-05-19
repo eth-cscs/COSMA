@@ -96,6 +96,7 @@ constexpr auto MemoryTypeManaged = GPU_PREFIX(MemoryTypeManaged);
 
 constexpr auto MemcpyHostToDevice = GPU_PREFIX(MemcpyHostToDevice);
 constexpr auto MemcpyDeviceToHost = GPU_PREFIX(MemcpyDeviceToHost);
+constexpr auto MemcpyDeviceToDevice = GPU_PREFIX(MemcpyDeviceToDevice);
 
 constexpr auto EventDefault = GPU_PREFIX(EventDefault);
 constexpr auto EventBlockingSync = GPU_PREFIX(EventBlockingSync);

@@ -588,13 +588,6 @@ T which_is_expanded(T &&A,
     return std::forward<T>(C);
 }
 
-// check if the type in template is std::complex or not
-template<typename T>
-struct is_complex : std::false_type {};
-
-template<typename T>
-struct is_complex<std::complex<T>> : std::true_type {};
-
 /*
  In a parallel step one of the dimensions is split into "div" pieces.
  Also, ranks P are split into "div" groups of "newP" processors

@@ -6,8 +6,17 @@
 #include <limits>
 #include <tuple>
 #include <vector>
+#include <complex>
 
 namespace cosma {
+
+// check if the type in template is std::complex or not
+template<typename T>
+struct is_complex : std::false_type {};
+
+template<typename T>
+struct is_complex<std::complex<T>> : std::true_type {};
+
 namespace math_utils {
 // greates common divisor of a and b
 int gcd(int a, int b);
