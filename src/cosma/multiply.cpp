@@ -219,6 +219,7 @@ void multiply(CosmaMatrix<Scalar> &matrixA,
               MPI_Comm comm,
               Scalar alpha,
               Scalar beta) {
+
     assert(matrixA.get_context() == matrixB.get_context() &&
            matrixB.get_context() == matrixC.get_context());
     multiply(matrixA.get_context(),
@@ -359,6 +360,14 @@ void multiply(cosma_context<Scalar> *ctx,
     PL();
 
     if (strategy.final_step(step) || strategy.empty()) {
+        bool copy_c_back = true;
+
+#ifdef COSMA_WITH_NCCL
+        if (step > 0 && strategy.parallel_step(step-1) && !is_complex<Scalar>()) {
+            copy_c_back = false;
+        }
+#endif
+
         local_multiply(ctx,
                        matrixA.current_matrix(),
                        matrixB.current_matrix(),
@@ -367,7 +376,8 @@ void multiply(cosma_context<Scalar> *ctx,
                        n.length(),
                        k.length(),
                        alpha,
-                       beta);
+                       beta,
+                       copy_c_back);
     } else {
         if (strategy.parallel_step(step)) {
             if (strategy.should_overlap_comm_and_comp(step)) {
@@ -821,6 +831,8 @@ void parallel(cosma_context<Scalar> *ctx,
         expanded_mat.swap_reduce_buffer_with(buffer_idx);
     }
 
+    std::cout << "Parallel step before multiplication" << std::endl;
+
     multiply(ctx,
              matrixA,
              matrixB,
@@ -834,6 +846,8 @@ void parallel(cosma_context<Scalar> *ctx,
              comm,
              alpha,
              new_beta);
+
+    std::cout << "Parallel step after multiplication" << std::endl;
 
 #ifdef DEBUG
     std::cout << "rank = " << comm->rank() << ", label = " << expanded_mat.label() << std::endl;

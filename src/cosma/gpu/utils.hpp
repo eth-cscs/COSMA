@@ -62,6 +62,13 @@ namespace gpu {
     }
 
     template <typename T>
+    void copy_to_host(const T* from, T* to, size_t n, runtime_api::StreamType stream=NULL) {
+        auto status = runtime_api::memcpy(to, from, n * sizeof(T),
+                                          runtime_api::flag::MemcpyDeviceToHost, stream);
+        check_runtime_status(status);
+    }
+
+    template <typename T>
     void copy_device_to_device_async(const T* from, T* to, size_t n, runtime_api::StreamType stream=NULL) {
         auto status = runtime_api::memcpy_async(to, from, n * sizeof(T),
                                                 runtime_api::flag::MemcpyDeviceToDevice, stream);
@@ -82,6 +89,8 @@ namespace gpu {
                 std::vector<int> &c_total_expanded,
                 Scalar beta,
                 size_t step) {
+
+        std::cout << "Entering the nccl reduce" << std::endl;
 
         auto mpi_comm = ctx->get_cosma_comm()->active_comm(step);
         auto nccl_comm = ctx->get_cosma_comm()->active_nccl_comm(step);
