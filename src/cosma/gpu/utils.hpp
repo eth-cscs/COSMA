@@ -89,9 +89,6 @@ namespace gpu {
                 std::vector<int> &c_total_expanded,
                 Scalar beta,
                 size_t step) {
-
-        std::cout << "Entering the nccl reduce" << std::endl;
-
         auto mpi_comm = ctx->get_cosma_comm()->active_comm(step);
         auto nccl_comm = ctx->get_cosma_comm()->active_nccl_comm(step);
 
@@ -140,7 +137,6 @@ namespace gpu {
 
         std::vector<int> recvcnts(div);
 
-        bool same_size = true;
         int index = 0;
         // go through the communication ring
         for (int i = 0; i < div; ++i) {
@@ -155,6 +151,10 @@ namespace gpu {
                     gpu::copy_device_to_device_async(d_LC + b_offset, 
                                                      d_send_pointer + index, 
                                                      b_size, stream);
+                    // pad with 0s if not all the blocks are the same
+                    if (b_size < max_block_size) {
+                        gpu::runtime_api::memset_async(d_send_pointer + index + b_size, 0, max_block_size - b_size);
+                    }
                     index += max_block_size;
                     block_offset[block] += b_size;
                 }
@@ -177,6 +177,15 @@ namespace gpu {
 
         // wait for the result on the host
         gpu::runtime_api::stream_synchronize(stream);
+
+        /*
+        std::cout << "Receive pointer = ";
+        for (int i = 0; i < recvcnts[gp]; ++i) {
+            std::cout << receive_pointer[i] << ", ";
+        }
+        std::cout << std::endl;
+        */
+
         PL();
 
         PE(multiply_communication_other);

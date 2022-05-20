@@ -219,7 +219,6 @@ void multiply(CosmaMatrix<Scalar> &matrixA,
               MPI_Comm comm,
               Scalar alpha,
               Scalar beta) {
-
     assert(matrixA.get_context() == matrixB.get_context() &&
            matrixB.get_context() == matrixC.get_context());
     multiply(matrixA.get_context(),
@@ -363,7 +362,11 @@ void multiply(cosma_context<Scalar> *ctx,
         bool copy_c_back = true;
 
 #ifdef COSMA_WITH_NCCL
-        if (step > 0 && strategy.parallel_step(step-1) && !is_complex<Scalar>()) {
+        if (step > 0 
+                && 
+                strategy.parallel_step(step-1) && strategy.split_k(step-1)
+                &&
+                !is_complex<Scalar>()) {
             copy_c_back = false;
         }
 #endif
@@ -831,8 +834,6 @@ void parallel(cosma_context<Scalar> *ctx,
         expanded_mat.swap_reduce_buffer_with(buffer_idx);
     }
 
-    std::cout << "Parallel step before multiplication" << std::endl;
-
     multiply(ctx,
              matrixA,
              matrixB,
@@ -846,8 +847,6 @@ void parallel(cosma_context<Scalar> *ctx,
              comm,
              alpha,
              new_beta);
-
-    std::cout << "Parallel step after multiplication" << std::endl;
 
 #ifdef DEBUG
     std::cout << "rank = " << comm->rank() << ", label = " << expanded_mat.label() << std::endl;
@@ -876,7 +875,7 @@ void parallel(cosma_context<Scalar> *ctx,
     if (strategy.split_k(step)) {
         Scalar *reduce_buffer = expanded_mat.reduce_buffer_ptr();
 #ifdef COSMA_WITH_NCCL
-        if (!is_complex<Scalar>()) {
+        if (!is_complex<Scalar>() && strategy.final_step(step+1)) {
             cosma::gpu::nccl_reduce(ctx,
                                     P,
                                     expanded_matrix,
