@@ -110,15 +110,21 @@ namespace gpu {
         // first all blocks that should be sent to rank 0 then all blocks for
         // rank 1 and so on...
         int n_blocks = c_expanded[off].size();
-        std::vector<int> block_offset(n_blocks);
 
+        std::vector<int> block_offset(n_blocks);
         int sum = 0;
-        int max_block_size = 0;
         for (int i = 0; i < n_blocks; ++i) {
             block_offset[i] = sum;
             sum += c_expanded[off][i];
+        }
+
+        std::vector<int> recvcnts(div);
+        int max_block_size = 0;
+        for (int i = 0; i < div; ++i) {
+            int target = P.locate_in_interval(div, i, off);
+            recvcnts[i] = c_total_current[target];
             // the max block size (used to determine the padding)
-            max_block_size = std::max(max_block_size, c_expanded[off][i]);
+            max_block_size = std::max(max_block_size, recvcnts[i]);
         }
 
         // here is the result of matrix multiplication on GPU
@@ -128,36 +134,29 @@ namespace gpu {
         ctx->get_memory_pool().allocate_device_send_buffer(div * max_block_size);
         Scalar* d_reshuffle_buffer = ctx->get_memory_pool().device_send_buffer.data();
 
-        Scalar *d_send_pointer = n_blocks > 1 ? d_reshuffle_buffer : d_LC;
-
         ctx->get_memory_pool().allocate_device_receive_buffer(max_block_size);
         Scalar* d_receive_pointer = ctx->get_memory_pool().device_receive_buffer.data();
 
         auto stream = ctx->nccl_stream.stream();
 
-        std::vector<int> recvcnts(div);
-
         int index = 0;
         // go through the communication ring
         for (int i = 0; i < div; ++i) {
             int target = P.locate_in_interval(div, i, off);
-            recvcnts[i] = c_total_current[target];
 
-            if (n_blocks > 1) {
-                for (int block = 0; block < n_blocks; ++block) {
-                    int b_offset = block_offset[block];
-                    int b_size = c_current[target][block];
-                    // reshuffle directly into the gpu buffer
-                    gpu::copy_device_to_device_async(d_LC + b_offset, 
-                                                     d_send_pointer + index, 
-                                                     b_size, stream);
-                    // pad with 0s if not all the blocks are the same
-                    if (b_size < max_block_size) {
-                        gpu::runtime_api::memset_async(d_send_pointer + index + b_size, 0, max_block_size - b_size);
-                    }
-                    index += max_block_size;
-                    block_offset[block] += b_size;
+            for (int block = 0; block < n_blocks; ++block) {
+                int b_offset = block_offset[block];
+                int b_size = c_current[target][block];
+                // reshuffle directly into the gpu buffer
+                gpu::copy_device_to_device_async(d_LC + b_offset, 
+                                                 d_reshuffle_buffer + index, 
+                                                 b_size, stream);
+                // pad with 0s if not all the blocks are the same
+                if (b_size < max_block_size) {
+                    gpu::runtime_api::memset_async(d_reshuffle_buffer + index + b_size, 0, max_block_size - b_size);
                 }
+                index += max_block_size;
+                block_offset[block] += b_size;
             }
         }
 
@@ -166,7 +165,7 @@ namespace gpu {
 
         PE(multiply_communication_reduce);
         auto nccl_type = nccl_mapper<Scalar>::getType();
-        ncclReduceScatter(d_send_pointer,
+        ncclReduceScatter(d_reshuffle_buffer,
                 d_receive_pointer,
                 max_block_size,
                 nccl_type,
@@ -177,14 +176,6 @@ namespace gpu {
 
         // wait for the result on the host
         gpu::runtime_api::stream_synchronize(stream);
-
-        /*
-        std::cout << "Receive pointer = ";
-        for (int i = 0; i < recvcnts[gp]; ++i) {
-            std::cout << receive_pointer[i] << ", ";
-        }
-        std::cout << std::endl;
-        */
 
         PL();
 

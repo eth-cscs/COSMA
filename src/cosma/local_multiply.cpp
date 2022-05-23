@@ -86,12 +86,14 @@ void local_multiply(gpu::mm_handle<Scalar>* gpu_ctx,
                     Scalar beta,
                     bool pin_host_buffers,
                     bool copy_c_back) {
+    /*
     int rank = 0;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if (rank == 0) {
-        // print_matrix(m, k, matrixA, 'A');
-        // print_matrix(k, n, matrixB, 'B');
+        print_matrix(m, k, matrixA, 'A');
+        print_matrix(k, n, matrixB, 'B');
     }
+    */
     gpu::gemm(*(gpu_ctx), matrixA, matrixB, matrixC,
               m, n, k, alpha, beta,
               pin_host_buffers, copy_c_back);
@@ -102,10 +104,13 @@ void local_multiply(gpu::mm_handle<Scalar>* gpu_ctx,
         gpu::check_runtime_status(status);
     }
 
+    /*
     if (rank == 0) {
         gpu::copy_to_host(gpu_ctx->get_full_device_buffer_c().data(), matrixC, m * n);
         print_matrix(m, n, matrixC, 'C');
+        std::cout << "alpha = " << alpha << ", beta = " << beta << std::endl;
     }
+    */
 
 }
 #endif
