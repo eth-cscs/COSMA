@@ -89,13 +89,13 @@ namespace gpu {
                 std::vector<int> &c_total_expanded,
                 Scalar beta,
                 size_t step) {
+        PE(multiply_communication_other);
         auto mpi_comm = ctx->get_cosma_comm()->active_comm(step);
         auto nccl_comm = ctx->get_cosma_comm()->active_nccl_comm(step);
 
         int rank = ctx->get_cosma_comm()->rank();
         int div = ctx->get_cosma_comm()->get_strategy()->divisor(step);
 
-        PE(multiply_communication_other);
         // int div = strategy_->divisor(step);
         // MPI_Comm subcomm = active_comm(step);
 

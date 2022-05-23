@@ -88,8 +88,8 @@ void cosma_context<Scalar>::register_state(MPI_Comm comm,
         MPI_Comm prev_comm = prev_cosma_comm->full_comm();
         int comm_compare;
         MPI_Comm_compare(prev_comm, comm, &comm_compare);
-        bool same_comm = comm_compare == MPI_CONGRUENT || 
-                         comm_compare == MPI_IDENT;
+        same_comm = comm_compare == MPI_CONGRUENT || 
+                    comm_compare == MPI_IDENT;
 
         // if same_comm and same strategy -> reuse the communicators
         if (!same_comm || strategy != prev_strategy) {
@@ -114,7 +114,6 @@ void cosma_context<Scalar>::register_state(MPI_Comm comm,
         memory_pool_.unpin_all();
         memory_pool_.already_pinned = false;
         memory_pool_.resized = false;
-
     } else {
         memory_pool_.already_pinned = true;
     }

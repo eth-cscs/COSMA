@@ -90,20 +90,14 @@ void local_multiply(gpu::mm_handle<Scalar>* gpu_ctx,
     int rank = 0;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if (rank == 0) {
-        print_matrix(m, k, matrixA, 'A');
-        print_matrix(k, n, matrixB, 'B');
+        // print_matrix(m, k, matrixA, 'A');
+        // print_matrix(k, n, matrixB, 'B');
+        // std::cout << "m = " << m << ", n = " << n << ", k = " << k << std::endl;
     }
     */
     gpu::gemm(*(gpu_ctx), matrixA, matrixB, matrixC,
               m, n, k, alpha, beta,
               pin_host_buffers, copy_c_back);
-
-    if (!copy_c_back) {
-        auto status =
-        gpu::runtime_api::device_synchronize();
-        gpu::check_runtime_status(status);
-    }
-
     /*
     if (rank == 0) {
         gpu::copy_to_host(gpu_ctx->get_full_device_buffer_c().data(), matrixC, m * n);
@@ -154,29 +148,33 @@ void local_multiply(cosma_context<Scalar>* ctx,
                     Scalar alpha,
                     Scalar beta,
                     bool copy_c_back) {
-    PE(multiply_computation);
 #ifdef DEBUG
     auto t_start =
         debug_gemm_start(matrixA, matrixB, matrixC, m, n, k, alpha, beta);
 #endif
 
 #ifdef COSMA_HAVE_GPU
+    PE(multiply_computation_pinning);
     if (ctx->pin_host_buffers) {
         ctx->get_memory_pool().pin(matrixA, m * k);
         ctx->get_memory_pool().pin(matrixB, k * n);
-        if (copy_c_back || beta != Scalar{0}) {
-            ctx->get_memory_pool().pin(matrixC, m * n);
-        }
+        // if (copy_c_back || std::abs(beta) > 0) {
+        ctx->get_memory_pool().pin(matrixC, m * n);
+        // }
     }
+    PL();
+
+    PE(multiply_computation_gemm);
     local_multiply(ctx->get_gpu_context(),
                    matrixA, matrixB, matrixC,
                    m, n, k, alpha, beta,
                    false, copy_c_back);
-#else
-    gemm(m, n, k, alpha, matrixA, m, matrixB, k, beta, matrixC, m);
-#endif
-
     PL();
+#else
+    PE(multiply_computation_gemm);
+    gemm(m, n, k, alpha, matrixA, m, matrixB, k, beta, matrixC, m);
+    PL();
+#endif
 
 #ifdef DEBUG
     auto t_end =
