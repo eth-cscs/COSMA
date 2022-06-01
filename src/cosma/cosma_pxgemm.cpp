@@ -384,11 +384,20 @@ void pxgemm(const char transa,
 
     }
 #endif
+
+    // we do not have to free the reordered comm
+    // since it will be cached in the context and potentially reused
+    // The reordered_comm will be freed in one of the following ways:
+    // - if the context itself is freed in the end of the execution of the main program
+    // - if COSMA is invoked with some other arguments, in which case, the context
+    //   will free this (cached) communicator and cache the new one
+    /*
     PE(transform_reordering_comm);
     if (reordered) {
         MPI_Comm_free(&reordered_comm);
     }
     PL();
+    */
 }
 
 // scales the submatrix of C by beta
