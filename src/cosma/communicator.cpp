@@ -46,7 +46,12 @@ communicator::communicator(const Strategy *strategy,
         MPI_Group_free(&group);
         MPI_Group_free(&reduced_group);
     } else {
-        full_comm_ = comm;
+        // this communicator has to be duplicated as it's being cached.
+        // The user might deallocate the comm as it's allocated outside of COSMA
+        // for this reason, we have to ensure that we duplicate the comm
+        // before it's cached in the COSMA context
+        MPI_Comm_dup(comm, &full_comm_);
+        // full_comm_ = comm;
     }
 
     if (is_idle_) {
@@ -350,9 +355,10 @@ void communicator::free_comms() {
         gpu::free_nccl_comm(nccl_comm_ring_[i]);
 #endif
     }
-    if (using_reduced_comm_) {
-        free_comm(full_comm_);
-    }
+    // if (using_reduced_comm_) {
+    free_comm(full_comm_);
+    full_comm_ = MPI_COMM_NULL;
+    //}
 }
 
 template <typename Scalar>
