@@ -120,12 +120,16 @@ namespace gpu {
 
         std::vector<int> recvcnts(div);
         int max_block_size = 0;
+        int min_block_size = recvcnts[0];
         for (int i = 0; i < div; ++i) {
             int target = P.locate_in_interval(div, i, off);
             recvcnts[i] = c_total_current[target];
             // the max block size (used to determine the padding)
             max_block_size = std::max(max_block_size, recvcnts[i]);
+            min_block_size = std::min(min_block_size, recvcnts[i]);
         }
+
+        bool same_blocks = max_block_size == min_block_size;
 
         // here is the result of matrix multiplication on GPU
         Scalar* d_LC = ctx->get_gpu_context()->get_full_device_buffer_c().data();
@@ -138,6 +142,11 @@ namespace gpu {
         Scalar* d_receive_pointer = ctx->get_memory_pool().device_receive_buffer.data();
 
         auto stream = ctx->nccl_stream.stream();
+
+        // set all to 0s, so that we don't have to pad each block with 0s up to max_block_size
+        if (!same_blocks) {
+            gpu::runtime_api::memset_async(d_reshuffle_buffer, 0, n_blocks * max_block_size);
+        }
 
         int index = 0;
         // go through the communication ring
@@ -152,9 +161,13 @@ namespace gpu {
                                                  d_reshuffle_buffer + index, 
                                                  b_size, stream);
                 // pad with 0s if not all the blocks are the same
+                // padding is not necessary because the array is initialized to 0s above
+                // in a single kernel
+                /*
                 if (b_size < max_block_size) {
                     gpu::runtime_api::memset_async(d_reshuffle_buffer + index + b_size, 0, max_block_size - b_size);
                 }
+                */
                 index += max_block_size;
                 block_offset[block] += b_size;
             }
