@@ -370,7 +370,6 @@ void multiply(cosma_context<Scalar> *ctx,
             copy_c_back = false;
         }
 #endif
-
         local_multiply(ctx,
                        matrixA.current_matrix(),
                        matrixB.current_matrix(),
@@ -875,7 +874,8 @@ void parallel(cosma_context<Scalar> *ctx,
     if (strategy.split_k(step)) {
         Scalar *reduce_buffer = expanded_mat.reduce_buffer_ptr();
 #ifdef COSMA_WITH_NCCL
-        if (!is_complex<Scalar>() && strategy.final_step(step+1)) {
+        if (!is_complex<Scalar>()) { // && strategy.final_step(step+1)) {
+            bool copy_c_back = !strategy.final_step(step+1);
             cosma::gpu::nccl_reduce(ctx,
                                     P,
                                     expanded_matrix,
@@ -887,7 +887,8 @@ void parallel(cosma_context<Scalar> *ctx,
                                     size_after_expansion,
                                     total_after_expansion,
                                     beta,
-                                    step);
+                                    step,
+                                    copy_c_back);
         } else {
             comm->reduce(P,
                         expanded_matrix,

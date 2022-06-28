@@ -45,7 +45,7 @@ public:
 
     bool pin_host_buffers = true;
 
-#ifdef COSMA_HAVE_GPU
+#ifdef COSMA_WITH_NCCL
     gpu::device_stream nccl_stream;
 #endif
 
