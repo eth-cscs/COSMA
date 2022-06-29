@@ -26,6 +26,14 @@ Other important options that can be passed to `cmake` are the following:
 - `COSMA_BLAS:` `MKL` (default), `OPENBLAS`, `CRAY_LIBSCI`, `CUSTOM`, `CUDA` or `ROCM`. Determines which backend will be used for the local matrix multiplication calls.
 - `COSMA_SCALAPACK:` OFF (default), `MKL`, `CRAY_LIBSCI`, `CUSTOM`. If specified, `COSMA` will also provide ScaLAPACK wrappers, thus offering `pdgemm`, `psgemm`, `pzgemm` and `pcgemm` functions, which completely match the ScaLAPACK API.
 
+## Building COSMA on Multi-GPU Systems
+
+COSMA can take advantage of fast GPU-to-GPU interconnects like NV-Links, through the use of the following:
+- NCCL library (for NVIDIA GPUs), i.e. RCCL library (for AMD GPUs): when `-DCOSMA_WITH_NCCL=ON`, i.e. `-DCOSMA_WITH_RCCL=ON` is specified in `cmake`, all the collective communication is performed through these libraries, which can utilize fast gpu-to-gpu interconnects.
+- GPU-aware MPI: when `-DCOSMA_WITH_GPU_AWARE_MPI=ON` is specified in `cmake`, cuda-aware MPI for NVIDIA GPUs (i.e. rocm-aware MPI for AMD GPUs) will be used for collective communication. The user must make sure that the gpu-aware MPI is enabled. For example, on Cray-systems, this can be done by setting the following environment variables: 
+    - `export MPICH_RDMA_ENABLED_CUDA=1`
+    - `export MPICH_GPU_SUPPORT_ENABLED=1`
+
 ## Building COSMA on Cray Systems
 
 There are already prepared scripts for loading the necessary dependencies for COSMA on Cray-Systems:
