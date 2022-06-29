@@ -740,6 +740,28 @@ void parallel(cosma_context<Scalar> *ctx,
     // should own exactly the same data in the expanded matrix.
     if (strategy.split_m(step) || strategy.split_n(step)) {
         // copy the matrix that wasn't divided in this step
+#ifdef COSMA_WITH_NCCL
+        if (!is_complex<Scalar>()) { // && strategy.final_step(step+1)) {
+            cosma::gpu::nccl_copy(ctx,
+                                  P,
+                                  original_matrix,
+                                  expanded_matrix,
+                                  reshuffle_buffer,
+                                  size_before_expansion,
+                                  total_before_expansion,
+                                  new_size,
+                                  step);
+        } else {
+            comm->copy(P,
+                      original_matrix,
+                      expanded_matrix,
+                      reshuffle_buffer,
+                      size_before_expansion,
+                      total_before_expansion,
+                      new_size,
+                      step);
+        }
+#else
         comm->copy(P,
                   original_matrix,
                   expanded_matrix,
@@ -748,6 +770,7 @@ void parallel(cosma_context<Scalar> *ctx,
                   total_before_expansion,
                   new_size,
                   step);
+#endif
     }
 
     // if division by k, and we are in the branch where beta > 0, then

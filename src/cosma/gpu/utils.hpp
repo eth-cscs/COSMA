@@ -76,6 +76,99 @@ namespace gpu {
     }
 
     template <typename Scalar>
+    void nccl_copy(
+                cosma_context<Scalar> *ctx,
+                Interval &P,
+                Scalar * in, // original_matrix
+                Scalar * out,  // expanded matrix
+                Scalar *reshuffle_buffer,
+                std::vector<std::vector<int>>& size_before,
+                std::vector<int> &total_before,
+                int total_after,
+                size_t step) {
+        PE(multiply_communication_other);
+        auto mpi_comm = ctx->get_cosma_comm()->active_comm(step);
+        auto nccl_comm = ctx->get_cosma_comm()->active_nccl_comm(step);
+
+        int rank = ctx->get_cosma_comm()->rank();
+        int div = ctx->get_cosma_comm()->get_strategy()->divisor(step);
+
+        int gp, off;
+        std::tie(gp, off) = P.locate_in_subinterval(div, rank);
+
+        int relative_rank = rank - P.first();
+        int local_size = total_before[relative_rank];
+
+        int sum = 0;
+        std::vector<int> total_size(div);
+        std::vector<int> dspls(div);
+
+        std::vector<int> subgroup(div);
+        bool same_size = true;
+
+        int max_block_size = 0;
+        for (int i = 0; i < div; ++i) {
+            int target = P.locate_in_interval(div, i, off);
+            int temp_size = total_before[target];
+            dspls[i] = sum;
+            sum += temp_size;
+            total_size[i] = temp_size;
+            same_size &= temp_size == local_size;
+            max_block_size = std::max(max_block_size, temp_size);
+        }
+
+        int n_blocks = size_before[relative_rank].size();
+
+        // this will only resize the buffer if not already allocated
+        ctx->get_memory_pool().allocate_device_receive_buffer(max_block_size);
+        Scalar* d_send_pointer = ctx->get_memory_pool().device_receive_buffer.data();
+
+        ctx->get_memory_pool().allocate_device_send_buffer(div * max_block_size);
+        Scalar* d_receive_pointer = ctx->get_memory_pool().device_send_buffer.data();
+
+        auto stream = ctx->nccl_stream.stream();
+
+        // copy input matrix to device
+        gpu::copy_to_device_async(in, d_send_pointer, local_size, stream);
+
+        PL();
+
+        PE(multiply_communication_reduce);
+        auto nccl_type = nccl_mapper<Scalar>::getType();
+        ncclAllGather(d_send_pointer,
+                d_receive_pointer,
+                max_block_size,
+                nccl_type,
+                nccl_comm,
+                stream);
+
+        PE(multiply_communication_other);
+        int index = 0;
+        std::vector<int> block_offset(div);
+        // order all first sequential parts of all groups first and so on..
+        for (int block = 0; block < n_blocks; block++) {
+            for (int rank = 0; rank < div; rank++) {
+                int target = P.locate_in_interval(div, rank, off);
+                int dsp = dspls[rank] + block_offset[rank];
+                int b_size = size_before[target][block];
+                gpu::copy_to_host_async(
+                    d_receive_pointer + rank * max_block_size + block_offset[rank],
+                    out + index, 
+                    b_size,
+                    stream);
+                index += b_size;
+                block_offset[rank] += b_size;
+            }
+        }
+        PL();
+
+        // wait for the result on the host
+        gpu::runtime_api::stream_synchronize(stream);
+
+        PL();
+    }
+
+    template <typename Scalar>
     void nccl_reduce(
                 cosma_context<Scalar> *ctx,
                 Interval &P,
