@@ -81,6 +81,9 @@ void cosma::gpu::gpu_aware_mpi_copy(
             mpi_type,
             mpi_comm);
 
+    // make sure MPI has finished
+    gpu::runtime_api::device_synchronize();
+
     PE(multiply_communication_other);
     int index = 0;
     std::vector<int> block_offset(div);
@@ -226,6 +229,9 @@ void cosma::gpu::gpu_aware_mpi_reduce(
             mpi_type,
             MPI_SUM,
             mpi_comm);
+
+    // make sure MPI has finished
+    // gpu::runtime_api::device_synchronize();
 
     gpu::copy_to_host_async(d_receive_pointer, receive_pointer, recvcnts[gp], stream);
 

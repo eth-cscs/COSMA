@@ -364,16 +364,23 @@ void multiply(cosma_context<Scalar> *ctx,
 
     if (strategy.final_step(step) || strategy.empty()) {
         bool copy_c_back = true;
+        bool nccl_enabled = false;
+        bool gpu_aware_mpi_enabled = false;
 
 #ifdef COSMA_WITH_NCCL
-        if (step > 0 
-                && 
-                strategy.parallel_step(step-1) && strategy.split_k(step-1)
-                &&
-                !is_complex<Scalar>()) {
-            copy_c_back = false;
-        }
+        nccl_enabled = true;
 #endif
+#ifdef COSMA_WITH_GPU_AWARE_MPI
+        gpu_aware_mpi_enabled = true;
+#endif
+
+        if (gpu_aware_mpi_enabled || nccl_enabled) {
+            copy_c_back = !(step > 0 && strategy.parallel_step(step-1) && strategy.split_k(step-1));
+        }
+        if (nccl_enabled) {
+            copy_c_back = copy_c_back || is_complex<Scalar>();
+        }
+
         local_multiply(ctx,
                        matrixA.current_matrix(),
                        matrixB.current_matrix(),
