@@ -3,6 +3,10 @@
 #include <cosma/pinned_buffers.hpp>
 #include <cosma/aligned_allocator.hpp>
 
+#ifdef COSMA_HAVE_GPU
+#include <Tiled-MM/device_vector.hpp>
+#endif
+
 namespace cosma {
 template <typename T>
 class memory_pool {
@@ -45,6 +49,14 @@ public:
 
     // scaling factor for the buffer growth
     double amortization;
+
+#ifdef COSMA_HAVE_GPU
+    void allocate_device_send_buffer(std::size_t size);
+    void allocate_device_receive_buffer(std::size_t size);
+
+    gpu::device_vector<T> device_send_buffer;
+    gpu::device_vector<T> device_receive_buffer;
+#endif
 
 private:
     aligned_vector_t pool_;

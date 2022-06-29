@@ -67,6 +67,8 @@ int main(int argc, char **argv) {
 
     auto ctx = cosma::make_context<double>();
 
+    bool copy_c_back = true;
+
     // run random dgemm in order to initialize it
     for (int i = 0; i < n_rep; ++i) {
         a = std::vector<double>(min_m * min_m);
@@ -74,7 +76,7 @@ int main(int argc, char **argv) {
         c = std::vector<double>(min_m * min_m);
 
         local_multiply(
-            ctx, a.data(), b.data(), c.data(), min_m, min_m, min_m, 1.0, 0.0);
+            ctx, a.data(), b.data(), c.data(), min_m, min_m, min_m, 1.0, 0.0, copy_c_back);
     }
 
     std::vector<problem> timings;
@@ -89,7 +91,7 @@ int main(int argc, char **argv) {
                     c = std::vector<double>(m * n);
 
                     local_multiply(
-                        ctx, a.data(), b.data(), c.data(), m, n, k, 1.0, 0.0);
+                        ctx, a.data(), b.data(), c.data(), m, n, k, 1.0, 0.0, copy_c_back);
                 }
                 auto finish = std::chrono::high_resolution_clock::now();
                 auto time =

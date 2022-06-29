@@ -8,9 +8,13 @@
 
 #ifdef COSMA_HAVE_GPU
 #include <Tiled-MM/tiled_mm.hpp>
+#include <Tiled-MM/device_stream.hpp>
 #endif
 
 namespace cosma {
+
+// forward-declaration
+class communicator;
 
 template <typename Scalar>
 class cosma_context {
@@ -19,12 +23,15 @@ public:
     cosma_context(size_t cpu_mem_limit, int streams, int tile_m, int tile_n, int tile_k);
     ~cosma_context();
 
-    void register_state(int rank, const Strategy& strategy);
+    void register_state(MPI_Comm comm, 
+                        const Strategy& strategy);
 
     memory_pool<Scalar>& get_memory_pool();
 #ifdef COSMA_HAVE_GPU
     gpu::mm_handle<Scalar>* get_gpu_context();
 #endif
+
+    cosma::communicator* get_cosma_comm();
 
     long long get_cpu_memory_limit();
 
@@ -36,6 +43,10 @@ public:
 
     bool pin_host_buffers = true;
 
+#if defined(COSMA_WITH_GPU_AWARE_MPI) || defined(COSMA_WITH_NCCL)
+    gpu::device_stream gpu_stream;
+#endif
+
 private:
     long long cpu_memory_limit = std::numeric_limits<long long>::max();
     memory_pool<Scalar> memory_pool_;
@@ -44,8 +55,8 @@ private:
     // gpu::mm_handle<Scalar> gpu_ctx_;
 #endif
     bool output = false;
-    int prev_rank = -1;
     Strategy prev_strategy;
+    std::unique_ptr<cosma::communicator> prev_cosma_comm;
 };
 
 template <typename Scalar>

@@ -1,3 +1,4 @@
+#include <cosma/math_utils.hpp>
 #include <cosma/local_multiply.hpp>
 #include <cosma/multiply.hpp>
 #include <cosma/profiler.hpp>
@@ -5,6 +6,14 @@
 #include <costa/grid2grid/transformer.hpp>
 
 #include <complex>
+
+#if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_NCCL)
+#include <cosma/gpu/nccl_utils.hpp>
+#endif
+
+#if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_GPU_AWARE_MPI)
+#include <cosma/gpu/gpu_aware_mpi_utils.hpp>
+#endif
 
 namespace cosma {
 template <typename Scalar>
@@ -18,7 +27,7 @@ void multiply(cosma_context<Scalar> *ctx,
               Interval &P,
               size_t step,
               const Strategy &strategy,
-              communicator &comm,
+              communicator *comm,
               Scalar alpha,
               Scalar beta);
 
@@ -33,7 +42,7 @@ void sequential(cosma_context<Scalar> *ctx,
                 Interval &P,
                 size_t step,
                 const Strategy &strategy,
-                communicator &comm,
+                communicator *comm,
                 Scalar alpha,
                 Scalar beta);
 
@@ -48,7 +57,7 @@ void parallel(cosma_context<Scalar> *ctx,
               Interval &P,
               size_t step,
               const Strategy &strategy,
-              communicator &comm,
+              communicator *comm,
               Scalar alpha,
               Scalar beta);
 
@@ -267,14 +276,10 @@ void multiply(cosma_context<Scalar> *ctx,
     assert(matrixB.rank() == matrixC.rank());
     PL();
 
-    PE(preprocessing_communicators);
-    communicator cosma_comm = communicator(&strategy, comm);
-    PL();
+    // register reusable objects in the context
+    ctx->register_state(comm, strategy);
 
-    if (!cosma_comm.is_idle()) {
-        // register strategy in the context
-        ctx->register_state(cosma_comm.rank(), strategy);
-
+    if (!ctx->get_cosma_comm()->is_idle()) {
         multiply(ctx,
                  matrixA,
                  matrixB,
@@ -285,7 +290,7 @@ void multiply(cosma_context<Scalar> *ctx,
                  Pi,
                  0,
                  strategy,
-                 cosma_comm,
+                 ctx->get_cosma_comm(),
                  alpha,
                  beta);
     }
@@ -299,7 +304,7 @@ void multiply(cosma_context<Scalar> *ctx,
     matrixA.free_communication_buffers();
     PL();
 
-    if (cosma_comm.rank() == 0) {
+    if (ctx->get_cosma_comm()->rank() == 0) {
         PP();
     }
 }
@@ -315,7 +320,7 @@ void multiply(cosma_context<Scalar> *ctx,
               Interval &P,
               size_t step,
               const Strategy &strategy,
-              communicator &comm,
+              communicator *comm,
               Scalar alpha,
               Scalar beta) {
     PE(multiply_other);
@@ -352,12 +357,30 @@ void multiply(cosma_context<Scalar> *ctx,
 
     // This iterates over the skipped buckets and sums up their sizes,
     // and increases the pointer of the current matrix for the offset
-    int offsetA = matrixA.shift(bucketA[comm.relative_rank(P)]);
-    int offsetB = matrixB.shift(bucketB[comm.relative_rank(P)]);
-    int offsetC = matrixC.shift(bucketC[comm.relative_rank(P)]);
+    int offsetA = matrixA.shift(bucketA[comm->relative_rank(P)]);
+    int offsetB = matrixB.shift(bucketB[comm->relative_rank(P)]);
+    int offsetC = matrixC.shift(bucketC[comm->relative_rank(P)]);
     PL();
 
     if (strategy.final_step(step) || strategy.empty()) {
+        bool copy_c_back = true;
+        bool nccl_enabled = false;
+        bool gpu_aware_mpi_enabled = false;
+
+#ifdef COSMA_WITH_NCCL
+        nccl_enabled = true;
+#endif
+#ifdef COSMA_WITH_GPU_AWARE_MPI
+        gpu_aware_mpi_enabled = true;
+#endif
+
+        if (gpu_aware_mpi_enabled || nccl_enabled) {
+            copy_c_back = !(step > 0 && strategy.parallel_step(step-1) && strategy.split_k(step-1));
+        }
+        if (nccl_enabled) {
+            copy_c_back = copy_c_back || is_complex<Scalar>();
+        }
+
         local_multiply(ctx,
                        matrixA.current_matrix(),
                        matrixB.current_matrix(),
@@ -366,11 +389,12 @@ void multiply(cosma_context<Scalar> *ctx,
                        n.length(),
                        k.length(),
                        alpha,
-                       beta);
+                       beta,
+                       copy_c_back);
     } else {
         if (strategy.parallel_step(step)) {
             if (strategy.should_overlap_comm_and_comp(step)) {
-                comm.overlap_comm_and_comp(ctx,
+                comm->overlap_comm_and_comp(ctx,
                                            matrixA,
                                            matrixB,
                                            matrixC,
@@ -443,7 +467,7 @@ void sequential(cosma_context<Scalar> *ctx,
                 Interval &P,
                 size_t step,
                 const Strategy &strategy,
-                communicator &comm,
+                communicator *comm,
                 Scalar alpha,
                 Scalar beta) {
     // split the dimension but not the processors, all P processors are taking
@@ -630,7 +654,7 @@ void parallel(cosma_context<Scalar> *ctx,
               Interval &P,
               size_t step,
               const Strategy &strategy,
-              communicator &comm,
+              communicator *comm,
               Scalar alpha,
               Scalar beta) {
     PE(multiply_other);
@@ -639,7 +663,7 @@ void parallel(cosma_context<Scalar> *ctx,
     int divisor_n = strategy.divisor_n(step);
     int divisor_k = strategy.divisor_k(step);
     // processor subinterval which the current rank belongs to
-    int partition_idx = P.subinterval_index(divisor, comm.rank());
+    int partition_idx = P.subinterval_index(divisor, comm->rank());
     Interval newP = P.subinterval(divisor, partition_idx);
     // intervals of M, N and K that the current rank is in charge of,
     // together with other ranks from its group.
@@ -709,7 +733,7 @@ void parallel(cosma_context<Scalar> *ctx,
     // this is the sum of sizes of all the buckets after expansion
     // that the current rank will own.
     // which is also the size of the matrix after expansion
-    int new_size = total_after_expansion[comm.relative_rank(newP)];
+    int new_size = total_after_expansion[comm->relative_rank(newP)];
 
     int buffer_idx = expanded_mat.buffer_index();
     expanded_mat.advance_buffer();
@@ -727,7 +751,40 @@ void parallel(cosma_context<Scalar> *ctx,
     // should own exactly the same data in the expanded matrix.
     if (strategy.split_m(step) || strategy.split_n(step)) {
         // copy the matrix that wasn't divided in this step
-        comm.copy(P,
+#ifdef COSMA_WITH_NCCL
+        if (!is_complex<Scalar>()) { // && strategy.final_step(step+1)) {
+            cosma::gpu::nccl_copy(ctx,
+                                  P,
+                                  original_matrix,
+                                  expanded_matrix,
+                                  reshuffle_buffer,
+                                  size_before_expansion,
+                                  total_before_expansion,
+                                  new_size,
+                                  step);
+        } else {
+            comm->copy(P,
+                      original_matrix,
+                      expanded_matrix,
+                      reshuffle_buffer,
+                      size_before_expansion,
+                      total_before_expansion,
+                      new_size,
+                      step);
+        }
+#elif COSMA_WITH_GPU_AWARE_MPI
+        cosma::gpu::gpu_aware_mpi_copy(
+                              ctx,
+                              P,
+                              original_matrix,
+                              expanded_matrix,
+                              reshuffle_buffer,
+                              size_before_expansion,
+                              total_before_expansion,
+                              new_size,
+                              step);
+#else
+        comm->copy(P,
                   original_matrix,
                   expanded_matrix,
                   reshuffle_buffer,
@@ -735,6 +792,7 @@ void parallel(cosma_context<Scalar> *ctx,
                   total_before_expansion,
                   new_size,
                   step);
+#endif
     }
 
     // if division by k, and we are in the branch where beta > 0, then
@@ -835,10 +893,10 @@ void parallel(cosma_context<Scalar> *ctx,
              new_beta);
 
 #ifdef DEBUG
-    std::cout << "rank = " << comm.rank() << ", label = " << expanded_mat.label() << std::endl;
-    if (comm.rank() == 0 && expanded_mat.label() == 'C') {
+    std::cout << "rank = " << comm->rank() << ", label = " << expanded_mat.label() << std::endl;
+    if (comm->rank() == 0 && expanded_mat.label() == 'C') {
         std::cout << "expanded matrix after multiply: " << std::endl;
-        int local_size = size_before_expansion[comm.rank() - P.first()][0];
+        int local_size = size_before_expansion[comm->rank() - P.first()][0];
         for (int i = 0; i < local_size; ++i) {
             std::cout << *(expanded_mat.current_matrix() + i) << ", ";
         }
@@ -860,7 +918,54 @@ void parallel(cosma_context<Scalar> *ctx,
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
         Scalar *reduce_buffer = expanded_mat.reduce_buffer_ptr();
-        comm.reduce(P,
+#ifdef COSMA_WITH_NCCL
+        if (!is_complex<Scalar>()) { // && strategy.final_step(step+1)) {
+            bool copy_c_back = !strategy.final_step(step+1);
+            cosma::gpu::nccl_reduce(ctx,
+                                    P,
+                                    expanded_matrix,
+                                    original_matrix,
+                                    reshuffle_buffer,
+                                    reduce_buffer,
+                                    size_before_expansion,
+                                    total_before_expansion,
+                                    size_after_expansion,
+                                    total_after_expansion,
+                                    beta,
+                                    step,
+                                    copy_c_back);
+        } else {
+            comm->reduce(P,
+                        expanded_matrix,
+                        original_matrix,
+                        reshuffle_buffer,
+                        reduce_buffer,
+                        size_before_expansion,
+                        total_before_expansion,
+                        size_after_expansion,
+                        total_after_expansion,
+                        alpha,
+                        beta,
+                        step);
+        }
+#elif COSMA_WITH_GPU_AWARE_MPI
+        bool copy_c_back = !strategy.final_step(step+1);
+        cosma::gpu::gpu_aware_mpi_reduce(
+                                ctx,
+                                P,
+                                expanded_matrix,
+                                original_matrix,
+                                reshuffle_buffer,
+                                reduce_buffer,
+                                size_before_expansion,
+                                total_before_expansion,
+                                size_after_expansion,
+                                total_after_expansion,
+                                beta,
+                                step,
+                                copy_c_back);
+#else
+        comm->reduce(P,
                     expanded_matrix,
                     original_matrix,
                     reshuffle_buffer,
@@ -872,6 +977,7 @@ void parallel(cosma_context<Scalar> *ctx,
                     alpha,
                     beta,
                     step);
+#endif
     }
 
     PE(multiply_other);

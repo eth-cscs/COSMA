@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.17 FATAL_ERROR)
 
 # Check if COSMA is a subproject.
 #
@@ -18,6 +18,8 @@ option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
 option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT})
 option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
 option(COSMA_WITH_PROFILING "Enable profiling." OFF)
+option(COSMA_WITH_NCCL "Use NCCL as communication backend." OFF)
+option(COSMA_WITH_GPU_AWARE_MPI "Use gpu-aware MPI for communication." OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries." OFF)
 
 set(COSMA_BLAS "MKL" CACHE STRING
@@ -38,12 +40,20 @@ set(COSMA_SCALAPACK "OFF" CACHE STRING
 set_property(CACHE COSMA_SCALAPACK PROPERTY STRINGS
     "OFF" "MKL" "CRAY_LIBSCI" "CUSTOM")
 
+set(GPU_BACKENDS "CUDA" "ROCM")
+if (COSMA_WITH_NCCL AND NOT COSMA_BLAS IN_LIST GPU_BACKENDS) 
+    message(FATAL_ERROR "NCCL can only be used with the GPU backend.")
+endif()
+
+if (COSMA_WITH_GPU_AWARE_MPI AND NOT COSMA_BLAS IN_LIST GPU_BACKENDS) 
+    message(FATAL_ERROR "GPU-aware MPI can only be used with the GPU backend.")
+endif()
+
 # if using scalapack, then enforce building as a shared library
 # so that the function interpose can work
 #if (COSMA_SCALAPACK AND NOT BUILD_SHARED_LIBS)
 #    message(FATAL_ERROR "When SCALAPACK wrappers are used, COSMA has to be compiled as a shared library. Rerun cmake adding -DBUILD_SHARED_LIBS=ON.")
 # endif()
-
 
 # if SCALAPACK BLAS is not defined, then set it to be the same
 # as the scalapack provider
@@ -87,7 +97,7 @@ if (${COSMA_BLAS} STREQUAL "MKL" OR ${COSMA_BLAS} STREQUAL "CRAY_LIBSCI")
     endif()
 endif()
 
-project(cosma VERSION 2.5.1 LANGUAGES CXX C)
+project(cosma VERSION 2.6.0 LANGUAGES CXX C)
 
 include(GNUInstallDirs)
 
@@ -110,7 +120,7 @@ if(isSystemDir STREQUAL "-1")
 endif()
 
 # Dependencies
-#
+# MPI
 find_package(MPI REQUIRED)
 adjust_mpiexec_flags()
 
@@ -137,6 +147,13 @@ set(GPU OFF)
 # BLAS provider that SCALAPACK is linked to
 set(SCALAPACK_BLAS_TARGET "")
 
+set(NCCL_TARGET "")
+set(NCCL_DEF "")
+set(MPI_DEF "")
+
+set(GPU_TARGET "")
+set(GPU_DEFF "")
+
 # these are only GPU-backends
 if (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
     option(TILEDMM_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
@@ -145,6 +162,44 @@ if (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
     set(BLAS_TARGET "Tiled-MM")
     set(BLAS_DEF "COSMA_HAVE_GPU")
     set(GPU ON)
+
+    if (COSMA_WITH_NCCL)
+        set(NCCL_DEF "COSMA_WITH_NCCL")
+        if (${COSMA_BLAS} STREQUAL "CUDA")
+            find_package(CUDAToolkit)
+            find_package(NCCL)
+            set(GPU_TARGET "CUDA::cudart")
+            set(NCCL_TARGET "${NCCL_LIBRARIES}")
+            message("NCCL INCLUDE DIRS = ${NCCL_INCLUDE_DIRS}")
+            message("NCCL LIBRARIES = ${NCCL_LIBRARIES}")
+            # set(NCCL_TARGET "${NCCL_LIBRARIES}")
+        elseif (${COSMA_BLAS} STREQUAL "ROCM")
+            find_package(hip)
+            find_package(RCCL)
+            set(GPU_TARGET "hip::host")
+            set(GPU_DEF "-D__HIP_PLATFORM_HCC__")
+            set(NCCL_TARGET "${RCCL_LIBRARIES}")
+            message("RCCL INCLUDE DIRS = ${RCCL_INCLUDE_DIRS}")
+            message("RCCL LIBRARIES = ${RCCL_LIBRARIES}")
+            # set(NCCL_TARGET "${NCCL_LIBRARIES}")
+        else()
+            message(FATAL_ERROR "COSMA_WITH_NCCL specified, but no GPU backend chosen.")
+        endif()
+    endif()
+
+    if (COSMA_WITH_GPU_AWARE_MPI)
+        set(MPI_DEF "COSMA_WITH_GPU_AWARE_MPI")
+        if (${COSMA_BLAS} STREQUAL "CUDA")
+            find_package(CUDAToolkit)
+            set(GPU_TARGET "CUDA::cudart")
+        elseif (${COSMA_BLAS} STREQUAL "ROCM")
+            find_package(hip)
+            set(GPU_TARGET "hip::host")
+            set(GPU_DEF "-D__HIP_PLATFORM_HCC__")
+        else()
+            message(FATAL_ERROR "COSMA_WITH_GPU_AWARE_MPI specified, but no GPU backend chosen.")
+        endif()
+    endif()
 endif()
 
 # BLAS LIBRARIES below can be used together with the GPU backend
@@ -266,4 +321,5 @@ endif()
 
 if(COSMA_WITH_BENCHMARKS AND NOT COSMA_WITH_OPENBLAS)
     add_subdirectory(benchmarks)
+
 endif()

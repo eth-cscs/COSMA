@@ -1,10 +1,11 @@
-FROM nvidia/cuda:10.1-devel-ubuntu18.04
+FROM nvidia/cuda:11.6.0-devel-ubuntu20.04
 
 WORKDIR /root
+SHELL ["/bin/bash", "-c"]
 
-ARG MPICH_VERSION=3.3.2
-ARG OPENBLAS_VERSION=0.3.9
-ARG NETLIB_SCALAPACK_VERSION=2.1.0
+ARG MPICH_VERSION=4.0.1
+ARG OPENBLAS_VERSION=0.3.20
+ARG NETLIB_SCALAPACK_VERSION=2.2.0
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV MKLROOT=/opt/intel/compilers_and_libraries/linux/mkl
@@ -25,7 +26,7 @@ RUN apt-get update -qq && \
     rm -rf /var/lib/apt/lists/*
 
 # Install cmake
-RUN wget -qO- "https://cmake.org/files/v3.17/cmake-3.17.0-Linux-x86_64.tar.gz" | tar --strip-components=1 -xz -C /usr/local
+RUN wget -qO- "https://cmake.org/files/v3.22/cmake-3.22.1-linux-x86_64.tar.gz" | tar --strip-components=1 -xz -C /usr/local
 
 # Install MPICH ABI compatible with Cray's lib on Piz Daint
 RUN wget -q https://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPICH_VERSION}.tar.gz && \
@@ -59,6 +60,7 @@ RUN wget -qO - http://www.netlib.org/scalapack/scalapack-${NETLIB_SCALAPACK_VERS
     ldconfig
 
 # Add deployment tooling
-RUN wget -q https://github.com/haampie/libtree/releases/download/v1.1.2/libtree_x86_64.tar.gz && \
-    tar -xzf libtree_x86_64.tar.gz && \
-    rm libtree_x86_64.tar.gz
+RUN mkdir -p /opt/libtree && \
+    curl -Lfso /opt/libtree/libtree https://github.com/haampie/libtree/releases/download/v3.0.3/libtree_x86_64 && \
+    chmod +x /opt/libtree/libtree
+

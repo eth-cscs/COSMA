@@ -482,6 +482,7 @@ void overlap_m_split(bool use_busy_waiting,
     matrixC.set_current_matrix(pointer_c);
 
     PL();
+    bool copy_c_back = true;
     local_multiply(ctx,
                    matrixA.current_matrix(),
                    matrixB.current_matrix(),
@@ -490,7 +491,8 @@ void overlap_m_split(bool use_busy_waiting,
                    n.subinterval(divisor, gp).length(),
                    k.length(),
                    alpha,
-                   beta);
+                   beta,
+                   copy_c_back);
     PE(multiply_communication_other);
 
     int dist = 1;
@@ -515,7 +517,8 @@ void overlap_m_split(bool use_busy_waiting,
                            n.subinterval(divisor, idx).length(),
                            k.length(),
                            alpha,
-                           beta);
+                           beta,
+                           copy_c_back);
             PE(multiply_communication_copy);
             ready--;
             dist++;
@@ -625,6 +628,7 @@ void overlap_n_split(bool use_busy_waiting,
 
             Scalar new_beta = dist == 0 ? beta : Scalar(1);
             PL();
+            bool copy_c_back = true;
             local_multiply(ctx,
                            matrixA.current_matrix(),
                            matrixB.current_matrix(),
@@ -633,7 +637,8 @@ void overlap_n_split(bool use_busy_waiting,
                            newn.length(),
                            k.subinterval(divisor, idx).length(),
                            alpha,
-                           new_beta);
+                           new_beta,
+                           copy_c_back);
             PE(multiply_communication_other);
 
             dist++;
@@ -750,6 +755,7 @@ void compute(cosma_context<Scalar> *ctx,
     // C.set_current_matrix(c);
 
     PL();
+    bool copy_c_back = true;
     local_multiply(ctx,
                    A.current_matrix(),
                    B.current_matrix(),
@@ -758,7 +764,8 @@ void compute(cosma_context<Scalar> *ctx,
                    n_length,
                    k.length(),
                    alpha,
-                   beta);
+                   beta,
+                   copy_c_back);
     PE(multiply_communication_other);
 }
 

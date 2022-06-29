@@ -1,14 +1,4 @@
 #pragma once
-
-#include <cosma/buffer.hpp>
-#include <cosma/context.hpp>
-#include <cosma/interval.hpp>
-#include <cosma/layout.hpp>
-#include <cosma/mapper.hpp>
-#include <cosma/strategy.hpp>
-
-#include <costa/grid2grid/transform.hpp>
-
 #include <algorithm>
 #include <cassert>
 #include <fstream>
@@ -21,6 +11,15 @@
 #include <tuple>
 #include <unordered_map>
 #include <vector>
+
+#include <cosma/context.hpp>
+#include <cosma/buffer.hpp>
+#include <cosma/interval.hpp>
+#include <cosma/layout.hpp>
+#include <cosma/mapper.hpp>
+#include <cosma/strategy.hpp>
+
+#include <costa/grid2grid/transform.hpp>
 
 namespace cosma {
 

@@ -1,7 +1,10 @@
-#include <cosma/context.hpp>
-#include <cosma/environment_variables.hpp>
 #include <complex>
 #include <stdlib.h>
+
+#include <cosma/communicator.hpp>
+#include <cosma/context.hpp>
+#include <cosma/environment_variables.hpp>
+#include <cosma/profiler.hpp>
 
 namespace cosma {
 #ifdef COSMA_HAVE_GPU
@@ -66,19 +69,51 @@ long long cosma_context<Scalar>::get_cpu_memory_limit() {
 }
 
 template <typename Scalar>
-void cosma_context<Scalar>::register_state(int rank, const Strategy& strategy) {
+cosma::communicator* cosma_context<Scalar>::get_cosma_comm() {
+    return prev_cosma_comm.get();
+}
+
+template <typename Scalar>
+void cosma_context<Scalar>::register_state(MPI_Comm comm,
+                                           const Strategy& strategy) {
+    bool same_comm = false;
+
+    if (!prev_cosma_comm || prev_cosma_comm->full_comm() == MPI_COMM_NULL) {
+        prev_strategy = strategy;
+
+        PE(preprocessing_communicators);
+        prev_cosma_comm = std::make_unique<cosma::communicator>(&strategy, comm);
+        PL();
+    } else {
+        MPI_Comm prev_comm = prev_cosma_comm->full_comm();
+        int comm_compare;
+        MPI_Comm_compare(prev_comm, comm, &comm_compare);
+        same_comm = comm_compare == MPI_CONGRUENT || 
+                    comm_compare == MPI_IDENT;
+
+        // if same_comm and same strategy -> reuse the communicators
+        if (!same_comm || strategy != prev_strategy) {
+            prev_strategy = strategy;
+
+            PE(preprocessing_communicators);
+            prev_cosma_comm = std::make_unique<cosma::communicator>(&strategy, comm);
+            PL();
+        }
+    }
+
+    // if this rank is not taking part in multiply, return
+    if (prev_cosma_comm->is_idle()) return;
+
 #ifdef COSMA_HAVE_GPU
     if (memory_pool_.resized 
                 || 
-            rank != prev_rank
+            !same_comm
                 ||
             strategy != prev_strategy
         ) {
         memory_pool_.unpin_all();
         memory_pool_.already_pinned = false;
         memory_pool_.resized = false;
-        prev_rank = rank;
-        prev_strategy = strategy;
     } else {
         memory_pool_.already_pinned = true;
     }

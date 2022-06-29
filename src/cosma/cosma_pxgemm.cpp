@@ -384,6 +384,7 @@ void pxgemm(const char transa,
 
     }
 #endif
+
     PE(transform_reordering_comm);
     if (reordered) {
         MPI_Comm_free(&reordered_comm);

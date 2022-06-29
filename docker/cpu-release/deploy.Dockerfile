@@ -5,7 +5,7 @@ FROM $BUILD_ENV as builder
 # Build COSMA
 COPY . /COSMA
 
-RUN COMPILERVARS_ARCHITECTURE=intel64 /opt/intel/bin/compilervars.sh && \
+RUN source /opt/intel/bin/compilervars.sh intel64 && \
     mkdir /COSMA/build && cd /COSMA/build && \
     CC=mpicc CXX=mpicxx cmake .. \
       -DCOSMA_WITH_TESTS=ON \
@@ -48,9 +48,12 @@ RUN /root/libtree/libtree --chrpath --strip -d /root/COSMA.bundle/ \
       ${MKL_LIB}/libmkl_vml_mc.so \
       ${MKL_LIB}/libmkl_vml_mc3.so
 
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 COPY --from=builder /root/COSMA.bundle /root/COSMA.bundle
+
+# Automatically print stacktraces on segfault
+ENV LD_PRELOAD=/lib/x86_64-linux-gnu/libSegFault.so
 
 # Make it easy to call our binaries.
 ENV PATH="/root/COSMA.bundle/usr/bin:$PATH"

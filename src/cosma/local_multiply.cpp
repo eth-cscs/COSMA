@@ -84,10 +84,28 @@ void local_multiply(gpu::mm_handle<Scalar>* gpu_ctx,
                     int k,
                     Scalar alpha,
                     Scalar beta,
-                    bool pin_host_buffers) {
+                    bool pin_host_buffers,
+                    bool copy_c_back) {
+    /*
+    int rank = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank == 0) {
+        // print_matrix(m, k, matrixA, 'A');
+        // print_matrix(k, n, matrixB, 'B');
+        // std::cout << "m = " << m << ", n = " << n << ", k = " << k << std::endl;
+    }
+    */
     gpu::gemm(*(gpu_ctx), matrixA, matrixB, matrixC,
               m, n, k, alpha, beta,
-              pin_host_buffers);
+              pin_host_buffers, copy_c_back);
+    /*
+    if (rank == 0) {
+        gpu::copy_to_host(gpu_ctx->get_full_device_buffer_c().data(), matrixC, m * n);
+        print_matrix(m, n, matrixC, 'C');
+        std::cout << "alpha = " << alpha << ", beta = " << beta << std::endl;
+    }
+    */
+
 }
 #endif
 
@@ -128,27 +146,35 @@ void local_multiply(cosma_context<Scalar>* ctx,
                     int n,
                     int k,
                     Scalar alpha,
-                    Scalar beta) {
-    PE(multiply_computation);
+                    Scalar beta,
+                    bool copy_c_back) {
 #ifdef DEBUG
     auto t_start =
         debug_gemm_start(matrixA, matrixB, matrixC, m, n, k, alpha, beta);
 #endif
 
 #ifdef COSMA_HAVE_GPU
+    PE(multiply_computation_pinning);
     if (ctx->pin_host_buffers) {
         ctx->get_memory_pool().pin(matrixA, m * k);
         ctx->get_memory_pool().pin(matrixB, k * n);
+        // if (copy_c_back || std::abs(beta) > 0) {
         ctx->get_memory_pool().pin(matrixC, m * n);
+        // }
     }
+    PL();
+
+    PE(multiply_computation_gemm);
     local_multiply(ctx->get_gpu_context(),
                    matrixA, matrixB, matrixC,
                    m, n, k, alpha, beta,
-                   false);
-#else
-    gemm(m, n, k, alpha, matrixA, m, matrixB, k, beta, matrixC, m);
-#endif
+                   false, copy_c_back);
     PL();
+#else
+    PE(multiply_computation_gemm);
+    gemm(m, n, k, alpha, matrixA, m, matrixB, k, beta, matrixC, m);
+    PL();
+#endif
 
 #ifdef DEBUG
     auto t_end =
@@ -166,8 +192,13 @@ void local_multiply(Scalar *matrixA,
                     int n,
                     int k,
                     Scalar alpha,
-                    Scalar beta) {
-    local_multiply(get_context_instance<Scalar>(), matrixA, matrixB, matrixC, m, n, k, alpha, beta);
+                    Scalar beta,
+                    bool copy_c_back) {
+    local_multiply(get_context_instance<Scalar>(), 
+                   matrixA, matrixB, matrixC, 
+                   m, n, k, 
+                   alpha, beta, 
+                   copy_c_back);
 }
 
 template <typename Scalar>
@@ -179,8 +210,9 @@ void local_multiply(context<Scalar>& ctx,
                     int n,
                     int k,
                     Scalar alpha,
-                    Scalar beta) {
-    local_multiply(ctx.get(), matrixA, matrixB, matrixC, m, n, k, alpha, beta);
+                    Scalar beta,
+                    bool copy_c_back) {
+    local_multiply(ctx.get(), matrixA, matrixB, matrixC, m, n, k, alpha, beta, copy_c_back);
 }
 
 // explicit template instantiation using context
@@ -192,7 +224,8 @@ template void local_multiply<double>(cosma_context<double> *ctx,
                                      int n,
                                      int k,
                                      double alpha,
-                                     double beta);
+                                     double beta,
+                                     bool copy_c_back);
 
 template void local_multiply<float>(cosma_context<float> *ctx,
                                     float *matrixA,
@@ -202,7 +235,8 @@ template void local_multiply<float>(cosma_context<float> *ctx,
                                     int n,
                                     int k,
                                     float alpha,
-                                    float beta);
+                                    float beta,
+                                    bool copy_c_back);
 
 template void
 local_multiply<std::complex<double>>(cosma_context<std::complex<double>> *ctx,
@@ -213,7 +247,8 @@ local_multiply<std::complex<double>>(cosma_context<std::complex<double>> *ctx,
                                      int n,
                                      int k,
                                      std::complex<double> alpha,
-                                     std::complex<double> beta);
+                                     std::complex<double> beta,
+                                     bool copy_c_back);
 
 template void
 local_multiply<std::complex<float>>(cosma_context<std::complex<float>> *ctx,
@@ -224,7 +259,8 @@ local_multiply<std::complex<float>>(cosma_context<std::complex<float>> *ctx,
                                     int n,
                                     int k,
                                     std::complex<float> alpha,
-                                    std::complex<float> beta);
+                                    std::complex<float> beta,
+                                    bool copy_c_back);
 
 // explicit template instantiation using context - no pinning
 template void local_multiply_cpu<double>(
@@ -278,7 +314,8 @@ template void local_multiply<double>(context<double> &ctx,
                                      int n,
                                      int k,
                                      double alpha,
-                                     double beta);
+                                     double beta,
+                                     bool copy_c_back);
 
 template void local_multiply<float>(context<float> &ctx,
                                     float *matrixA,
@@ -288,7 +325,8 @@ template void local_multiply<float>(context<float> &ctx,
                                     int n,
                                     int k,
                                     float alpha,
-                                    float beta);
+                                    float beta,
+                                    bool copy_c_back);
 
 template void
 local_multiply<std::complex<double>>(context<std::complex<double>> &ctx,
@@ -299,7 +337,8 @@ local_multiply<std::complex<double>>(context<std::complex<double>> &ctx,
                                      int n,
                                      int k,
                                      std::complex<double> alpha,
-                                     std::complex<double> beta);
+                                     std::complex<double> beta,
+                                     bool copy_c_back);
 
 template void
 local_multiply<std::complex<float>>(context<std::complex<float>> &ctx,
@@ -310,7 +349,8 @@ local_multiply<std::complex<float>>(context<std::complex<float>> &ctx,
                                     int n,
                                     int k,
                                     std::complex<float> alpha,
-                                    std::complex<float> beta);
+                                    std::complex<float> beta,
+                                    bool copy_c_back);
 
 // explicit instantiation without context
 template void local_multiply<double>(double *matrixA,
@@ -320,7 +360,8 @@ template void local_multiply<double>(double *matrixA,
                                      int n,
                                      int k,
                                      double alpha,
-                                     double beta);
+                                     double beta,
+                                     bool copy_c_back);
 
 template void local_multiply<float>(float *matrixA,
                                     float *matrixB,
@@ -329,7 +370,8 @@ template void local_multiply<float>(float *matrixA,
                                     int n,
                                     int k,
                                     float alpha,
-                                    float beta);
+                                    float beta,
+                                    bool copy_c_back);
 
 template void
 local_multiply<std::complex<double>>(std::complex<double> *matrixA,
@@ -339,7 +381,8 @@ local_multiply<std::complex<double>>(std::complex<double> *matrixA,
                                      int n,
                                      int k,
                                      std::complex<double> alpha,
-                                     std::complex<double> beta);
+                                     std::complex<double> beta,
+                                     bool copy_c_back);
 
 template void
 local_multiply<std::complex<float>>(std::complex<float> *matrixA,
@@ -349,7 +392,8 @@ local_multiply<std::complex<float>>(std::complex<float> *matrixA,
                                     int n,
                                     int k,
                                     std::complex<float> alpha,
-                                    std::complex<float> beta);
+                                    std::complex<float> beta,
+                                    bool copy_c_back);
 
 #ifdef COSMA_HAVE_GPU
 // explicit template instantiation using gpu context
@@ -362,7 +406,8 @@ template void local_multiply<double>(gpu::mm_handle<double> *ctx,
                                      int k,
                                      double alpha,
                                      double beta,
-                                     bool pin_host_buffers);
+                                     bool pin_host_buffers,
+                                     bool copy_c_back);
 
 template void local_multiply<float>(gpu::mm_handle<float> *ctx,
                                     float *matrixA,
@@ -373,7 +418,8 @@ template void local_multiply<float>(gpu::mm_handle<float> *ctx,
                                     int k,
                                     float alpha,
                                     float beta,
-                                    bool pin_host_buffers);
+                                    bool pin_host_buffers,
+                                    bool copy_c_back);
 
 template void
 local_multiply<std::complex<double>>(gpu::mm_handle<std::complex<double>> *ctx,
@@ -385,7 +431,8 @@ local_multiply<std::complex<double>>(gpu::mm_handle<std::complex<double>> *ctx,
                                      int k,
                                      std::complex<double> alpha,
                                      std::complex<double> beta,
-                                     bool pin_host_buffers);
+                                     bool pin_host_buffers,
+                                     bool copy_c_back);
 
 template void
 local_multiply<std::complex<float>>(gpu::mm_handle<std::complex<float>> *ctx,
@@ -397,6 +444,7 @@ local_multiply<std::complex<float>>(gpu::mm_handle<std::complex<float>> *ctx,
                                     int k,
                                     std::complex<float> alpha,
                                     std::complex<float> beta,
-                                    bool pin_host_buffers);
+                                    bool pin_host_buffers,
+                                    bool copy_c_back);
 #endif
 } // namespace cosma

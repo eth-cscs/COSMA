@@ -1,8 +1,12 @@
+#include <complex>
+
 #include <cosma/communicator.hpp>
 #include <cosma/one_sided_communicator.hpp>
 #include <cosma/two_sided_communicator.hpp>
 
-#include <complex>
+#if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_NCCL)
+#include <cosma/gpu/nccl_utils.hpp>
+#endif
 
 namespace cosma {
 bool communicator::use_busy_waiting = true;
@@ -42,7 +46,12 @@ communicator::communicator(const Strategy *strategy,
         MPI_Group_free(&group);
         MPI_Group_free(&reduced_group);
     } else {
-        full_comm_ = comm;
+        // this communicator has to be duplicated as it's being cached.
+        // The user might deallocate the comm as it's allocated outside of COSMA
+        // for this reason, we have to ensure that we duplicate the comm
+        // before it's cached in the COSMA context
+        MPI_Comm_dup(comm, &full_comm_);
+        // full_comm_ = comm;
     }
 
     if (is_idle_) {
@@ -165,9 +174,22 @@ MPI_Comm communicator::active_comm(int step) {
     return comm_ring_[comm_index];
 }
 
+#ifdef COSMA_WITH_NCCL
+ncclComm_t communicator::active_nccl_comm(int step) {
+    int comm_index = step_to_comm_index_[step];
+    return nccl_comm_ring_[comm_index];
+}
+#endif
+
 int communicator::comm_size() { return comm_size_; }
 
-void communicator::free_comm(MPI_Comm &comm) { MPI_Comm_free(&comm); }
+void communicator::free_comm(MPI_Comm &comm) { 
+    int mpi_finalized;
+    MPI_Finalized(&mpi_finalized);
+    if (!mpi_finalized) {
+        MPI_Comm_free(&comm); 
+    }
+}
 
 void communicator::free_group(MPI_Group &group) { MPI_Group_free(&group); }
 
@@ -225,8 +247,15 @@ void communicator::split_communicators(MPI_Comm comm) {
             MPI_Comm comm_ring, comm_subproblem;
             MPI_Comm_split(comm, group, offset, &comm_subproblem);
             MPI_Comm_split(comm, offset, group, &comm_ring);
+
             comm_ring_.push_back(comm_ring);
             comm_subproblem_.push_back(comm_subproblem);
+
+#ifdef COSMA_WITH_NCCL
+            nccl_comm_ring_.push_back(gpu::mpi_to_nccl_comm(comm_ring_.back()));
+            nccl_comm_subproblem_.push_back(gpu::mpi_to_nccl_comm(comm_subproblem_.back()));
+#endif
+
             comm = comm_subproblem;
             P = newP;
         }
@@ -266,6 +295,11 @@ void communicator::create_communicators(MPI_Comm comm) {
 
             comm_ring_.emplace_back(create_comm_ring(comm, P, offset, div));
             comm_subproblem_.emplace_back(create_comm_subproblem(comm, P, newP));
+
+#ifdef COSMA_WITH_NCCL
+            nccl_comm_ring_.emplace_back(gpu::mpi_to_nccl_comm(comm_ring_.back()));
+            nccl_comm_subproblem_.emplace_back(gpu::mpi_to_nccl_comm(comm_subproblem_.back()));
+#endif
 
             comm = comm_subproblem_.back();
             P = newP;
@@ -311,13 +345,20 @@ MPI_Comm communicator::create_comm_subproblem(MPI_Comm comm,
 void communicator::free_comms() {
     for (int i = comm_subproblem_.size() - 1; i >= 0; --i) {
         free_comm(comm_subproblem_[i]);
+#ifdef COSMA_WITH_NCCL
+        gpu::free_nccl_comm(nccl_comm_subproblem_[i]);
+#endif
     }
     for (int i = comm_ring_.size() - 1; i >= 0; --i) {
         free_comm(comm_ring_[i]);
+#ifdef COSMA_WITH_NCCL
+        gpu::free_nccl_comm(nccl_comm_ring_[i]);
+#endif
     }
-    if (using_reduced_comm_) {
-        free_comm(full_comm_);
-    }
+    // if (using_reduced_comm_) {
+    free_comm(full_comm_);
+    full_comm_ = MPI_COMM_NULL;
+    //}
 }
 
 template <typename Scalar>
@@ -398,6 +439,10 @@ void communicator::overlap_comm_and_comp(cosma_context<Scalar> *ctx,
                                                   step,
                                                   alpha,
                                                   beta);
+}
+
+const Strategy* communicator::get_strategy() {
+    return strategy_;
 }
 
 // Explicit instantiations for `copy`

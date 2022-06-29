@@ -1,10 +1,4 @@
 #pragma once
-#include <cosma/context.hpp>
-#include <cosma/interval.hpp>
-#include <cosma/local_multiply.hpp>
-#include <cosma/math_utils.hpp>
-#include <cosma/matrix.hpp>
-#include <cosma/strategy.hpp>
 
 #include <algorithm>
 #include <iostream>
@@ -12,7 +6,25 @@
 #include <stdlib.h>
 #include <tuple>
 
+#include <cosma/interval.hpp>
+#include <cosma/matrix.hpp>
+#include <cosma/strategy.hpp>
+#include <cosma/context.hpp>
+
+#if defined(COSMA_WITH_NCCL) && defined(TILED_MM_CUDA)
+#include <nccl.h>
+#endif
+
+#if defined(COSMA_WITH_NCCL) && defined(TILED_MM_ROCM)
+#include <rccl.h>
+#endif
+
 namespace cosma {
+
+// forward-declaration
+// template <typename T>
+// class cosma_context;
+
 class communicator {
   public:
     communicator() = default;
@@ -187,6 +199,10 @@ class communicator {
 
     // communicator active in step
     MPI_Comm active_comm(int step);
+#ifdef COSMA_WITH_NCCL
+    // nccl communicator active in step
+    ncclComm_t active_nccl_comm(int step);
+#endif
     MPI_Comm full_comm();
 
     // size of the initial communicator
@@ -222,15 +238,23 @@ class communicator {
     static int rank_inside_ring(Interval &P, int div, int global_rank);
     static int rank_outside_ring(Interval &P, int div, int off, int gp);
 
+    // returns the current strategy
+    const Strategy* get_strategy();
+
   protected:
     // hierarchy of communicators used throughout the algorithm
     std::vector<MPI_Comm> comm_ring_;
     std::vector<MPI_Comm> comm_subproblem_;
+    // equivalents of mpi communicators, but for nccl
+#ifdef COSMA_WITH_NCCL
+    std::vector<ncclComm_t> nccl_comm_ring_;
+    std::vector<ncclComm_t> nccl_comm_subproblem_;
+#endif
     int rank_;
     const Strategy *strategy_;
     std::vector<int> step_to_comm_index_;
-    MPI_Comm full_comm_;
-    int comm_size_;
+    MPI_Comm full_comm_ = MPI_COMM_NULL;
+    int comm_size_ = 0;
     // if true then not all processors were used
     // this usually happens if given number of processors
     // cannot be decomposed nicely (e.g. if P is prime)

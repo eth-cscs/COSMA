@@ -128,7 +128,6 @@ void cosma::memory_pool<T>::reserve(std::vector<size_t>& buffer_sizes) {
     size = (std::size_t) std::ceil(size * amortization);
     // take the alignment into account 
     if (alignment > 0) {
-        std::cout << "alignment = " << alignment << std::endl;
         size += aligned_allocator<T>::get_alignment_padding(size);
     }
 
@@ -171,6 +170,18 @@ void cosma::memory_pool<T>::unpin_all() {
     pinned_buffers_list.clear();
 #endif
 }
+
+#ifdef COSMA_HAVE_GPU
+template <typename T>
+void cosma::memory_pool<T>::allocate_device_send_buffer(std::size_t size) {
+    device_send_buffer.resize(size);
+}
+
+template <typename T>
+void cosma::memory_pool<T>::allocate_device_receive_buffer(std::size_t size) {
+    device_receive_buffer.resize(size);
+}
+#endif
 
 template class cosma::memory_pool<double>;
 template class cosma::memory_pool<float>;
