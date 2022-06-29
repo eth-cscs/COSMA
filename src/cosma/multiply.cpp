@@ -8,7 +8,11 @@
 #include <complex>
 
 #if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_NCCL)
-#include <cosma/gpu/utils.hpp>
+#include <cosma/gpu/nccl_utils.hpp>
+#endif
+
+#if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_GPU_AWARE_MPI)
+#include <cosma/gpu/gpu_aware_mpi_utils.hpp>
 #endif
 
 namespace cosma {
@@ -761,6 +765,17 @@ void parallel(cosma_context<Scalar> *ctx,
                       new_size,
                       step);
         }
+#elif COSMA_WITH_GPU_AWARE_MPI
+        cosma::gpu::gpu_aware_mpi_copy(
+                              ctx,
+                              P,
+                              original_matrix,
+                              expanded_matrix,
+                              reshuffle_buffer,
+                              size_before_expansion,
+                              total_before_expansion,
+                              new_size,
+                              step);
 #else
         comm->copy(P,
                   original_matrix,
@@ -926,6 +941,22 @@ void parallel(cosma_context<Scalar> *ctx,
                         beta,
                         step);
         }
+#elif COSMA_WITH_GPU_AWARE_MPI
+        bool copy_c_back = !strategy.final_step(step+1);
+        cosma::gpu::gpu_aware_mpi_reduce(
+                                ctx,
+                                P,
+                                expanded_matrix,
+                                original_matrix,
+                                reshuffle_buffer,
+                                reduce_buffer,
+                                size_before_expansion,
+                                total_before_expansion,
+                                size_after_expansion,
+                                total_after_expansion,
+                                beta,
+                                step,
+                                copy_c_back);
 #else
         comm->reduce(P,
                     expanded_matrix,

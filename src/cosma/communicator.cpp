@@ -5,7 +5,7 @@
 #include <cosma/two_sided_communicator.hpp>
 
 #if defined(COSMA_HAVE_GPU) && defined(COSMA_WITH_NCCL)
-#include <cosma/gpu/utils.hpp>
+#include <cosma/gpu/nccl_utils.hpp>
 #endif
 
 namespace cosma {

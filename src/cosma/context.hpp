@@ -4,8 +4,6 @@
 #include <cosma/memory_pool.hpp>
 #include <cosma/strategy.hpp>
 
-// #include <cosma/communicator.hpp>
-
 #include <mpi.h>
 
 #ifdef COSMA_HAVE_GPU
@@ -45,8 +43,8 @@ public:
 
     bool pin_host_buffers = true;
 
-#ifdef COSMA_WITH_NCCL
-    gpu::device_stream nccl_stream;
+#if defined(COSMA_WITH_GPU_AWARE_MPI) || defined(COSMA_WITH_NCCL)
+    gpu::device_stream gpu_stream;
 #endif
 
 private:
