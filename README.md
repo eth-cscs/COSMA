@@ -10,6 +10,9 @@
 - [COSMA Dependencies](#cosma-dependencies)
 - [Using COSMA](#using-cosma)
     - [30 seconds Tutorial](#using-cosma-in-30-seconds)
+- [COSMA on Multi-GPU Systems](#cosma-on-multi-gpu-systems)
+    - [Using NCCL/RCCL Libraries](using-ncclrccl-libraries)
+    - [Using GPU-aware MPI](#using-gpu-aware-mpi)
 - [COSMA in production](#cosma-in-production)
     - [CP2K](#cp2k)
     - [Julia language](#julia-language)
@@ -54,6 +57,7 @@ The paper and other materials on COSMA are available under the following link:
 
 ## Features
 
+- **[NEW] Multi-GPU Systems Support:** COSMA is now able to take advantage of fast GPU-to-GPU interconnects either through the use of NCCL/RCCL libraries or by using the GPU-aware MPI. Both, NVIDIA and AMD GPUs are supported. 
 - **ScaLAPACK API Support:** it is enough to link to COSMA, without changing the code and all `p?gemm` calls will use ScaLAPACK wrappers provided by COSMA.
 - **C/Fortran Interface:** written in `C++`, but provides `C` and `Fortran` interfaces.
 - **Custom Types:** fully templatized types.
@@ -71,7 +75,7 @@ See [Installation Instructions](INSTALL.md).
 
 ## COSMA Dependencies
 
-COSMA is a CMake project and requires a recent CMake(>=3.12).
+COSMA is a CMake project and requires a recent CMake(>=3.17).
 
 External dependencies: 
 
@@ -154,6 +158,39 @@ make install
        
 3) Include headers:
 >-I<installation dir>/cosma/include
+    
+## COSMA on Multi-GPU Systems
+    
+COSMA is able to take advantage of fast GPU-to-GPU interconnects on multi-gpu systems. This can be achieved in one of the following ways.
+
+### Using `NCCL/RCCL` Libraries
+
+When running `cmake` for COSMA, make sure to specify `-DCOSMA_WITH_NCCL=ON` or `-DCOSMA_WITH_RCCL=ON`, e.g. by doing:
+```bash
+    # NVIDIA GPUs
+    # this will looks for NCCL library in the following environment variables:
+    # - NCCL_ROOT: Base directory where all NCCL components are found
+    # - NCCL_INCLUDE_DIR: Directory where NCCL header is found
+    # - NCCL_LIB_DIR: Directory where NCCL library is found
+    cmake -DCOSMA_BLAS=CUDA -DCOSMA_SCALAPACK=MKL -DCOSMA_WITH_NCCL=ON ..
+    
+    # AMD GPUs
+    # this will looks for RCCL library in the following environment variables:
+    # - RCCL_ROOT_DIR: Base directory where all RCCL components are found
+    # - RCCL_INCLUDE_DIR: Directory where RCCL header is found
+    # - RCCL_LIB_DIR: Directory where RCCL library is found
+    cmake -DCOSMA_BLAS=CUDA -DCOSMA_SCALAPACK=MKL -DCOSMA_WITH_RCCL=ON ..
+```
+### Using GPU-aware MPI
+
+When running `cmake` for COSMA, make sure that GPU-aware MPI is enabled in your environment and specify `-DCOSMA_WITH_GPU_AWARE_MPI=ON` when running cmake for COSMA, e.g. by doing:
+```bash
+    # Before running cmake, make sure that GPU-aware MPI is enabled on your system.
+    # For example, on Cray-systems, this can be done by setting the following environment variables:
+    # - export MPICH_RDMA_ENABLED_CUDA=1
+    # - export MPICH_GPU_SUPPORT_ENABLED=1
+    cmake -DCOSMA_BLAS=CUDA -DCOSMA_SCALAPACK=MKL -DCOSMA_WITH_GPU_AWARE_MPI=ON ..
+```
 
 ## COSMA in Production
 
