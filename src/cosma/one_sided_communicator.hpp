@@ -14,7 +14,7 @@ template <typename Scalar>
 void overlap_comm_and_comp(cosma_context<Scalar> *ctx,
                            MPI_Comm comm,
                            int rank,
-                           const Strategy *strategy,
+                           const Strategy strategy,
                            CosmaMatrix<Scalar> &matrixA,
                            CosmaMatrix<Scalar> &matrixB,
                            CosmaMatrix<Scalar> &matrixC,

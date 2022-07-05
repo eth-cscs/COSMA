@@ -1021,7 +1021,7 @@ template <typename Scalar>
 void overlap_comm_and_comp(cosma_context<Scalar> *ctx,
                            MPI_Comm comm,
                            int rank,
-                           const Strategy *strategy,
+                           const Strategy strategy,
                            CosmaMatrix<Scalar> &matrixA,
                            CosmaMatrix<Scalar> &matrixB,
                            CosmaMatrix<Scalar> &matrixC,
@@ -1032,9 +1032,9 @@ void overlap_comm_and_comp(cosma_context<Scalar> *ctx,
                            size_t step,
                            Scalar alpha,
                            Scalar beta) {
-    bool use_busy_waiting = strategy->use_busy_waiting;
-    int divisor = strategy->divisor(step);
-    if (strategy->split_m(step)) {
+    bool use_busy_waiting = strategy.use_busy_waiting;
+    int divisor = strategy.divisor(step);
+    if (strategy.split_m(step)) {
         overlap_m_split(use_busy_waiting,
                         ctx,
                         comm,
@@ -1049,7 +1049,7 @@ void overlap_comm_and_comp(cosma_context<Scalar> *ctx,
                         P,
                         alpha,
                         beta);
-    } else if (strategy->split_n(step)) {
+    } else if (strategy.split_n(step)) {
         overlap_n_split(use_busy_waiting,
                         ctx,
                         comm,
@@ -1084,7 +1084,7 @@ void overlap_comm_and_comp(cosma_context<Scalar> *ctx,
 template void overlap_comm_and_comp<float>(cosma_context<float> *ctx,
                                            MPI_Comm comm,
                                            int rank,
-                                           const Strategy *strategy,
+                                           const Strategy strategy,
                                            CosmaMatrix<float> &matrixA,
                                            CosmaMatrix<float> &matrixB,
                                            CosmaMatrix<float> &matrixC,
@@ -1099,7 +1099,7 @@ template void overlap_comm_and_comp<float>(cosma_context<float> *ctx,
 template void overlap_comm_and_comp<double>(cosma_context<double> *ctx,
                                             MPI_Comm comm,
                                             int rank,
-                                            const Strategy *strategy,
+                                            const Strategy strategy,
                                             CosmaMatrix<double> &matrixA,
                                             CosmaMatrix<double> &matrixB,
                                             CosmaMatrix<double> &matrixC,
@@ -1115,7 +1115,7 @@ template void overlap_comm_and_comp<std::complex<float>>(
     cosma_context<std::complex<float>> *ctx,
     MPI_Comm comm,
     int rank,
-    const Strategy *strategy,
+    const Strategy strategy,
     CosmaMatrix<std::complex<float>> &matrixA,
     CosmaMatrix<std::complex<float>> &matrixB,
     CosmaMatrix<std::complex<float>> &matrixC,
@@ -1131,7 +1131,7 @@ template void overlap_comm_and_comp<std::complex<double>>(
     cosma_context<std::complex<double>> *ctx,
     MPI_Comm comm,
     int rank,
-    const Strategy *strategy,
+    const Strategy strategy,
     CosmaMatrix<std::complex<double>> &matrixA,
     CosmaMatrix<std::complex<double>> &matrixB,
     CosmaMatrix<std::complex<double>> &matrixC,

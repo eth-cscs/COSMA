@@ -75,14 +75,14 @@ cosma::communicator* cosma_context<Scalar>::get_cosma_comm() {
 
 template <typename Scalar>
 void cosma_context<Scalar>::register_state(MPI_Comm comm,
-                                           const Strategy& strategy) {
+                                           const Strategy strategy) {
     bool same_comm = false;
 
     if (!prev_cosma_comm || prev_cosma_comm->full_comm() == MPI_COMM_NULL) {
         prev_strategy = strategy;
 
         PE(preprocessing_communicators);
-        prev_cosma_comm = std::make_unique<cosma::communicator>(&strategy, comm);
+        prev_cosma_comm = std::make_unique<cosma::communicator>(strategy, comm);
         PL();
     } else {
         MPI_Comm prev_comm = prev_cosma_comm->full_comm();
@@ -96,7 +96,7 @@ void cosma_context<Scalar>::register_state(MPI_Comm comm,
             prev_strategy = strategy;
 
             PE(preprocessing_communicators);
-            prev_cosma_comm = std::make_unique<cosma::communicator>(&strategy, comm);
+            prev_cosma_comm = std::make_unique<cosma::communicator>(strategy, comm);
             PL();
         }
     }

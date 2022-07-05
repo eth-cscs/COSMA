@@ -24,7 +24,7 @@ public:
     ~cosma_context();
 
     void register_state(MPI_Comm comm, 
-                        const Strategy& strategy);
+                        const Strategy strategy);
 
     memory_pool<Scalar>& get_memory_pool();
 #ifdef COSMA_HAVE_GPU

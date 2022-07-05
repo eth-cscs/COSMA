@@ -28,7 +28,7 @@ namespace cosma {
 class communicator {
   public:
     communicator() = default;
-    communicator(const Strategy *strategy, MPI_Comm comm);
+    communicator(const Strategy strategy, MPI_Comm comm);
     ~communicator();
 
     /* In each communication step, processors are split and the communication is
@@ -239,7 +239,7 @@ class communicator {
     static int rank_outside_ring(Interval &P, int div, int off, int gp);
 
     // returns the current strategy
-    const Strategy* get_strategy();
+    const Strategy get_strategy();
 
   protected:
     // hierarchy of communicators used throughout the algorithm
@@ -251,7 +251,7 @@ class communicator {
     std::vector<ncclComm_t> nccl_comm_subproblem_;
 #endif
     int rank_;
-    const Strategy *strategy_;
+    const Strategy strategy_;
     std::vector<int> step_to_comm_index_;
     MPI_Comm full_comm_ = MPI_COMM_NULL;
     int comm_size_ = 0;

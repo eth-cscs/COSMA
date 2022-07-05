@@ -179,7 +179,7 @@ When running `cmake` for COSMA, make sure to specify `-DCOSMA_WITH_NCCL=ON` or `
     # - RCCL_ROOT_DIR: Base directory where all RCCL components are found
     # - RCCL_INCLUDE_DIR: Directory where RCCL header is found
     # - RCCL_LIB_DIR: Directory where RCCL library is found
-    cmake -DCOSMA_BLAS=CUDA -DCOSMA_SCALAPACK=MKL -DCOSMA_WITH_RCCL=ON ..
+    cmake -DCOSMA_BLAS=CUDA -DCOSMA_SCALAPACK=MKL -DCOSMA_WITH_NCCL=ON ..
 ```
 ### Using GPU-aware MPI
 

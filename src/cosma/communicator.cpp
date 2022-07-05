@@ -11,11 +11,11 @@
 namespace cosma {
 bool communicator::use_busy_waiting = true;
 
-communicator::communicator(const Strategy *strategy, 
+communicator::communicator(const Strategy strategy, 
                            MPI_Comm comm)
     : strategy_(strategy) {
 
-    use_busy_waiting = strategy_->use_busy_waiting;
+    use_busy_waiting = strategy_.use_busy_waiting;
 
     MPI_Comm_rank(comm, &rank_);
     // rank_ = reordered_rank(rank_);
@@ -23,14 +23,14 @@ communicator::communicator(const Strategy *strategy,
     // check if the reordered rank belongs 
     // to this communicator
     assert(rank_ < comm_size_);
-    using_reduced_comm_ = comm_size_ != strategy->P;
-    is_idle_ = rank_ >= strategy->P;
+    using_reduced_comm_ = comm_size_ != strategy.P;
+    is_idle_ = rank_ >= strategy.P;
 
     if (using_reduced_comm_) {
         MPI_Group group;
         MPI_Comm_group(comm, &group);
         std::vector<int> exclude_ranks;
-        for (int i = strategy->P; i < comm_size_; ++i) {
+        for (int i = strategy.P; i < comm_size_; ++i) {
             // exclude_ranks.push_back(reordered_rank(i));
             exclude_ranks.push_back(i);
         }
@@ -58,18 +58,18 @@ communicator::communicator(const Strategy *strategy,
         return;
     }
 
-    if (strategy_->topology) {
+    if (strategy_.topology) {
         add_topology();
     }
 
     create_communicators(full_comm_);
     // split_communicators(full_comm_);
 
-    step_to_comm_index_ = std::vector<int>(strategy_->n_steps());
+    step_to_comm_index_ = std::vector<int>(strategy_.n_steps());
     int idx = 0;
-    for (int i = 0; i < strategy_->n_steps(); ++i) {
+    for (int i = 0; i < strategy_.n_steps(); ++i) {
         step_to_comm_index_[i] = idx;
-        if (strategy_->parallel_step(i))
+        if (strategy_.parallel_step(i))
             idx++;
     }
 }
@@ -88,19 +88,19 @@ bool communicator::is_idle() { return is_idle_; }
 // weight of the edge is given by the amount of communicated data
 void communicator::get_topology_edges(std::vector<int> &dest,
                                       std::vector<int> &weight) {
-    int m = strategy_->m;
-    int n = strategy_->n;
-    int k = strategy_->k;
-    Interval P(0, strategy_->P - 1);
-    int n_steps = strategy_->n_steps();
+    int m = strategy_.m;
+    int n = strategy_.n;
+    int k = strategy_.k;
+    Interval P(0, strategy_.P - 1);
+    int n_steps = strategy_.n_steps();
 
     for (int step = 0; step < n_steps; ++step) {
-        m /= strategy_->divisor_m(step);
-        n /= strategy_->divisor_n(step);
-        k /= strategy_->divisor_k(step);
+        m /= strategy_.divisor_m(step);
+        n /= strategy_.divisor_n(step);
+        k /= strategy_.divisor_k(step);
 
-        if (strategy_->parallel_step(step)) {
-            int div = strategy_->divisor(step);
+        if (strategy_.parallel_step(step)) {
+            int div = strategy_.divisor(step);
             int partition_idx = P.subinterval_index(div, rank_);
             Interval newP = P.subinterval(div, partition_idx);
             int group, offset;
@@ -114,9 +114,9 @@ void communicator::get_topology_edges(std::vector<int> &dest,
                 dest.push_back(neighbor);
 
                 int communication_size = 0;
-                if (strategy_->split_n(step))
+                if (strategy_.split_n(step))
                     communication_size = m * k / newP.length();
-                else if (strategy_->split_m(step))
+                else if (strategy_.split_m(step))
                     communication_size = k * n / newP.length();
                 else
                     communication_size = m * n / newP.length();
@@ -234,12 +234,12 @@ int communicator::rank_outside_ring(Interval &P, int div, int off, int i) {
 
 void communicator::split_communicators(MPI_Comm comm) {
     // MPI_Comm_group(comm, &comm_group);
-    Interval P(0, strategy_->P - 1);
+    Interval P(0, strategy_.P - 1);
     // iterate through all steps and for each parallel
     // step, create a suitable subcommunicator
-    for (int step = 0; step < strategy_->n_steps(); ++step) {
-        if (strategy_->parallel_step(step)) {
-            int div = strategy_->divisor(step);
+    for (int step = 0; step < strategy_.n_steps(); ++step) {
+        if (strategy_.parallel_step(step)) {
+            int div = strategy_.divisor(step);
             int partition_idx = P.subinterval_index(div, rank_);
             Interval newP = P.subinterval(div, partition_idx);
             int group, offset;
@@ -281,13 +281,13 @@ MPI_Comm create_comm(MPI_Comm& comm, std::vector<int>& ranks) {
 
 void communicator::create_communicators(MPI_Comm comm) {
     // MPI_Comm_group(comm, &comm_group);
-    Interval P(0, strategy_->P - 1);
+    Interval P(0, strategy_.P - 1);
 
     // iterate through all steps and for each parallel
     // step, create a suitable subcommunicator
-    for (int step = 0; step < strategy_->n_steps(); ++step) {
-        if (strategy_->parallel_step(step)) {
-            int div = strategy_->divisor(step);
+    for (int step = 0; step < strategy_.n_steps(); ++step) {
+        if (strategy_.parallel_step(step)) {
+            int div = strategy_.divisor(step);
             int partition_idx = P.subinterval_index(div, rank_);
             Interval newP = P.subinterval(div, partition_idx);
             int group, offset;
@@ -373,7 +373,7 @@ void communicator::copy(Interval &P,
     MPI_Comm comm = active_comm(step);
     two_sided_communicator::copy(comm,
                                  rank(),
-                                 strategy_->divisor(step),
+                                 strategy_.divisor(step),
                                  P,
                                  in,
                                  out,
@@ -399,7 +399,7 @@ void communicator::reduce(Interval &P,
     MPI_Comm comm = active_comm(step);
     two_sided_communicator::reduce(comm,
                                    rank(),
-                                   strategy_->divisor(step),
+                                   strategy_.divisor(step),
                                    P,
                                    in,  // LC
                                    out, // C
@@ -441,7 +441,7 @@ void communicator::overlap_comm_and_comp(cosma_context<Scalar> *ctx,
                                                   beta);
 }
 
-const Strategy* communicator::get_strategy() {
+const Strategy communicator::get_strategy() {
     return strategy_;
 }
 
