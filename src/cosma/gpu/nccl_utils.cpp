@@ -57,7 +57,7 @@ void cosma::gpu::nccl_copy(
     auto nccl_comm = ctx->get_cosma_comm()->active_nccl_comm(step);
 
     int rank = ctx->get_cosma_comm()->rank();
-    int div = ctx->get_cosma_comm()->get_strategy()->divisor(step);
+    int div = ctx->get_cosma_comm()->get_strategy().divisor(step);
 
     int gp, off;
     std::tie(gp, off) = P.locate_in_subinterval(div, rank);
@@ -154,7 +154,7 @@ void cosma::gpu::nccl_reduce(
     auto nccl_comm = ctx->get_cosma_comm()->active_nccl_comm(step);
 
     int rank = ctx->get_cosma_comm()->rank();
-    int div = ctx->get_cosma_comm()->get_strategy()->divisor(step);
+    int div = ctx->get_cosma_comm()->get_strategy().divisor(step);
 
     // int div = strategy_->divisor(step);
     // MPI_Comm subcomm = active_comm(step);

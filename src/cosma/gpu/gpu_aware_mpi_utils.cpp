@@ -22,7 +22,7 @@ void cosma::gpu::gpu_aware_mpi_copy(
     auto mpi_comm = ctx->get_cosma_comm()->active_comm(step);
 
     int rank = ctx->get_cosma_comm()->rank();
-    int div = ctx->get_cosma_comm()->get_strategy()->divisor(step);
+    int div = ctx->get_cosma_comm()->get_strategy().divisor(step);
 
     int gp, off;
     std::tie(gp, off) = P.locate_in_subinterval(div, rank);
@@ -129,7 +129,7 @@ void cosma::gpu::gpu_aware_mpi_reduce(
     auto mpi_comm = ctx->get_cosma_comm()->active_comm(step);
 
     int rank = ctx->get_cosma_comm()->rank();
-    int div = ctx->get_cosma_comm()->get_strategy()->divisor(step);
+    int div = ctx->get_cosma_comm()->get_strategy().divisor(step);
 
     // int div = strategy_->divisor(step);
     // MPI_Comm subcomm = active_comm(step);
