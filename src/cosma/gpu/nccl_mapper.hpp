@@ -34,6 +34,16 @@ inline ncclDataType_t nccl_mapper<float>::getType() {
   return ncclFloat;
 }
 
+template <>
+inline ncclDataType_t nccl_mapper<std::complex<double>>::getType() {
+  return ncclDouble;
+}
+
+template <>
+inline ncclDataType_t nccl_mapper<std::complex<float>>::getType() {
+  return ncclFloat;
+}
+
 // Removes const qualifier
 //
 template <typename Scalar>

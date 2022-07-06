@@ -377,9 +377,6 @@ void multiply(cosma_context<Scalar> *ctx,
         if (gpu_aware_mpi_enabled || nccl_enabled) {
             copy_c_back = !(step > 0 && strategy.parallel_step(step-1) && strategy.split_k(step-1));
         }
-        if (nccl_enabled) {
-            copy_c_back = copy_c_back || is_complex<Scalar>();
-        }
 
         local_multiply(ctx,
                        matrixA.current_matrix(),
@@ -752,26 +749,15 @@ void parallel(cosma_context<Scalar> *ctx,
     if (strategy.split_m(step) || strategy.split_n(step)) {
         // copy the matrix that wasn't divided in this step
 #ifdef COSMA_WITH_NCCL
-        if (!is_complex<Scalar>()) { // && strategy.final_step(step+1)) {
-            cosma::gpu::nccl_copy(ctx,
-                                  P,
-                                  original_matrix,
-                                  expanded_matrix,
-                                  reshuffle_buffer,
-                                  size_before_expansion,
-                                  total_before_expansion,
-                                  new_size,
-                                  step);
-        } else {
-            comm->copy(P,
-                      original_matrix,
-                      expanded_matrix,
-                      reshuffle_buffer,
-                      size_before_expansion,
-                      total_before_expansion,
-                      new_size,
-                      step);
-        }
+        cosma::gpu::nccl_copy(ctx,
+                              P,
+                              original_matrix,
+                              expanded_matrix,
+                              reshuffle_buffer,
+                              size_before_expansion,
+                              total_before_expansion,
+                              new_size,
+                              step);
 #elif COSMA_WITH_GPU_AWARE_MPI
         cosma::gpu::gpu_aware_mpi_copy(
                               ctx,
@@ -918,38 +904,22 @@ void parallel(cosma_context<Scalar> *ctx,
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
         Scalar *reduce_buffer = expanded_mat.reduce_buffer_ptr();
-#ifdef COSMA_WITH_NCCL
-        if (!is_complex<Scalar>()) { // && strategy.final_step(step+1)) {
-            bool copy_c_back = !strategy.final_step(step+1);
-            cosma::gpu::nccl_reduce(ctx,
-                                    P,
-                                    expanded_matrix,
-                                    original_matrix,
-                                    reshuffle_buffer,
-                                    reduce_buffer,
-                                    size_before_expansion,
-                                    total_before_expansion,
-                                    size_after_expansion,
-                                    total_after_expansion,
-                                    beta,
-                                    step,
-                                    copy_c_back);
-        } else {
-            comm->reduce(P,
-                        expanded_matrix,
-                        original_matrix,
-                        reshuffle_buffer,
-                        reduce_buffer,
-                        size_before_expansion,
-                        total_before_expansion,
-                        size_after_expansion,
-                        total_after_expansion,
-                        alpha,
-                        beta,
-                        step);
-        }
-#elif COSMA_WITH_GPU_AWARE_MPI
         bool copy_c_back = !strategy.final_step(step+1);
+#ifdef COSMA_WITH_NCCL
+        cosma::gpu::nccl_reduce(ctx,
+                                P,
+                                expanded_matrix,
+                                original_matrix,
+                                reshuffle_buffer,
+                                reduce_buffer,
+                                size_before_expansion,
+                                total_before_expansion,
+                                size_after_expansion,
+                                total_after_expansion,
+                                beta,
+                                step,
+                                copy_c_back);
+#elif COSMA_WITH_GPU_AWARE_MPI
         cosma::gpu::gpu_aware_mpi_reduce(
                                 ctx,
                                 P,

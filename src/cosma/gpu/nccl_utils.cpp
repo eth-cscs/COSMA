@@ -101,9 +101,14 @@ void cosma::gpu::nccl_copy(
 
     PE(multiply_communication_reduce);
     auto nccl_type = nccl_mapper<Scalar>::getType();
-    ncclAllGather(d_send_pointer,
-            d_receive_pointer,
-            max_block_size,
+    int block_size = max_block_size;
+    if (is_complex<Scalar>()) {
+        block_size *= 2;
+    }
+
+    ncclAllGather(reinterpret_cast<void*>(d_send_pointer),
+            reinterpret_cast<void*>(d_receive_pointer),
+            block_size,
             nccl_type,
             nccl_comm,
             stream);
@@ -249,9 +254,13 @@ void cosma::gpu::nccl_reduce(
 
     PE(multiply_communication_reduce);
     auto nccl_type = nccl_mapper<Scalar>::getType();
-    ncclReduceScatter(d_reshuffle_buffer,
-            d_receive_pointer,
-            max_block_size,
+    int block_size = max_block_size;
+    if (is_complex<Scalar>()) {
+        block_size *= 2;
+    }
+    ncclReduceScatter(reinterpret_cast<void*>(d_reshuffle_buffer),
+            reinterpret_cast<void*>(d_receive_pointer),
+            block_size,
             nccl_type,
             ncclSum,
             nccl_comm,
@@ -304,6 +313,36 @@ template void cosma::gpu::nccl_reduce<double>(
             size_t step,
             bool copy_c_back);
 
+template void cosma::gpu::nccl_reduce<std::complex<float>>(
+            cosma_context<std::complex<float>> *ctx,
+            Interval &P,
+            std::complex<float> *LC, // expanded_matrix
+            std::complex<float> *C,  // original matrix
+            std::complex<float> *reshuffle_buffer,
+            std::complex<float> *reduce_buffer,
+            std::vector<std::vector<int>> &c_current,
+            std::vector<int> &c_total_current,
+            std::vector<std::vector<int>> &c_expanded,
+            std::vector<int> &c_total_expanded,
+            std::complex<float> beta,
+            size_t step,
+            bool copy_c_back);
+
+template void cosma::gpu::nccl_reduce<std::complex<double>>(
+            cosma_context<std::complex<double>> *ctx,
+            Interval &P,
+            std::complex<double> *LC, // expanded_matrix
+            std::complex<double> *C,  // original matrix
+            std::complex<double> *reshuffle_buffer,
+            std::complex<double> *reduce_buffer,
+            std::vector<std::vector<int>> &c_current,
+            std::vector<int> &c_total_current,
+            std::vector<std::vector<int>> &c_expanded,
+            std::vector<int> &c_total_expanded,
+            std::complex<double> beta,
+            size_t step,
+            bool copy_c_back);
+
 // template instantiation for nccl_copy
 template void cosma::gpu::nccl_copy<float>(
             cosma_context<float> *ctx,
@@ -315,13 +354,33 @@ template void cosma::gpu::nccl_copy<float>(
             std::vector<int> &total_before,
             int total_after,
             size_t step);
-
 template void cosma::gpu::nccl_copy<double>(
             cosma_context<double> *ctx,
             Interval &P,
             double * in, // original_matrix
             double * out,  // expanded matrix
             double *reshuffle_buffer,
+            std::vector<std::vector<int>>& size_before,
+            std::vector<int> &total_before,
+            int total_after,
+            size_t step);
+template void cosma::gpu::nccl_copy<std::complex<float>>(
+            cosma_context<std::complex<float>> *ctx,
+            Interval &P,
+            std::complex<float> * in, // original_matrix
+            std::complex<float> * out,  // expanded matrix
+            std::complex<float> *reshuffle_buffer,
+            std::vector<std::vector<int>>& size_before,
+            std::vector<int> &total_before,
+            int total_after,
+            size_t step);
+
+template void cosma::gpu::nccl_copy<std::complex<double>>(
+            cosma_context<std::complex<double>> *ctx,
+            Interval &P,
+            std::complex<double> * in, // original_matrix
+            std::complex<double> * out,  // expanded matrix
+            std::complex<double> *reshuffle_buffer,
             std::vector<std::vector<int>>& size_before,
             std::vector<int> &total_before,
             int total_after,

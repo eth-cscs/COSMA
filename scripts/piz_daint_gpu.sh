@@ -22,6 +22,7 @@ export NCCL_IB_DISABLE=1
 #
 export CRAYPE_LINK_TYPE=dynamic
 export CRAY_CUDA_MPS=1
+export MPICH_RDMA_ENABLED_CUDA=1
 
 # Enable threading
 # 
