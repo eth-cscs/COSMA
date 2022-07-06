@@ -82,7 +82,7 @@ void cosma::gpu::gpu_aware_mpi_copy(
             mpi_comm);
 
     // make sure MPI has finished
-    gpu::runtime_api::device_synchronize();
+    // gpu::runtime_api::device_synchronize();
 
     PE(multiply_communication_other);
     int index = 0;
