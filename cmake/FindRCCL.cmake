@@ -34,7 +34,7 @@ if(NOT DEFINED ENV{RCCL_ROOT_DIR} AND NOT DEFINED ENV{ROCM_PATH})
     set(RCCL_ROOT_DIR "/opt/rocm")
 endif()
 
-find_path(RCCL_INCLUDE_DIR
+find_path(RCCL_INCLUDE_DIRS
     NAMES rccl.h
     HINTS
     ${RCCL_INCLUDE_DIR}
@@ -50,14 +50,14 @@ else()
     list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 ".so" )
 endif()
 
-find_library(RCCL_LIBRARY
+find_library(RCCL_LIBRARIES
     NAMES ${RCCL_LIBNAME}
     HINTS
     ${RCCL_LIB_DIR}
     ${RCCL_ROOT_DIR}/lib)
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(RCCL DEFAULT_MSG RCCL_INCLUDE_DIR RCCL_LIBRARY)
+find_package_handle_standard_args(RCCL DEFAULT_MSG RCCL_INCLUDE_DIRS RCCL_LIBRARIES)
 
 if (RCCL_FOUND)
     set(RCCL_HEADER_FILE "${RCCL_INCLUDE_DIR}/rccl.h")
@@ -69,8 +69,6 @@ if (RCCL_FOUND)
             RCCL_MAJOR_VERSION ${RCCL_MAJOR_VERSION_DEFINED})
         message(STATUS "RCCL_MAJOR_VERSION: ${RCCL_MAJOR_VERSION}")
     endif()
-    set(RCCL_INCLUDE_DIRS ${RCCL_INCLUDE_DIR})
-    set(RCCL_LIBRARIES ${RCCL_LIBRARY})
     message(STATUS "Found RCCL (include: ${RCCL_INCLUDE_DIRS}, library: ${RCCL_LIBRARIES})")
     mark_as_advanced(RCCL_ROOT_DIR RCCL_INCLUDE_DIRS RCCL_LIBRARIES)
 endif()
