@@ -14,6 +14,18 @@
 # install RCCL in the same location as the CUDA toolkit.
 # See https://github.com/caffe2/caffe2/issues/1601
 
+if(DEFINED ENV{RCCL_ROOT_DIR})
+    set(RCCL_ROOT_DIR $ENV{RCCL_ROOT_DIR})
+endif()
+
+if(DEFINED ENV{RCCL_INCLUDE_DIR})
+    set(RCCL_INCLUDE_DIR $ENV{RCCL_INCLUDE_DIR})
+endif()
+
+if(DEFINED ENV{RCCL_LIB_DIR})
+    set(RCCL_LIB_DIR $ENV{RCCL_LIB_DIR})
+endif()
+
 if(NOT DEFINED ENV{RCCL_ROOT_DIR} AND DEFINED ENV{ROCM_PATH})
     set(RCCL_ROOT_DIR $ENV{ROCM_PATH} CACHE PATH "Folder contains AMD RCCL")
 endif()
