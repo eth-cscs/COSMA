@@ -41,9 +41,13 @@ find_path(RCCL_INCLUDE_DIR
     ${RCCL_ROOT_DIR}/include)
 
 set(RCCL_LIBNAME "rccl")
+
 if (DEFINED ENV{USE_STATIC_RCCL})
     message(STATUS "USE_STATIC_RCCL detected. Linking against static RCCL library")
-    set(RCCL_LIBNAME "librccl_static.a")
+    set(RCCL_LIBNAME "rccl_static")
+    list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 ".a" )
+else()
+    list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 ".so" )
 endif()
 
 find_library(RCCL_LIBRARY
