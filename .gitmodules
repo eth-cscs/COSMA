@@ -4,9 +4,6 @@
 [submodule "libs/gtest_mpi"]
 	path = libs/gtest_mpi
 	url = https://github.com/teonnik/gtest_mpi.git
-[submodule "libs/semiprof"]
-	path = libs/semiprof
-	url = https://github.com/kabicm/semiprof
 [submodule "libs/COSTA"]
 	path = libs/COSTA
 	url = https://github.com/eth-cscs/COSTA
