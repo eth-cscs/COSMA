@@ -640,6 +640,80 @@ INSTANTIATE_TEST_CASE_P(
             0, 0, // matrix A
             0, 0, // matrix B
             0, 0  // matrix C
+        },
+
+        cosma::pxgemm_params<double>{
+            // matrix dimensions
+            43417, 217, // matrix A
+            43417, 217, // matrix B
+            217, 217, // matrix C
+
+            // block sizes
+            169, 108, // matrix A
+            169, 108, // matrix B
+            108, 108, // matrix C
+
+            // submatrices ij
+            1, 1, // matrix A
+            1, 1, // matrix B
+            1, 1, // matrix C
+
+            // problem size
+            217, 217, 43417,
+
+            // transpose flags
+            'T', 'N',
+
+            // scaling flags
+            1.0, 0.0,
+
+            // leading dims
+            54272, 54272, 1088,
+
+            // proc grid
+            8, 1, 'R',
+
+            // proc srcs
+            0, 0, // matrix A
+            0, 0, // matrix B
+            0, 0  // matrix C
+        },
+
+        cosma::pxgemm_params<double>{
+            // matrix dimensions
+            43176, 217, // matrix A
+            43176, 217, // matrix B
+            2176, 217, // matrix C
+
+            // block sizes
+            1696, 108, // matrix A
+            1696, 108, // matrix B
+            1088, 108, // matrix C
+
+            // submatrices ij
+            1, 1, // matrix A
+            1, 1, // matrix B
+            1, 1, // matrix C
+
+            // problem size
+            217, 217, 43176,
+
+            // transpose flags
+            'T', 'N',
+
+            // scaling flags
+            1.0, 0.0,
+
+            // leading dims
+            54272, 54272, 1088,
+
+            // proc grid
+            8, 1, 'R',
+
+            // proc srcs
+            0, 0, // matrix A
+            0, 0, // matrix B
+            0, 0  // matrix C
         }
     ));
 

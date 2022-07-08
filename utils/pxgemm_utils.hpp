@@ -173,6 +173,7 @@ bool validate_results(std::vector<T>& v1, std::vector<T>& v2, double epsilon=1e-
         if (std::abs(v1[i] - v2[i]) / std::max(std::max(lower_threshold, (double) std::abs(v1[i])), (double) std::abs(v2[i])) > epsilon) {
             std::cout << "epsilon = " << epsilon << ", v1 = " << v1[i] << ", which is != " << v2[i] << std::endl;
             correct = false;
+            return correct;
         }
     }
     return correct;
