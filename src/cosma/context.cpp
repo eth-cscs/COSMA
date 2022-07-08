@@ -102,10 +102,13 @@ void cosma_context<Scalar>::register_state(MPI_Comm comm,
     }
 
     // if this rank is not taking part in multiply, return
-    if (prev_cosma_comm->is_idle()) return;
+    // if (prev_cosma_comm->is_idle()) return;
 
 #ifdef COSMA_HAVE_GPU
-    if (memory_pool_.resized 
+    if (
+            prev_cosma_comm->is_idle()
+                ||
+            memory_pool_.resized 
                 || 
             !same_comm
                 ||

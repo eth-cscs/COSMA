@@ -64,7 +64,7 @@ void cosma::gpu::gpu_aware_mpi_copy(
 
     PL();
 
-    PE(multiply_communication_reduce);
+    PE(multiply_communication_copy);
     auto mpi_type = mpi_mapper<Scalar>::getType();
 
     // since it's not possible to pass the stream to MPI
@@ -81,8 +81,7 @@ void cosma::gpu::gpu_aware_mpi_copy(
             mpi_type,
             mpi_comm);
 
-    // make sure MPI has finished
-    gpu::runtime_api::device_synchronize();
+    PL();
 
     PE(multiply_communication_other);
     int index = 0;
@@ -102,7 +101,6 @@ void cosma::gpu::gpu_aware_mpi_copy(
             block_offset[rank] += b_size;
         }
     }
-    PL();
 
     // wait for the result on the host
     gpu::runtime_api::stream_synchronize(stream);
@@ -212,10 +210,6 @@ void cosma::gpu::gpu_aware_mpi_reduce(
     }
 
     Scalar *receive_pointer = beta != Scalar{0} ? reduce_buffer : C;
-    PL();
-
-    PE(multiply_communication_reduce);
-    auto mpi_type = mpi_mapper<Scalar>::getType();
 
     // since it's not possible to pass the stream to MPI
     // to perform the collective on that stream
@@ -223,24 +217,24 @@ void cosma::gpu::gpu_aware_mpi_reduce(
     // before MPI function is called
     gpu::runtime_api::stream_synchronize(stream);
 
+    PL();
+
+    PE(multiply_communication_reduce);
+    auto mpi_type = mpi_mapper<Scalar>::getType();
     MPI_Reduce_scatter_block(d_reshuffle_buffer,
             d_receive_pointer,
             max_block_size,
             mpi_type,
             MPI_SUM,
             mpi_comm);
+    PL();
 
-    // make sure MPI has finished
-    // gpu::runtime_api::device_synchronize();
-
+    PE(multiply_communication_other);
     gpu::copy_to_host_async(d_receive_pointer, receive_pointer, recvcnts[gp], stream);
 
     // wait for the result on the host
     gpu::runtime_api::stream_synchronize(stream);
 
-    PL();
-
-    PE(multiply_communication_other);
     if (beta != Scalar{0}) {
         // sum up receiving_buffer with C
         for (int el = 0; el < recvcnts[gp]; ++el) {

@@ -99,7 +99,7 @@ void cosma::gpu::nccl_copy(
 
     PL();
 
-    PE(multiply_communication_reduce);
+    PE(multiply_communication_copy);
     auto nccl_type = nccl_mapper<Scalar>::getType();
     int block_size = max_block_size;
     if (is_complex<Scalar>()) {
@@ -113,7 +113,6 @@ void cosma::gpu::nccl_copy(
             nccl_comm,
             stream);
 
-    PE(multiply_communication_other);
     int index = 0;
     std::vector<int> block_offset(div);
     // order all first sequential parts of all groups first and so on..
@@ -131,7 +130,6 @@ void cosma::gpu::nccl_copy(
             block_offset[rank] += b_size;
         }
     }
-    PL();
 
     // wait for the result on the host
     gpu::runtime_api::stream_synchronize(stream);
@@ -269,7 +267,6 @@ void cosma::gpu::nccl_reduce(
 
     // wait for the result on the host
     gpu::runtime_api::stream_synchronize(stream);
-
     PL();
 
     PE(multiply_communication_other);
