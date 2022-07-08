@@ -165,7 +165,7 @@ COSMA is able to take advantage of fast GPU-to-GPU interconnects on multi-gpu sy
 
 ### Using `NCCL/RCCL` Libraries
 
-When running `cmake` for COSMA, make sure to specify `-DCOSMA_WITH_NCCL=ON` or `-DCOSMA_WITH_RCCL=ON`, e.g. by doing:
+When running `cmake` for COSMA, make sure to specify `-DCOSMA_WITH_NCCL=ON`, e.g. by doing:
 ```bash
     # NVIDIA GPUs
     # this will looks for NCCL library in the following environment variables:
