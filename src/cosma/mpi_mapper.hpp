@@ -27,12 +27,12 @@ inline MPI_Datatype mpi_mapper<float>::getType() {
 
 template <>
 inline MPI_Datatype mpi_mapper<std::complex<float>>::getType() {
-  return MPI_CXX_FLOAT_COMPLEX;
+  return MPI_C_FLOAT_COMPLEX;
 }
 
 template <>
 inline MPI_Datatype mpi_mapper<std::complex<double>>::getType() {
-  return MPI_CXX_DOUBLE_COMPLEX;
+  return MPI_C_DOUBLE_COMPLEX;
 }
 
 // Removes const qualifier
