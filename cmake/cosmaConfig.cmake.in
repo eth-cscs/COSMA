@@ -38,7 +38,6 @@ if(NOT TARGET cosma::cosma)
             else()
                 find_package(hip)
         endif()
-    endif()
     elseif (${COSMA_BLAS} STREQUAL "OPENBLAS")
         find_package(OpenBLAS)
         set_target_properties(openblas PROPERTIES 
