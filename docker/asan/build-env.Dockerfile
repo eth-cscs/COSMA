@@ -12,7 +12,7 @@ ENV MPICH_VERSION ${MPICH_VERSION}
 # Install basic tools
 RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     software-properties-common \
-    build-essential gfortran pkg-config gcc mono-mcs \
+    build-essential gfortran pkg-config \
     git tar wget curl && \
     rm -rf /var/lib/apt/lists/*
 
