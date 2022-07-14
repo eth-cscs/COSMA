@@ -4,6 +4,7 @@
 /docker export-ignore
 
 *.DS_Store export-ignore
+*.gitattributes export-ignore
 /*.clang-format export-ignore
 *.gitignore export-ignore
 /_config.yml export-ignore
