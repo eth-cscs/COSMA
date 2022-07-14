@@ -1,0 +1,12 @@
+*.git export-ignore
+*.github export-ignore
+/ci export-ignore
+/docker export-ignore
+
+*.DS_Store export-ignore
+/*.clang-format export-ignore
+*.gitignore export-ignore
+/_config.yml export-ignore
+/bors.toml export-ignore
+*.gitmodules export-ignore
+/.gitlab-ci.yml export-ignore
