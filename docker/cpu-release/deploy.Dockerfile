@@ -7,7 +7,7 @@ COPY . /COSMA
 
 RUN source /opt/intel/bin/compilervars.sh intel64 && \
     mkdir /COSMA/build && cd /COSMA/build && \
-    CC=mpicc CXX=mpicxx cmake .. \
+    CC=gcc-9 CXX=g++-9 cmake .. \
       -DCOSMA_WITH_TESTS=ON \
       -DCOSMA_BLAS=MKL \
       -DCOSMA_SCALAPACK=MKL \
