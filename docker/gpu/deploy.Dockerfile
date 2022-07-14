@@ -20,7 +20,7 @@ RUN mkdir /COSMA/build && cd /COSMA/build && \
       rm -rf /COSMA
 
 # Run linuxdeploy, and add a bunch of libs that are dlopen'ed by mkl
-RUN /root/libtree/libtree \
+RUN /root/opt/libtree/libtree \
       -d /root/COSMA.bundle/ \
       --chrpath \
       --strip \

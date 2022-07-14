@@ -20,7 +20,7 @@ RUN source /opt/intel/bin/compilervars.sh intel64 && \
 ENV MKL_LIB=/opt/intel/compilers_and_libraries/linux/mkl/lib/intel64
 
 # Run linuxdeploy, and add a bunch of libs that are dlopen'ed by mkl
-RUN /root/libtree/libtree --chrpath --strip -d /root/COSMA.bundle/ \
+RUN /root/opt/libtree/libtree --chrpath --strip -d /root/COSMA.bundle/ \
       /root/COSMA-build/bin/test.cosma \
       /root/COSMA-build/bin/test.mapper \
       /root/COSMA-build/bin/test.multiply \
