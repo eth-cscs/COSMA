@@ -20,7 +20,6 @@ ENV COSMA_MIN_LOCAL_DIMENSION=32
 # Install basic tools
 RUN apt-get update -qq && \
     apt-get install -qq -y --no-install-recommends \
-      chrpath \
       software-properties-common \
       build-essential gfortran pkg-config \
       git tar wget curl && \
@@ -62,6 +61,6 @@ RUN wget -qO - http://www.netlib.org/scalapack/scalapack-${NETLIB_SCALAPACK_VERS
 
 # Add deployment tooling
 RUN mkdir -p /opt/libtree && \
-    curl -Lfso /opt/libtree/libtree https://github.com/haampie/libtree/releases/download/v3.1.1/libtree_x86_64 && \
+    curl -Lfso /opt/libtree/libtree https://github.com/haampie/libtree/releases/download/v2.0.0/libtree_x86_64 && \
     chmod +x /opt/libtree/libtree
 
