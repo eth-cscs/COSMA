@@ -20,7 +20,7 @@ option(COSMA_WITH_INSTALL "Enable installation." ${MASTER_PROJECT})
 option(COSMA_WITH_PROFILING "Enable profiling." OFF)
 option(COSMA_WITH_NCCL "Use NCCL as communication backend." OFF)
 option(COSMA_WITH_GPU_AWARE_MPI "Use gpu-aware MPI for communication." OFF)
-option(BUILD_SHARED_LIBS "Build shared libraries." OFF)
+option(BUILD_SHARED_LIBS "Build shared libraries." ON)
 
 set(COSMA_BLAS "MKL" CACHE STRING
     "Blas backend. Can be MKL, OPENBLAS, CRAY_LIBSCI, BLIS, ATLAS, CUDA, ROCM or CUSTOM")
@@ -123,6 +123,14 @@ endif()
 # MPI
 find_package(MPI REQUIRED)
 adjust_mpiexec_flags()
+
+# OpenMP
+find_package(OpenMP COMPONENTS CXX REQUIRED)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
 
 # Bundled dependencies
 #
