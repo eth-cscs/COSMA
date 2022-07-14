@@ -11,6 +11,7 @@ ENV MPICH_VERSION ${MPICH_VERSION}
 
 # Install basic tools
 RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
+    chrpath \
     software-properties-common \
     build-essential gfortran pkg-config \
     git tar wget curl && \
