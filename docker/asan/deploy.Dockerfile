@@ -23,7 +23,7 @@ RUN mkdir /COSMA/build && cd /COSMA/build && \
       make install && \
       rm -rf /COSMA
 
-RUN /root/opt/libtree/libtree \
+RUN /opt/libtree/libtree \
       --chrpath \
       -d /root/COSMA.bundle/ \
       /root/COSMA-build/bin/test.cosma \
