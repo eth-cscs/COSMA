@@ -41,10 +41,20 @@ if(NOT TARGET cosma)
     endif()
 
     target_compile_features(cosma PUBLIC cxx_std_14)
-    target_link_libraries(cosma PUBLIC MPI::MPI_CXX
-                                       costa
-                                       ${BLAS_TARGET}
-    )
+
+    if (NOT GPU)
+        target_link_libraries(cosma PUBLIC MPI::MPI_CXX
+                                           costa
+                                    PRIVATE
+                                           ${BLAS_TARGET}
+        )
+    else()
+        target_link_libraries(cosma PUBLIC MPI::MPI_CXX
+                                           costa
+                                           ${BLAS_TARGET}
+        )
+    endif()
+
     if (COSMA_WITH_NCCL) 
         target_link_libraries(cosma PUBLIC ${NCCL_TARGET}
                                            ${GPU_TARGET}

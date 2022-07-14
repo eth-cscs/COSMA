@@ -12,7 +12,7 @@ COPY . /COSMA
 ENV COSMA_MIN_LOCAL_DIMENSION=32
 
 RUN mkdir /COSMA/build && cd /COSMA/build && \
-    CC=mpicc CXX=mpicxx cmake .. \
+    CC=gcc-9 CXX=g++-9 cmake .. \
       -DCOSMA_WITH_TESTS=ON \
       -DCOSMA_BLAS=OPENBLAS \
       -DCOSMA_SCALAPACK=CUSTOM \
@@ -23,7 +23,7 @@ RUN mkdir /COSMA/build && cd /COSMA/build && \
       make install && \
       rm -rf /COSMA
 
-RUN /root/libtree/libtree \
+RUN /opt/libtree/libtree \
       --chrpath \
       -d /root/COSMA.bundle/ \
       /root/COSMA-build/bin/test.cosma \

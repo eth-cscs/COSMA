@@ -8,7 +8,7 @@ ARG BLAS
 COPY . /COSMA
 
 RUN mkdir /COSMA/build && cd /COSMA/build && \
-    CC=mpicc CXX=mpicxx cmake .. \
+    CC=gcc-9 CXX=g++-9 cmake .. \
       -DCOSMA_WITH_TESTS=ON \
       -DCUDA_PATH=/usr/local/cuda \
       -DCOSMA_BLAS=CUDA \
@@ -20,7 +20,7 @@ RUN mkdir /COSMA/build && cd /COSMA/build && \
       rm -rf /COSMA
 
 # Run linuxdeploy, and add a bunch of libs that are dlopen'ed by mkl
-RUN /root/libtree/libtree \
+RUN /opt/libtree/libtree \
       -d /root/COSMA.bundle/ \
       --chrpath \
       --strip \

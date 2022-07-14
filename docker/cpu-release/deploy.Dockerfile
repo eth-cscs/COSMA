@@ -7,7 +7,7 @@ COPY . /COSMA
 
 RUN source /opt/intel/bin/compilervars.sh intel64 && \
     mkdir /COSMA/build && cd /COSMA/build && \
-    CC=mpicc CXX=mpicxx cmake .. \
+    CC=gcc-9 CXX=g++-9 cmake .. \
       -DCOSMA_WITH_TESTS=ON \
       -DCOSMA_BLAS=MKL \
       -DCOSMA_SCALAPACK=MKL \
@@ -20,7 +20,7 @@ RUN source /opt/intel/bin/compilervars.sh intel64 && \
 ENV MKL_LIB=/opt/intel/compilers_and_libraries/linux/mkl/lib/intel64
 
 # Run linuxdeploy, and add a bunch of libs that are dlopen'ed by mkl
-RUN /root/libtree/libtree --chrpath --strip -d /root/COSMA.bundle/ \
+RUN /opt/libtree/libtree --chrpath --strip -d /root/COSMA.bundle/ \
       /root/COSMA-build/bin/test.cosma \
       /root/COSMA-build/bin/test.mapper \
       /root/COSMA-build/bin/test.multiply \
