@@ -425,7 +425,7 @@ Cite as:
 ## Questions?
 
 For questions, feel free to contact us, and we will soon get back to you:
-- For questions regarding the implementation, contact Marko Kabic (marko.kabic@cscs.ch) or Teodor Nikolov (tnikolov@cscs.ch).
+- For questions regarding the implementation, contact Marko Kabic (marko.kabic@inf.ethz.ch), Teodor Nikolov (tnikolov@cscs.ch) or Simon Pintarelli (simon.pintarelli@cscs.ch).
 - For questions regarding the theory, contact Grzegorz Kwasniewski (gkwasnie@inf.ethz.ch).
 
 > If you need any help with the integration of COSMA into your library, we will be more than happy to help you!
