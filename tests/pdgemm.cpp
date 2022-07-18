@@ -714,6 +714,193 @@ INSTANTIATE_TEST_CASE_P(
             0, 0, // matrix A
             0, 0, // matrix B
             0, 0  // matrix C
+        },
+
+	// CP2K runs from H2O-sos-mp2-lr
+        cosma::pxgemm_params<double>{
+            // matrix dimensions
+            23, 23, // matrix A
+            23, 23, // matrix B
+            23, 23, // matrix C
+
+            // block sizes
+            12, 12, // matrix A
+            12, 12, // matrix B
+            12, 12, // matrix C
+
+            // submatrices ij
+            1, 1, // matrix A
+            1, 1, // matrix B
+            1, 1, // matrix C
+
+            // problem size
+            23, 23, 4,
+
+            // transpose flags
+            'N', 'T',
+
+            // scaling flags
+            1.0, 0.0,
+
+            // leading dims
+            12, 12, 12,
+
+            // proc grid
+            2, 1, 'C',
+
+            // proc srcs
+            0, 0, // matrix A
+            0, 0, // matrix B
+            0, 0  // matrix C
+        },
+
+        cosma::pxgemm_params<double>{
+            // matrix dimensions
+            23, 23, // matrix A
+            23, 23, // matrix B
+            23, 23, // matrix C
+
+            // block sizes
+            12, 12, // matrix A
+            12, 12, // matrix B
+            12, 12, // matrix C
+
+            // submatrices ij
+            1, 1, // matrix A
+            1, 1, // matrix B
+            1, 1, // matrix C
+
+            // problem size
+            23, 23, 4,
+
+            // transpose flags
+            'N', 'T',
+
+            // scaling flags
+            1.0, -1.0,
+
+            // leading dims
+            12, 12, 12,
+
+            // proc grid
+            2, 1, 'C',
+
+            // proc srcs
+            0, 0, // matrix A
+            0, 0, // matrix B
+            0, 0  // matrix C
+        },
+
+        cosma::pxgemm_params<double>{
+            // matrix dimensions
+            83, 83, // matrix A
+            83, 83, // matrix B
+            83, 83, // matrix C
+
+            // block sizes
+            32, 32, // matrix A
+            32, 32, // matrix B
+            32, 32, // matrix C
+
+            // submatrices ij
+            1, 1, // matrix A
+            1, 1, // matrix B
+            1, 1, // matrix C
+
+            // problem size
+            83, 83, 83,
+
+            // transpose flags
+            'N', 'T',
+
+            // scaling flags
+            1.0, 0.0,
+
+            // leading dims
+            83, 83, 83,
+
+            // proc grid
+            1, 1, 'C',
+
+            // proc srcs
+            0, 0, // matrix A
+            0, 0, // matrix B
+            0, 0  // matrix C
+        },
+
+        cosma::pxgemm_params<double>{
+            // matrix dimensions
+            83, 83, // matrix A
+            83, 77, // matrix B
+            83, 77, // matrix C
+
+            // block sizes
+            32, 32, // matrix A
+            32, 32, // matrix B
+            32, 32, // matrix C
+
+            // submatrices ij
+            1, 1, // matrix A
+            1, 1, // matrix B
+            1, 1, // matrix C
+
+            // problem size
+            83, 77, 83,
+
+            // transpose flags
+            'T', 'N',
+
+            // scaling flags
+            1.0, 0.0,
+
+            // leading dims
+            83, 83, 83,
+
+            // proc grid
+            1, 1, 'C',
+
+            // proc srcs
+            0, 0, // matrix A
+            0, 0, // matrix B
+            0, 0  // matrix C
+        },
+
+        cosma::pxgemm_params<double>{
+            // matrix dimensions
+            83, 83, // matrix A
+            83, 77, // matrix B
+            83, 77, // matrix C
+
+            // block sizes
+            32, 32, // matrix A
+            32, 32, // matrix B
+            32, 32, // matrix C
+
+            // submatrices ij
+            1, 1, // matrix A
+            1, 1, // matrix B
+            1, 1, // matrix C
+
+            // problem size
+            83, 77, 83,
+
+            // transpose flags
+            'T', 'N',
+
+            // scaling flags
+            1.0, 0.0,
+
+            // leading dims
+            83, 83, 83,
+
+            // proc grid
+            1, 1, 'R',
+
+            // proc srcs
+            0, 0, // matrix A
+            0, 0, // matrix B
+            0, 0  // matrix C
         }
-    ));
+    )
+);
 
