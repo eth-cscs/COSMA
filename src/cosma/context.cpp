@@ -84,7 +84,6 @@ void cosma_context<Scalar>::register_state(MPI_Comm comm,
         PE(preprocessing_communicators);
         prev_cosma_comm = std::make_unique<cosma::communicator>(strategy, comm);
         PL();
-	std::cout << "Reseting memory pool in the context since not used before" << std::endl;
     } else {
         MPI_Comm prev_comm = prev_cosma_comm->full_comm();
         int comm_compare;
@@ -102,7 +101,9 @@ void cosma_context<Scalar>::register_state(MPI_Comm comm,
             prev_cosma_comm = std::make_unique<cosma::communicator>(strategy, comm);
             PL();
 
-	    // memory_pool_.reset();
+	    memory_pool_.unpin_all();
+	    memory_pool_.already_pinned = false;
+	    memory_pool_.resized = false;
         }
     }
 
@@ -119,12 +120,7 @@ void cosma_context<Scalar>::register_state(MPI_Comm comm,
                 &&
             strategy == prev_strategy
         ) {
-        // memory_pool_.already_pinned = true;
-	memory_pool_.unpin_all();
-        memory_pool_.already_pinned = false;
-        memory_pool_.resized = false;
-    } else {
-	memory_pool_.already_pinned = true;
+        memory_pool_.already_pinned = true;
     }
 #endif
 }

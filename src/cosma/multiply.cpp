@@ -250,6 +250,12 @@ void multiply(cosma_context<Scalar> *ctx,
         return;
     }
 
+    // register reusable objects in the context
+    ctx->register_state(comm, strategy);
+    if (ctx->get_cosma_comm()->is_idle()) {
+	return;
+    }
+
     Interval mi = Interval(0, strategy.m - 1);
     Interval ni = Interval(0, strategy.n - 1);
     Interval ki = Interval(0, strategy.k - 1);
@@ -276,24 +282,19 @@ void multiply(cosma_context<Scalar> *ctx,
     assert(matrixB.rank() == matrixC.rank());
     PL();
 
-    // register reusable objects in the context
-    ctx->register_state(comm, strategy);
-
-    if (!ctx->get_cosma_comm()->is_idle()) {
-        multiply(ctx,
-                 matrixA,
-                 matrixB,
-                 matrixC,
-                 mi,
-                 ni,
-                 ki,
-                 Pi,
-                 0,
-                 strategy,
-                 ctx->get_cosma_comm(),
-                 alpha,
-                 beta);
-    }
+    multiply(ctx,
+    	 matrixA,
+    	 matrixB,
+    	 matrixC,
+    	 mi,
+    	 ni,
+    	 ki,
+    	 Pi,
+    	 0,
+    	 strategy,
+    	 ctx->get_cosma_comm(),
+    	 alpha,
+    	 beta);
 
     // deallocate buffers used for communication
     // since its a stack allocator, we deallocate
