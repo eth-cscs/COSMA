@@ -292,7 +292,7 @@ void pxgemm(const char transa,
 #endif
 
     // first, we don't want to alloate the space, just to precompute
-    // the required memory size, so we active dry_run, which precomputes
+    // the required memory size, so we activate dry_run, which precomputes
     // everything but doesn't allocate anything yet
     bool dont_allocate = true;
     CosmaMatrix<T> A(std::move(mapper_a), rank_permutation[rank], dont_allocate);
@@ -365,23 +365,18 @@ void pxgemm(const char transa,
 
 #ifdef DEBUG
     if (rank == 0) {
-        auto reordered_vol = costa::communication_volume(scalapack_layout_a.grid, cosma_layout_a.grid);
-        reordered_vol += costa::communication_volume(scalapack_layout_b.grid, cosma_layout_b.grid);
+        auto reordered_vol = costa::communication_volume(scalapack_layout_a.grid, cosma_layout_a.grid, trans_a);
+        reordered_vol += costa::communication_volume(scalapack_layout_b.grid, cosma_layout_b.grid, trans_b);
         if (std::abs(beta) > 0) {
-            reordered_vol += costa::communication_volume(scalapack_layout_c.grid, cosma_layout_c.grid);
+            reordered_vol += costa::communication_volume(scalapack_layout_c.grid, cosma_layout_c.grid, 'N');
         }
-        reordered_vol += costa::communication_volume(cosma_layout_c.grid, scalapack_layout_c.grid);
+        reordered_vol += costa::communication_volume(cosma_layout_c.grid, scalapack_layout_c.grid, 'N');
 
         // std::cout << "Detailed comm volume: " << comm_vol << std::endl;
         // std::cout << "Detailed comm volume reordered: " << reordered_vol << std::endl;
 
-        auto comm_vol_total = comm_vol.total_volume();
         auto reordered_vol_total = reordered_vol.total_volume();
-        std::cout << "Initial comm volume = " << comm_vol_total << std::endl;
-        std::cout << "Reduced comm volume = " << reordered_vol_total << std::endl;
-        auto diff = (long long) comm_vol_total - (long long) reordered_vol_total;
-        std::cout << "Comm volume reduction [%] = " << 100.0 * diff / comm_vol_total << std::endl;
-
+        std::cout << "Comm volume [num_of_elements]= " << reordered_vol_total << std::endl;
     }
 #endif
 

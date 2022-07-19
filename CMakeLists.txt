@@ -22,6 +22,10 @@ option(COSMA_WITH_NCCL "Use NCCL as communication backend." OFF)
 option(COSMA_WITH_GPU_AWARE_MPI "Use gpu-aware MPI for communication." OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries." OFF)
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
 set(COSMA_BLAS "MKL" CACHE STRING
     "Blas backend. Can be MKL, OPENBLAS, CRAY_LIBSCI, BLIS, ATLAS, CUDA, ROCM or CUSTOM")
 set_property(CACHE COSMA_BLAS PROPERTY STRINGS
@@ -118,6 +122,19 @@ if(isSystemDir STREQUAL "-1")
         ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
     set(CMAKE_INSTALL_RPATH ${basePoint} ${basePoint}/${relDir})
 endif()
+
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -ggdb -DDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -ggdb -O2")
+elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -DDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2")
+endif()
+
 
 # Dependencies
 # MPI

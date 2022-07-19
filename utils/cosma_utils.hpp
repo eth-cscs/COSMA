@@ -76,21 +76,21 @@ bool test_cosma(Strategy s,
     if (rank == 0) {
         std::cout << "Initial data in A and B:" << std::endl;
     }
-    for (int i = 0; i < s.P; i++) {
+    for (std::size_t i = 0; i < s.P; i++) {
         if (rank == i) {
             printf("(%d) A: ", i);
-            for (auto j = 0; j < sizeA; j++)
-                printf("%5.3f ", A.matrix_pointer()[j]);
+            for (std::size_t j = 0; j < sizeA; j++)
+                printf("%5.3d ", A.matrix_pointer()[j]);
             printf("\n");
 
             printf("(%d) B: ", i);
-            for (auto j = 0; j < sizeB; j++)
-                printf("%5.3f ", B.matrix_pointer()[j]);
+            for (std::size_t j = 0; j < sizeB; j++)
+                printf("%5.3d ", B.matrix_pointer()[j]);
             printf("\n");
 
             printf("(%d) C: ", i);
-            for (auto j = 0; j < sizeC; j++)
-                printf("%5.3f ", C.matrix_pointer()[j]);
+            for (size_t j = 0; j < sizeC; j++)
+                printf("%5.3d ", C.matrix_pointer()[j]);
             printf("\n");
         }
         MPI_Barrier(comm);
@@ -360,17 +360,17 @@ bool test_cosma(Strategy s,
         if (rank == i) {
             printf("(%d) A: ", i);
             for (auto j = 0; j < sizeA; j++)
-                printf("%5.3f ", A.matrix_pointer()[j]);
+                printf("%5.3d ", A.matrix_pointer()[j]);
             printf("\n");
 
             printf("(%d) B: ", i);
             for (auto j = 0; j < sizeB; j++)
-                printf("%5.3f ", B.matrix_pointer()[j]);
+                printf("%5.3d ", B.matrix_pointer()[j]);
             printf("\n");
 
             printf("(%d) C: ", i);
             for (auto j = 0; j < sizeC; j++)
-                printf("%5.3f ", C.matrix_pointer()[j]);
+                printf("%5.3d ", C.matrix_pointer()[j]);
             printf("\n");
         }
         MPI_Barrier(comm);

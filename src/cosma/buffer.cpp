@@ -96,7 +96,7 @@ void Buffer<T>::allocate_communication_buffers(bool dry_run) {
                     std::cout << "buffer" << i << " size = " << buff_sizes_[i] << std::endl;
                 }
             }
-            MPI_Barrier(MPI_COMM_WORLD);
+            // MPI_Barrier(MPI_COMM_WORLD);
         }
 #endif
     }

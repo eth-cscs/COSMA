@@ -76,7 +76,7 @@ cosma::communicator* cosma_context<Scalar>::get_cosma_comm() {
 template <typename Scalar>
 void cosma_context<Scalar>::register_state(MPI_Comm comm,
                                            const Strategy strategy) {
-    bool same_comm = false;
+    int same_comm = 0;
 
     if (!prev_cosma_comm || prev_cosma_comm->full_comm() == MPI_COMM_NULL) {
         prev_strategy = strategy;
@@ -84,6 +84,7 @@ void cosma_context<Scalar>::register_state(MPI_Comm comm,
         PE(preprocessing_communicators);
         prev_cosma_comm = std::make_unique<cosma::communicator>(strategy, comm);
         PL();
+	std::cout << "Reseting memory pool in the context since not used before" << std::endl;
     } else {
         MPI_Comm prev_comm = prev_cosma_comm->full_comm();
         int comm_compare;
@@ -91,13 +92,17 @@ void cosma_context<Scalar>::register_state(MPI_Comm comm,
         same_comm = comm_compare == MPI_CONGRUENT || 
                     comm_compare == MPI_IDENT;
 
+	bool same_strategy = strategy == prev_strategy;
+
         // if same_comm and same strategy -> reuse the communicators
-        if (!same_comm || strategy != prev_strategy) {
+        if (!same_comm || !same_strategy) {
             prev_strategy = strategy;
 
             PE(preprocessing_communicators);
             prev_cosma_comm = std::make_unique<cosma::communicator>(strategy, comm);
             PL();
+
+	    // memory_pool_.reset();
         }
     }
 
@@ -106,19 +111,20 @@ void cosma_context<Scalar>::register_state(MPI_Comm comm,
 
 #ifdef COSMA_HAVE_GPU
     if (
-            prev_cosma_comm->is_idle()
-                ||
-            memory_pool_.resized 
-                || 
-            !same_comm
-                ||
-            strategy != prev_strategy
+            !prev_cosma_comm->is_idle()
+                &&
+            !memory_pool_.resized 
+                && 
+            same_comm
+                &&
+            strategy == prev_strategy
         ) {
-        memory_pool_.unpin_all();
+        // memory_pool_.already_pinned = true;
+	memory_pool_.unpin_all();
         memory_pool_.already_pinned = false;
         memory_pool_.resized = false;
     } else {
-        memory_pool_.already_pinned = true;
+	memory_pool_.already_pinned = true;
     }
 #endif
 }

@@ -342,7 +342,7 @@ struct pxgemm_params {
              "lld_a", "lld_b", "lld_c",
              "p_rows", "p_cols", "P"
         };
-        for (int i = 0; i < positive.size(); ++i) {
+        for (std::size_t i = 0; i < positive.size(); ++i) {
             if (positive[i] < 0) {
                 info = positive_labels[i] + " = " + std::to_string(positive[i]);
                 return false;
