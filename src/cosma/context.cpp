@@ -76,6 +76,8 @@ cosma::communicator* cosma_context<Scalar>::get_cosma_comm() {
 template <typename Scalar>
 void cosma_context<Scalar>::register_state(MPI_Comm comm,
                                            const Strategy strategy) {
+    if (comm == MPI_COMM_NULL) return;
+
     int same_comm = 0;
 
     if (!prev_cosma_comm || prev_cosma_comm->full_comm() == MPI_COMM_NULL) {

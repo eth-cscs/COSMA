@@ -171,7 +171,7 @@ void cosma::memory_pool<T>::unpin_all() {
 #endif
 }
 
-#ifdef COSMA_HAVE_GPU
+#if defined(COSMA_WITH_GPU_AWARE_MPI) || defined(COSMA_WITH_NCCL)
 template <typename T>
 void cosma::memory_pool<T>::allocate_device_send_buffer(std::size_t size) {
     device_send_buffer.resize(size);

@@ -101,7 +101,7 @@ if (${COSMA_BLAS} STREQUAL "MKL" OR ${COSMA_BLAS} STREQUAL "CRAY_LIBSCI")
     endif()
 endif()
 
-project(cosma VERSION 2.6.0 LANGUAGES CXX C)
+project(cosma VERSION 2.6.1 LANGUAGES CXX C)
 
 include(GNUInstallDirs)
 
@@ -123,18 +123,17 @@ if(isSystemDir STREQUAL "-1")
     set(CMAKE_INSTALL_RPATH ${basePoint} ${basePoint}/${relDir})
 endif()
 
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -ggdb -DDEBUG")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -ggdb -O2")
-elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -DDEBUG")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2")
-endif()
-
+# if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+#     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+#     set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -ggdb -DDEBUG")
+#     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+#     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -ggdb -O2")
+# elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
+#     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+#     set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -DDEBUG")
+#     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+#     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2")
+# endif()
 
 # Dependencies
 # MPI

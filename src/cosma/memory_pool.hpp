@@ -50,7 +50,7 @@ public:
     // scaling factor for the buffer growth
     double amortization;
 
-#ifdef COSMA_HAVE_GPU
+#if defined(COSMA_WITH_GPU_AWARE_MPI) || defined(COSMA_WITH_NCCL)
     void allocate_device_send_buffer(std::size_t size);
     void allocate_device_receive_buffer(std::size_t size);
 

@@ -252,7 +252,7 @@ void multiply(cosma_context<Scalar> *ctx,
 
     // register reusable objects in the context
     ctx->register_state(comm, strategy);
-    if (ctx->get_cosma_comm()->is_idle()) {
+    if (comm == MPI_COMM_NULL || ctx->get_cosma_comm()->is_idle()) {
 	return;
     }
 
@@ -905,8 +905,8 @@ void parallel(cosma_context<Scalar> *ctx,
     // if division by k do additional reduction of C
     if (strategy.split_k(step)) {
         Scalar *reduce_buffer = expanded_mat.reduce_buffer_ptr();
-        bool copy_c_back = !strategy.final_step(step+1);
 #ifdef COSMA_WITH_NCCL
+        bool copy_c_back = !strategy.final_step(step+1);
         cosma::gpu::nccl_reduce(ctx,
                                 P,
                                 expanded_matrix,
@@ -921,6 +921,7 @@ void parallel(cosma_context<Scalar> *ctx,
                                 step,
                                 copy_c_back);
 #elif COSMA_WITH_GPU_AWARE_MPI
+        bool copy_c_back = !strategy.final_step(step+1);
         cosma::gpu::gpu_aware_mpi_reduce(
                                 ctx,
                                 P,
