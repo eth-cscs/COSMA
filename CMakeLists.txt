@@ -101,7 +101,7 @@ if (${COSMA_BLAS} STREQUAL "MKL" OR ${COSMA_BLAS} STREQUAL "CRAY_LIBSCI")
     endif()
 endif()
 
-project(cosma VERSION 2.6.1 LANGUAGES CXX C)
+project(cosma VERSION 2.6.2 LANGUAGES CXX C)
 
 include(GNUInstallDirs)
 
