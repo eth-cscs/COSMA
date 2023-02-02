@@ -32,7 +32,7 @@ set_property(CACHE COSMA_BLAS PROPERTY STRINGS
     "MKL" "OPENBLAS" "CRAY_LIBSCI" "BLIS" "ATLAS" "CUDA" "ROCM" "CUSTOM")
 
 # the blas library that SCALAPACK is linked to
-# this is not used by COSMA, it's just to enable 
+# this is not used by COSMA, it's just to enable
 # the proper linking to SCALAPACK and its dependencies
 set(SCALAPACK_BLAS "OFF" CACHE STRING
     "Blas backend. Can be MKL, OPENBLAS, CRAY_LIBSCI, BLIS, ATLAS, CUSTOM or OFF.")
@@ -45,11 +45,11 @@ set_property(CACHE COSMA_SCALAPACK PROPERTY STRINGS
     "OFF" "MKL" "CRAY_LIBSCI" "CUSTOM")
 
 set(GPU_BACKENDS "CUDA" "ROCM")
-if (COSMA_WITH_NCCL AND NOT COSMA_BLAS IN_LIST GPU_BACKENDS) 
+if (COSMA_WITH_NCCL AND NOT COSMA_BLAS IN_LIST GPU_BACKENDS)
     message(FATAL_ERROR "NCCL can only be used with the GPU backend.")
 endif()
 
-if (COSMA_WITH_GPU_AWARE_MPI AND NOT COSMA_BLAS IN_LIST GPU_BACKENDS) 
+if (COSMA_WITH_GPU_AWARE_MPI AND NOT COSMA_BLAS IN_LIST GPU_BACKENDS)
     message(FATAL_ERROR "GPU-aware MPI can only be used with the GPU backend.")
 endif()
 
@@ -61,7 +61,7 @@ endif()
 
 # if SCALAPACK BLAS is not defined, then set it to be the same
 # as the scalapack provider
-if (COSMA_SCALAPACK AND NOT SCALAPACK_BLAS) 
+if (COSMA_SCALAPACK AND NOT SCALAPACK_BLAS)
     set(SCALAPACK_BLAS ${COSMA_SCALAPACK})
 endif()
 
@@ -74,7 +74,7 @@ endif()
 
 # this does not have to be the case: sometimes we might link COSMA to OPENBLAS, but use NETLIB'S SCALAPACK with NETLIB's blas
 # COSMA BLAS and SCALAPACK BLAS can only differ if the GPU version of COSMA is used
-# if(NOT ${SCALAPACK_BLAS} STREQUAL ${COSMA_BLAS}) 
+# if(NOT ${SCALAPACK_BLAS} STREQUAL ${COSMA_BLAS})
 #     if((NOT ${COSMA_BLAS} STREQUAL "CUDA") AND (NOT ${COSMA_BLAS} STREQUAL "ROCM"))
 #         message(FATAL_ERROR "SCALAPACK must be linked to the same BLAS library as COSMA if the CPU version of COSMA is used!")
 #     endif()
@@ -108,7 +108,7 @@ include(GNUInstallDirs)
 # preserve rpaths when installing and make the install folder relocatable
 # use `CMAKE_SKIP_INSTALL_RPATH` to skip this
 # https://spack.readthedocs.io/en/latest/workflows.html#write-the-cmake-build
-list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES 
+list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES
     "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" isSystemDir)
 # skip RPATH if COSMA is installed to system directories
 if(isSystemDir STREQUAL "-1")
@@ -122,18 +122,6 @@ if(isSystemDir STREQUAL "-1")
         ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
     set(CMAKE_INSTALL_RPATH ${basePoint} ${basePoint}/${relDir})
 endif()
-
-# if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-#     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-#     set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -ggdb -DDEBUG")
-#     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-#     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -ggdb -O2")
-# elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-#     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-#     set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -DDEBUG")
-#     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-#     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2")
-# endif()
 
 # Dependencies
 # MPI
