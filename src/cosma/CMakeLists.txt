@@ -22,17 +22,17 @@ if(NOT TARGET cosma)
 
     if (GPU)
         list(APPEND cosma_src_files "pinned_buffers.cpp")
-        if (COSMA_WITH_NCCL) 
+        if (COSMA_WITH_NCCL)
             list(APPEND cosma_src_files "gpu/nccl_utils.cpp")
         endif()
-        if (COSMA_WITH_GPU_AWARE_MPI) 
+        if (COSMA_WITH_GPU_AWARE_MPI)
             list(APPEND cosma_src_files "gpu/gpu_aware_mpi_utils.cpp")
         endif()
     endif()
 
     add_library(cosma ${cosma_src_files})
 
-    target_include_directories(cosma PUBLIC 
+    target_include_directories(cosma PUBLIC
         $<BUILD_INTERFACE:${cosma_SOURCE_DIR}/src>
     )
     if (COSMA_WITH_NCCL)
@@ -42,22 +42,22 @@ if(NOT TARGET cosma)
 
     target_compile_features(cosma PUBLIC cxx_std_14)
     target_link_libraries(cosma PUBLIC MPI::MPI_CXX
-                                       costa
+                                       costa::costa
                                        ${BLAS_TARGET}
     )
-    if (COSMA_WITH_NCCL) 
+    if (COSMA_WITH_NCCL)
         target_link_libraries(cosma PUBLIC ${NCCL_TARGET}
                                            ${GPU_TARGET}
        )
     endif()
 
     target_compile_definitions(cosma PUBLIC ${BLAS_DEF})
-    if (COSMA_WITH_NCCL) 
+    if (COSMA_WITH_NCCL)
         target_compile_definitions(cosma PUBLIC ${NCCL_DEF}
                                                  ${GPU_DEFF}
         )
     endif()
-    if (COSMA_WITH_GPU_AWARE_MPI) 
+    if (COSMA_WITH_GPU_AWARE_MPI)
         target_compile_definitions(cosma PUBLIC ${MPI_DEF}
                                                 ${GPU_DEFF}
         )
@@ -81,14 +81,14 @@ if(SCALAPACK_TARGET AND NOT TARGET cosma_pxgemm AND BUILD_SHARED_LIBS)
                              cosma_pxgemm.cpp
                              pxgemm.cpp
     )
-    target_link_libraries(cosma_pxgemm PUBLIC cosma 
-                                              costa_scalapack
+    target_link_libraries(cosma_pxgemm PUBLIC cosma
+                                              costa::costa_scalapack
                                               ${BLAS_TARGET}
                                               ${SCALAPACK_TARGET}
                                               ${SCALAPACK_DEPENDENCIES}
     )
     if(COSMA_WITH_PROFILING)
-        target_link_libraries(cosma_pxgemm PRIVATE semiprof)
+        target_link_libraries(cosma_pxgemm PRIVATE semiprof::semiprof)
         target_compile_definitions(cosma_pxgemm PRIVATE COSMA_WITH_PROFILING)
     endif()
     list(APPEND INSTALLED_TARGETS_LIST "cosma_pxgemm")
@@ -104,14 +104,14 @@ if(SCALAPACK_TARGET AND NOT TARGET cosma_prefixed_pxgemm)
                              prefixed_pxgemm.cpp
                              cosma_pxgemm.cpp
     )
-    target_link_libraries(cosma_prefixed_pxgemm PUBLIC cosma 
-                                              costa_prefixed_scalapack
+    target_link_libraries(cosma_prefixed_pxgemm PUBLIC cosma
+                                              costa::costa_prefixed_scalapack
                                               ${BLAS_TARGET}
                                               ${SCALAPACK_TARGET}
                                               ${SCALAPACK_DEPENDENCIES}
     )
     if(COSMA_WITH_PROFILING)
-        target_link_libraries(cosma_prefixed_pxgemm PRIVATE semiprof)
+        target_link_libraries(cosma_prefixed_pxgemm PRIVATE semiprof::semiprof)
         target_compile_definitions(cosma_prefixed_pxgemm PRIVATE COSMA_WITH_PROFILING)
     endif()
     list(APPEND INSTALLED_TARGETS_LIST "cosma_prefixed_pxgemm")
@@ -126,14 +126,14 @@ if(SCALAPACK_TARGET AND NOT TARGET cosma_pxgemm_cpp)
                                  pxgemm_params.hpp
                                  cosma_pxgemm.cpp
     )
-    target_link_libraries(cosma_pxgemm_cpp PUBLIC cosma 
-                                              costa
+    target_link_libraries(cosma_pxgemm_cpp PUBLIC cosma
+                                              costa::costa
                                               ${BLAS_TARGET}
                                               ${SCALAPACK_TARGET}
                                               ${SCALAPACK_DEPENDENCIES}
     )
     if(COSMA_WITH_PROFILING)
-        target_link_libraries(cosma_pxgemm_cpp PRIVATE semiprof)
+        target_link_libraries(cosma_pxgemm_cpp PRIVATE semiprof::semiprof)
         target_compile_definitions(cosma_pxgemm_cpp PRIVATE COSMA_WITH_PROFILING)
     endif()
     list(APPEND INSTALLED_TARGETS_LIST "cosma_pxgemm_cpp")
