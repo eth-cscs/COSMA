@@ -26,7 +26,7 @@ function(check_git_submodule name path)
 endfunction()
 
 function(add_git_submodule_or_find_external name path)
-  check_git_submodule(${name} "libs/cxxopts")
+  check_git_submodule(${name} ${path})
   if(NOT ${name}_avail)
     # attempt to find system installation of pybind11
     find_package(${name} REQUIRED)
