@@ -11,7 +11,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 include(cmake/build_type.cmake)
 include(cmake/adjust_mpiexec_flags.cmake)
-include(GitSubmodule)
 
 # Options
 #
@@ -74,7 +73,6 @@ if(NOT COSMA_BLAS IN_LIST BACKEND_LIST)
   message(FATAL_ERROR "Invalid value for COSMA_BLAS!")
 endif()
 
-include(GitSubmodule)    # include custom defined FindPackage modules
 set(CMAKE_EXPORT_COMPILE_COMMANDS "YES") # always write compile_commands.json
 
 # this does not have to be the case: sometimes we might link COSMA to OPENBLAS, but use NETLIB'S SCALAPACK with NETLIB's blas
@@ -136,8 +134,7 @@ adjust_mpiexec_flags()
 # Bundled dependencies
 #
 if (COSMA_WITH_PROFILING)
-  option(SEMIPROF_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
-  add_git_submodule_or_find_external(semiprof libs/semiprof)
+  find_package(semiprof REQUIRED)
 endif ()
 
 # Do not install cxxopts when including it.
@@ -145,7 +142,7 @@ if (COSMA_WITH_TESTS OR COSMA_WITH_APPS)
   option(CXXOPTS_BUILD_EXAMPLES OFF)
   option(CXXOPTS_BUILD_TESTS OFF)
   option(CXXOPTS_ENABLE_INSTALL OFF)
-  add_git_submodule_or_find_external(cxxopts libs/cxxopts)
+  find_package(cxxopts REQUIRED)
 endif()
 
 # BLAS providers
@@ -167,7 +164,7 @@ set(GPU_DEFF "")
 if (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
   option(TILEDMM_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
   set(TILEDMM_GPU_BACKEND ${COSMA_BLAS} CACHE STRING "GPU backend" FORCE)
-  add_git_submodule_or_find_external(tiled-mm libs/Tiled-MM)
+  find_package(tiled-mm REQUIRED)
   set(BLAS_TARGET "Tiled-MM")
   set(BLAS_DEF "COSMA_HAVE_GPU")
   set(GPU ON)
@@ -280,8 +277,10 @@ endif ()
 
 option(COSTA_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
 option(COSTA_WITH_PROFILING "" ${COSMA_WITH_PROFILING})
+
 set(COSTA_SCALAPACK ${COSMA_SCALAPACK} CACHE STRING "")
-add_git_submodule_or_find_external(costa libs/COSTA)
+find_package(costa)
+# add_git_submodule_or_find_external(costa libs/COSTA)
 
 # COSMA
 #
