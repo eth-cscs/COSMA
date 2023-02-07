@@ -127,7 +127,7 @@ endif()
 # these are only GPU-backends
 if (COSMA_GPU_BACKEND MATCHES "CUDA|ROCM")
   set(TILEDMM_GPU_BACKEND ${COSMA_GPU_BACKEND} CACHE STRING "GPU backend" FORCE)
-  add_git_submodule_or_find_external(tiled-mm libs/Tiled-MM)
+  add_git_submodule_or_find_external(Tiled-MM libs/Tiled-MM)
   if (NOT TARGET Tiled-MM::Tiled-MM AND TARGET Tiled-MM)
     add_library(Tiled-MM::Tiled-MM ALIAS Tiled-MM)
     if (TARGET Tiled-MM)
