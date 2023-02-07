@@ -1,10 +1,3 @@
-#!-------------------------------------------------------------------------------------------------!
-#!   COSMA: A general program to perform molecular dynamics simulations                             !
-#!   Copyright 2000-2023 COSMA developers group <https://cp2k.org>                                  !
-#!                                                                                                 !
-#!   SPDX-License-Identifier: GPL-2.0-or-later                                                     !
-#!-------------------------------------------------------------------------------------------------!
-
 # Copyright (c) 2022- ETH Zurich
 #
 # authors : Mathieu Taillefumier
@@ -17,36 +10,30 @@ if(NOT
 endif()
 
 set(COSMA_BLAS_VENDOR_LIST
-    "auto"
-    "MKL"
-    "OPENBLAS"
-    "CRAY_LIBSCI"
-    "GenericBLAS"
-    "ARMPL"
-    "BLIS"
-    "FLEXIBLAS"
-    "ATLAS")
+  "auto"
+  "MKL"
+  "OPENBLAS"
+  "CRAY_LIBSCI"
+  "BLIS"
+  "ATLAS"
+  "NONE")
 
-set(COSMA_BLAS
-    "auto"
-    CACHE STRING "Blas library for computations on host")
-set_property(CACHE COSMA_BLAS PROPERTY STRINGS ${COSMA_BLAS_VENDOR_LIST})
+# "GenericBLAS"
+# "ARMPL"
+# "FLEXIBLAS"
 
 if(NOT ${COSMA_BLAS_VENDOR} IN_LIST COSMA_BLAS_VENDOR_LIST)
   message(FATAL_ERROR "Invalid Host BLAS backend")
 endif()
 
-# already many breaking changes in cosma configuration so workaround
-set(COSMA_BLAS_VENDOR "${COSMA_BLAS}")
-
 set(COSMA_BLAS_THREAD_LIST "sequential" "thread" "gnu-thread" "intel-thread"
-                          "tbb-thread" "openmp")
+  "tbb-thread" "openmp")
 
 set(COSMA_BLAS_THREADING
-    "openmp"
-    CACHE STRING "threaded blas library")
+  "openmp"
+  CACHE STRING "threaded blas library")
 set_property(CACHE COSMA_BLAS_THREADING PROPERTY STRINGS
-                                                ${COSMA_BLAS_THREAD_LIST})
+  ${COSMA_BLAS_THREAD_LIST})
 
 if(NOT ${COSMA_BLAS_THREADING} IN_LIST COSMA_BLAS_THREAD_LIST)
   message(FATAL_ERROR "Invalid threaded BLAS backend")
@@ -54,16 +41,16 @@ endif()
 
 set(COSMA_BLAS_INTERFACE_BITS_LIST "32bits" "64bits")
 set(COSMA_BLAS_INTERFACE
-    "32bits"
-    CACHE STRING
-          "32 bits integers are used for indices, matrices and vectors sizes")
+  "32bits"
+  CACHE STRING
+  "32 bits integers are used for indices, matrices and vectors sizes")
 set_property(CACHE COSMA_BLAS_INTERFACE
-             PROPERTY STRINGS ${COSMA_BLAS_INTERFACE_BITS_LIST})
+  PROPERTY STRINGS ${COSMA_BLAS_INTERFACE_BITS_LIST})
 
 if(NOT ${COSMA_BLAS_INTERFACE} IN_LIST COSMA_BLAS_INTERFACE_BITS_LIST)
   message(
     FATAL_ERROR
-      "Invalid parameters. Blas and lapack can exist in two flavors 32 or 64 bits interfaces (relevant mostly for mkl)"
+    "Invalid parameters. Blas and lapack can exist in two flavors 32 or 64 bits interfaces (relevant mostly for mkl)"
   )
 endif()
 
@@ -112,6 +99,9 @@ if(NOT TARGET cosma::BLAS::blas)
   add_library(cosma::BLAS::blas INTERFACE IMPORTED)
 endif()
 
+message("OpenBLAS Lib : ${COSMA_BLAS_LINK_LIBRARIES}")
+message("OpenBLAS Lib : ${COSMA_BLAS_INCLUDE_DIRS}")
+
 set_target_properties(cosma::BLAS::blas PROPERTIES INTERFACE_LINK_LIBRARIES
   "${COSMA_BLAS_LINK_LIBRARIES}")
 
@@ -120,7 +110,9 @@ if(COSMA_BLAS_INCLUDE_DIRS)
     "${COSMA_BLAS_INCLUDE_DIRS}")
 endif()
 
+set(COSMA_BLAS ${COSMA_BLAS_VENDOR})
+
 mark_as_advanced(COSMA_BLAS_INCLUDE_DIRS)
 mark_as_advanced(COSMA_BLAS_LINK_LIBRARIES)
-mark_as_advanced(COSMA_BLAS_VENDOR)
+mark_as_advanced(COSMA_BLAS)
 mark_as_advanced(COSMA_BLAS_FOUND)

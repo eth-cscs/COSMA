@@ -38,30 +38,32 @@ target_include_directories(cosma PUBLIC
 target_compile_features(cosma PUBLIC cxx_std_14)
 target_link_libraries(cosma PUBLIC MPI::MPI_CXX
   costa::costa
-  $<$<STREQUAL:${COSMA_GPU_BACKEND},ROCM>:Tiled-MM::Tiled-MM>
-  $<$<STREQUAL:${COSMA_GPU_BACKEND},CUDA>:Tiled-MM::Tiled-MM>
   $<$<BOOL:${COSMA_WITH_NCCL}>:$<STREQUAL:${COSMA_GPU_BACKEND},"ROCM">:cosma::RCCL>
-  $<$<BOOL:${COSMA_WITH_NCCL}>:$<STREQUAL:${COSMA_GPU_BACKEND},"CUDA">:cosma::NCCL>
-  cosma::BLAS::blas)
+  $<$<BOOL:${COSMA_WITH_NCCL}>:$<STREQUAL:${COSMA_GPU_BACKEND},"CUDA">:cosma::NCCL>)
 
-if ((NOT COSMA_BLAS_VENDOR MATCHES "MKL") AND (NOT COSMA_BLAS_VENDOR MATCHES "BLIS"))
-  target_compile_definitions(cosma PUBLIC COSMA_WITH_BLAS)
+if (NOT COSMA_BLAS_VENDOR MATCHES "NONE") 
+  target_link_libraries(cosma PUBLIC cosma::BLAS::blas)
 endif()
 
 if (COSMA_GPU_BACKEND STREQUAL "NONE")
-  target_compile_definitions(cosma PUBLIC
-    $<$<STREQUAL:${COSMA_BLAS_VENDOR},MKL>:COSMA_WITH_MKL_BLAS>
-    $<$<STREQUAL:${COSMA_BLAS_VENDOR},BLIS>:COSMA_WITH_BLIS_BLAS>)
+  if ((NOT COSMA_BLAS_VENDOR MATCHES "MKL") AND (NOT COSMA_BLAS_VENDOR MATCHES "BLIS"))
+    target_compile_definitions(cosma PUBLIC COSMA_WITH_BLAS)
+  endif()
+
+  if (COSMA_GPU_BACKEND STREQUAL "NONE")
+    target_compile_definitions(cosma PUBLIC
+      $<$<STREQUAL:${COSMA_BLAS_VENDOR},MKL>:COSMA_WITH_MKL_BLAS>
+      $<$<STREQUAL:${COSMA_BLAS_VENDOR},BLIS>:COSMA_WITH_BLIS_BLAS>)
+  endif()
+else()
+  target_compile_definitions(cosma PUBLIC COSMA_HAVE_GPU)
+  target_link_libraries(cosma PUBLIC Tiled-MM::Tiled-MM)
 endif()
 
 target_compile_definitions(cosma PUBLIC
   $<$<BOOL:${COSMA_WITH_NCCL}>:COSMA_WITH_NCCL>
   $<$<STREQUAL:${COSMA_GPU_BACKEND},"ROCM">:__HIP_PLATFORM_HCC__>
   $<$<BOOL:${COSMA_WITH_GPU_AWARE_MPI}>:COSMA_WITH_GPU_AWARE_MPI>)
-
-if (COSMA_GPU_BACKEND MATCHES "CUDA" OR COSMA_GPU_BACKEND MATCHES "ROCM")
-  target_compile_definitions(cosma PUBLIC COSMA_HAVE_GPU)
-endif()
 
 target_compile_definitions(cosma PRIVATE $<$<BOOL:${COSMA_WITH_PROFILING}>:COSMA_WITH_PROFILING>)
 
@@ -82,10 +84,7 @@ if(COSMA_SCALAPACK)
       pxgemm.cpp
     )
     
-    target_link_libraries(cosma_pxgemm PUBLIC cosma
-      costa::costa_scalapack
-      cosma::scalapack::scalapack
-      cosma::BLAS::blas)
+    target_link_libraries(cosma_pxgemm PUBLIC cosma)
     
     if(COSMA_WITH_PROFILING)
       target_link_libraries(cosma_pxgemm PRIVATE semiprof::semiprof)
@@ -104,10 +103,7 @@ if(COSMA_SCALAPACK)
       prefixed_pxgemm.cpp
       cosma_pxgemm.cpp
     )
-    target_link_libraries(cosma_prefixed_pxgemm PUBLIC cosma
-      costa::costa_prefixed_scalapack
-      cosma::scalapack::scalapack
-      cosma::BLAS::blas)
+    target_link_libraries(cosma_prefixed_pxgemm PUBLIC cosma)
     
     if(COSMA_WITH_PROFILING)
       target_link_libraries(cosma_prefixed_pxgemm PRIVATE semiprof::semiprof)
@@ -125,10 +121,7 @@ if(COSMA_SCALAPACK)
       pxgemm_params.hpp
       cosma_pxgemm.cpp
     )
-    target_link_libraries(cosma_pxgemm_cpp PUBLIC cosma
-      costa::costa
-      cosma::scalapack::scalapack
-      cosma::BLAS::blas)
+    target_link_libraries(cosma_pxgemm_cpp PUBLIC cosma)
     
     if(COSMA_WITH_PROFILING)
       target_link_libraries(cosma_pxgemm_cpp PRIVATE semiprof::semiprof)
@@ -143,7 +136,7 @@ endif()
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
-  
+
   install(EXPORT cosma_targets
     FILE cosmaTargets.cmake
     NAMESPACE cosma::
