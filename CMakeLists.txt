@@ -172,10 +172,10 @@ endif()
 
 # COSMA
 #
-add_subdirectory(src/cosma)
-
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
+
+add_subdirectory(src/cosma)
 
 install(DIRECTORY "${cosma_SOURCE_DIR}/src/cosma"
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
