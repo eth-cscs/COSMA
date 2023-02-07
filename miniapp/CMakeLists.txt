@@ -10,7 +10,7 @@ foreach(exec ${executables})
     install(TARGETS ${exec} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
 endforeach()
 
-if(COSMA_SCALAPACK)
+if(NOT COSMA_SCALAPACK MATCHES "OFF")
     set(scalapack_executables "pxgemm_miniapp")
     foreach(exec ${scalapack_executables})
         add_executable(${exec} "${exec}.cpp")
