@@ -25,8 +25,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS "YES") # always write compile_commands.json
 # Options
 #
 
-set(COSMA_GPU_IMPLEMENTATION_LIST "BLAS" "CUDA" "ROCM" "CUSTOM")
-set(COSMA_GPU_BACKENDS_LIST "CUDA" "ROCM")
+set(COSMA_GPU_BACKENDS_LIST "NONE" "CUDA" "ROCM")
 set(COSMA_SCALAPACK_LIST "OFF" "MKL" "CRAY_LIBSCI" "CUSTOM")
 
 option(COSMA_WITH_TESTS "Generate the test target." ${MASTER_PROJECT})
@@ -39,12 +38,11 @@ option(COSMA_WITH_GPU_AWARE_MPI "Use gpu-aware MPI for communication." OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries." OFF)
 
 set(COSMA_GPU_BACKEND "NONE" CACHE STRING "backend for the xgemm functions. Choice NONE, CUDA, ROCM")
-set(COSMA_SCALAPACK "OFF" CACHE STRING "Blas backend. Can be MKL, CRAY_LIBSCI, CUSTOM or OFF.")
+set(COSMA_SCALAPACK "OFF" CACHE STRING "scalapack implementation. Can be MKL, CRAY_LIBSCI, CUSTOM or OFF.")
 #set(COSMA_BLAS "MKL" CACHE STRING "Blas backend. Can be MKL, OPENBLAS, CRAY_LIBSCI, BLIS, ATLAS or CUSTOM")
 
 set_property(CACHE COSMA_SCALAPACK PROPERTY STRINGS ${COSMA_SCALAPACK_LIST})
-#set_property(CACHE COSMA_BLAS PROPERTY STRINGS ${COSMA_BLAS_VENDOR_LIST})
-set_property(CACHE COSMA_GPU_BACKEND PROPERTY STRINGS ${COSMA_GPU_IMPLEMENTATION_LIST})
+set_property(CACHE COSMA_GPU_BACKEND PROPERTY STRINGS ${COSMA_GPU_BACKENDS_LIST})
 
 if (COSMA_WITH_NCCL AND NOT COSMA_GPU_BACKEND IN_LIST COSMA_GPU_BACKENDS_LIST)
   message(FATAL_ERROR "NCCL can only be used with the GPU backend.")
@@ -87,8 +85,6 @@ if(isSystemDir STREQUAL "-1")
   set(CMAKE_INSTALL_RPATH ${basePoint} ${basePoint}/${relDir})
 endif()
 
-find_package(BLAS)
-
 # Dependencies
 # MPI
 find_package(MPI REQUIRED)
@@ -119,8 +115,6 @@ if (NOT ${COSMA_GPU_BACKEND} STREQUAL "NONE")
   if (NOT TARGET Tiled-MM::Tiled-MM)
     add_library(Tiled-MM::Tiled-MM ALIAS Tiled-MM)
   endif()
-
-  message("TEST TEST TEST")
   if (COSMA_WITH_NCCL OR COSMA_WITH_GPU_AWARE_MPI)
     if (${COSMA_GPU_BACKEND} MATCHES "CUDA")
       find_package(CUDAToolkit REQUIRED)
@@ -150,6 +144,8 @@ add_git_submodule_or_find_external(costa libs/COSTA)
 
 if (NOT TARGET costa::costa)  # alias targets for add_subdirectory dependency
   add_library(costa::costa ALIAS costa)
+endif()
+if (TARGET costa_prefixed_scalapack)
   add_library(costa::costa_prefixed_scalapack ALIAS costa_prefixed_scalapack)
   add_library(costa::costa_scalapack ALIAS costa_scalapack)
 endif()
