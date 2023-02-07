@@ -18,7 +18,7 @@ set(cosma_src_files blas.cpp
   cinterface.cpp
   environment_variables.cpp)
 
-if (COSMA_XGEMM_BACKEND MATCHES "ROCM" OR COSMA_XGEMM_BACKEND MATCHES "CUDA")
+if (COSMA_GPU_BACKEND MATCHES "ROCM" OR COSMA_GPU_BACKEND MATCHES "CUDA")
   list(APPEND cosma_src_files "pinned_buffers.cpp")
   if (COSMA_WITH_NCCL)
     list(APPEND cosma_src_files "gpu/nccl_utils.cpp")

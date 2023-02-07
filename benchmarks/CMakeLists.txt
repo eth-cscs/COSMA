@@ -19,7 +19,7 @@ foreach(exec ${executables})
     target_link_libraries(${exec} cosma)
 endforeach()
 
-if (COSMA_XGEMM_BACKEND MATCHES "CUDA")
+if (COSMA_GPU_BACKEND MATCHES "CUDA")
   find_cuda_version()
   # check if cuda toolkit version >= 10.1
   # which is needed for cublasLt (used in the benchmark)
