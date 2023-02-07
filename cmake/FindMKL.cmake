@@ -359,8 +359,6 @@ if(MKL_FOUND)
   # the findMKL package finds all possible combination and define target for
   # each of them we just need to find which compiler we use, mpi etc...
 
-  message(INFO "COSMA_BLAS_THREADING : ${COSMA_BLAS_THREADING}")
-
   if(CMAKE_Fortran_COMPILER_LOADED
      AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU"
      AND NOT APPLE)
@@ -369,10 +367,7 @@ if(MKL_FOUND)
     set(BLAS_mkl_INTFACE "intel")
   endif()
 
-
-  message(INFO "COSMA_BLAS_THREADING : ${COSMA_BLAS_THREADING}")
   if(COSMA_BLAS_THREADING MATCHES "thread" OR COSMA_BLAS_THREADING MATCHES "gnu-thread" OR COSMA_BLAS_THREADING MATCHES "openmp")
-    message(INFO "COSMA_BLAS_THREADING 1 : ${COSMA_BLAS_THREADING}")
     set(BLAS_mkl_thread__ "omp")
   endif()
 

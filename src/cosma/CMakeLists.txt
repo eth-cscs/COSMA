@@ -77,6 +77,7 @@ list(APPEND INSTALLED_TARGETS_LIST "cosma")
 # then create it here and link it to the profiler if needed
 # build as a shared library is necessary here because of the function interposing
 if(COSMA_SCALAPACK)
+  target_link_libraries(cosma PUBLIC cosma::scalapack::scalapack)
   if (NOT TARGET cosma_pxgemm AND BUILD_SHARED_LIBS)
     add_library(cosma_pxgemm scalapack.cpp
       pxgemm_params.hpp
