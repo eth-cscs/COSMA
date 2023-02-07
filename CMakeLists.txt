@@ -137,15 +137,12 @@ adjust_mpiexec_flags()
 #
 if (COSMA_WITH_PROFILING)
   option(SEMIPROF_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
-  add_git_submodule_or_find_external(semiprof libs/semiprof)
+  find_package(semiprof REQUIRED)
 endif ()
 
 # Do not install cxxopts when including it.
 if (COSMA_WITH_TESTS OR COSMA_WITH_APPS)
-  option(CXXOPTS_BUILD_EXAMPLES OFF)
-  option(CXXOPTS_BUILD_TESTS OFF)
-  option(CXXOPTS_ENABLE_INSTALL OFF)
-  add_git_submodule_or_find_external(cxxopts libs/cxxopts)
+  find_package(cxxopts REQUIRED)
 endif()
 
 # BLAS providers
