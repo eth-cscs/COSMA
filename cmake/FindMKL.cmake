@@ -362,40 +362,40 @@ if(MKL_FOUND)
   if(CMAKE_Fortran_COMPILER_LOADED
      AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU"
      AND NOT APPLE)
-    set(BLAS_mkl_INTFACE "gf")
+    set(COSMA_BLAS_mkl_INTFACE "gf")
   else()
-    set(BLAS_mkl_INTFACE "intel")
+	  set(COSMA_BLAS_mkl_INTFACE "intel")
   endif()
 
-  if(COSMA_BLAS_THREADING MATCHES "thread" OR COSMA_BLAS_THREADING MATCHES "gnu-thread" OR COSMA_BLAS_THREADING MATCHES "openmp")
-    set(BLAS_mkl_thread__ "omp")
+  if(COSMA_BLAS_THREADING MATCHES "thread|gnu-thread|openmp")
+	  set(COSMA_BLAS_mkl_thread__ "omp")
   endif()
 
   if(COSMA_BLAS_THREADING MATCHES "sequential")
-    set(BLAS_mkl_thread__ "seq")
+	  set(COSMA_BLAS_mkl_thread__ "seq")
   endif()
 
   if(COSMA_BLAS_THREADING MATCHES "intel-thread")
-    set(BLAS_mkl_thread__ "intel")
+	  set(COSMA_BLAS_mkl_thread__ "intel")
   endif()
 
   if(COSMA_BLAS_THREADING MATCHES "tbb")
-    set(BLAS_mkl_thread__ "tbb")
+	  set(COSMA_BLAS_mkl_thread__ "tbb")
   endif()
 
   if(COSMA_BLAS_INTERFACE MATCHES "64bits")
-    set(BLAS_mkl_ILP_MODE "64bit")
+	  set(COSMA_BLAS_mkl_ILP_MODE "64bit")
   else()
-    set(BLAS_mkl_ILP_MODE "32bit")
+	  set(COSMA_BLAS_mkl_ILP_MODE "32bit")
   endif()
 
   get_target_property(
     MKL_BLAS_INCLUDE_DIRS
-    cosma::BLAS::MKL::${BLAS_mkl_INTFACE}_${BLAS_mkl_ILP_MODE}_${BLAS_mkl_thread__}_dyn
+    cosma::BLAS::MKL::${COSMA_BLAS_mkl_INTFACE}_${COSMA_BLAS_mkl_ILP_MODE}_${COSMA_BLAS_mkl_thread__}_dyn
     INTERFACE_INCLUDE_DIRECTORIES)
   get_target_property(
     MKL_BLAS_LIBRARIES
-    cosma::BLAS::MKL::${BLAS_mkl_INTFACE}_${BLAS_mkl_ILP_MODE}_${BLAS_mkl_thread__}_dyn
+    cosma::BLAS::MKL::${COSMA_BLAS_mkl_INTFACE}_${COSMA_BLAS_mkl_ILP_MODE}_${COSMA_BLAS_mkl_thread__}_dyn
     INTERFACE_LINK_LIBRARIES)
   if(NOT TARGET cosma::BLAS::MKL::blas)
     add_library(cosma::BLAS::MKL::MKL INTERFACE IMPORTED)
@@ -408,7 +408,7 @@ if(MKL_FOUND)
     PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${COSMA_MKL_INCLUDE_DIRS}"
                INTERFACE_LINK_LIBRARIES "${MKL_BLAS_LIBRARIES}")
 
-  if("${MPI_Fortran_LIBRARY_VERSION_STRING}" MATCHES "Open MPI")
+  if("${MPI_CXX_LIBRARY_VERSION_STRING}" MATCHES "Open MPI")
     set(__mkl_mpi_ver_ "ompi")
   else()
     set(__mkl_mpi_ver_ "mpich")
@@ -416,19 +416,19 @@ if(MKL_FOUND)
 
   get_target_property(
     __mkl_scalapack_inc
-    cosma::BLAS::MKL::scalapack_${__mkl_mpi_ver_}_${BLAS_mkl_INTFACE}_${BLAS_mkl_ILP_MODE}_${BLAS_mkl_thread__}_dyn
+    cosma::BLAS::MKL::scalapack_${__mkl_mpi_ver_}_${COSMA_BLAS_mkl_INTFACE}_${COSMA_BLAS_mkl_ILP_MODE}_${COSMA_BLAS_mkl_thread__}_dyn
     INTERFACE_INCLUDE_DIRECTORIES)
   get_target_property(
     __mkl_scalapack_lib
-    cosma::BLAS::MKL::scalapack_${__mkl_mpi_ver_}_${BLAS_mkl_INTFACE}_${BLAS_mkl_ILP_MODE}_${BLAS_mkl_thread__}_dyn
+    cosma::BLAS::MKL::scalapack_${__mkl_mpi_ver_}_${COSMA_BLAS_mkl_INTFACE}_${COSMA_BLAS_mkl_ILP_MODE}_${COSMA_BLAS_mkl_thread__}_dyn
     INTERFACE_LINK_LIBRARIES)
   get_target_property(
     __mkl_blacs_inc
-    cosma::BLAS::MKL::blacs_${__mkl_mpi_ver_}_${BLAS_mkl_INTFACE}_${BLAS_mkl_ILP_MODE}_${BLAS_mkl_thread__}_dyn
+    cosma::BLAS::MKL::blacs_${__mkl_mpi_ver_}_${COSMA_BLAS_mkl_INTFACE}_${COSMA_BLAS_mkl_ILP_MODE}_${COSMA_BLAS_mkl_thread__}_dyn
     INTERFACE_INCLUDE_DIRECTORIES)
   get_target_property(
     __mkl_blacs_lib
-    cosma::BLAS::MKL::blacs_${__mkl_mpi_ver_}_${BLAS_mkl_INTFACE}_${BLAS_mkl_ILP_MODE}_${BLAS_mkl_thread__}_dyn
+    cosma::BLAS::MKL::blacs_${__mkl_mpi_ver_}_${COSMA_BLAS_mkl_INTFACE}_${COSMA_BLAS_mkl_ILP_MODE}_${COSMA_BLAS_mkl_thread__}_dyn
     INTERFACE_LINK_LIBRARIES)
   if(NOT TARGET cosma::BLAS::MKL::scalapack_link)
     add_library(cosma::BLAS::MKL::scalapack_link INTERFACE IMPORTED)
@@ -438,9 +438,9 @@ if(MKL_FOUND)
                  INTERFACE_LINK_LIBRARIES
                  "${__mkl_scalapack_lib};${__mkl_blacs_lib}")
   endif()
-  unset(BLAS_mkl_ILP_MODE)
-  unset(BLAS_mkl_INTFACE)
-  unset(BLAS_mkl_thread__)
+  unset(COSMA_BLAS_mkl_ILP_MODE)
+  unset(COSMA_BLAS_mkl_INTFACE)
+  unset(COSMA_BLAS_mkl_thread__)
   unset(BLAS_mkl_OMP)
   unset(BLAS_mkl_OS_NAME)
   unset(__mkl_blacs_lib)

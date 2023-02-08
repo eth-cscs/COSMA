@@ -12,12 +12,14 @@ if(NOT TARGET cosma::cosma)
 
     set(MKL_ROOT "@MKL_ROOT@")
     set(MPI_CXX_COMPILER "@MPI_CXX_COMPILER@")
-
-    find_package(MPI)
+    set(MPI_DETERMINE_LIBRARY_VERSION TRUE)
+    find_package(MPI COMPONENTS "CXX" REQUIRED)
 
     set(COSMA_BLAS "@COSMA_BLAS@")
     set(COSMA_SCALAPACK "@COSMA_SCALAPACK@")
     set(COSMA_BLAS_VENDOR "@COSMA_BLAS_VENDOR@")
+    set(COSMA_BLAS_THREADING "@COSMA_BLAS_THREADING@")
+
     if (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
       if (${COSMA_BLAS} STREQUAL "CUDA")
         find_package(CUDAToolkit)
@@ -36,7 +38,7 @@ if(NOT TARGET cosma::cosma)
         endif()
       endif()
     else()
-        find_package(BLAS)
+        find_package(Blas)
     endif ()
 
     if (NOT ${COSMA_SCALAPACK} STREQUAL "NONE")
