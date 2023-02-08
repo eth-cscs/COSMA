@@ -78,7 +78,7 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(BLIS REQUIRED_VARS COSMA_BLIS_INCLUDE_DIRS COSMA_BLIS_LINK_LIBRARIES COSMA_BLIS_CBLAS_INCLUDE_DIRS)
 
 # add target to link against
-if(NOT TARGET BLIS::blis)
+if(NOT TARGET cosma::BLAS::BLIS::blis)
   add_library(cosma::BLAS::BLIS::blis INTERFACE IMPORTED)
   add_library(cosma::BLAS::BLIS::blas ALIAS cosma::BLAS::BLIS::blis)
 endif()

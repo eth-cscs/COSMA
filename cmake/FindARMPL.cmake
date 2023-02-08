@@ -10,18 +10,21 @@
 # authors : Mathieu Taillefumier
 
 include(FindPackageHandleStandardArgs)
-#include(cp2k_utils)
 
-find_package(PkgConfig)
-
-cp2k_set_default_paths(ARMPL "Armpl")
+set(_ARMPL_PATHS ${ARMPL_ROOT}
+  $ENV{ARMPL_ROOT}
+  $ENV{ARMPLROOT}
+  $ENV{ARMPL_DIR}
+  $ENV{ARMPLDIR}
+  $ENV{ORNL_ARMPL_ROOT}
+  $ENV{CRAY_ARMPL_ROOT})
 
 foreach(_var armpl_ilp64 armpl_lp64 armpl_ilp64_mp armpl_lp64_mp)
   string(TOUPPER ${_var} _var_up)
-  find_library("COSMA_${_var_up}_LINK_LIBRARIES" ${_var})
+  find_library("COSMA_${_var_up}_LINK_LIBRARIES" NAME ${_var} HINTS ${_ARMPL_PATHS} PATH_SUFFIXES "lib" "lib64" "armpl/lib" "armpl/lib64" "armpl")
 endforeach()
 
-cp2k_include_dirs(ARMPL "armpl.h")
+find_path(COSMA_ARMPL_INCLUDE_DIRS NAMES "armpl.h" HINTS ${_ARMPL_PATHS} PATH_SUFFIXES "include" "armpl" "armpl/include" "include/armpl")
 
 # Check for 64bit Integer support
 if(COSMA_BLAS_INTERFACE MATCHES "64bits")
@@ -43,7 +46,7 @@ find_package_handle_standard_args(
 # add target to link against
 if(COSMA_ARMPL_LP64_FOUND)
 
-  if (NOT TARGET ARMPL::armpl)
+  if (NOT TARGET cosma::BLAS::ARMPL::armpl)
     add_library(cosma::BLAS::ARMPL::armpl INTERFACE IMPORTED)
     # now define an alias to the target library
     add_library(cosma::BLAS::ARMPL::blas ALIAS cosma::BLAS::ARMPL::armpl)

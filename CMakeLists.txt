@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.17 FATAL_ERROR)
-include(GNUInstallDirs)
 
 # Check if COSMA is a subproject.
 #
@@ -45,11 +44,15 @@ set(COSMA_GPU_BACKEND "NONE")
 set_property(CACHE COSMA_SCALAPACK PROPERTY STRINGS ${COSMA_SCALAPACK_LIST})
 set_property(CACHE COSMA_BLAS PROPERTY STRINGS ${COSMA_BLAS_LIST})
 
+# we keep the old cosma behavior of indicating GPU support as a blas
+# implementation. We have to sort out what we should find for the FindBLAS and
+# GPU supports since they are treated as separate components
+
 if (COSMA_BLAS MATCHES "CUDA|ROCM")
   set(COSMA_GPU_BACKEND ${COSMA_BLAS})
 else()
   if(COSMA_BLAS STREQUAL "NONE")
-    message("A Blas implementation is needed when running on CPU only: choices are : auto, MKL, OPENBLAS, CRAY_LIBSCI, CUSTOM, BLIS, ATLAS")
+    message("A Blas implementation is needed when running on CPU only: choices are : auto, MKL, OPENBLAS, CRAY_LIBSCI, CUSTOM, BLIS, ATLAS, FLEXIBLAS, ARMPL, GenericBLAS")
   else()
     set(COSMA_BLAS_VENDOR ${COSMA_BLAS})
   endif()
@@ -74,7 +77,7 @@ if(NOT COSMA_SCALAPACK IN_LIST COSMA_SCALAPACK_LIST)
   message(FATAL_ERROR "Invalid value for COSMA_SCALAPACK!")
 endif()
 
-# the blas targets are only defined when COSMA_SCALAPACK is ON whatever value of COSMA_GPU_BACKEND 
+# the blas targets are only defined when COSMA_SCALAPACK is ON whatever value of COSMA_GPU_BACKEND
 if (COSMA_SCALAPACK OR COSMA_GPU_BACKEND MATCHES "OFF")
   if (COSMA_SCALAPACK MATCHES "MKL" OR COSMA_SCALAPACK MATCHES "CRAY_LIBSCI")
     set(COSMA_BLAS_VENDOR ${COSMA_SCALAPACK})
@@ -112,40 +115,34 @@ if (NOT COSMA_SCALAPACK MATCHES "OFF")
   find_package(SCALAPACK REQUIRED)
 endif()
 
-# Bundled dependencies
-#
 if (COSMA_WITH_PROFILING)
-  option(SEMIPROF_WITH_INSTALL "" ${COSMA_WITH_INSTALL})
   find_package(semiprof REQUIRED)
 endif ()
 
-# Do not install cxxopts when including it.
 if (COSMA_WITH_TESTS OR COSMA_WITH_APPS)
   find_package(cxxopts REQUIRED)
 endif()
 
 # these are only GPU-backends
 if (COSMA_GPU_BACKEND MATCHES "CUDA|ROCM")
+
   set(TILEDMM_GPU_BACKEND ${COSMA_GPU_BACKEND} CACHE STRING "GPU backend" FORCE)
   add_git_submodule_or_find_external(Tiled-MM libs/Tiled-MM)
   if (NOT TARGET Tiled-MM::Tiled-MM AND TARGET Tiled-MM)
     add_library(Tiled-MM::Tiled-MM ALIAS Tiled-MM)
-    if (TARGET Tiled-MM)
-      message(STATUS "Test 2")
-    endif()
   endif()
 
   if (COSMA_WITH_NCCL OR COSMA_WITH_GPU_AWARE_MPI)
     if (${COSMA_GPU_BACKEND} MATCHES "CUDA")
       find_package(CUDAToolkit REQUIRED)
       find_package(NCCL REQUIRED)
-      message("NCCL INCLUDE DIRS = ${NCCL_INCLUDE_DIRS}")
-      message("NCCL LIBRARIES = ${NCCL_LIBRARIES}")
+      message(INFO "NCCL INCLUDE DIRS = ${NCCL_INCLUDE_DIRS}")
+      message(INFO "NCCL LIBRARIES = ${NCCL_LIBRARIES}")
     elseif(${COSMA_GPU_BACKEND} MATCHES "ROCM")
       finmd_package(hip REQUIRED)
       find_package(RCCL REQUIRED)
-      message("RCCL INCLUDE DIRS = ${RCCL_INCLUDE_DIRS}")
-      message("RCCL LIBRARIES = ${RCCL_LIBRARIES}")
+      message(INFO "RCCL INCLUDE DIRS = ${RCCL_INCLUDE_DIRS}")
+      message(INFO "RCCL LIBRARIES = ${RCCL_LIBRARIES}")
     else()
       message(FATAL_ERROR "COSMA_WITH_NCCL AND/OR COSMA_WITH_GPU_AWARE_MPI are specified, but no GPU backend chosen.")
     endif()
@@ -161,7 +158,9 @@ endif()
 
 add_git_submodule_or_find_external(costa libs/COSTA)
 
-if (NOT TARGET costa::costa)  # alias targets for add_subdirectory dependency
+# alias targets for add_subdirectory dependency
+
+if (NOT TARGET costa::costa)
   add_library(costa::costa ALIAS costa)
 endif()
 
@@ -198,6 +197,17 @@ configure_file("${cosma_SOURCE_DIR}/cmake/cosmaConfig.cmake.in"
 install(FILES "${cosma_BINARY_DIR}/cosmaConfig.cmake"
   "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
   "${cosma_SOURCE_DIR}/cmake/FindMKL.cmake"
+  "${cosma_SOURCE_DIR}/cmake/FindBlas.cmake"
+  "${cosma_SOURCE_DIR}/cmake/FindSCALAPACK.cmake"
+  "${cosma_SOURCE_DIR}/cmake/FindOPENBLAS.cmake"
+  "${cosma_SOURCE_DIR}/cmake/FindFLEXIBLAS.cmake"
+  "${cosma_SOURCE_DIR}/cmake/FindARMPL.cmake"
+  "${cosma_SOURCE_DIR}/cmake/FindATLAS.cmake"
+  "${cosma_SOURCE_DIR}/cmake/FindCRAY_LIBSCI.cmake"
+  "${cosma_SOURCE_DIR}/cmake/FindGenericBLAS.cmake"
+  "${cosma_SOURCE_DIR}/cmake/FindNCCL.cmake"
+  "${cosma_SOURCE_DIR}/cmake/FindRCCL.cmake"
+  "${cosma_SOURCE_DIR}/cmake/FindBLIS.cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
 
 install(FILES "${cosma_BINARY_DIR}/cosma.pc"

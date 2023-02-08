@@ -1,6 +1,7 @@
 # Copyright (c) 2022- ETH Zurich
 #
 # authors : Mathieu Taillefumier
+include(FindPackageHandleStandardArgs)
 
 if(NOT POLICY CMP0074)
   set(_GenericBLAS_PATHS ${GenericBLAS_ROOT} $ENV{GenericBLAS_ROOT})
@@ -21,7 +22,6 @@ find_path(
   HINTS ${_GenericBLAS_PATHS})
 
 # check if found
-include(FindPackageHandleStandardArgs)
 if(COSMA_GenericBLAS_INCLUDE_DIRS)
   find_package_handle_standard_args(
     GenericBLAS REQUIRED_VARS COSMA_GenericBLAS_INCLUDE_DIRS COSMA_GenericBLAS_LINK_LIBRARIES)
@@ -35,13 +35,13 @@ if(COSMA_GenericBLAS_CBLAS_LINK_LIBRARIES)
 endif()
 
 # add target to link against
-if(NOT TARGET cosma::GenericBLAS::blas)
-  add_library(cosma::GenericBLAS::blas INTERFACE IMPORTED)
+if(NOT TARGET cosma::BLAS::GenericBLAS::blas)
+  add_library(cosma::BLAS::GenericBLAS::blas INTERFACE IMPORTED)
 endif()
-set_property(TARGET cosma::GenericBLAS::blas PROPERTY INTERFACE_LINK_LIBRARIES
+set_property(TARGET cosma::BLAS::GenericBLAS::blas PROPERTY INTERFACE_LINK_LIBRARIES
   ${COSMA_GenericBLAS_LINK_LIBRARIES})
 set_property(
-  TARGET cosma::GenericBLAS::blas PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+  TARGET cosma::BLAS::GenericBLAS::blas PROPERTY INTERFACE_INCLUDE_DIRECTORIES
   ${COSMA_GenericBLAS_INCLUDE_DIRS})
 endif()
 

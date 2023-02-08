@@ -2,6 +2,8 @@
 #
 # authors : Mathieu Taillefumier
 
+
+
 if(NOT
    (CMAKE_C_COMPILER_LOADED
     OR CMAKE_CXX_COMPILER_LOADED
@@ -13,14 +15,20 @@ set(COSMA_BLAS_VENDOR_LIST
   "auto"
   "MKL"
   "OPENBLAS"
+  "FLEXIBLAS"
+  "ARMPL"
+  "GenericBLAS"
   "CRAY_LIBSCI"
   "BLIS"
   "ATLAS"
   "NONE")
 
-# "GenericBLAS"
-# "ARMPL"
-# "FLEXIBLAS"
+# COSMA_BLAS_VENDOR should normally be defined here but cosma defines it in the
+# main CMakeLists.txt to keep the old behavior. the threading and integer
+# interface can also be controlled but are fixed to the default values that
+# COSMA was configured before introducing this module. So if findBLAS.cmake is
+# to be used elsewhere, it is better to look at what CP2K does and start from
+# there
 
 if(NOT ${COSMA_BLAS_VENDOR} IN_LIST COSMA_BLAS_VENDOR_LIST)
   message(FATAL_ERROR "Invalid Host BLAS backend")
