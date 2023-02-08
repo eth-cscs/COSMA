@@ -107,9 +107,6 @@ if(NOT TARGET cosma::BLAS::blas)
   add_library(cosma::BLAS::blas INTERFACE IMPORTED)
 endif()
 
-message("OpenBLAS Lib : ${COSMA_BLAS_LINK_LIBRARIES}")
-message("OpenBLAS Lib : ${COSMA_BLAS_INCLUDE_DIRS}")
-
 set_target_properties(cosma::BLAS::blas PROPERTIES INTERFACE_LINK_LIBRARIES
   "${COSMA_BLAS_LINK_LIBRARIES}")
 
