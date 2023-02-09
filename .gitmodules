@@ -4,3 +4,6 @@
 [submodule "libs/COSTA"]
 	path = libs/COSTA
 	url = https://github.com/eth-cscs/COSTA
+[submodule "libs/cxxopts"]
+	path = libs/cxxopts
+	url = https://github.com/jarro2783/cxxopts

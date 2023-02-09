@@ -4,7 +4,7 @@
 //
 #ifdef COSMA_WITH_PROFILING
 
-#include <semiprof/semiprof.hpp>
+#include <semiprof.hpp>
 
 // prints the profiler summary
 #define PP() std::cout << semiprof::profiler_summary() << "\n"

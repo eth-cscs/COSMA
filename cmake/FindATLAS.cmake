@@ -55,13 +55,13 @@ set(_ATLAS_PATHS ${ATLAS_ROOT}
 # endif()
 
 find_library(
-    ATLAS_LIBRARIES
+    COSMA_ATLAS_LINK_LIBRARIES
     NAMES "atlas"
     HINTS ${_ATLAS_PATHS}
     PATH_SUFFIXES "atlas/lib" "atlas/lib64" "atlas"
 )
 find_path(
-    ATLAS_INCLUDE_DIRS
+    COSMA_ATLAS_INCLUDE_DIRS
     NAMES "cblas-atlas.h" "cblas_atlas.h" "cblas.h" 
     HINTS ${_ATLAS_PATHS}
     PATH_SUFFIXES "atlas" "atlas/include" "include/atlas"
@@ -69,16 +69,15 @@ find_path(
 
 # check if found
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(ATLAS REQUIRED_VARS ATLAS_INCLUDE_DIRS ATLAS_LIBRARIES)
+find_package_handle_standard_args(ATLAS REQUIRED_VARS COSMA_ATLAS_INCLUDE_DIRS COSMA_ATLAS_LINK_LIBRARIES)
 
 # add target to link against
-if(ATLAS_FOUND)
-    if(NOT TARGET ATLAS::atlas)
-        add_library(ATLAS::atlas INTERFACE IMPORTED)
-    endif()
-    set_property(TARGET ATLAS::atlas PROPERTY INTERFACE_LINK_LIBRARIES ${ATLAS_LIBRARIES})
-    set_property(TARGET ATLAS::atlas PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${ATLAS_INCLUDE_DIRS})
+if(NOT TARGET cosma::BLAS::ATLAS::atlas)
+  add_library(cosma::BLAS::ATLAS::atlas INTERFACE IMPORTED)
+  add_library(cosma::BLAS::ATLAS::blas ALIAS cosma::BLAS::ATLAS::atlas)
 endif()
+set_property(TARGET cosma::BLAS::ATLAS::atlas PROPERTY INTERFACE_LINK_LIBRARIES ${COSMA_ATLAS_LINK_LIBRARIES})
+set_property(TARGET cosma::BLAS::ATLAS::atlas PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${COSMA_ATLAS_INCLUDE_DIRS})
 
 # prevent clutter in cache
 MARK_AS_ADVANCED(ATLAS_FOUND ATLAS_LIBRARIES ATLAS_INCLUDE_DIRS)

@@ -29,7 +29,7 @@ add_test(NAME test.mapper COMMAND test.mapper)
 add_dependencies(tests test.mapper)
 install(TARGETS test.mapper DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
-if(COSMA_SCALAPACK)
+if(NOT COSMA_SCALAPACK MATCHES "OFF")
     add_cosma_mpi_test(pdgemm 16 cosma_pxgemm_cpp)
 endif()
 
