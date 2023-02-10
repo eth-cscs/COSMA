@@ -5,8 +5,8 @@ if(NOT TARGET cosma::cosma)
     endif()
     include(CMakeFindDependencyMacro)
 
-    # Bundled modules should be found first to prevent conflicts with similarly 
-    # named modules in calling projects. 
+    # Bundled modules should be found first to prevent conflicts with similarly
+    # named modules in calling projects.
     #
     set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_MODULE_PATH})
 
@@ -22,9 +22,9 @@ if(NOT TARGET cosma::cosma)
 
     if (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
       if (${COSMA_BLAS} STREQUAL "CUDA")
-        find_package(CUDAToolkit)
+        find_dependency(CUDAToolkit)
       else()
-        find_package(hip)
+        find_dependency(hip)
       endif()
 
       set(TILEMM_GPU_BACKEND ${COSMA_BLAS} CACHE STRING FORCE "")
@@ -32,17 +32,17 @@ if(NOT TARGET cosma::cosma)
 
       if ("@COSMA_WITH_NCCL@")
         if (${COSMA_BLAS} STREQUAL "CUDA")
-          find_package(NCCL)
+          find_dependency(NCCL)
         else()
-          find_package(RCCL)
+          find_dependency(RCCL)
         endif()
       endif()
     else()
-        find_package(Blas)
+        find_dependency(Blas)
     endif ()
 
     if (NOT ${COSMA_SCALAPACK} STREQUAL "NONE")
-        find_package(SCALAPACK)
+        find_dependency(SCALAPACK)
     endif ()
 
     if ("@COSMA_WITH_PROFILING@")
