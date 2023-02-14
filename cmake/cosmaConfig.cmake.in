@@ -41,7 +41,7 @@ if(NOT TARGET cosma::cosma)
         find_dependency(Blas)
     endif ()
 
-    if (NOT ${COSMA_SCALAPACK} STREQUAL "NONE")
+    if (NOT ${COSMA_SCALAPACK} MATCHES "OFF")
         find_dependency(SCALAPACK)
     endif ()
 
