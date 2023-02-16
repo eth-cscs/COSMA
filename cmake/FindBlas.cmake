@@ -21,7 +21,7 @@ set(COSMA_BLAS_VENDOR_LIST
   "CRAY_LIBSCI"
   "BLIS"
   "ATLAS"
-  "NONE")
+  "OFF")
 
 # COSMA_BLAS_VENDOR should normally be defined here but cosma defines it in the
 # main CMakeLists.txt to keep the old behavior. the threading and integer
@@ -62,12 +62,20 @@ if(NOT ${COSMA_BLAS_INTERFACE} IN_LIST COSMA_BLAS_INTERFACE_BITS_LIST)
   )
 endif()
 
+if (COSMA_BLAS_VENDOR MATCHES "OFF")
+   return ()
+endif()
+
 set(COSMA_BLAS_FOUND FALSE)
 
 # first check for a specific implementation if requested
 
 if(NOT COSMA_BLAS_VENDOR MATCHES "auto")
-  find_package(${COSMA_BLAS_VENDOR} REQUIRED)
+   if (COSMA_BLAS_VENDOR MATCHES "CUSTOM")
+       find_package(GenericBLAS REQUIRED)
+   else()
+       find_package(${COSMA_BLAS_VENDOR} REQUIRED)
+  endif()
   if(TARGET cosma::BLAS::${COSMA_BLAS_VENDOR}::blas)
     get_target_property(COSMA_BLAS_INCLUDE_DIRS cosma::BLAS::${COSMA_BLAS_VENDOR}::blas
                         INTERFACE_INCLUDE_DIRECTORIES)

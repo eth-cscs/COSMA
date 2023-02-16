@@ -30,8 +30,8 @@ option(BUILD_SHARED_LIBS "Build shared libraries." OFF)
 set(COSMA_SCALAPACK "OFF" CACHE STRING "scalapack implementation. Can be MKL, CRAY_LIBSCI, CUSTOM or OFF.")
 set(COSMA_BLAS "OFF" CACHE STRING "Blas library for computations on host or GPU")
 
-set(COSMA_BLAS_VENDOR "NONE")
-set(COSMA_GPU_BACKEND "NONE")
+set(COSMA_BLAS_VENDOR "OFF")
+set(COSMA_GPU_BACKEND "OFF")
 
 set_property(CACHE COSMA_SCALAPACK PROPERTY STRINGS ${COSMA_SCALAPACK_LIST})
 set_property(CACHE COSMA_BLAS PROPERTY STRINGS ${COSMA_BLAS_LIST})
@@ -44,7 +44,7 @@ if (COSMA_BLAS MATCHES "CUDA|ROCM")
   set(COSMA_GPU_BACKEND ${COSMA_BLAS})
 else()
   if(COSMA_BLAS STREQUAL "OFF")
-    message("A Blas implementation is needed when running on CPU only: choices are : auto, MKL, OPENBLAS, CRAY_LIBSCI, CUSTOM, BLIS, ATLAS, FLEXIBLAS, ARMPL, GenericBLAS")
+    message(FATAL_ERROR "A Blas implementation is needed when running on CPU only: choices are : auto, MKL, OPENBLAS, CRAY_LIBSCI, CUSTOM, BLIS, ATLAS, FLEXIBLAS, ARMPL, GenericBLAS")
   else()
     set(COSMA_BLAS_VENDOR ${COSMA_BLAS})
   endif()
@@ -76,7 +76,7 @@ if (NOT COSMA_SCALAPACK MATCHES "OFF" OR COSMA_GPU_BACKEND MATCHES "OFF")
   endif()
 endif()
 
-if (NOT COSMA_BLAS_VENDOR STREQUAL "NONE")
+if (NOT COSMA_BLAS_VENDOR MATCHES "OFF")
   find_package(Blas REQUIRED)
 endif()
 
@@ -187,7 +187,13 @@ configure_file("${cosma_SOURCE_DIR}/cmake/cosmaConfig.cmake.in"
   "${cosma_BINARY_DIR}/cosmaConfig.cmake"
   @ONLY)
 
+write_basic_package_version_file(
+  "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
+  VERSION "${cosma_VERSION}"
+  COMPATIBILITY SameMajorVersion)
+
 install(FILES "${cosma_BINARY_DIR}/cosmaConfig.cmake"
+  "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
   "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
   "${cosma_SOURCE_DIR}/cmake/FindMKL.cmake"
   "${cosma_SOURCE_DIR}/cmake/FindBlas.cmake"
