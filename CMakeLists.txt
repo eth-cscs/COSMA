@@ -1,12 +1,5 @@
 cmake_minimum_required(VERSION 3.17 FATAL_ERROR)
 
-# Check if COSMA is a subproject.
-#
-set(MASTER_PROJECT OFF)
-if(NOT DEFINED PROJECT_NAME)
-  set(MASTER_PROJECT ON)
-endif()
-
 project(cosma
   DESCRIPTION "Communication Optimal Matrix Multiplication"
   HOMEPAGE_URL "https://github.com/eth-cscs/COSMA"
@@ -27,9 +20,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS "YES") # always write compile_commands.json
 set(COSMA_GPU_BACKENDS_LIST "CUDA" "ROCM")
 set(COSMA_SCALAPACK_LIST "OFF" "MKL" "CRAY_LIBSCI" "CUSTOM")
 set(COSMA_BLAS_LIST   "auto" "MKL" "OPENBLAS" "CRAY_LIBSCI" "CUSTOM" "BLIS" "ATLAS" "CUDA" "ROCM" "OFF")
-option(COSMA_WITH_TESTS "Generate the test target." ${MASTER_PROJECT})
-option(COSMA_WITH_APPS "Generate the miniapp targets." ${MASTER_PROJECT})
-option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ${MASTER_PROJECT})
+option(COSMA_WITH_TESTS "Generate the test target." ON)
+option(COSMA_WITH_APPS "Generate the miniapp targets." ON)
+option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ON)
 option(COSMA_WITH_PROFILING "Enable profiling." OFF)
 option(COSMA_WITH_NCCL "Use NCCL as communication backend." OFF)
 option(COSMA_WITH_GPU_AWARE_MPI "Use gpu-aware MPI for communication." OFF)
