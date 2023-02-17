@@ -1,3 +1,4 @@
+#include "cosma/context.hpp"
 #include <cosma/local_multiply.hpp>
 #include <cosma/profiler.hpp>
 #include <cosma/timer.hpp>
@@ -95,9 +96,11 @@ void local_multiply(gpu::mm_handle<Scalar>* gpu_ctx,
         // std::cout << "m = " << m << ", n = " << n << ", k = " << k << std::endl;
     }
     */
-    gpu::gemm(*(gpu_ctx), matrixA, matrixB, matrixC,
-              m, n, k, alpha, beta,
-              pin_host_buffers, copy_c_back);
+    int ld_a = m;
+    int ld_b = k;
+    int ld_c = m;
+
+    gpu::gemm(*gpu_ctx, 'N', 'N', m, n, k, alpha, matrixA, ld_a, matrixB, ld_b, beta, matrixC, ld_c);
     /*
     if (rank == 0) {
         gpu::copy_to_host(gpu_ctx->get_full_device_buffer_c().data(), matrixC, m * n);
@@ -109,7 +112,7 @@ void local_multiply(gpu::mm_handle<Scalar>* gpu_ctx,
 }
 #endif
 
-template <typename Scalar> 
+template <typename Scalar>
 Scalar& get_element(Scalar* mat, int m, int n, int i, int j) {
     return mat[j * m + i];
 }
@@ -194,10 +197,10 @@ void local_multiply(Scalar *matrixA,
                     Scalar alpha,
                     Scalar beta,
                     bool copy_c_back) {
-    local_multiply(get_context_instance<Scalar>(), 
-                   matrixA, matrixB, matrixC, 
-                   m, n, k, 
-                   alpha, beta, 
+    local_multiply(get_context_instance<Scalar>(),
+                   matrixA, matrixB, matrixC,
+                   m, n, k,
+                   alpha, beta,
                    copy_c_back);
 }
 

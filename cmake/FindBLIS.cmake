@@ -55,19 +55,19 @@ set(_BLIS_PATHS ${BLIS_ROOT}
 # endif()
 
 find_library(
-    BLIS_LIBRARIES
+    COSMA_BLIS_LINK_LIBRARIES
     NAMES "blis"
     HINTS ${_BLIS_PATHS}
     PATH_SUFFIXES "lib" "lib64" "blis/lib" "blis/lib64" "blis"
 )
 find_path(
-    BLIS_INCLUDE_DIRS
+    COSMA_BLIS_INCLUDE_DIRS
     NAMES "blis.h"
     HINTS ${_BLIS_PATHS}
     PATH_SUFFIXES "include" "blis" "blis/include" "include/blis"
 )
 find_path(
-    BLIS_CBLAS_INCLUDE_DIRS
+    COSMA_BLIS_CBLAS_INCLUDE_DIRS
     NAMES "cblas_blis.h" "cblas-blis.h" "cblas.h" 
     HINTS ${_BLIS_PATHS}
     PATH_SUFFIXES "include" "blis" "blis/include" "include/blis"
@@ -75,16 +75,15 @@ find_path(
 
 # check if found
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(BLIS REQUIRED_VARS BLIS_INCLUDE_DIRS BLIS_LIBRARIES BLIS_CBLAS_INCLUDE_DIRS)
+find_package_handle_standard_args(BLIS REQUIRED_VARS COSMA_BLIS_INCLUDE_DIRS COSMA_BLIS_LINK_LIBRARIES COSMA_BLIS_CBLAS_INCLUDE_DIRS)
 
 # add target to link against
-if(BLIS_FOUND)
-    if(NOT TARGET BLIS::blis)
-        add_library(BLIS::blis INTERFACE IMPORTED)
-    endif()
-    set_property(TARGET BLIS::blis PROPERTY INTERFACE_LINK_LIBRARIES ${BLIS_LIBRARIES})
-    set_property(TARGET BLIS::blis PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${BLIS_INCLUDE_DIRS} ${BLIS_CBLAS_INCLUDE_DIRS})
+if(NOT TARGET cosma::BLAS::BLIS::blis)
+  add_library(cosma::BLAS::BLIS::blis INTERFACE IMPORTED)
+  add_library(cosma::BLAS::BLIS::blas ALIAS cosma::BLAS::BLIS::blis)
 endif()
+set_property(TARGET cosma::BLAS::BLIS::blis PROPERTY INTERFACE_LINK_LIBRARIES ${COSMA_BLIS_LINK_LIBRARIES})
+set_property(TARGET cosma::BLAS::BLIS::blis PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${COSMA_BLIS_INCLUDE_DIRS} ${COSMA_BLIS_CBLAS_INCLUDE_DIRS})
 
 # prevent clutter in cache
-MARK_AS_ADVANCED(BLIS_FOUND BLIS_LIBRARIES BLIS_INCLUDE_DIRS BLIS_CBLAS_INCLUDE_DIRS)
+MARK_AS_ADVANCED(BLIS_FOUND COSMA_BLIS_LINK_LIBRARIES COSMA_BLIS_INCLUDE_DIRS COSMA_BLIS_CBLAS_INCLUDE_DIRS)

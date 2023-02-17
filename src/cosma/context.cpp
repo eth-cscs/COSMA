@@ -1,8 +1,8 @@
 #include <complex>
 #include <stdlib.h>
 
+#include "context.hpp"
 #include <cosma/communicator.hpp>
-#include <cosma/context.hpp>
 #include <cosma/environment_variables.hpp>
 #include <cosma/profiler.hpp>
 
@@ -90,10 +90,10 @@ void cosma_context<Scalar>::register_state(MPI_Comm comm,
         MPI_Comm prev_comm = prev_cosma_comm->full_comm();
         int comm_compare;
         MPI_Comm_compare(prev_comm, comm, &comm_compare);
-        same_comm = comm_compare == MPI_CONGRUENT || 
+        same_comm = comm_compare == MPI_CONGRUENT ||
                     comm_compare == MPI_IDENT;
 
-	bool same_strategy = strategy == prev_strategy;
+  bool same_strategy = strategy == prev_strategy;
 
         // if same_comm and same strategy -> reuse the communicators
         if (!same_comm || !same_strategy) {
@@ -103,9 +103,9 @@ void cosma_context<Scalar>::register_state(MPI_Comm comm,
             prev_cosma_comm = std::make_unique<cosma::communicator>(strategy, comm);
             PL();
 
-	    memory_pool_.unpin_all();
-	    memory_pool_.already_pinned = false;
-	    memory_pool_.resized = false;
+      memory_pool_.unpin_all();
+      memory_pool_.already_pinned = false;
+      memory_pool_.resized = false;
         }
     }
 
@@ -116,8 +116,8 @@ void cosma_context<Scalar>::register_state(MPI_Comm comm,
     if (
             !prev_cosma_comm->is_idle()
                 &&
-            !memory_pool_.resized 
-                && 
+            !memory_pool_.resized
+                &&
             same_comm
                 &&
             strategy == prev_strategy
