@@ -123,9 +123,7 @@ if(COSMA_BLAS_INCLUDE_DIRS)
     "${COSMA_BLAS_INCLUDE_DIRS}")
 endif()
 
-set(COSMA_BLAS ${COSMA_BLAS_VENDOR})
-
 mark_as_advanced(COSMA_BLAS_INCLUDE_DIRS)
 mark_as_advanced(COSMA_BLAS_LINK_LIBRARIES)
-mark_as_advanced(COSMA_BLAS)
+mark_as_advanced(COSMA_BLAS_VENDOR)
 mark_as_advanced(COSMA_BLAS_FOUND)

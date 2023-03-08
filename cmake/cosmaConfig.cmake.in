@@ -20,14 +20,14 @@ if(NOT TARGET cosma::cosma)
     set(COSMA_BLAS_VENDOR "@COSMA_BLAS_VENDOR@")
     set(COSMA_BLAS_THREADING "@COSMA_BLAS_THREADING@")
 
-    if (${COSMA_BLAS} STREQUAL "CUDA" OR ${COSMA_BLAS} STREQUAL "ROCM")
+    if ("@COSMA_GPU_BACKEND@" STREQUAL "CUDA" OR "@COSMA_GPU_BACKEND@" STREQUAL "ROCM")
       if (${COSMA_BLAS} STREQUAL "CUDA")
         find_dependency(CUDAToolkit)
       else()
         find_dependency(hip)
       endif()
 
-      set(TILEMM_GPU_BACKEND ${COSMA_BLAS} CACHE STRING FORCE "")
+      set(TILEMM_GPU_BACKEND "@COSMA_GPU_BACKEND@" CACHE STRING FORCE "")
       find_dependency(Tiled-MM) # bundled
 
       if ("@COSMA_WITH_NCCL@")
@@ -37,9 +37,11 @@ if(NOT TARGET cosma::cosma)
           find_dependency(RCCL)
         endif()
       endif()
-    else()
-        find_dependency(Blas)
     endif ()
+
+    if (NOT @COSMA_BLAS_VENDOR@ MATCHES "OFF")
+    	find_dependency(Blas)
+    endif()
 
     if (NOT ${COSMA_SCALAPACK} MATCHES "OFF")
         find_dependency(SCALAPACK)
