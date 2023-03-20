@@ -100,7 +100,7 @@ void local_multiply(gpu::mm_handle<Scalar>* gpu_ctx,
     int ld_b = k;
     int ld_c = m;
 
-    gpu::gemm(*gpu_ctx, 'N', 'N', m, n, k, alpha, matrixA, ld_a, matrixB, ld_b, beta, matrixC, ld_c);
+    gpu::gemm(*gpu_ctx, 'N', 'N', m, n, k, alpha, matrixA, ld_a, matrixB, ld_b, beta, matrixC, ld_c, pin_host_buffers, copy_c_back);
     /*
     if (rank == 0) {
         gpu::copy_to_host(gpu_ctx->get_full_device_buffer_c().data(), matrixC, m * n);
