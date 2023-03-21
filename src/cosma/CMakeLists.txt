@@ -20,7 +20,7 @@ set(cosma_src_files blas.cpp
 
 if (COSMA_GPU_BACKEND MATCHES "ROCM" OR COSMA_GPU_BACKEND MATCHES "CUDA")
   list(APPEND cosma_src_files "pinned_buffers.cpp")
-  if (COSMA_WITH_NCCL)
+  if (COSMA_WITH_NCCL OR COSMA_WITH_RCCL)
     list(APPEND cosma_src_files "gpu/nccl_utils.cpp")
   endif()
   if (COSMA_WITH_GPU_AWARE_MPI)
@@ -32,16 +32,16 @@ add_library(cosma ${cosma_src_files})
 
 target_include_directories(cosma PUBLIC
   $<BUILD_INTERFACE:${cosma_SOURCE_DIR}/src>
-  $<$<BOOL:${COSMA_WITH_NCCL}>:${NCCL_INCLUDE_DIRS}>
 )
 
 target_compile_features(cosma PUBLIC cxx_std_14)
-target_link_libraries(cosma PUBLIC MPI::MPI_CXX
+target_link_libraries(cosma PUBLIC
+  MPI::MPI_CXX
   costa::costa
-  $<$<BOOL:${COSMA_WITH_NCCL}>:$<STREQUAL:${COSMA_GPU_BACKEND},"ROCM">:cosma::RCCL>
-  $<$<BOOL:${COSMA_WITH_NCCL}>:$<STREQUAL:${COSMA_GPU_BACKEND},"CUDA">:cosma::NCCL>)
+  $<TARGET_NAME_IF_EXISTS:roc::rccl>
+  $<TARGET_NAME_IF_EXISTS:cosma::nccl>)
 
-if (NOT COSMA_BLAS_VENDOR MATCHES "OFF") 
+if (NOT COSMA_BLAS_VENDOR MATCHES "OFF")
   target_link_libraries(cosma PUBLIC cosma::BLAS::blas)
 endif()
 
@@ -65,6 +65,11 @@ target_compile_definitions(cosma PUBLIC
   $<$<STREQUAL:${COSMA_GPU_BACKEND},"ROCM">:__HIP_PLATFORM_HCC__>
   $<$<BOOL:${COSMA_WITH_GPU_AWARE_MPI}>:COSMA_WITH_GPU_AWARE_MPI>)
 
+target_compile_definitions(cosma PUBLIC
+  $<$<BOOL:${COSMA_WITH_NCCL}>:COSMA_WITH_NCCL>
+  $<$<BOOL:${COSMA_WITH_RCCL}>:COSMA_WITH_NCCL>
+)
+
 target_compile_definitions(cosma PRIVATE $<$<BOOL:${COSMA_WITH_PROFILING}>:COSMA_WITH_PROFILING>)
 
 if(COSMA_WITH_PROFILING)
@@ -84,16 +89,16 @@ if(COSMA_SCALAPACK)
       cosma_pxgemm.cpp
       pxgemm.cpp
     )
-    
+
     target_link_libraries(cosma_pxgemm PUBLIC cosma)
-    
+
     if(COSMA_WITH_PROFILING)
       target_link_libraries(cosma_pxgemm PRIVATE semiprof::semiprof)
       target_compile_definitions(cosma_pxgemm PRIVATE COSMA_WITH_PROFILING)
     endif()
     list(APPEND INSTALLED_TARGETS_LIST "cosma_pxgemm")
   endif()
-  
+
   # this is a library exposing the prefixed scalapack API (with cosma/COSMA prefix)
   # it is aimed for users who don't want to overwrite the available scalapack API with cosma.
   # if SCALAPACK is found and cosma_prefixed_pxgemm library is not already created
@@ -105,14 +110,14 @@ if(COSMA_SCALAPACK)
       cosma_pxgemm.cpp
     )
     target_link_libraries(cosma_prefixed_pxgemm PUBLIC cosma)
-    
+
     if(COSMA_WITH_PROFILING)
       target_link_libraries(cosma_prefixed_pxgemm PRIVATE semiprof::semiprof)
       target_compile_definitions(cosma_prefixed_pxgemm PRIVATE COSMA_WITH_PROFILING)
     endif()
     list(APPEND INSTALLED_TARGETS_LIST "cosma_prefixed_pxgemm")
   endif()
-  
+
   # the following library is aimed only for testing purposes
   # it provides templated cosma::pxgemm call without
   # pxgemm.h, so that pxgemm calls of scalapack are not overwritten
@@ -123,7 +128,7 @@ if(COSMA_SCALAPACK)
       cosma_pxgemm.cpp
     )
     target_link_libraries(cosma_pxgemm_cpp PUBLIC cosma)
-    
+
     if(COSMA_WITH_PROFILING)
       target_link_libraries(cosma_pxgemm_cpp PRIVATE semiprof::semiprof)
       target_compile_definitions(cosma_pxgemm_cpp PRIVATE COSMA_WITH_PROFILING)
@@ -142,4 +147,3 @@ endif()
     FILE cosmaTargets.cmake
     NAMESPACE cosma::
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
-  

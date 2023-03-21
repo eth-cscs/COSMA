@@ -38,7 +38,7 @@ COSMA alleviates the issues of current state-of-the-art algorithms, which can be
 
 - `2D (SUMMA)`: Requires manual tuning and not communication-optimal in the presence of extra memory.
 - `2.5D`: Optimal for `m=n`, but inefficient for `m << n` or `n << m` and for some numbers of processes `p`.
-- `Recursive (CARMA)`: Asymptotically communication-optimal for all `m, n, k, p`, but splitting always the largest dimension might lead up to `√3` increase in communication volume. 
+- `Recursive (CARMA)`: Asymptotically communication-optimal for all `m, n, k, p`, but splitting always the largest dimension might lead up to `√3` increase in communication volume.
 - `COSMA (this work)`: Strictly communication-optimal (not just asymptotically) for all `m, n, k, p` and memory sizes that yields the speedups by factor of up to 8.3x over the second-fastest algorithm.
 
 In addition to being communication-optimal, this implementation is higly-optimized to reduce the memory footprint in the following sense:
@@ -48,21 +48,21 @@ In addition to being communication-optimal, this implementation is higly-optimiz
 The library supports both one-sided and two-sided MPI communication backends. It uses `dgemm` for the local computations, but also has a support for the `GPU` acceleration through our `Tiled-MM` library using `cublas` or `rocBLAS`.
 
 ## COSMA Literature
- 
+
 The paper and other materials on COSMA are available under the following link:
-- **ACM Digital Library (Best Student Paper Award at SC19):** https://dl.acm.org/doi/10.1145/3295500.3356181 
+- **ACM Digital Library (Best Student Paper Award at SC19):** https://dl.acm.org/doi/10.1145/3295500.3356181
 - **Arxiv:** https://arxiv.org/abs/1908.09606
 - **YouTube Presentation:** https://www.youtube.com/watch?v=5wiZWw5ltR0
 - **Press Release:** https://www.cscs.ch/science/computer-science-hpc/2019/new-matrix-multiplication-algorithm-pushes-the-performance-to-the-limits/
 
 ## Features
 
-- **[NEW] Multi-GPU Systems Support:** COSMA is now able to take advantage of fast GPU-to-GPU interconnects either through the use of NCCL/RCCL libraries or by using the GPU-aware MPI. Both, NVIDIA and AMD GPUs are supported. 
+- **[NEW] Multi-GPU Systems Support:** COSMA is now able to take advantage of fast GPU-to-GPU interconnects either through the use of NCCL/RCCL libraries or by using the GPU-aware MPI. Both, NVIDIA and AMD GPUs are supported.
 - **ScaLAPACK API Support:** it is enough to link to COSMA, without changing the code and all `p?gemm` calls will use ScaLAPACK wrappers provided by COSMA.
 - **C/Fortran Interface:** written in `C++`, but provides `C` and `Fortran` interfaces.
 - **Custom Types:** fully templatized types.
 - **GPU acceleration:** supports both **NVIDIA** and **AMD** GPUs.
-- **Supported BLAS (CPU) backends:** MKL, LibSci, NETLIB, BLIS, ATLAS. 
+- **Supported BLAS (CPU) backends:** MKL, LibSci, NETLIB, BLIS, ATLAS.
 - **Custom Data Layout Support:** natively uses its own blocked data layout of matrices, but supports arbitrary grid-like data layout of matrices.
 - **Tranposition/Conjugation Support:** matrices `A` and `B` can be transposed and/or conjugated.
 - **Communication and Computation Overlap:** supports overlapping of communication and computation.
@@ -77,11 +77,11 @@ See [Installation Instructions](INSTALL.md).
 
 COSMA is a CMake project and requires a recent CMake(>=3.17).
 
-External dependencies: 
+External dependencies:
 
 - `MPI 3`: (required)
 - `BLAS`: when the problem becomes local, COSMA uses provided `?gemm` backend, which can be one of the following:
-     - `MKL` (default) 
+     - `MKL` (default)
      - `OPENBLAS`
      - `BLIS`
      - `ATLAS`
@@ -105,7 +105,7 @@ To allow easy integration, COSMA can be used in the following ways:
 - **adapting your code:** if your code is not using ScaLAPACK, then there are two interfaces that can be used:
     - **custom layout:** if you matrices are distributed in a custom way, then it is eanough to pass the descriptors of your data layout to `multiply_using_layout` function, which will then adapt COSMA to your own layout.
     - **native COSMA layout:** to get the maximum performance, the native COSMA matrix layout should be used. To get an idea of the performance you can expect to get, please have a look at the [matrix multiplication miniapp](#matrix-multiplication).
-    
+
 The documentation for the latter option will soon be published here.
 
 ## Using COSMA in 30 seconds
@@ -140,27 +140,27 @@ make install
 2) Link your code to COSMA:
     - **CPU-only** version of COSMA:
        - link your code to:
-       > -L<installation dir>/cosma/lib64 -lcosma_pxgemm -lcosma -lcosta_scalapack 
- 
+       > -L<installation dir>/cosma/lib64 -lcosma_pxgemm -lcosma -lcosta_scalapack
+
        - then link to the BLAS and ScaLAPACK you built COSMA with (see `COSMA_BLAS` and `COSMA_SCALAPACK` flags in cmake):
        > -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_scalapack_lp64 -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lmkl_blacs_intelmpi_lp64 -lgomp -lpthread -lm
- 
-    
-   - using **GPU-accelerated** version of COSMA: 
+
+
+   - using **GPU-accelerated** version of COSMA:
        - link your code to:
        >-L<installation dir>/cosma/lib64 -lcosma_pxgemm -lcosma -lcosta_scalapack -lTiled-MM
-       
+
        - link to the GPU backend you built COSMA with (see `COSMA_BLAS` flag in cmake):
        >-lcublas -lcudart -lrt
-       
+
        - then link to the ScaLAPACK you built COSMA with (see `COSMA_SCALAPACK` flag in cmake):
        >-L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_scalapack_lp64 -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lmkl_blacs_intelmpi_lp64 -lgomp -lpthread -lm
-       
+
 3) Include headers:
 >-I<installation dir>/cosma/include
-    
+
 ## COSMA on Multi-GPU Systems
-    
+
 COSMA is able to take advantage of fast GPU-to-GPU interconnects on multi-gpu systems. This can be achieved in one of the following ways.
 
 ### Using `NCCL/RCCL` Libraries
@@ -173,7 +173,7 @@ When running `cmake` for COSMA, make sure to specify `-DCOSMA_WITH_NCCL=ON`, e.g
     # - NCCL_INCLUDE_DIR: Directory where NCCL header is found
     # - NCCL_LIB_DIR: Directory where NCCL library is found
     cmake -DCOSMA_BLAS=CUDA -DCOSMA_SCALAPACK=MKL -DCOSMA_WITH_NCCL=ON ..
-    
+
     # AMD GPUs
     # this will looks for RCCL library in the following environment variables:
     # - RCCL_ROOT_DIR: Base directory where all RCCL components are found
@@ -210,11 +210,11 @@ On **128 nodes**, we compared the performance of CP2K using the following algori
 
 <p align="center"><img src="./docs/cp2k-results-128.svg" width="95%"></p>
 
-With COSMA, even higher speedups are possible, depending on matrix shapes. To illustrate possible performance gains, we also ran different **square matrix** multiplications on the same number of nodes (**=128**) of [Piz Daint supercomputer](https://www.cscs.ch/computers/piz-daint/). The block size is `128x128` and the processor grid is also square: `16x16` (2 ranks per node). The performance of COSMA is compared against Intel MKL ScaLAPACK (version: 19.0.1.144). The results on Cray XC50 (GPU-accelerated) and Cray XC40 (CPU-only) are summarized in the following table: 
+With COSMA, even higher speedups are possible, depending on matrix shapes. To illustrate possible performance gains, we also ran different **square matrix** multiplications on the same number of nodes (**=128**) of [Piz Daint supercomputer](https://www.cscs.ch/computers/piz-daint/). The block size is `128x128` and the processor grid is also square: `16x16` (2 ranks per node). The performance of COSMA is compared against Intel MKL ScaLAPACK (version: 19.0.1.144). The results on Cray XC50 (GPU-accelerated) and Cray XC40 (CPU-only) are summarized in the following table:
 
 <p align="center"><img src="./docs/square-results.svg" width="80%"></p>
 
-All the results from this section assumed matrices given in (block-cyclic) ScaLAPACK data layout. However, if the native COSMA layout is used, even higher throughput is possible. 
+All the results from this section assumed matrices given in (block-cyclic) ScaLAPACK data layout. However, if the native COSMA layout is used, even higher throughput is possible.
 
 ### Julia language
 
@@ -257,7 +257,7 @@ the project):
 # set the number of threads to be used by each MPI rank
 export OMP_NUM_THREADS=18
 # if using CPU version with MKL backend, set MKL_NUM_THREADS as well
-export MKL_NUM_THREADS=18 
+export MKL_NUM_THREADS=18
 # run the miniapp
 mpirun -np 4 ./build/miniapp/cosma_miniapp -m 1000 -n 1000 -k 1000 -r 2
 ```
@@ -287,10 +287,10 @@ The miniapp consists of an executable `./build/miniapp/pxgemm_miniapp` which can
 # set the number of threads to be used by each MPI rank
 export OMP_NUM_THREADS=18
 # if using CPU version with MKL backend, set MKL_NUM_THREADS as well
-export MKL_NUM_THREADS=18 
+export MKL_NUM_THREADS=18
 # run the miniapp
 mpirun -np 4 ./build/miniapp/pxgemm_miniapp -m 1000 -n 1000 -k 1000 \
-                                            --block_a=128,128 \ 
+                                            --block_a=128,128 \
                                             --block_b=128,128 \
                                             --block_c=128,128 \
                                             --p_grid=2,2 \
@@ -301,9 +301,9 @@ mpirun -np 4 ./build/miniapp/pxgemm_miniapp -m 1000 -n 1000 -k 1000 \
 
 The overview of all supported options is given below:
 - `-m (--m_dim)` (default: `1000`): number of rows of matrices `A` and `C`.
-- `-n (--n_dim)` (default: `1000`): number of columns of matrices `B` and `C`. 
+- `-n (--n_dim)` (default: `1000`): number of columns of matrices `B` and `C`.
 - `-k (--k_dim)` (default: `1000`): number of columns of matrix `A` and rows of matrix `B`.
-- `--block_a` (optional, default: `128,128`): 2D-block size for matrix A. 
+- `--block_a` (optional, default: `128,128`): 2D-block size for matrix A.
 - `--block_b` (optional, default `128,128`): 2D-block size for matrix B.
 - `--block_c` (optional, default `128,128`): 2D-block size for matrix C.
 - `-p (--p_grid)` (optional, default: `1,P`): 2D-processor grid. By default `1xP` where `P` is the total number of MPI ranks.
@@ -320,12 +320,12 @@ The overview of all supported options is given below:
 
 ### Parameters Overview
 
-The overview of tunable parameters, that can be set through environment variables is given in the table below. The default values are given in **bold**. 
+The overview of tunable parameters, that can be set through environment variables is given in the table below. The default values are given in **bold**.
 
 ENVIRONMENT VARIABLE | POSSIBLE VALUES | DESCRIPTION
 | :------------------- | :------------------- |:------------------- |
 `COSMA_OVERLAP_COMM_AND_COMP` | ON, **OFF** | If enabled, commmunication and computation might be overlapped, depending on the built-in heuristics.
-`COSMA_ADAPT_STRATEGY` | **ON**, OFF | If enabled, COSMA will try to natively use the scalapack layout, without transforming to the COSMA layout.  Used only in the pxgemm wrapper. 
+`COSMA_ADAPT_STRATEGY` | **ON**, OFF | If enabled, COSMA will try to natively use the scalapack layout, without transforming to the COSMA layout.  Used only in the pxgemm wrapper.
 `COSMA_CPU_MAX_MEMORY` | integer (`size_t`), by default: **infinite** | CPU memory limit in megabytes per MPI process (rank). Allowing too little memory might reduce the performance.
 `COSMA_GPU_MEMORY_PINNING` | **ON**, OFF | If enabled, COSMA will pin parts of the host memory to speed up CPU-GPU memory transfers. Used only in the GPU backend.
 `COSMA_GPU_MAX_TILE_M`, `COSMA_GPU_MAX_TILE_N`, `COSMA_GPU_MAX_TILE_K` | integer (`size_t`), by default: **5000** | Tile sizes for each dimension, that are used to pipeline the local CPU matrices to GPU. `K` refers to the shared dimension and `MxN` refer to the dimensions of matrix `C`
@@ -350,7 +350,7 @@ export COSMA_GPU_MAX_TILE_K=5000
 ```
 where `K` refers to the shared dimension and `MxN` refer to the dimensions of matrix `C`. By default, all tiles are square and have dimensions `5000x5000`.
 
-These are only the maximum tiles and the actual tile sizes that will be used might be less, depending on the problem size. These variables are only used in the GPU backend for pipelining the local matrices to GPUs. 
+These are only the maximum tiles and the actual tile sizes that will be used might be less, depending on the problem size. These variables are only used in the GPU backend for pipelining the local matrices to GPUs.
 
 It is also possible to specify the number of GPU streams:
 ```bash
@@ -411,7 +411,7 @@ The precentage is always relative to the first level above. All time measurement
 
 - Grzegorz Kwasniewski, Marko Kabic, Maciej Besta, Joost VandeVondele, Raffaele Solca, Torsten Hoefler
 
-Cite as: 
+Cite as:
 ```
 @inproceedings{cosma_algorithm_2019,
   title={Red-blue pebbling revisited: Near optimal parallel matrix-matrix multiplication},
@@ -432,7 +432,7 @@ For questions, feel free to contact us, and we will soon get back to you:
 
 ## Acknowledgements
 
-This work was funded in part by:  
+This work was funded in part by:
 
 <img align="left" height="50" src="./docs/eth-logo.svg"> | [**ETH Zurich**](https://ethz.ch/en.html)**: Swiss Federal Institute of Technology in Zurich**
 | :------------------- | :------------------- |

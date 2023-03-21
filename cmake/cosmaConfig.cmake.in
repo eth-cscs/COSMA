@@ -31,16 +31,16 @@ if(NOT TARGET cosma::cosma)
       find_dependency(Tiled-MM) # bundled
 
       if ("@COSMA_WITH_NCCL@")
-        if (${COSMA_BLAS} STREQUAL "CUDA")
-          find_dependency(NCCL)
-        else()
-          find_dependency(RCCL)
-        endif()
+        find_dependency(NCCL)
+      endif()
+
+      if("@COSMA_WITH_RCCL@")
+        find_dependency(rccl)
       endif()
     endif ()
 
     if (NOT @COSMA_BLAS_VENDOR@ MATCHES "OFF")
-    	find_dependency(Blas)
+      find_dependency(Blas)
     endif()
 
     if (NOT ${COSMA_SCALAPACK} MATCHES "OFF")
