@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.17 FATAL_ERROR)
 project(cosma
   DESCRIPTION "Communication Optimal Matrix Multiplication"
   HOMEPAGE_URL "https://github.com/eth-cscs/COSMA"
-  VERSION 2.6.4
+  VERSION 2.6.5
   LANGUAGES CXX C)
 
 
@@ -25,6 +25,7 @@ option(COSMA_WITH_APPS "Generate the miniapp targets." ON)
 option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ON)
 option(COSMA_WITH_PROFILING "Enable profiling." OFF)
 option(COSMA_WITH_NCCL "Use NCCL as communication backend." OFF)
+option(COSMA_WITH_RCCL "Use RCCL as communication backend." OFF)
 option(COSMA_WITH_GPU_AWARE_MPI "Use gpu-aware MPI for communication." OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries." OFF)
 set(COSMA_SCALAPACK "OFF" CACHE STRING "scalapack implementation. Can be MKL, CRAY_LIBSCI, CUSTOM or OFF.")
@@ -120,27 +121,18 @@ endif()
 
 # these are only GPU-backends
 if (COSMA_GPU_BACKEND MATCHES "CUDA|ROCM")
-
   set(TILEDMM_GPU_BACKEND ${COSMA_GPU_BACKEND} CACHE STRING "GPU backend" FORCE)
   add_git_submodule_or_find_external(Tiled-MM libs/Tiled-MM)
   if (NOT TARGET Tiled-MM::Tiled-MM AND TARGET Tiled-MM)
     add_library(Tiled-MM::Tiled-MM ALIAS Tiled-MM)
   endif()
 
-  if (COSMA_WITH_NCCL OR COSMA_WITH_GPU_AWARE_MPI)
-    if (${COSMA_GPU_BACKEND} MATCHES "CUDA")
-      find_package(CUDAToolkit REQUIRED)
-      find_package(NCCL REQUIRED)
-      message(INFO "NCCL INCLUDE DIRS = ${NCCL_INCLUDE_DIRS}")
-      message(INFO "NCCL LIBRARIES = ${NCCL_LIBRARIES}")
-    elseif(${COSMA_GPU_BACKEND} MATCHES "ROCM")
-      finmd_package(hip REQUIRED)
-      find_package(RCCL REQUIRED)
-      message(INFO "RCCL INCLUDE DIRS = ${RCCL_INCLUDE_DIRS}")
-      message(INFO "RCCL LIBRARIES = ${RCCL_LIBRARIES}")
-    else()
-      message(FATAL_ERROR "COSMA_WITH_NCCL AND/OR COSMA_WITH_GPU_AWARE_MPI are specified, but no GPU backend chosen.")
-    endif()
+  if (COSMA_WITH_NCCL)
+    find_package(CUDAToolkit REQUIRED)
+    find_package(NCCL REQUIRED)
+  elseif (COSMA_WITH_RCCL)
+    find_package(hip REQUIRED)
+    find_package(rccl REQUIRED)
   endif()
 endif()
 
@@ -207,7 +199,6 @@ install(FILES "${cosma_BINARY_DIR}/cosmaConfig.cmake"
   "${cosma_SOURCE_DIR}/cmake/FindCRAY_LIBSCI.cmake"
   "${cosma_SOURCE_DIR}/cmake/FindGenericBLAS.cmake"
   "${cosma_SOURCE_DIR}/cmake/FindNCCL.cmake"
-  "${cosma_SOURCE_DIR}/cmake/FindRCCL.cmake"
   "${cosma_SOURCE_DIR}/cmake/FindBLIS.cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cosma")
 
