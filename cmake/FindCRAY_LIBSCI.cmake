@@ -19,8 +19,9 @@ find_package_handle_standard_args(CRAY_LIBSCI DEFAULT_MSG CRAY_LIBSCI_LIBRARIES)
 
 if (CRAY_LIBSCI_LIBRARIES AND NOT TARGET cosma::BLAS::SCI::scalapack)
   add_library(cosma::BLAS::SCI::sci INTERFACE IMPORTED)
+  set_target_properties(cosma::BLAS::SCI::sci PROPERTY INTERFACE_LINK_LIBRARIES "${CRAY_LIBSCI_LINK_LIBRARIES}")
   add_library(cosma::BLAS::SCI::blas ALIAS cosma::BLAS::SCI::sci)
+
   add_library(cosma::BLAS::SCI::scalapack_link INTERFACE IMPORTED)
-  set_properties(cosma::BLAS::SCI::scalapack PROPERTY INTERFACE_LINK_LIBRARIES "${CRAY_LIBSCI_LINK_LIBRARIES}")
-  set_properties(cosma::BLAS::SCI::sci PROPERTY INTERFACE_LINK_LIBRARIES "${CRAY_LIBSCI_LINK_LIBRARIES}")
+  set_target_properties(cosma::BLAS::SCI::scalapack PROPERTY INTERFACE_LINK_LIBRARIES "${CRAY_LIBSCI_LINK_LIBRARIES}")
 endif()
