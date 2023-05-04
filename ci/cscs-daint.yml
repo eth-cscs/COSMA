@@ -1,0 +1,115 @@
+include:
+  - remote: 'https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.ci-ext.yml'
+
+stages:
+  - build_base
+  - build
+#  - test
+
+build base image:
+  extends: .container-builder
+  stage: build_base
+  timeout: 2h
+  before_script:
+  - DOCKER_TAG=`sha256sum ci/baseimage.cpu.Fedora37.Dockerfile | head -c 16`
+  - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/baseimage/cosma_base:$DOCKER_TAG
+  - echo "BASE_IMAGE=$PERSIST_IMAGE_NAME" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
+  variables:
+    #CSCS_BUILD_IN_MEMORY: 'FALSE'
+    DOCKERFILE: ci/baseimage.cpu.Fedora37.Dockerfile
+    # change to 'always' if you want to rebuild, even if target tag exists already (if-not-exists is the default, i.e. we could also skip the variable)
+    CSCS_REBUILD_POLICY: if-not-exists
+    #DOCKER_BUILD_ARGS: '["CUDA_ARCH=60"]'
+
+build cpu image:
+   extends: .container-builder
+   needs: ["build base image"]
+   stage: build
+   variables:
+     DOCKERFILE: ci/build.Dockerfile
+     PERSIST_IMAGE_NAME: discard
+     SPEC: 'cosma@develop%gcc +tests +apps +shared +scalapack ^intel-mkl+cluster'
+     #CMAKE_ARG: '-DCP2K_BLAS_VENDOR=MKL -DCP2K_SCALAPACK_VENDOR=MKL -DCP2K_USE_LIBXC -DCP2K_USE_LIBINT2 -DCP2K_USE_COSMA -DCP2K_USE_SPGLIB'
+     DOCKER_BUILD_ARGS: '["BASE_IMAGE=${BASE_IMAGE}", "SPECDEV=$SPEC"]'
+
+# .run_tests:
+#   extends: .container-runner-daint-gpu
+#   needs: ["build cuda image"]
+#   stage: test
+#   script:
+#     - cd /sirius-src/spack-build
+#     - |
+#       if [ "$SLURM_PROCID" == "0" ]; then
+#         $TEST_COMMAND -V
+#       else
+#         $TEST_COMMAND --output-on-failure
+#       fi
+#   image: $CSCS_REGISTRY_PATH/sirius/sirius-ci:$CI_COMMIT_SHA
+#   variables:
+#     CRAY_CUDA_MPS: 1
+#     GIT_STRATEGY: none
+#     MPICH_MAX_THREAD_SAFETY: multiple
+#     CSCS_REGISTRY_LOGIN: 'YES'
+#     PULL_IMAGE: 'YES'
+#     SLURM_HINT: nomultithread
+#     SLURM_JOB_NUM_NODES: 1
+#     SLURM_UNBUFFEREDIO: ''
+#     SLURM_WAIT: 0
+
+# gpu serial:
+#   extends: .run_tests
+#   variables:
+#     OMP_NUM_THREADS: 12
+#     SLURM_CONSTRAINT: gpu
+#     SLURM_CPUS_PER_TASK: 12
+#     SLURM_NTASKS: 1
+#     SLURM_TIMELIMIT: "30:00"
+#     TEST_COMMAND: ctest -L gpu_serial
+
+# gpu band parallel:
+#   extends: .run_tests
+#   variables:
+#     OMP_NUM_THREADS: 3
+#     SLURM_CONSTRAINT: gpu
+#     SLURM_CPUS_PER_TASK: 3
+#     SLURM_NTASKS: 4
+#     SLURM_TIMELIMIT: "30:00"
+#     TEST_COMMAND: ctest -L gpu_band_parallel
+#     USE_MPI: 'YES'
+
+# gpu k-point parallel:
+#   extends: .run_tests
+#   variables:
+#     OMP_NUM_THREADS: 3
+#     SLURM_CONSTRAINT: gpu
+#     SLURM_CPUS_PER_TASK: 3
+#     SLURM_NTASKS: 4
+#     SLURM_TIMELIMIT: "30:00"
+#     TEST_COMMAND: ctest -L gpu_k_point_parallel
+#     USE_MPI: 'YES'
+
+# cpu single:
+#   extends: .run_tests
+#   variables:
+#     OMP_NUM_THREADS: 12
+#     SLURM_CONSTRAINT: gpu
+#     SLURM_CPU_BIND: sockets
+#     SLURM_CPUS_PER_TASK: 12
+#     SLURM_NTASKS: 1
+#     SLURM_TIMELIMIT: "30:00"
+#     TEST_COMMAND: ctest -L cpu_serial
+
+# cpu band parallel:
+#   extends: .run_tests
+#   variables:
+#     OMP_NUM_THREADS: 3
+#     SLURM_CONSTRAINT: gpu
+#     SLURM_CPU_BIND: sockets
+#     SLURM_CPUS_PER_TASK: 3
+#     SLURM_NTASKS: 4
+#     SLURM_TIMELIMIT: "30:00"
+#     TEST_COMMAND: ctest -L cpu_band_parallel
+#     USE_MPI: 'YES'
