@@ -61,6 +61,7 @@ target_compile_definitions(cosma PUBLIC
                               PRIVATE
                               $<$<BOOL:${COSMA_WITH_PROFILING}>:COSMA_WITH_PROFILING>)
 
+
 list(APPEND INSTALLED_TARGETS_LIST "cosma")
 
 # if SCALAPACK is found and cosma_pxgemm library is not already created
