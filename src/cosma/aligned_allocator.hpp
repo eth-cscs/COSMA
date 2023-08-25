@@ -94,7 +94,11 @@ public:
     pointer allocate(size_type cnt,
                      typename std::allocator<void>::const_pointer = 0) {
         if (cnt > 0) {
-            pointer ptr = aligned_malloc(cnt);
+            //pointer ptr = aligned_malloc(cnt);
+	    pointer ptr;
+	    //hipMalloc(&ptr, cnt*sizeof(T));
+	    hipHostMalloc(&ptr, cnt*sizeof(T), hipHostMallocDefault);
+	    //hipMallocManaged(&ptr, cnt*sizeof(T), hipMemAttachGlobal);
             return ptr;
         }
         return nullptr;
@@ -102,7 +106,10 @@ public:
 
     void deallocate(pointer p, size_type cnt) {
         if (p) {
-            std::free(p);
+            //std::free(p);
+	    //hipFree(p);
+	    hipHostFree(p);
+
         }
     }
 
