@@ -94,11 +94,14 @@ public:
     pointer allocate(size_type cnt,
                      typename std::allocator<void>::const_pointer = 0) {
         if (cnt > 0) {
-            //pointer ptr = aligned_malloc(cnt);
+#if !defined(COSMA_USE_UNIFIED_MEMORY) 
+            pointer ptr = aligned_malloc(cnt);
+#else
 	    pointer ptr;
 	    //hipMalloc(&ptr, cnt*sizeof(T));
 	    hipHostMalloc(&ptr, cnt*sizeof(T), hipHostMallocDefault);
 	    //hipMallocManaged(&ptr, cnt*sizeof(T), hipMemAttachGlobal);
+#endif
             return ptr;
         }
         return nullptr;
