@@ -98,8 +98,8 @@ public:
             pointer ptr = aligned_malloc(cnt);
 #else
 	    pointer ptr;
-	    //hipMalloc(&ptr, cnt*sizeof(T));
-	    hipHostMalloc(&ptr, cnt*sizeof(T), hipHostMallocDefault);
+	    hipMalloc(&ptr, cnt*sizeof(T));
+	    //hipHostMalloc(&ptr, cnt*sizeof(T), hipHostMallocDefault);
 	    //hipMallocManaged(&ptr, cnt*sizeof(T), hipMemAttachGlobal);
 #endif
             return ptr;
@@ -109,9 +109,12 @@ public:
 
     void deallocate(pointer p, size_type cnt) {
         if (p) {
-            //std::free(p);
-	    //hipFree(p);
-	    hipHostFree(p);
+#if !defined(COSMA_USE_UNIFIED_MEMORY) 
+            std::free(p);
+#else
+	    hipFree(p);
+	    //hipHostFree(p);
+#endif
 
         }
     }
