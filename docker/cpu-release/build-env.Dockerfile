@@ -20,7 +20,7 @@ ENV COSMA_MIN_LOCAL_DIMENSION=32
 RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     software-properties-common \
     build-essential \
-    git tar wget curl gpg-agent && \
+    git tar wget curl gpg-agent chrpath && \
     rm -rf /var/lib/apt/lists/*
 
 # Install cmake

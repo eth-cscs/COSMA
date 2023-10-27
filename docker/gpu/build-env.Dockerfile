@@ -22,7 +22,7 @@ RUN apt-get update -qq && \
     apt-get install -qq -y --no-install-recommends \
       software-properties-common \
       build-essential gfortran pkg-config \
-      git tar wget curl && \
+      git tar wget curl chrpath && \
     rm -rf /var/lib/apt/lists/*
 
 # Install cmake
