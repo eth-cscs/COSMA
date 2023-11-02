@@ -116,7 +116,7 @@ if (COSMA_WITH_PROFILING)
 endif ()
 
 if (COSMA_WITH_TESTS OR COSMA_WITH_APPS)
-  find_package(cxxopts REQUIRED)
+  add_git_submodule_or_find_external(cxxopts libs/cxxopts)
 endif()
 
 # these are only GPU-backends

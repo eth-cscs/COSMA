@@ -20,7 +20,7 @@ ENV COSMA_MIN_LOCAL_DIMENSION=32
 RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     software-properties-common \
     build-essential \
-    git tar wget curl gpg-agent && \
+    git tar wget curl gpg-agent chrpath && \
     rm -rf /var/lib/apt/lists/*
 
 # Install cmake
@@ -44,6 +44,6 @@ RUN wget -qO - https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-P
 
 # Add deployment tooling
 RUN mkdir -p /opt/libtree && \
-    curl -Lfso /opt/libtree/libtree https://github.com/haampie/libtree/releases/download/v3.0.3/libtree_x86_64 && \
+    curl -Lfso /opt/libtree/libtree https://github.com/haampie/libtree/releases/download/v2.0.0/libtree_x86_64 && \
     chmod +x /opt/libtree/libtree
 

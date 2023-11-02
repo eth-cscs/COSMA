@@ -78,3 +78,18 @@ Notes:
   add `^mpich`
 
 For more information on Spack: [Spack 101 Tutorial](https://spack.readthedocs.io/en/latest/tutorial.html).
+
+## Docker
+
+COSMA can be installed into a Docker container in the following way:
+
+```
+docker build -f docker/gpu/build-env.Dockerfile -t cosma-build-env .
+docker build --build-arg BUILD_ENV=cosma-build-env -f docker/gpu/deploy.Dockerfile -t cosma .
+```
+
+Then the `cosma` container can be deployed for testing:
+
+```
+docker run --rm -it -v (pwd):(pwd) --gpus all cosma
+```
