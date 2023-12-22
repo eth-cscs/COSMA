@@ -1,0 +1,27 @@
+include:
+  - remote: 'https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.ci-ext.yml'
+
+stages:
+  - baseimage
+  - build
+  - test
+
+build base image:
+  extends: .container-builder-dynamic-name
+  stage: baseimage
+  timeout: 2h
+  variables:
+    DOCKERFILE: ci/baseimage.cuda.Dockerfile
+    WATCH_FILECHANGES: ci/baseimage.cuda.Dockerfile
+    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/base/cosma-ci
+
+
+build cosma:
+  extends: .container-builder
+  needs: ["build base image"]
+  stage: build
+  variables:
+    DOCKERFILE: ci/build.Dockerfile
+    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/cosma/cosma-ci:$CI_COMMIT_SHA
+    ENVPATH: "/cosma-env-cuda"
+    DOCKER_BUILD_ARGS: '["BASE_IMAGE=${BASE_IMAGE}", "ENVPATH=$ENVPATH"]'
