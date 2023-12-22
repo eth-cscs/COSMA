@@ -67,6 +67,11 @@ RUN spack env create -d /cosma-env-cuda-gpu-direct && \
     spack -e /cosma-env-cuda-gpu-direct develop -p /src cosma@master && \
     spack -e /cosma-env-cuda-gpu-direct install --only=dependencies --fail-fast
 
+RUN spack env create -d /cosma-env-cuda-nccl && \
+    spack -e /cosma-env-cuda-nccl add "cosma@master %gcc +cuda +tests +scalapack +shared +nccl ^mpich " && \
+    spack -e /cosma-env-cuda-nccl develop -p /src cosma@master && \
+    spack -e /cosma-env-cuda-nccl install --only=dependencies --fail-fast
+
 RUN spack env create -d /cosma-env-cpu && \
     spack -e /cosma-env-cpu add "cosma@master %gcc ~cuda +tests +scalapack +shared ^mpich " && \
     spack -e /cosma-env-cpu develop -p /src cosma@master && \
