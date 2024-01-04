@@ -39,7 +39,7 @@ COPY ./spack /cosma-repo
 RUN spack repo add /cosma-repo
 
 # find all external packages
-RUN spack external find --all
+RUN spack external find --all --exclude python
 
 # find compilers
 RUN spack compiler find
