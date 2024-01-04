@@ -34,6 +34,10 @@ RUN spack config add config:install_tree:root:/opt/local
 # set cuda_arch for all packages
 RUN spack config add packages:all:variants:cuda_arch=${CUDA_ARCH}
 
+# add local repo
+COPY ./spack /cosma-repo
+RUN spack repo add /cosma-repo
+
 # find all external packages
 RUN spack external find --all
 
