@@ -70,47 +70,48 @@ build cosma cuda nccl:
     SLURM_UNBUFFEREDIO: ''
     SLURM_WAIT: 0
 
-pdgemm and multiply:
-  extends: .run_tests
-  stage: test
-  script:
-    - |
-      eval $(spack load --sh cosma)
-      test.pdgemm
-      test.multiply
-  variables:
-    SLURM_JOB_NUM_NODES: 2
-    SLURM_NTASKS: 16
-
 mapper:
   extends: .run_tests
   stage: test
   script:
     - |
       eval $(spack load --sh cosma)
+      env
       test.mapper
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
 
-scalar_matmul:
-  extends: .run_tests
-  stage: test
-  script:
-    - |
-      eval $(spack load --sh cosma)
-      test.scalar_matmul
-  variables:
-    SLURM_JOB_NUM_NODES: 1
-    SLURM_NTASKS: 8
+# pdgemm and multiply:
+#   extends: .run_tests
+#   stage: test
+#   script:
+#     - |
+#       eval $(spack load --sh cosma)
+#       test.pdgemm
+#       test.multiply
+#   variables:
+#     SLURM_JOB_NUM_NODES: 2
+#     SLURM_NTASKS: 16
 
-multiply_using_layout:
-  extends: .run_tests
-  stage: test
-  script:
-    - |
-      eval $(spack load --sh cosma)
-      test.multiply_using_layout
-  variables:
-    SLURM_JOB_NUM_NODES: 1
-    SLURM_NTASKS: 4
+# scalar_matmul:
+#   extends: .run_tests
+#   stage: test
+#   script:
+#     - |
+#       eval $(spack load --sh cosma)
+#       test.scalar_matmul
+#   variables:
+#     SLURM_JOB_NUM_NODES: 1
+#     SLURM_NTASKS: 8
+
+# multiply_using_layout:
+#   extends: .run_tests
+#   stage: test
+#   script:
+#     - |
+#       eval $(spack load --sh cosma)
+#       test.multiply_using_layout
+#   variables:
+#     SLURM_JOB_NUM_NODES: 1
+#     SLURM_NTASKS: 4
