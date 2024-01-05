@@ -69,6 +69,9 @@ build cosma cuda nccl:
     SLURM_HINT: nomultithread
     SLURM_UNBUFFEREDIO: ''
     SLURM_WAIT: 0
+    COSMA_GPU_MAX_TILE_K: 100
+    COSMA_GPU_MAX_TILE_M: 100
+    COSMA_GPU_MAX_TILE_N: 100
 
 mapper:
   extends: .run_tests
@@ -77,16 +80,25 @@ mapper:
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
+    USE_MPI: 'YES'
 
-pdgemm and multiply:
+pdgemm:
   extends: .run_tests
   stage: test
-  script:
-    - /cosma-env-cuda/.spack-env/view/bin/test.pdgemm
-    - /cosma-env-cuda/.spack-env/view/bin/test.multiply
+  script: /cosma-env-cuda/.spack-env/view/bin/test.pdgemm
   variables:
     SLURM_JOB_NUM_NODES: 2
     SLURM_NTASKS: 16
+    USE_MPI: 'YES'
+
+multiply:
+  extends: .run_tests
+  stage: test
+  script: /cosma-env-cuda/.spack-env/view/bin/test.multiply
+  variables:
+    SLURM_JOB_NUM_NODES: 2
+    SLURM_NTASKS: 16
+    USE_MPI: 'YES'
 
 scalar_matmul:
   extends: .run_tests
@@ -95,6 +107,7 @@ scalar_matmul:
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 8
+    USE_MPI: 'YES'
 
 multiply_using_layout:
   extends: .run_tests
@@ -103,3 +116,4 @@ multiply_using_layout:
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 4
+    USE_MPI: 'YES'
