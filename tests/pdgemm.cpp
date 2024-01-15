@@ -3,6 +3,8 @@
 
 #include <gtest/gtest.h>
 #include <gtest_mpi/gtest_mpi.hpp>
+#include <vector>
+#include <iostream>
 
 MPI_Comm subcommunicator(int new_P, MPI_Comm comm = MPI_COMM_WORLD) {
     // original size
