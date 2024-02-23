@@ -3,6 +3,8 @@
 
 #include <gtest/gtest.h>
 #include <gtest_mpi/gtest_mpi.hpp>
+#include <vector>
+#include <iostream>
 
 MPI_Comm subcommunicator(int new_P, MPI_Comm comm = MPI_COMM_WORLD) {
     // original size
@@ -683,7 +685,7 @@ INSTANTIATE_TEST_CASE_P(
             // matrix dimensions
             43176, 217, // matrix A
             43176, 217, // matrix B
-            2176, 217, // matrix C
+            217, 217, // matrix C
 
             // block sizes
             1696, 108, // matrix A
