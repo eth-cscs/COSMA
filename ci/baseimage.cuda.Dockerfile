@@ -34,7 +34,7 @@ RUN spack config add config:install_tree:root:/opt/local
 # set cuda_arch for all packages
 RUN spack config add packages:all:variants:cuda_arch=${CUDA_ARCH}
 
-# add local repo
+# add local repo for cosma and tiled-mm
 COPY ./spack /cosma-repo
 RUN spack repo add /cosma-repo
 
@@ -62,17 +62,20 @@ RUN ldconfig
 
 # create environments for several configurations and install dependencies
 RUN spack env create -d /cosma-env-cuda && \
-    spack -e /cosma-env-cuda add "cosma@master %gcc +cuda +tests +scalapack +shared ^mpich " && \
+    spack -e /cosma-env-cuda add "cosma@master %gcc +cuda +tests +scalapack +shared ^mpich" && \
+    spack -e /cosma-env-cuda add "tiled-mm@master" && \
     spack -e /cosma-env-cuda develop -p /src cosma@master && \
     spack -e /cosma-env-cuda install --only=dependencies --fail-fast
 
 RUN spack env create -d /cosma-env-cuda-gpu-direct && \
     spack -e /cosma-env-cuda-gpu-direct add "cosma@master %gcc +cuda +tests +scalapack +shared +gpu_direct ^mpich " && \
+    spack -e /cosma-env-cuda-gpu-direct add "tiled-mm@master" && \
     spack -e /cosma-env-cuda-gpu-direct develop -p /src cosma@master && \
     spack -e /cosma-env-cuda-gpu-direct install --only=dependencies --fail-fast
 
 RUN spack env create -d /cosma-env-cuda-nccl && \
     spack -e /cosma-env-cuda-nccl add "cosma@master %gcc +cuda +tests +scalapack +shared +nccl ^mpich " && \
+    spack -e /cosma-env-cuda-nccl add "tiled-mm@master" && \
     spack -e /cosma-env-cuda-nccl develop -p /src cosma@master && \
     spack -e /cosma-env-cuda-nccl install --only=dependencies --fail-fast
 
