@@ -685,7 +685,7 @@ INSTANTIATE_TEST_CASE_P(
             // matrix dimensions
             43176, 217, // matrix A
             43176, 217, // matrix B
-            217, 217, // matrix C
+            2176, 217, // matrix C
 
             // block sizes
             1696, 108, // matrix A
