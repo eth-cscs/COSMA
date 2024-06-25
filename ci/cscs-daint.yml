@@ -89,6 +89,7 @@ pdgemm:
   variables:
     SLURM_JOB_NUM_NODES: 2
     SLURM_NTASKS: 16
+    COSMA_GPU_STREAMS: 1
     USE_MPI: 'YES'
 
 multiply:
