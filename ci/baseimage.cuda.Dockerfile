@@ -63,7 +63,7 @@ RUN ldconfig
 # create environments for several configurations and install dependencies
 RUN spack env create -d /cosma-env-cuda && \
     spack -e /cosma-env-cuda add "cosma@master %gcc +cuda +tests +scalapack +shared ^mpich" && \
-    spack -e /cosma-env-cuda add "tiled-mm@master" && \
+    spack -e /cosma-env-cuda add "tiled-mm@2.3.1" && \
     spack -e /cosma-env-cuda develop -p /src cosma@master && \
     spack -e /cosma-env-cuda install --only=dependencies --fail-fast
 
@@ -75,7 +75,7 @@ RUN spack env create -d /cosma-env-cuda-gpu-direct && \
 
 RUN spack env create -d /cosma-env-cuda-nccl && \
     spack -e /cosma-env-cuda-nccl add "cosma@master %gcc +cuda +tests +scalapack +shared +nccl ^mpich " && \
-    spack -e /cosma-env-cuda-nccl add "tiled-mm@master" && \
+    spack -e /cosma-env-cuda-nccl add "tiled-mm@2.3.1" && \
     spack -e /cosma-env-cuda-nccl develop -p /src cosma@master && \
     spack -e /cosma-env-cuda-nccl install --only=dependencies --fail-fast
 
