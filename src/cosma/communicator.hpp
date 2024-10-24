@@ -16,7 +16,7 @@
 #endif
 
 #if defined(COSMA_WITH_NCCL) && defined(TILED_MM_ROCM)
-#include <rccl.h>
+#include <rccl/rccl.h>
 #endif
 
 namespace cosma {

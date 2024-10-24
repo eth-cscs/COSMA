@@ -10,7 +10,7 @@
 #include <nccl.h>
 
 #elif defined(TILED_MM_ROCM)
-#include <rccl.h>
+#include <rccl/rccl.h>
 
 #else
 #error Either TILED_MM_CUDA or TILED_MM_ROCM must be defined!
