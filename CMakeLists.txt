@@ -101,8 +101,9 @@ set(COSTA_SCALAPACK ${COSMA_SCALAPACK} CACHE INTERNAL "")
 
 FetchContent_Declare(
   costa
-  GIT_REPOSITORY https://github.com/mtaillefumier/costa.git
-  GIT_TAG        f9955e626adca8ca4b613932a57e1e6a38235581 # master
+  GIT_REPOSITORY https://github.com/eth-cscs/costa.git
+  GIT_TAG        76acd4e2f1061fa5d7d58499f980402659806c6f # master
+  FIND_PACKAGE_ARGS NAMES costa
 )
 
 # the joy of fetch_content. if we build costa and cosma together
@@ -114,14 +115,14 @@ endif ()
 
 FetchContent_MakeAvailable(costa)
 
-
 # these are only GPU-backends
 if (COSMA_GPU_BACKEND MATCHES "CUDA|ROCM")
   set(TILEDMM_GPU_BACKEND ${COSMA_GPU_BACKEND} CACHE INTERNAL "")
   FetchContent_Declare(
     Tiled-MM
-    GIT_REPOSITORY https://github.com/mtaillefumier/Tiled-MM.git
-    GIT_TAG        d200bee1dc19a0b51656aa89ec29d85873dd23a4 # v2.3.1
+    GIT_REPOSITORY https://github.com/eth-cscs/Tiled-MM.git
+    GIT_TAG        236d5844ed95991e9d041dd616db4a1e2afe41cb # v2.3.1
+    FIND_PACKAGE_ARGS NAMES tiled-MM
   )
   FetchContent_MakeAvailable(Tiled-MM)
 
@@ -144,6 +145,8 @@ if (COSMA_WITH_PROFILING)
     semiprof
     GIT_REPOSITORY  https://github.com/bcumming/semiprof.git
     GIT_TAG         f132142ff2215dfa073e416fa7911d8877d62752
+    FIND_PACKAGE_ARGS NAMES semiprof
+
   )
   FetchContent_MakeAvailable(semiprof)
 endif ()
@@ -153,6 +156,7 @@ if (COSMA_WITH_TESTS OR COSMA_WITH_APPS)
     cxxopts
     GIT_REPOSITORY https://github.com/jarro2783/cxxopts.git
     GIT_TAG        4bf61f08697b110d9e3991864650a405b3dd515d # v3.2.1
+    FIND_PACKAGE_ARGS NAMES cxxopts
   )
   FetchContent_MakeAvailable(cxxopts)
 endif()
