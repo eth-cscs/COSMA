@@ -24,7 +24,7 @@ build tiled-mm:
     SLURM_RESERVATION: 'NCCL'
     DOCKERFILE: ci/build.Dockerfile
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/cosma/cosma-ci:$CI_COMMIT_SHA
-    ENVPATH: "/tiledmm-env-cuda"
+    ENVPATH: "/cosma-env-cuda"
     DOCKER_BUILD_ARGS: '["BASE_IMAGE=${BASE_IMAGE}", "ENVPATH=$ENVPATH"]'
 
 .run_tests:
