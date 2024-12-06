@@ -48,12 +48,6 @@ RUN spack compiler find
 # install yq (utility to manipulate the yaml files)
 RUN wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_arm64 && chmod a+x /usr/local/bin/yq
 
-# change the fortran compilers: for gcc the gfortran is already properly set and the change has no effect; add it for clang
-RUN yq -i '.compilers[0].compiler.paths.f77 = "/usr/bin/gfortran"' /root/.spack/linux/compilers.yaml && \
-    yq -i '.compilers[0].compiler.paths.fc = "/usr/bin/gfortran"' /root/.spack/linux/compilers.yaml  && \
-    yq -i '.compilers[1].compiler.paths.f77 = "/usr/bin/gfortran"' /root/.spack/linux/compilers.yaml && \
-    yq -i '.compilers[1].compiler.paths.fc = "/usr/bin/gfortran"' /root/.spack/linux/compilers.yaml
-
 # install MPICH
 RUN spack install mpich@${MPICH_VERSION} %gcc
 
