@@ -1,6 +1,6 @@
 FROM ubuntu:22.04 as builder
 
-ARG CUDA_ARCH=60
+ARG CUDA_ARCH=90
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -10,7 +10,7 @@ ENV PATH="/spack/bin:${PATH}"
 
 ENV MPICH_VERSION=3.4.3
 
-ENV CMAKE_VERSION=3.27.9
+ENV CMAKE_VERSION=3.30.3
 
 RUN apt-get -y update
 
@@ -23,11 +23,12 @@ RUN apt-get install -y --no-install-recommends gcc g++ gfortran clang libomp-14-
   liblzma-dev libbz2-dev
 
 # install CMake
-RUN wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz -O cmake.tar.gz && \
+RUN wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-aarch64.tar.gz -O cmake.tar.gz && \
     tar zxvf cmake.tar.gz --strip-components=1 -C /usr
 
+#
 # get latest version of spack
-RUN git clone -b v0.21.0 https://github.com/spack/spack.git
+RUN git clone -b v0.23.0 https://github.com/spack/spack.git
 
 # set the location of packages built by spack
 RUN spack config add config:install_tree:root:/opt/local
@@ -45,7 +46,7 @@ RUN spack external find --all --exclude python
 RUN spack compiler find
 
 # install yq (utility to manipulate the yaml files)
-RUN wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_386 && chmod a+x /usr/local/bin/yq
+RUN wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_arm64 && chmod a+x /usr/local/bin/yq
 
 # change the fortran compilers: for gcc the gfortran is already properly set and the change has no effect; add it for clang
 RUN yq -i '.compilers[0].compiler.paths.f77 = "/usr/bin/gfortran"' /root/.spack/linux/compilers.yaml && \
