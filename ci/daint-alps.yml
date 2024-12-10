@@ -42,6 +42,7 @@ build tiled-mm:
     SLURM_RESERVATION: 'NCCL'
     SLURM_CPU_BIND: 'socket'
     SLURM_MPI: "pmi2"
+    CRAY_CUDA_MPS: 'YES'
     # Workaround after update until hooks are fixed
     ENROOT_LIBRARY_PATH: /capstor/scratch/cscs/fmohamed/enrootlibn
     # SLURM_WAIT: 0
@@ -52,7 +53,7 @@ build tiled-mm:
 mapper:
   extends: .run_tests
   stage: test
-  script: ci/mps-wrapper.sh /cosma-env-cuda/.spack-env/view/bin/test.mapper
+  script: /cosma-env-cuda/.spack-env/view/bin/test.mapper
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
@@ -61,7 +62,7 @@ mapper:
 pdgemm:
   extends: .run_tests
   stage: test
-  script: ci/mps-wrapper.sh /cosma-env-cuda/.spack-env/view/bin/test.pdgemm
+  script: /cosma-env-cuda/.spack-env/view/bin/test.pdgemm
   variables:
     SLURM_JOB_NUM_NODES: 2
     SLURM_NTASKS: 16
@@ -70,7 +71,7 @@ pdgemm:
 multiply:
   extends: .run_tests
   stage: test
-  script: ci/mps-wrapper.sh /cosma-env-cuda/.spack-env/view/bin/test.multiply
+  script: /cosma-env-cuda/.spack-env/view/bin/test.multiply
   variables:
     SLURM_JOB_NUM_NODES: 2
     SLURM_NTASKS: 16
@@ -79,7 +80,7 @@ multiply:
 scalar_matmul:
   extends: .run_tests
   stage: test
-  script: ci/mps-wrapper.sh /cosma-env-cuda/.spack-env/view/bin/test.scalar_matmul
+  script: /cosma-env-cuda/.spack-env/view/bin/test.scalar_matmul
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 8
@@ -88,7 +89,7 @@ scalar_matmul:
 multiply_using_layout:
   extends: .run_tests
   stage: test
-  script: ci/mps-wrapper.sh /cosma-env-cuda/.spack-env/view/bin/test.multiply_using_layout
+  script: /cosma-env-cuda/.spack-env/view/bin/test.multiply_using_layout
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 4
