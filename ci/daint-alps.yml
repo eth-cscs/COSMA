@@ -40,6 +40,7 @@ build tiled-mm:
     SLURM_HINT: nomultithread
     SLURM_UNBUFFEREDIO: ''
     SLURM_RESERVATION: 'NCCL'
+    SLURM_GPUS_PER_TASK: 1
     SLURM_MPI: "pmi2"
     # Workaround after update until hooks are fixed
     ENROOT_LIBRARY_PATH: /capstor/scratch/cscs/fmohamed/enrootlibn
