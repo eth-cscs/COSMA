@@ -1,0 +1,95 @@
+include:
+  - remote: 'https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.ci-ext.yml'
+
+stages:
+  - baseimage
+  - build
+  - test
+
+build base image:
+  extends: [.dynamic-image-name, .container-builder-cscs-gh200]
+  stage: baseimage
+  timeout: 2h
+  variables:
+    SLURM_RESERVATION: 'NCCL'
+    DOCKERFILE: ci/baseimage.cuda.Dockerfile
+    WATCH_FILECHANGES: ci/baseimage.cuda.Dockerfile
+    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/base/cosma-ci
+
+build tiled-mm:
+  extends: .container-builder-cscs-gh200
+  needs: ["build base image"]
+  stage: build
+  variables:
+    SLURM_RESERVATION: 'NCCL'
+    DOCKERFILE: ci/build.Dockerfile
+    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/cosma/cosma-ci:$CI_COMMIT_SHA
+    ENVPATH: "/cosma-env-cuda"
+    DOCKER_BUILD_ARGS: '["BASE_IMAGE=${BASE_IMAGE}", "ENVPATH=$ENVPATH"]'
+
+.run_tests:
+  extends: [.container-runner-todi-gh200]
+  needs: ["build tiled-mm"]
+  stage: test
+  image: $CSCS_REGISTRY_PATH/cosma/cosma-ci:$CI_COMMIT_SHA
+  variables:
+    GIT_STRATEGY: none
+    MPICH_MAX_THREAD_SAFETY: multiple
+    CSCS_REGISTRY_LOGIN: 'YES'
+    PULL_IMAGE: 'YES'
+    SLURM_HINT: nomultithread
+    SLURM_UNBUFFEREDIO: ''
+    SLURM_RESERVATION: 'NCCL'
+    SLURM_CPU_BIND: 'socket'
+    SLURM_MPI: "pmi2"
+    CRAY_CUDA_MPS: 'YES'
+    # Workaround after update until hooks are fixed
+    ENROOT_LIBRARY_PATH: /capstor/scratch/cscs/fmohamed/enrootlibn
+    # SLURM_WAIT: 0
+    COSMA_GPU_MAX_TILE_K: 100
+    COSMA_GPU_MAX_TILE_M: 100
+    COSMA_GPU_MAX_TILE_N: 100
+
+mapper:
+  extends: .run_tests
+  stage: test
+  script: /cosma-env-cuda/.spack-env/view/bin/test.mapper
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 1
+    USE_MPI: 'YES'
+
+pdgemm:
+  extends: .run_tests
+  stage: test
+  script: /cosma-env-cuda/.spack-env/view/bin/test.pdgemm
+  variables:
+    SLURM_JOB_NUM_NODES: 2
+    SLURM_NTASKS: 16
+    USE_MPI: 'YES'
+
+multiply:
+  extends: .run_tests
+  stage: test
+  script: /cosma-env-cuda/.spack-env/view/bin/test.multiply
+  variables:
+    SLURM_JOB_NUM_NODES: 2
+    SLURM_NTASKS: 16
+    USE_MPI: 'YES'
+
+scalar_matmul:
+  extends: .run_tests
+  stage: test
+  script: /cosma-env-cuda/.spack-env/view/bin/test.scalar_matmul
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 8
+    USE_MPI: 'YES'
+
+multiply_using_layout:
+  extends: .run_tests
+  stage: test
+  script: /cosma-env-cuda/.spack-env/view/bin/test.multiply_using_layout
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 4
