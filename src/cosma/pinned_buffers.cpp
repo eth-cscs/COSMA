@@ -1,3 +1,4 @@
+#include <complex>
 #include <cosma/pinned_buffers.hpp>
 
 // container of pinned buffers
