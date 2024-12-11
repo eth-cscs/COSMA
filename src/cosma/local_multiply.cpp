@@ -314,51 +314,57 @@ void local_multiply(cosma_context<Scalar> *ctx,
 
 #ifdef COSMA_HAVE_GPU
 #ifdef COSMA_USE_UNIFIED_MEMORY
-    PE(multiply_computation_gemm);
-    auto status =
-      cublas_gemm_wrapper(ctx->get_gpu_context()->get_gpu_context().get_blas_handle(0),
-                          'N',
-                          'N',
-                          m,
-                          n,
-                          k,
-                          &alpha,
-                          matrixA,
-                          matrixB,
-                          &beta,
-                          matrixC,
-                          m);
+    if (ctx.unified_memory()) {
+        PE(multiply_computation_gemm);
+        auto status = cublas_gemm_wrapper(
+            ctx->get_gpu_context()->get_gpu_context().get_blas_handle(0),
+            'N',
+            'N',
+            m,
+            n,
+            k,
+            &alpha,
+            matrixA,
+            matrixB,
+            &beta,
+            matrixC,
+            m);
 
-    gpu::check_blas_status(status);
-    // we need explicit synchronization over the stream to trigger the copy back
-    // to CPU memory
-    hipStreamSynchronize(ctx->get_gpu_context()->get_gpu_context().get_stream(0));
-    PL();
-#else
-    PE(multiply_computation_pinning);
-    if (ctx->pin_host_buffers) {
-      ctx->get_memory_pool().pin(matrixA, m * k);
-      ctx->get_memory_pool().pin(matrixB, k * n);
-      // if (copy_c_back || std::abs(beta) > 0) {
-      ctx->get_memory_pool().pin(matrixC, m * n);
-      // }
+        gpu::check_blas_status(status);
+        // we need explicit synchronization over the stream to trigger the copy
+        // back to CPU memory
+        hipStreamSynchronize(
+            ctx->get_gpu_context()->get_gpu_context().get_stream(0));
+        PL();
+    } else {
+#endif // COSMA_USE_UNIFIED_MEMORY
+        PE(multiply_computation_pinning);
+        if (ctx->pin_host_buffers) {
+            ctx->get_memory_pool().pin(matrixA, m * k);
+            ctx->get_memory_pool().pin(matrixB, k * n);
+            // if (copy_c_back || std::abs(beta) > 0) {
+            ctx->get_memory_pool().pin(matrixC, m * n);
+            // }
+        }
+        PL();
+
+        PE(multiply_computation_gemm);
+        local_multiply(ctx->get_gpu_context(),
+                       matrixA,
+                       matrixB,
+                       matrixC,
+                       m,
+                       n,
+                       k,
+                       alpha,
+                       beta,
+                       false,
+                       copy_c_back);
+        PL();
+#ifdef COSMA_USE_UNIFIED_MEMORY
     }
-    PL();
-
-    PE(multiply_computation_gemm);
-    local_multiply(ctx->get_gpu_context(),
-                   matrixA,
-                   matrixB,
-                   matrixC,
-                   m,
-                   n,
-                   k,
-                   alpha,
-                   beta,
-                   false,
-                   copy_c_back);
-    PL();
 #endif
+
 #else
     PE(multiply_computation_gemm);
     gemm(m, n, k, alpha, matrixA, m, matrixB, k, beta, matrixC, m);
