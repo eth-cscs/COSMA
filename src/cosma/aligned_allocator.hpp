@@ -3,11 +3,11 @@
 #include <mpi.h>
 
 #include <cassert>
+#include <cosma/environment_variables.hpp>
+#include <cosma/math_utils.hpp>
 #include <exception>
 #include <iostream>
 #include <limits>
-#include <cosma/math_utils.hpp>
-#include <cosma/environment_variables.hpp>
 
 /*
  * A custom allocator that:
@@ -18,7 +18,7 @@
 namespace cosma {
 template <typename T>
 class aligned_allocator {
-public:
+  public:
     using value_type = T;
     using pointer = value_type *;
     using const_pointer = const value_type *;
@@ -38,10 +38,10 @@ public:
 
     // the minimum alignment for given type T
     std::size_t min_alignment() {
-        return std::max(math_utils::next_power_of_2(sizeof(T)), sizeof(void*));
+        return std::max(math_utils::next_power_of_2(sizeof(T)), sizeof(void *));
     }
 
-    // Calculate how many additional elements we have to allocate for an array 
+    // Calculate how many additional elements we have to allocate for an array
     // of length n and data type T.
     static std::size_t get_alignment_padding(std::size_t n) {
         auto alignment = get_alignment();
@@ -50,34 +50,35 @@ public:
         auto remainder = (n * sizeof(T)) % alignment;
 
         // Convert the padding from bytes to the number of elements
-        remainder = remainder!=0 ? (alignment - remainder) / sizeof(T) : 0;
+        remainder = remainder != 0 ? (alignment - remainder) / sizeof(T) : 0;
 
-        // std::cout << "For size " << n << ", reminder = " << remainder << std::endl;
-        // std::cout << "sizeof(T) = " << sizeof(T) << std::endl;
+        // std::cout << "For size " << n << ", reminder = " << remainder <<
+        // std::endl; std::cout << "sizeof(T) = " << sizeof(T) << std::endl;
         return remainder;
     }
 
     // allocate memory with alignment specified as a template parameter
     // returns nullptr on failure
-    T* aligned_malloc(std::size_t size) {
+    T *aligned_malloc(std::size_t size) {
         auto alignment = get_alignment();
         // if alignment is disabled, use the standard malloc
         if (alignment <= 0) {
-            return reinterpret_cast<T*>(malloc(size*sizeof(T)));
+            return reinterpret_cast<T *>(malloc(size * sizeof(T)));
         }
         // check if the requested size is a multiple of the alignment
         assert(get_alignment_padding(size) == 0);
         // check if the alignment is >= min_alignment for this data type T
         assert(alignment >= min_alignment());
-        // check if the alignment is a power of 2 and a multiple of sizeof(void*).
+        // check if the alignment is a power of 2 and a multiple of
+        // sizeof(void*).
         assert(math_utils::is_power_of_2(alignment));
         // "Memory alignment must be a power of 2.");
         // This is required for the posix_memalign function.
-        assert(alignment % sizeof(void*) == 0);
+        assert(alignment % sizeof(void *) == 0);
         // "Memory alignment must be a multiple of sizeof(void*)");
         void *ptr;
-        if (posix_memalign(&ptr, alignment, size*sizeof(T)) == 0) {
-            return reinterpret_cast<T*>(ptr);
+        if (posix_memalign(&ptr, alignment, size * sizeof(T)) == 0) {
+            return reinterpret_cast<T *>(ptr);
         }
         return nullptr;
     }
@@ -94,14 +95,16 @@ public:
     pointer allocate(size_type cnt,
                      typename std::allocator<void>::const_pointer = 0) {
         if (cnt > 0) {
-#if !defined(COSMA_USE_UNIFIED_MEMORY) 
-            pointer ptr = aligned_malloc(cnt);
+            pointer ptr;
+            if (!cosma::get_unified_memory()) {
+                ptr = aligned_malloc(cnt);
+#if defined(COSMA_USE_UNIFIED_MEMORY)
+            } else {
+                hipMalloc(&ptr, cnt * sizeof(T));
 #else
-	    pointer ptr;
-	    hipMalloc(&ptr, cnt*sizeof(T));
-	    //hipHostMalloc(&ptr, cnt*sizeof(T), hipHostMallocDefault);
-	    //hipMallocManaged(&ptr, cnt*sizeof(T), hipMemAttachGlobal);
+            }
 #endif
+            }
             return ptr;
         }
         return nullptr;
@@ -109,13 +112,12 @@ public:
 
     void deallocate(pointer p, size_type cnt) {
         if (p) {
-#if !defined(COSMA_USE_UNIFIED_MEMORY) 
-            std::free(p);
-#else
-	    hipFree(p);
-	    //hipHostFree(p);
+            if (!cosma::get_unified_memory())
+                std::free(p);
+#ifdef defined(COSMA_USE_UNIFIED_MEMORY)
+            else
+                hipFree(p);
 #endif
-
         }
     }
 
@@ -123,9 +125,7 @@ public:
         return std::numeric_limits<size_type>::max() / sizeof(T);
     }
 
-    void construct(pointer p, const T &t) {
-        new (p) T(t);
-    }
+    void construct(pointer p, const T &t) { new (p) T(t); }
 
     void destroy(pointer p) {
         if (p) {
