@@ -18,8 +18,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS "YES") # always write compile_commands.json
 #
 
 set(COSMA_GPU_BACKENDS_LIST "CUDA" "ROCM")
-set(COSMA_SCALAPACK_LIST "OFF" "MKL" "CRAY_LIBSCI" "CUSTOM")
-set(COSMA_BLAS_LIST   "auto" "MKL" "OPENBLAS" "CRAY_LIBSCI" "CUSTOM" "BLIS" "ATLAS" "CUDA" "ROCM" "OFF")
+set(COSMA_SCALAPACK_LIST "OFF" "MKL" "CRAY_LIBSCI" "NVPL" "CUSTOM")
+set(COSMA_BLAS_LIST   "auto" "MKL" "OPENBLAS" "CRAY_LIBSCI" "NVPL" "CUSTOM" "BLIS" "ATLAS" "CUDA" "ROCM" "OFF")
 option(COSMA_WITH_TESTS "Generate the test target." ON)
 option(COSMA_WITH_APPS "Generate the miniapp targets." ON)
 option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ON)
@@ -28,7 +28,7 @@ option(COSMA_WITH_NCCL "Use NCCL as communication backend." OFF)
 option(COSMA_WITH_RCCL "Use RCCL as communication backend." OFF)
 option(COSMA_WITH_GPU_AWARE_MPI "Use gpu-aware MPI for communication." OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries." OFF)
-set(COSMA_SCALAPACK "OFF" CACHE STRING "scalapack implementation. Can be MKL, CRAY_LIBSCI, CUSTOM or OFF.")
+set(COSMA_SCALAPACK "OFF" CACHE STRING "scalapack implementation. Can be MKL, CRAY_LIBSCI, NVPL, CUSTOM or OFF.")
 set(COSMA_BLAS "OFF" CACHE STRING "Blas library for computations on host or GPU")
 
 set(COSMA_BLAS_VENDOR "OFF")
@@ -45,7 +45,7 @@ if (COSMA_BLAS MATCHES "CUDA|ROCM")
   set(COSMA_GPU_BACKEND ${COSMA_BLAS})
 else()
   if(COSMA_BLAS STREQUAL "OFF")
-    message(FATAL_ERROR "A Blas implementation is needed when running on CPU only: choices are : auto, MKL, OPENBLAS, CRAY_LIBSCI, CUSTOM, BLIS, ATLAS, FLEXIBLAS, ARMPL, GenericBLAS")
+    message(FATAL_ERROR "A Blas implementation is needed when running on CPU only: choices are : auto, MKL, OPENBLAS, CRAY_LIBSCI, NVPL, CUSTOM, BLIS, ATLAS, FLEXIBLAS, ARMPL, GenericBLAS")
   else()
     set(COSMA_BLAS_VENDOR ${COSMA_BLAS})
   endif()
@@ -72,7 +72,7 @@ endif()
 
 # the blas targets are only defined when COSMA_SCALAPACK is ON whatever value of COSMA_GPU_BACKEND
 if (NOT COSMA_SCALAPACK MATCHES "OFF")
-  if (COSMA_SCALAPACK MATCHES "MKL" OR COSMA_SCALAPACK MATCHES "CRAY_LIBSCI")
+  if (COSMA_SCALAPACK MATCHES "MKL" OR COSMA_SCALAPACK MATCHES "CRAY_LIBSCI" OR COSMA_SCALAPACK MATCHES "NVPL")
     set(COSMA_BLAS_VENDOR ${COSMA_SCALAPACK})
   else()
     set(COSMA_BLAS_VENDOR "auto")
@@ -190,6 +190,7 @@ install(FILES "${cosma_BINARY_DIR}/cosmaConfig.cmake"
   "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
   "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
   "${cosma_SOURCE_DIR}/cmake/FindMKL.cmake"
+  "${cosma_SOURCE_DIR}/cmake/Findnvpl.cmake"
   "${cosma_SOURCE_DIR}/cmake/FindBlas.cmake"
   "${cosma_SOURCE_DIR}/cmake/FindSCALAPACK.cmake"
   "${cosma_SOURCE_DIR}/cmake/FindOPENBLAS.cmake"
