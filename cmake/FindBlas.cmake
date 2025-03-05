@@ -21,6 +21,7 @@ set(COSMA_BLAS_VENDOR_LIST
   "CRAY_LIBSCI"
   "BLIS"
   "ATLAS"
+  "NVPL"
   "OFF")
 
 # COSMA_BLAS_VENDOR should normally be defined here but cosma defines it in the

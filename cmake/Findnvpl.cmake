@@ -1,13 +1,13 @@
 find_package("nvpl_blas" REQUIRED)
 find_package("nvpl_lapack" REQUIRED)
 
-if(BLA_SIZEOF_INTEGER EQUAL 8)
-  set(_nvpl_int "_ilp64")
-else()
+if(COSMA_BLAS_INTERFACE STREQUAL "32bits")
   set(_nvpl_int "_lp64")
+else()
+  set(_nvpl_int "_ilp64")
 endif()
 
-if((BLA_THREAD STREQUAL "OMP") OR (BLA_THREAD STREQUAL "ANY"))
+if(COSMA_BLAS_THREADING STREQUAL "openmp")
   set(_nvpl_thread "_omp")
 else()
   set(_nvpl_thread "_seq")
