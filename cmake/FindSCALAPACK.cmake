@@ -1,17 +1,18 @@
 include(FindPackageHandleStandardArgs)
 
 if(COSMA_SCALAPACK STREQUAL "MKL")
-	find_package(MKL REQUIRED)
+  find_package(MKL REQUIRED)
   get_target_property(COSMA_SCALAPACK_LINK_LIBRARIES cosma::BLAS::MKL::scalapack_link
     INTERFACE_LINK_LIBRARIES)
 elseif(COSMA_SCALAPACK STREQUAL "CRAY_LIBSCI")
-	find_package(CRAY_LIBSCI REQUIRED)
-	get_target_property(COSMA_SCALAPACK_LINK_LIBRARIES cosma::BLAS::CRAY_LIBSCI::scalapack_link
+  find_package(CRAY_LIBSCI REQUIRED)
+  get_target_property(COSMA_SCALAPACK_LINK_LIBRARIES cosma::BLAS::CRAY_LIBSCI::scalapack_link
     INTERFACE_LINK_LIBRARIES)
 elseif(COSMA_SCALAPACK STREQUAL "NVPL")
-	find_package(NVPL REQUIRED)
-	get_target_property(COSMA_SCALAPACK_LINK_LIBRARIES cosma::BLAS::NVPL::scalapack_link
+  find_package(NVPL REQUIRED)
+  get_target_property(COSMA_SCALAPACK_LINK_LIBRARIES cosma::BLAS::NVPL::scalapack_link
     INTERFACE_LINK_LIBRARIES)
+  message(WARNING "COSMA_SCALAPACK_LINK_LIBRARIES: ${COSMA_SCALAPACK_LINK_LIBRARIES}")
 elseif(COSMA_SCALAPACK STREQUAL "CUSTOM")
   find_library(COSMA_SCALAPACK_LINK_LIBRARIES
     NAMES scalapack
@@ -34,10 +35,9 @@ set(COSMA_SCALAPACK_FOUND "YES")
 
 if (NOT TARGET cosma::scalapack::scalapack)
   add_library(cosma::scalapack::scalapack INTERFACE IMPORTED)
+  set_target_properties(
+    cosma::scalapack::scalapack PROPERTIES INTERFACE_LINK_LIBRARIES
+    "${COSMA_SCALAPACK_LINK_LIBRARIES}")
 endif()
-
-set_target_properties(
-  cosma::scalapack::scalapack PROPERTIES INTERFACE_LINK_LIBRARIES
-  "${COSMA_SCALAPACK_LINK_LIBRARIES}")
 
 mark_as_advanced(COSMA_SCALAPACK_LINK_LIBRARIES COSMA_SCALAPACK_FOUND)
