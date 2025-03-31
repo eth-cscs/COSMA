@@ -104,7 +104,7 @@ endif()
 # Dependencies
 # MPI
 set(MPI_DETERMINE_LIBRARY_VERSION TRUE)
-find_package(MPI COMPONENTS CXX C REQUIRED)
+find_package(MPI COMPONENTS CXX REQUIRED)
 adjust_mpiexec_flags()
 
 if (NOT COSMA_SCALAPACK MATCHES "OFF")
