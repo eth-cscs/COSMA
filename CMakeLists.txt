@@ -4,7 +4,7 @@ project(cosma
   DESCRIPTION "Communication Optimal Matrix Multiplication"
   HOMEPAGE_URL "https://github.com/eth-cscs/COSMA"
   VERSION 2.6.6
-  LANGUAGES CXX C)
+  LANGUAGES CXX)
 
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -104,7 +104,7 @@ endif()
 # Dependencies
 # MPI
 set(MPI_DETERMINE_LIBRARY_VERSION TRUE)
-find_package(MPI COMPONENTS CXX C REQUIRED)
+find_package(MPI COMPONENTS CXX REQUIRED)
 adjust_mpiexec_flags()
 
 if (NOT COSMA_SCALAPACK MATCHES "OFF")
