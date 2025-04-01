@@ -11,7 +11,6 @@ build base image:
   stage: baseimage
   timeout: 2h
   variables:
-    SLURM_RESERVATION: 'NCCL'
     DOCKERFILE: ci/baseimage.cuda.Dockerfile
     WATCH_FILECHANGES: ci/baseimage.cuda.Dockerfile
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/base/cosma-ci
@@ -21,7 +20,6 @@ build tiled-mm:
   needs: ["build base image"]
   stage: build
   variables:
-    SLURM_RESERVATION: 'NCCL'
     DOCKERFILE: ci/build.Dockerfile
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/cosma/cosma-ci:$CI_COMMIT_SHA
     ENVPATH: "/cosma-env-cuda"
@@ -39,7 +37,6 @@ build tiled-mm:
     PULL_IMAGE: 'YES'
     SLURM_HINT: nomultithread
     SLURM_UNBUFFEREDIO: ''
-    SLURM_RESERVATION: 'NCCL'
     SLURM_CPU_BIND: 'socket'
     SLURM_MPI: "pmi2"
     CRAY_CUDA_MPS: 'YES'
