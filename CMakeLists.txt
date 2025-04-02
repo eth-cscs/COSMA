@@ -141,9 +141,7 @@ if (COSMA_WITH_PROFILING)
     semiprof
     GIT_REPOSITORY  https://github.com/bcumming/semiprof.git
     GIT_TAG         f132142ff2215dfa073e416fa7911d8877d62752
-    FIND_PACKAGE_ARGS NAMES semiprof
-
-  )
+    FIND_PACKAGE_ARGS NAMES semiprof)
   FetchContent_MakeAvailable(semiprof)
 endif ()
 
