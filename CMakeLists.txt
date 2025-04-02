@@ -97,15 +97,12 @@ endif ()
 set(COSTA_WITH_PROFILING ${COSMA_WITH_PROFILING} CACHE INTERNAL "")
 set(COSTA_SCALAPACK ${COSMA_SCALAPACK} CACHE INTERNAL "")
 
-
-
 FetchContent_Declare(
   costa
   GIT_REPOSITORY https://github.com/eth-cscs/costa.git
-  GIT_TAG        76acd4e2f1061fa5d7d58499f980402659806c6f # master
+  GIT_TAG        03847e66f05ad4a1eb371b85be628e218ce46f11 # v2.2.3
   FIND_PACKAGE_ARGS NAMES costa
 )
-
 # the joy of fetch_content. if we build costa and cosma together
 # fetch_content will pick up the FindSCALAPACK from cosma NOT costa.
 
