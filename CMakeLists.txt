@@ -117,7 +117,7 @@ if (COSMA_GPU_BACKEND MATCHES "CUDA|ROCM")
   FetchContent_Declare(
     Tiled-MM
     GIT_REPOSITORY https://github.com/eth-cscs/Tiled-MM.git
-    GIT_TAG        236d5844ed95991e9d041dd616db4a1e2afe41cb # v2.3.1
+    GIT_TAG      0eb75179e670a04c649b50ae5e91bb71b43e4d06 # v2.3.2
     FIND_PACKAGE_ARGS NAMES tiled-MM
   )
   FetchContent_MakeAvailable(Tiled-MM)
