@@ -15,7 +15,7 @@ build base image:
     WATCH_FILECHANGES: ci/baseimage.cuda.Dockerfile
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/base/cosma-ci
 
-build tiled-mm:
+build cosma:
   extends: .container-builder-cscs-gh200
   needs: ["build base image"]
   stage: build
@@ -27,7 +27,7 @@ build tiled-mm:
 
 .run_tests:
   extends: [.container-runner-daint-gh200]
-  needs: ["build tiled-mm"]
+  needs: ["build cosma"]
   stage: test
   image: $CSCS_REGISTRY_PATH/cosma/cosma-ci:$CI_COMMIT_SHA
   variables:

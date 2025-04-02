@@ -39,42 +39,27 @@ target_link_libraries(cosma PUBLIC
   MPI::MPI_CXX
   costa::costa
   $<TARGET_NAME_IF_EXISTS:roc::rccl>
-  $<TARGET_NAME_IF_EXISTS:cosma::nccl>)
-
-if (NOT COSMA_BLAS_VENDOR MATCHES "OFF")
-  target_link_libraries(cosma PUBLIC cosma::BLAS::blas)
-endif()
-
-if (COSMA_GPU_BACKEND STREQUAL "OFF")
-  if ((NOT COSMA_BLAS_VENDOR MATCHES "MKL") AND (NOT COSMA_BLAS_VENDOR MATCHES "BLIS"))
-    target_compile_definitions(cosma PUBLIC COSMA_WITH_BLAS)
-  endif()
-
-  if (COSMA_GPU_BACKEND STREQUAL "OFF")
-    target_compile_definitions(cosma PUBLIC
-      $<$<STREQUAL:${COSMA_BLAS_VENDOR},MKL>:COSMA_WITH_MKL_BLAS>
-      $<$<STREQUAL:${COSMA_BLAS_VENDOR},BLIS>:COSMA_WITH_BLIS_BLAS>)
-  endif()
-else()
-  target_compile_definitions(cosma PUBLIC COSMA_HAVE_GPU)
-  target_link_libraries(cosma PUBLIC Tiled-MM::Tiled-MM)
-endif()
+  $<TARGET_NAME_IF_EXISTS:cosma::nccl>
+  $<$<NOT:$<STREQUAL:${COSMA_BLAS_VENDOR},"OFF">>:cosma::BLAS::blas>
+  $<TARGET_NAME_IF_EXISTS:Tiled-MM::Tiled-MM>
+  $<$<STREQUAL:${COSMA_GPU_BACKEND},CUDA>:Tiled-MM::Tiled-MM>
+  $<$<STREQUAL:${COSMA_GPU_BACKEND},ROCM>:Tiled-MM::Tiled-MM>
+  $<$<BOOL:${COSMA_WITH_PROFILING}>:semiprof::semiprof>
+  $<$<BOOL:${COSMA_SCALAPACK}>:cosma::scalapack::scalapack>)
 
 target_compile_definitions(cosma PUBLIC
-  $<$<BOOL:${COSMA_WITH_NCCL}>:COSMA_WITH_NCCL>
-  $<$<STREQUAL:${COSMA_GPU_BACKEND},"ROCM">:__HIP_PLATFORM_HCC__>
-  $<$<BOOL:${COSMA_WITH_GPU_AWARE_MPI}>:COSMA_WITH_GPU_AWARE_MPI>)
-
-target_compile_definitions(cosma PUBLIC
-  $<$<BOOL:${COSMA_WITH_NCCL}>:COSMA_WITH_NCCL>
-  $<$<BOOL:${COSMA_WITH_RCCL}>:COSMA_WITH_NCCL>
-)
-
-target_compile_definitions(cosma PRIVATE $<$<BOOL:${COSMA_WITH_PROFILING}>:COSMA_WITH_PROFILING>)
-
-if(COSMA_WITH_PROFILING)
-  target_link_libraries(cosma PRIVATE semiprof::semiprof)
-endif()
+                              $<$<BOOL:${COSMA_WITH_NCCL}>:COSMA_WITH_NCCL>
+                              $<$<STREQUAL:${COSMA_GPU_BACKEND},"ROCM">:__HIP_PLATFORM_HCC__>
+                              $<$<BOOL:${COSMA_WITH_GPU_AWARE_MPI}>:COSMA_WITH_GPU_AWARE_MPI>
+                              $<$<BOOL:${COSMA_WITH_NCCL}>:COSMA_WITH_NCCL>
+                              $<$<BOOL:${COSMA_WITH_RCCL}>:COSMA_WITH_NCCL>
+                              $<$<STREQUAL:${COSMA_BLAS_VENDOR},MKL>:COSMA_WITH_MKL_BLAS>
+                              $<$<STREQUAL:${COSMA_BLAS_VENDOR},BLIS>:COSMA_WITH_BLIS_BLAS>
+                              $<$<NOT:$<IN_LIST:${COSMA_BLAS_VENDOR},"MKL;BLIS">>:COSMA_WITH_BLAS>
+                              $<$<STREQUAL:${COSMA_GPU_BACKEND},CUDA>:COSMA_HAVE_GPU>
+                              $<$<STREQUAL:${COSMA_GPU_BACKEND},ROCM>:COSMA_HAVE_GPU>
+                              PRIVATE
+                              $<$<BOOL:${COSMA_WITH_PROFILING}>:COSMA_WITH_PROFILING>)
 
 list(APPEND INSTALLED_TARGETS_LIST "cosma")
 
@@ -82,7 +67,6 @@ list(APPEND INSTALLED_TARGETS_LIST "cosma")
 # then create it here and link it to the profiler if needed
 # build as a shared library is necessary here because of the function interposing
 if(COSMA_SCALAPACK)
-  target_link_libraries(cosma PUBLIC cosma::scalapack::scalapack)
   if (NOT TARGET cosma_pxgemm AND BUILD_SHARED_LIBS)
     add_library(cosma_pxgemm scalapack.cpp
       pxgemm_params.hpp
@@ -90,12 +74,10 @@ if(COSMA_SCALAPACK)
       pxgemm.cpp
     )
 
-    target_link_libraries(cosma_pxgemm PUBLIC cosma)
+    target_link_libraries(cosma_pxgemm PUBLIC cosma
+    $<$<BOOL:${COSMA_WITH_PROFILING}>:semiprof::semiprof>)
 
-    if(COSMA_WITH_PROFILING)
-      target_link_libraries(cosma_pxgemm PRIVATE semiprof::semiprof)
-      target_compile_definitions(cosma_pxgemm PRIVATE COSMA_WITH_PROFILING)
-    endif()
+    target_compile_definitions(cosma_pxgemm PRIVATE $<$<BOOL:${COSMA_WITH_PROFILING}>:COSMA_WITH_PROFILING>)
     list(APPEND INSTALLED_TARGETS_LIST "cosma_pxgemm")
   endif()
 
@@ -103,20 +85,16 @@ if(COSMA_SCALAPACK)
   # it is aimed for users who don't want to overwrite the available scalapack API with cosma.
   # if SCALAPACK is found and cosma_prefixed_pxgemm library is not already created
   # then create it here and link it to the profiler if needed
-  if(NOT TARGET cosma_prefixed_pxgemm)
     add_library(cosma_prefixed_pxgemm scalapack.cpp
       pxgemm_params.hpp
       prefixed_pxgemm.cpp
       cosma_pxgemm.cpp
     )
-    target_link_libraries(cosma_prefixed_pxgemm PUBLIC cosma)
-
-    if(COSMA_WITH_PROFILING)
-      target_link_libraries(cosma_prefixed_pxgemm PRIVATE semiprof::semiprof)
-      target_compile_definitions(cosma_prefixed_pxgemm PRIVATE COSMA_WITH_PROFILING)
-    endif()
+    target_link_libraries(cosma_prefixed_pxgemm
+    PUBLIC cosma
+    PRIVATE $<$<BOOL:${COSMA_WITH_PROFILING}>:semiprof::semiprof>)
+    target_compile_definitions(cosma_prefixed_pxgemm PRIVATE $<$<BOOL:${COSMA_WITH_PROFILING}>:COSMA_WITH_PROFILING>)
     list(APPEND INSTALLED_TARGETS_LIST "cosma_prefixed_pxgemm")
-  endif()
 
   # the following library is aimed only for testing purposes
   # it provides templated cosma::pxgemm call without
@@ -127,12 +105,12 @@ if(COSMA_SCALAPACK)
       pxgemm_params.hpp
       cosma_pxgemm.cpp
     )
-    target_link_libraries(cosma_pxgemm_cpp PUBLIC cosma)
+    target_link_libraries(cosma_pxgemm_cpp
+                            PUBLIC cosma
+                            PRIVATE $<$<BOOL:${COSMA_WITH_PROFILING}>:semiprof::semiprof>)
 
-    if(COSMA_WITH_PROFILING)
-      target_link_libraries(cosma_pxgemm_cpp PRIVATE semiprof::semiprof)
-      target_compile_definitions(cosma_pxgemm_cpp PRIVATE COSMA_WITH_PROFILING)
-    endif()
+    target_compile_definitions(cosma_pxgemm_cpp
+                                  PRIVATE $<$<BOOL:${COSMA_WITH_PROFILING}>:COSMA_WITH_PROFILING>)
     list(APPEND INSTALLED_TARGETS_LIST "cosma_pxgemm_cpp")
   endif()
 endif()
