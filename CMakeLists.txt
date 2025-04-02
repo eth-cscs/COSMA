@@ -105,8 +105,7 @@ FetchContent_Declare(
 )
 # the joy of fetch_content. if we build costa and cosma together
 # fetch_content will pick up the FindSCALAPACK from cosma NOT costa.
-
-if (NOT TARGET costa::scalapack::scalapack)
+if (NOT TARGET costa::scalapack::scalapack AND NOT COSMA_SCALAPACK MATCHES "OFF")
   add_library(costa::scalapack::scalapack ALIAS cosma::scalapack::scalapack)
 endif ()
 
