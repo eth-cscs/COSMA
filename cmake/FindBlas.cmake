@@ -2,7 +2,7 @@
 #
 # authors : Mathieu Taillefumier
 
-
+include(FindPackageHandleStandardArgs)
 
 if(NOT
    (CMAKE_C_COMPILER_LOADED
@@ -21,6 +21,7 @@ set(COSMA_BLAS_VENDOR_LIST
   "CRAY_LIBSCI"
   "BLIS"
   "ATLAS"
+  "NVPL"
   "OFF")
 
 # COSMA_BLAS_VENDOR should normally be defined here but cosma defines it in the
@@ -107,8 +108,9 @@ if(COSMA_BLAS_INCLUDE_DIRS)
     Blas REQUIRED_VARS COSMA_BLAS_LINK_LIBRARIES COSMA_BLAS_INCLUDE_DIRS
                        COSMA_BLAS_VENDOR)
 else()
-  find_package_handle_standard_args(Blas REQUIRED_VARS COSMA_BLAS_LINK_LIBRARIES
-                                                       COSMA_BLAS_VENDOR)
+  message(WARNING "Blas REQUIRED_VARS '${COSMA_BLAS_LINK_LIBRARIES}' '${COSMA_BLAS_VENDOR}'")
+  find_package_handle_standard_args(
+    Blas REQUIRED_VARS COSMA_BLAS_LINK_LIBRARIES COSMA_BLAS_VENDOR)
 endif()
 
 if(NOT TARGET cosma::BLAS::blas)
