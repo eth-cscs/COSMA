@@ -55,7 +55,7 @@ target_compile_definitions(cosma PUBLIC
                               $<$<BOOL:${COSMA_WITH_RCCL}>:COSMA_WITH_NCCL>
                               $<$<STREQUAL:${COSMA_BLAS_VENDOR},MKL>:COSMA_WITH_MKL_BLAS>
                               $<$<STREQUAL:${COSMA_BLAS_VENDOR},BLIS>:COSMA_WITH_BLIS_BLAS>
-#                              $<$<NOT:$<IN_LIST:${COSMA_BLAS_VENDOR},"MKL;BLIS">>:COSMA_WITH_BLAS>
+                              $<$<NOT:$<IN_LIST:${COSMA_BLAS_VENDOR},"MKL;BLIS">>:COSMA_WITH_BLAS>
                               $<$<STREQUAL:${COSMA_GPU_BACKEND},CUDA>:COSMA_HAVE_GPU>
                               $<$<STREQUAL:${COSMA_GPU_BACKEND},ROCM>:COSMA_HAVE_GPU>
                               PRIVATE
