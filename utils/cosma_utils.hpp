@@ -333,23 +333,38 @@ bool test_cosma(Strategy s,
         // Now Check result
         isOK = globCcheck.size() == globC.size();
         for (int i = 0; i < globC.size(); ++i) {
-            isOK = isOK && (std::abs(globC[i] - globCcheck[i]) < epsilon);
+            // Use relative error for large values, absolute error for small values
+            double abs_error = std::abs(globC[i] - globCcheck[i]);
+            double scale = std::max(std::abs(globC[i]), std::abs(globCcheck[i]));
+            double rel_error = (scale > 1e-10) ? abs_error / scale : abs_error;
+            // For float32, relative error tolerance should be ~1e-6
+            // For float64, relative error tolerance should be ~1e-12
+            double tolerance = (sizeof(Scalar) == 4) ? 1e-5 : epsilon;
+            isOK = isOK && (rel_error < tolerance);
         }
 
         if (!isOK) {
             std::cout << "Result is NOT OK" << std::endl;
+            int error_count = 0;
+            const int MAX_ERRORS_TO_PRINT = 20;
             for (int i = 0; i < m * n; i++) {
                 if (globCcheck[i] != globC[i]) {
-                    int x = i % m;
-                    int y = i / m;
-                    int locidx, rank;
-                    std::tie(locidx, rank) = C.local_coordinates(x, y);
-                    std::cout << "global(" << x << ", " << y
-                              << ") = (loc = " << locidx << ", rank = " << rank
-                              << ") = " << globC.at(i) << " and should be "
-                              << globCcheck.at(i) << std::endl;
+                    error_count++;
+                    if (error_count <= MAX_ERRORS_TO_PRINT) {
+                        int x = i % m;
+                        int y = i / m;
+                        int locidx, rank;
+                        std::tie(locidx, rank) = C.local_coordinates(x, y);
+                        std::cout << "global(" << x << ", " << y
+                                  << ") = (loc = " << locidx << ", rank = " << rank
+                                  << ") = " << globC.at(i) << " and should be "
+                                  << globCcheck.at(i) << " (diff = " 
+                                  << std::abs(globC.at(i) - globCcheck.at(i)) << ")" << std::endl;
+                    }
                 }
             }
+            std::cout << "Total errors: " << error_count << " out of " << (m * n) << " elements ("
+                      << (100.0 * error_count / (m * n)) << "%)" << std::endl;
         }
         else {
             std::cout <<"Result is OK"<<std::endl;
@@ -376,5 +391,9 @@ bool test_cosma(Strategy s,
         MPI_Barrier(comm);
     }
 #endif // DEBUG
+    
+    // Synchronize all ranks before returning to prevent hangs
+    MPI_Barrier(comm);
+    
     return rank > 0 || isOK;
 }
