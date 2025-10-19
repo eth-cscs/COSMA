@@ -97,10 +97,10 @@ endif ()
 set(COSTA_WITH_PROFILING ${COSMA_WITH_PROFILING} CACHE INTERNAL "")
 set(COSTA_SCALAPACK ${COSMA_SCALAPACK} CACHE INTERNAL "")
 
+# Use local COSTA submodule (forked with bfloat16 support)
 FetchContent_Declare(
   costa
-  GIT_REPOSITORY https://github.com/eth-cscs/costa.git
-  GIT_TAG        03847e66f05ad4a1eb371b85be628e218ce46f11 # v2.2.3
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libs/COSTA
   FIND_PACKAGE_ARGS NAMES costa
 )
 # the joy of fetch_content. if we build costa and cosma together
@@ -114,10 +114,12 @@ FetchContent_MakeAvailable(costa)
 # these are only GPU-backends
 if (COSMA_GPU_BACKEND MATCHES "CUDA|ROCM")
   set(TILEDMM_GPU_BACKEND ${COSMA_GPU_BACKEND} CACHE INTERNAL "")
+  
+  # Use fork with BF16 support
   FetchContent_Declare(
     Tiled-MM
-    GIT_REPOSITORY https://github.com/eth-cscs/Tiled-MM.git
-    GIT_TAG      0eb75179e670a04c649b50ae5e91bb71b43e4d06 # v2.3.2
+    GIT_REPOSITORY https://github.com/dbsanfte/Tiled-MM.git
+    GIT_TAG      feature/bf16-support  # BF16 support branch
     FIND_PACKAGE_ARGS NAMES tiled-MM
   )
   FetchContent_MakeAvailable(Tiled-MM)
@@ -134,6 +136,55 @@ if (COSMA_GPU_BACKEND MATCHES "CUDA|ROCM")
       message("Tiled-mm target not found")
   endif ()
 
+  # Check if GPU backend supports BFloat16
+  include(check_gpu_bf16_support)
+  check_gpu_bf16_support()
+  
+  # Pass BF16 support flag to Tiled-MM
+  if(COSMA_GPU_HAS_BF16_SUPPORT)
+    set(TILED_MM_HAS_BF16_SUPPORT ON CACHE INTERNAL "Enable BF16 support in Tiled-MM")
+    target_compile_definitions(Tiled-MM::Tiled-MM INTERFACE TILED_MM_HAS_BF16_SUPPORT)
+    message(STATUS "Tiled-MM BF16 support: ENABLED")
+  else()
+    set(TILED_MM_HAS_BF16_SUPPORT OFF CACHE INTERNAL "Enable BF16 support in Tiled-MM")
+    message(STATUS "Tiled-MM BF16 support: DISABLED")
+  endif()
+
+endif()
+
+# CPU BFloat16 Support Detection (for OpenBLAS native BF16)
+# This detects if the CPU has AVX512_BF16 instructions and if OpenBLAS
+# supports native BF16 GEMM operations (cblas_sbgemm)
+if(COSMA_BLAS_VENDOR MATCHES "OPENBLAS")
+  message(STATUS "Configuring OpenBLAS with BF16 support detection...")
+  
+  # Check CPU capabilities for BF16
+  include(check_cpu_bf16_support)
+  check_cpu_bf16_support()
+  
+  # Fetch/build OpenBLAS from source with BF16 support
+  include(fetch_openblas_bf16)
+  
+  # Configure COSMA with OpenBLAS BF16 capabilities
+  if(COSMA_CPU_HAS_BF16 AND OPENBLAS_HAS_BF16_SUPPORT)
+    set(COSMA_OPENBLAS_HAS_BF16_NATIVE ON CACHE BOOL "OpenBLAS has native BF16 GEMM support")
+    target_compile_definitions(cosma PRIVATE COSMA_OPENBLAS_HAS_BF16_NATIVE)
+    
+    # Add CPU BF16 compiler flags if needed
+    if(COSMA_CPU_BF16_FLAGS)
+      target_compile_options(cosma PRIVATE ${COSMA_CPU_BF16_FLAGS})
+    endif()
+    
+    message(STATUS "OpenBLAS native BF16 GEMM: ENABLED (CPU has AVX512_BF16)")
+  else()
+    set(COSMA_OPENBLAS_HAS_BF16_NATIVE OFF CACHE BOOL "OpenBLAS native BF16 support")
+    
+    if(NOT COSMA_CPU_HAS_BF16)
+      message(STATUS "OpenBLAS native BF16 GEMM: DISABLED (CPU lacks AVX512_BF16)")
+    elseif(NOT OPENBLAS_HAS_BF16_SUPPORT)
+      message(STATUS "OpenBLAS native BF16 GEMM: DISABLED (OpenBLAS version too old)")
+    endif()
+  endif()
 endif()
 
 if (COSMA_WITH_PROFILING)

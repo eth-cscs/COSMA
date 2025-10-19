@@ -1,5 +1,6 @@
 #include <cosma/one_sided_communicator.hpp>
 
+#include <cosma/bfloat16.hpp>
 #include <cosma/local_multiply.hpp>
 #include <cosma/math_utils.hpp>
 #include <cosma/mpi_mapper.hpp>
@@ -803,8 +804,9 @@ void overlap_k_split(cosma_context<Scalar> *ctx,
 
     int local_size = m.length() * n.subinterval(divisor, gp).length();
 
-    auto accumulate_buffer = 
-        (beta != Scalar{0}) ? expanded_mat.reduce_buffer_ptr() : original_matrix;
+    auto accumulate_buffer = (beta != Scalar{0})
+                                 ? expanded_mat.reduce_buffer_ptr()
+                                 : original_matrix;
     std::fill(accumulate_buffer, accumulate_buffer + local_size, Scalar{0});
 
     Interval newk = k.subinterval(divisor, gp);
@@ -1010,7 +1012,8 @@ void overlap_k_split(cosma_context<Scalar> *ctx,
 
     if (beta != Scalar{0}) {
         for (unsigned i = 0u; i < local_size; ++i) {
-            original_matrix[i] = original_matrix[i] * beta + accumulate_buffer[i];
+            original_matrix[i] =
+                original_matrix[i] * beta + accumulate_buffer[i];
         }
     }
 
@@ -1142,6 +1145,21 @@ template void overlap_comm_and_comp<std::complex<double>>(
     size_t step,
     std::complex<double> alpha,
     std::complex<double> beta);
+
+template void overlap_comm_and_comp<bfloat16>(cosma_context<bfloat16> *ctx,
+                                              MPI_Comm comm,
+                                              int rank,
+                                              const Strategy strategy,
+                                              CosmaMatrix<bfloat16> &matrixA,
+                                              CosmaMatrix<bfloat16> &matrixB,
+                                              CosmaMatrix<bfloat16> &matrixC,
+                                              Interval &m,
+                                              Interval &n,
+                                              Interval &k,
+                                              Interval &P,
+                                              size_t step,
+                                              bfloat16 alpha,
+                                              bfloat16 beta);
 
 } // end namespace one_sided_communicator
 

@@ -2,9 +2,7 @@
 #include <cosma/profiler.hpp>
 
 namespace cosma {
-Mapper::Mapper(char label,
-               const Strategy& strategy,
-               int rank)
+Mapper::Mapper(char label, const Strategy &strategy, int rank)
     : label_(label)
     , strategy_(&strategy)
     , m_(strategy.n_rows(label))
@@ -20,7 +18,8 @@ Mapper::Mapper(char label,
     Pi_ = Interval(0, P_ - 1);
     compute_sizes(mi_, ni_, Pi_, 0, strategy);
     initial_buffer_size_ = std::vector<size_t>(P_);
-    range_offset_ = std::vector<std::vector<std::size_t>>(P_, std::vector<std::size_t>());
+    range_offset_ =
+        std::vector<std::vector<std::size_t>>(P_, std::vector<std::size_t>());
 
     for (size_t rank = 0; rank < P_; ++rank) {
         size_t size = 0;
@@ -57,6 +56,126 @@ Mapper::Mapper(char label,
     // if (rank_ >= P_) {
     //     return;
     // }
+}
+
+Mapper::Mapper(const Mapper &other)
+    : label_(other.label_)
+    , m_(other.m_)
+    , n_(other.n_)
+    , P_(other.P_)
+    , rank_(other.rank_)
+    , strategy_(other.strategy_)
+    , rank_to_range_(other.rank_to_range_)
+    , range_to_rank_(other.range_to_rank_)
+    , initial_buffer_size_(other.initial_buffer_size_)
+    , range_offset_(other.range_offset_)
+    , mi_(other.mi_)
+    , ni_(other.ni_)
+    , Pi_(other.Pi_)
+    , skip_ranges_(other.skip_ranges_)
+    , row_partition_set_(other.row_partition_set_)
+    , col_partition_set_(other.col_partition_set_)
+    , row_partition_(other.row_partition_)
+    , col_partition_(other.col_partition_) {
+    std::lock_guard<std::mutex> guard(other.global_coord_mutex_);
+    global_coord_ready_ = other.global_coord_ready_;
+    global_coord_ = other.global_coord_;
+}
+
+Mapper &Mapper::operator=(const Mapper &other) {
+    if (this == &other) {
+        return *this;
+    }
+
+    label_ = other.label_;
+    m_ = other.m_;
+    n_ = other.n_;
+    P_ = other.P_;
+    rank_ = other.rank_;
+    strategy_ = other.strategy_;
+    rank_to_range_ = other.rank_to_range_;
+    range_to_rank_ = other.range_to_rank_;
+    initial_buffer_size_ = other.initial_buffer_size_;
+    range_offset_ = other.range_offset_;
+    mi_ = other.mi_;
+    ni_ = other.ni_;
+    Pi_ = other.Pi_;
+    skip_ranges_ = other.skip_ranges_;
+    row_partition_set_ = other.row_partition_set_;
+    col_partition_set_ = other.col_partition_set_;
+    row_partition_ = other.row_partition_;
+    col_partition_ = other.col_partition_;
+
+    std::lock(global_coord_mutex_, other.global_coord_mutex_);
+    std::lock_guard<std::mutex> lock_this(global_coord_mutex_, std::adopt_lock);
+    std::lock_guard<std::mutex> lock_other(other.global_coord_mutex_,
+                                           std::adopt_lock);
+    global_coord_ready_ = other.global_coord_ready_;
+    global_coord_ = other.global_coord_;
+
+    return *this;
+}
+
+Mapper::Mapper(Mapper &&other) noexcept
+    : label_(other.label_)
+    , m_(other.m_)
+    , n_(other.n_)
+    , P_(other.P_)
+    , rank_(other.rank_)
+    , strategy_(other.strategy_)
+    , rank_to_range_(std::move(other.rank_to_range_))
+    , range_to_rank_(std::move(other.range_to_rank_))
+    , initial_buffer_size_(std::move(other.initial_buffer_size_))
+    , range_offset_(std::move(other.range_offset_))
+    , mi_(other.mi_)
+    , ni_(other.ni_)
+    , Pi_(other.Pi_)
+    , skip_ranges_(std::move(other.skip_ranges_))
+    , row_partition_set_(std::move(other.row_partition_set_))
+    , col_partition_set_(std::move(other.col_partition_set_))
+    , row_partition_(std::move(other.row_partition_))
+    , col_partition_(std::move(other.col_partition_)) {
+    std::lock_guard<std::mutex> guard(other.global_coord_mutex_);
+    global_coord_ready_ = other.global_coord_ready_;
+    global_coord_ = std::move(other.global_coord_);
+    other.global_coord_ready_ = false;
+    other.global_coord_.clear();
+}
+
+Mapper &Mapper::operator=(Mapper &&other) noexcept {
+    if (this == &other) {
+        return *this;
+    }
+
+    label_ = other.label_;
+    m_ = other.m_;
+    n_ = other.n_;
+    P_ = other.P_;
+    rank_ = other.rank_;
+    strategy_ = other.strategy_;
+    rank_to_range_ = std::move(other.rank_to_range_);
+    range_to_rank_ = std::move(other.range_to_rank_);
+    initial_buffer_size_ = std::move(other.initial_buffer_size_);
+    range_offset_ = std::move(other.range_offset_);
+    mi_ = other.mi_;
+    ni_ = other.ni_;
+    Pi_ = other.Pi_;
+    skip_ranges_ = std::move(other.skip_ranges_);
+    row_partition_set_ = std::move(other.row_partition_set_);
+    col_partition_set_ = std::move(other.col_partition_set_);
+    row_partition_ = std::move(other.row_partition_);
+    col_partition_ = std::move(other.col_partition_);
+
+    std::lock(global_coord_mutex_, other.global_coord_mutex_);
+    std::lock_guard<std::mutex> lock_this(global_coord_mutex_, std::adopt_lock);
+    std::lock_guard<std::mutex> lock_other(other.global_coord_mutex_,
+                                           std::adopt_lock);
+    global_coord_ready_ = other.global_coord_ready_;
+    global_coord_ = std::move(other.global_coord_);
+    other.global_coord_ready_ = false;
+    other.global_coord_.clear();
+
+    return *this;
 }
 
 void Mapper::output_layout() {
@@ -242,7 +361,8 @@ void Mapper::compute_range_to_rank() {
     for (auto rank = 0u; rank < P_; ++rank) {
         int matrix_id = 0;
         for (auto matrix : rank_to_range_[rank]) {
-            range_to_rank_.insert({matrix, {rank, range_offset_[rank][matrix_id]}});
+            range_to_rank_.insert(
+                {matrix, {rank, range_offset_[rank][matrix_id]}});
             row_partition_set_.insert(matrix.rows.last());
             col_partition_set_.insert(matrix.cols.last());
             ++matrix_id;
@@ -293,15 +413,20 @@ std::pair<int, int> Mapper::local_coordinates(int gi, int gj) {
 }
 
 void Mapper::compute_global_coord() {
+    const auto size = initial_size();
+    global_coord_ready_ = false;
+    global_coord_.assign(size, {-1, -1});
+
     int index = 0;
-    global_coord = std::vector<std::pair<int, int>>(initial_size());
     for (auto matrix_id = 0u; matrix_id < rank_to_range_[rank_].size();
          ++matrix_id) {
         Interval2D range = rank_to_range_[rank_][matrix_id];
-        for (auto local = 0; local < range.size(); ++local, ++index) {
-            global_coord[index] = range.global_index(local);
+        for (auto local = 0; local < range.size() && index < size;
+             ++local, ++index) {
+            global_coord_[index] = range.global_index(local);
         }
     }
+    global_coord_ready_ = true;
 }
 
 // local_id -> (gi, gj) (only for the current rank)
@@ -309,10 +434,14 @@ std::pair<int, int> Mapper::global_coordinates(int local_index) {
     if (local_index >= initial_size()) {
         return {-1, -1};
     }
-    if (global_coord.size() == 0) {
+    std::lock_guard<std::mutex> guard(global_coord_mutex_);
+    if (!global_coord_ready_) {
         compute_global_coord();
     }
-    return global_coord[local_index];
+    if (local_index >= static_cast<int>(global_coord_.size())) {
+        return {-1, -1};
+    }
+    return global_coord_[local_index];
 }
 
 // (local_id, rank) -> (gi, gj)
@@ -341,11 +470,9 @@ std::pair<int, int> Mapper::global_coordinates(int local_index, int rank) {
     return {-1, -1};
 }
 
-char Mapper::which_matrix() {
-    return label_;
-}
+char Mapper::which_matrix() { return label_; }
 
-std::vector<std::size_t>& Mapper::local_blocks_offsets() {
+std::vector<std::size_t> &Mapper::local_blocks_offsets() {
     return range_offset_[rank_];
 }
 
@@ -355,10 +482,11 @@ std::vector<Interval2D> Mapper::local_blocks() {
     return {};
 }
 
-int Mapper::owner(Interval2D& block) {
+int Mapper::owner(Interval2D &block) {
     auto rank_and_offset_iterator = range_to_rank_.find(block);
     if (rank_and_offset_iterator == range_to_rank_.end()) {
-        throw std::runtime_error("ERROR in mapper.cpp: the owner cannot be determined, the block not found.");
+        throw std::runtime_error("ERROR in mapper.cpp: the owner cannot be "
+                                 "determined, the block not found.");
     }
     assert(rank_and_offset_iterator != range_to_rank_.end());
     auto rank_and_offset = rank_and_offset_iterator->second;
@@ -374,12 +502,12 @@ costa::assigned_grid2D Mapper::get_layout_grid() {
     // and col intervals
     std::vector<int> rows_split;
     rows_split.reserve(row_partition_.size());
-    for (const auto& tick : row_partition_) {
+    for (const auto &tick : row_partition_) {
         rows_split.push_back(tick + 1);
     }
     std::vector<int> cols_split;
     cols_split.reserve(col_partition_.size());
-    for (const auto& tick : col_partition_) {
+    for (const auto &tick : col_partition_) {
         cols_split.push_back(tick + 1);
     }
 
@@ -413,31 +541,22 @@ costa::assigned_grid2D Mapper::get_layout_grid() {
     return assigned_grid;
 }
 
-int Mapper::m() const {
-    return m_;
-}
+int Mapper::m() const { return m_; }
 
-int Mapper::n() const {
-    return n_;
-}
+int Mapper::n() const { return n_; }
 
-int Mapper::P() const {
-    return P_;
-}
+int Mapper::P() const { return P_; }
 
-int Mapper::rank() const {
-    return rank_;
-}
+int Mapper::rank() const { return rank_; }
 
-char Mapper::label() const {
-    return label_;
-}
+char Mapper::label() const { return label_; }
 
-const Strategy& Mapper::strategy() const {
-    return *strategy_;
-}
+const Strategy &Mapper::strategy() const { return *strategy_; }
 
 void Mapper::reorder_rank(int new_rank) {
     rank_ = new_rank;
+    std::lock_guard<std::mutex> guard(global_coord_mutex_);
+    global_coord_ready_ = false;
+    global_coord_.clear();
 }
 } // namespace cosma

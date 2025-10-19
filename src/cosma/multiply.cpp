@@ -1,5 +1,6 @@
-#include <cosma/math_utils.hpp>
+#include <cosma/bfloat16.hpp>
 #include <cosma/local_multiply.hpp>
+#include <cosma/math_utils.hpp>
 #include <cosma/multiply.hpp>
 #include <cosma/profiler.hpp>
 #include <costa/grid2grid/ranks_reordering.hpp>
@@ -96,7 +97,8 @@ void multiply_using_layout(cosma_context<T> *ctx,
     //           CORNER CASES
     // **********************************
     // edge cases, which are allowed by the standard
-    if (m == 0 || n == 0) return;
+    if (m == 0 || n == 0)
+        return;
     // afterwards we are sure m != 0 and n != 0
     if (k == 0 || alpha == T{0}) {
         // scale matrix C by beta
@@ -153,8 +155,9 @@ void multiply_using_layout(cosma_context<T> *ctx,
     CosmaMatrix<T> B_cosma(ctx, std::move(mapper_b), rank_permutation[rank]);
     CosmaMatrix<T> C_cosma(ctx, std::move(mapper_c), rank_permutation[rank]);
 
-    // avoid resizing the buffer by reserving immediately the total required memory
-    // collect sizes of all buffers that are going to be allocated for each matrix
+    // avoid resizing the buffer by reserving immediately the total required
+    // memory collect sizes of all buffers that are going to be allocated for
+    // each matrix
     auto A_buffers = A_cosma.required_memory();
     auto B_buffers = B_cosma.required_memory();
     auto C_buffers = C_cosma.required_memory();
@@ -162,9 +165,15 @@ void multiply_using_layout(cosma_context<T> *ctx,
     int n_buffers = A_buffers.size() + B_buffers.size() + C_buffers.size();
     if (n_buffers > 0) {
         buffer_sizes.reserve(n_buffers);
-        std::copy(A_buffers.begin(), A_buffers.end(), std::back_inserter(buffer_sizes));
-        std::copy(B_buffers.begin(), B_buffers.end(), std::back_inserter(buffer_sizes));
-        std::copy(C_buffers.begin(), C_buffers.end(), std::back_inserter(buffer_sizes));
+        std::copy(A_buffers.begin(),
+                  A_buffers.end(),
+                  std::back_inserter(buffer_sizes));
+        std::copy(B_buffers.begin(),
+                  B_buffers.end(),
+                  std::back_inserter(buffer_sizes));
+        std::copy(C_buffers.begin(),
+                  C_buffers.end(),
+                  std::back_inserter(buffer_sizes));
 
         // allocate all buffers in the memory pool
         get_context_instance<T>()->get_memory_pool().reserve(buffer_sizes);
@@ -206,7 +215,6 @@ void multiply_using_layout(cosma_context<T> *ctx,
         MPI_Comm_free(&reordered_comm);
     }
     PL();
-
 }
 
 /*
@@ -253,7 +261,7 @@ void multiply(cosma_context<Scalar> *ctx,
     // register reusable objects in the context
     ctx->register_state(comm, strategy);
     if (comm == MPI_COMM_NULL || ctx->get_cosma_comm()->is_idle()) {
-	return;
+        return;
     }
 
     Interval mi = Interval(0, strategy.m - 1);
@@ -283,18 +291,18 @@ void multiply(cosma_context<Scalar> *ctx,
     PL();
 
     multiply(ctx,
-    	 matrixA,
-    	 matrixB,
-    	 matrixC,
-    	 mi,
-    	 ni,
-    	 ki,
-    	 Pi,
-    	 0,
-    	 strategy,
-    	 ctx->get_cosma_comm(),
-    	 alpha,
-    	 beta);
+             matrixA,
+             matrixB,
+             matrixC,
+             mi,
+             ni,
+             ki,
+             Pi,
+             0,
+             strategy,
+             ctx->get_cosma_comm(),
+             alpha,
+             beta);
 
     // deallocate buffers used for communication
     // since its a stack allocator, we deallocate
@@ -376,7 +384,8 @@ void multiply(cosma_context<Scalar> *ctx,
 #endif
 
         if (gpu_aware_mpi_enabled || nccl_enabled) {
-            copy_c_back = !(step > 0 && strategy.parallel_step(step-1) && strategy.split_k(step-1));
+            copy_c_back = !(step > 0 && strategy.parallel_step(step - 1) &&
+                            strategy.split_k(step - 1));
         }
 
         local_multiply(ctx,
@@ -393,16 +402,16 @@ void multiply(cosma_context<Scalar> *ctx,
         if (strategy.parallel_step(step)) {
             if (strategy.should_overlap_comm_and_comp(step)) {
                 comm->overlap_comm_and_comp(ctx,
-                                           matrixA,
-                                           matrixB,
-                                           matrixC,
-                                           m,
-                                           n,
-                                           k,
-                                           P,
-                                           step,
-                                           alpha,
-                                           beta);
+                                            matrixA,
+                                            matrixB,
+                                            matrixC,
+                                            m,
+                                            n,
+                                            k,
+                                            P,
+                                            step,
+                                            alpha,
+                                            beta);
                 // parallel(matrixA, matrixB, matrixC, m, n, k, P, step,
                 // strategy, comm, beta);
             } else {
@@ -487,16 +496,16 @@ void sequential(cosma_context<Scalar> *ctx,
                      alpha,
                      beta);
             // this only affects the GPU backend.
-            // if sequential steps are used, then each sequential step 
-            // is reusing the same communication buffers. 
-            // However, if the strategy contains steps 
+            // if sequential steps are used, then each sequential step
+            // is reusing the same communication buffers.
+            // However, if the strategy contains steps
             // which are not perfectly divisible then
             // this might result in each sequential step requiring
             // slightly different pointers to be pinned and thus
             // we cannot reuse the already pinned buffers from
             // the previous sequential step. We have to unpin
             // all the buffers from the previous step, to avoid
-            // getting the GPU runtime error that 
+            // getting the GPU runtime error that
             // some part of the buffer is already pinned.
             if (strategy.irregular) {
                 ctx->get_memory_pool().unpin_all();
@@ -522,16 +531,16 @@ void sequential(cosma_context<Scalar> *ctx,
                      alpha,
                      beta);
             // this only affects the GPU backend.
-            // if sequential steps are used, then each sequential step 
-            // is reusing the same communication buffers. 
-            // However, if the strategy contains steps 
+            // if sequential steps are used, then each sequential step
+            // is reusing the same communication buffers.
+            // However, if the strategy contains steps
             // which are not perfectly divisible then
             // this might result in each sequential step requiring
             // slightly different pointers to be pinned and thus
             // we cannot reuse the already pinned buffers from
             // the previous sequential step. We have to unpin
             // all the buffers from the previous step, to avoid
-            // getting the GPU runtime error that 
+            // getting the GPU runtime error that
             // some part of the buffer is already pinned.
             if (strategy.irregular) {
                 ctx->get_memory_pool().unpin_all();
@@ -565,16 +574,16 @@ void sequential(cosma_context<Scalar> *ctx,
                      alpha,
                      new_beta);
             // this only affects the GPU backend.
-            // if sequential steps are used, then each sequential step 
-            // is reusing the same communication buffers. 
-            // However, if the strategy contains steps 
+            // if sequential steps are used, then each sequential step
+            // is reusing the same communication buffers.
+            // However, if the strategy contains steps
             // which are not perfectly divisible then
             // this might result in each sequential step requiring
             // slightly different pointers to be pinned and thus
             // we cannot reuse the already pinned buffers from
             // the previous sequential step. We have to unpin
             // all the buffers from the previous step, to avoid
-            // getting the GPU runtime error that 
+            // getting the GPU runtime error that
             // some part of the buffer is already pinned.
             if (strategy.irregular) {
                 ctx->get_memory_pool().unpin_all();
@@ -760,25 +769,24 @@ void parallel(cosma_context<Scalar> *ctx,
                               new_size,
                               step);
 #elif COSMA_WITH_GPU_AWARE_MPI
-        cosma::gpu::gpu_aware_mpi_copy(
-                              ctx,
-                              P,
-                              original_matrix,
-                              expanded_matrix,
-                              reshuffle_buffer,
-                              size_before_expansion,
-                              total_before_expansion,
-                              new_size,
-                              step);
+        cosma::gpu::gpu_aware_mpi_copy(ctx,
+                                       P,
+                                       original_matrix,
+                                       expanded_matrix,
+                                       reshuffle_buffer,
+                                       size_before_expansion,
+                                       total_before_expansion,
+                                       new_size,
+                                       step);
 #else
         comm->copy(P,
-                  original_matrix,
-                  expanded_matrix,
-                  reshuffle_buffer,
-                  size_before_expansion,
-                  total_before_expansion,
-                  new_size,
-                  step);
+                   original_matrix,
+                   expanded_matrix,
+                   reshuffle_buffer,
+                   size_before_expansion,
+                   total_before_expansion,
+                   new_size,
+                   step);
 #endif
     }
 
@@ -799,7 +807,7 @@ void parallel(cosma_context<Scalar> *ctx,
            Assume the case: (m, n, k, P) = (4, 4, 8, 4),
            with strategy being: -s pk2,pk2 and beta = 1.0
 
-           In this case, matrix C will only allocate 3 buffers: 
+           In this case, matrix C will only allocate 3 buffers:
            1) initial buffer (send buffer)
            2) communication buffer (receive buffer)
            3) reduce_buffer (temporary buffer)
@@ -817,9 +825,9 @@ void parallel(cosma_context<Scalar> *ctx,
            This means that the initial buffer will be overwritten
            with partial results of the nested parallel k/2 step.
 
-           Then, when the outer parallel step wants to accumulate: 
+           Then, when the outer parallel step wants to accumulate:
            C = beta * C + sum(partial results)
-           However, the values in C are not anymore the initial values, 
+           However, the values in C are not anymore the initial values,
            but the values of the inner reduction which overwrote C.
 
            This happens when all following conditions are met:
@@ -837,14 +845,14 @@ void parallel(cosma_context<Scalar> *ctx,
                 so the initial buffer only serves as the send buffer.
 
            When none of these conditions are met, we have to:
-           - either: 
+           - either:
              1) allocate an additional communication buffer
                 so that the initial buffer never gets written to
                 during communication rounds
            - or:
              2) preserve the initial content of C temporarily
                 in a temporary buffer (e.g. in a reduce_buffer)
-                given that the temp buffer is not used 
+                given that the temp buffer is not used
                 in any subsequent step.
 
            Here we chose to take the option 2).
@@ -855,7 +863,7 @@ void parallel(cosma_context<Scalar> *ctx,
 
            We can do this, because the following is guaranteed:
            1) if beta > 0 in some parallel step where k is divided
-              then all nested steps (both parallel and sequential) 
+              then all nested steps (both parallel and sequential)
               will have beta = 0 (since we set new_beta = 0).
            2) size(reduce_buffer) >= size(initial C buffer)
            3) Even if there is only 1 parallel k step
@@ -880,7 +888,8 @@ void parallel(cosma_context<Scalar> *ctx,
              new_beta);
 
 #ifdef DEBUG
-    std::cout << "rank = " << comm->rank() << ", label = " << expanded_mat.label() << std::endl;
+    std::cout << "rank = " << comm->rank()
+              << ", label = " << expanded_mat.label() << std::endl;
     if (comm->rank() == 0 && expanded_mat.label() == 'C') {
         std::cout << "expanded matrix after multiply: " << std::endl;
         int local_size = size_before_expansion[comm->rank() - P.first()][0];
@@ -906,7 +915,7 @@ void parallel(cosma_context<Scalar> *ctx,
     if (strategy.split_k(step)) {
         Scalar *reduce_buffer = expanded_mat.reduce_buffer_ptr();
 #ifdef COSMA_WITH_NCCL
-        bool copy_c_back = !strategy.final_step(step+1);
+        bool copy_c_back = !strategy.final_step(step + 1);
         cosma::gpu::nccl_reduce(ctx,
                                 P,
                                 expanded_matrix,
@@ -921,34 +930,33 @@ void parallel(cosma_context<Scalar> *ctx,
                                 step,
                                 copy_c_back);
 #elif COSMA_WITH_GPU_AWARE_MPI
-        bool copy_c_back = !strategy.final_step(step+1);
-        cosma::gpu::gpu_aware_mpi_reduce(
-                                ctx,
-                                P,
-                                expanded_matrix,
-                                original_matrix,
-                                reshuffle_buffer,
-                                reduce_buffer,
-                                size_before_expansion,
-                                total_before_expansion,
-                                size_after_expansion,
-                                total_after_expansion,
-                                beta,
-                                step,
-                                copy_c_back);
+        bool copy_c_back = !strategy.final_step(step + 1);
+        cosma::gpu::gpu_aware_mpi_reduce(ctx,
+                                         P,
+                                         expanded_matrix,
+                                         original_matrix,
+                                         reshuffle_buffer,
+                                         reduce_buffer,
+                                         size_before_expansion,
+                                         total_before_expansion,
+                                         size_after_expansion,
+                                         total_after_expansion,
+                                         beta,
+                                         step,
+                                         copy_c_back);
 #else
         comm->reduce(P,
-                    expanded_matrix,
-                    original_matrix,
-                    reshuffle_buffer,
-                    reduce_buffer,
-                    size_before_expansion,
-                    total_before_expansion,
-                    size_after_expansion,
-                    total_after_expansion,
-                    alpha,
-                    beta,
-                    step);
+                     expanded_matrix,
+                     original_matrix,
+                     reshuffle_buffer,
+                     reduce_buffer,
+                     size_before_expansion,
+                     total_before_expansion,
+                     size_after_expansion,
+                     total_after_expansion,
+                     alpha,
+                     beta,
+                     step);
 #endif
     }
 
@@ -982,25 +990,32 @@ template void multiply_using_layout<float>(costa::grid_layout<float> &A,
                                            char transb,
                                            MPI_Comm comm);
 
-template void
-multiply_using_layout<zdouble_t>(costa::grid_layout<zdouble_t> &A,
-                                 costa::grid_layout<zdouble_t> &B,
-                                 costa::grid_layout<zdouble_t> &C,
-                                 zdouble_t alpha,
-                                 zdouble_t beta,
-                                 char transa,
-                                 char transb,
-                                 MPI_Comm comm);
+template void multiply_using_layout<zdouble_t>(costa::grid_layout<zdouble_t> &A,
+                                               costa::grid_layout<zdouble_t> &B,
+                                               costa::grid_layout<zdouble_t> &C,
+                                               zdouble_t alpha,
+                                               zdouble_t beta,
+                                               char transa,
+                                               char transb,
+                                               MPI_Comm comm);
 
-template void
-multiply_using_layout<zfloat_t>(costa::grid_layout<zfloat_t> &A,
-                                costa::grid_layout<zfloat_t> &B,
-                                costa::grid_layout<zfloat_t> &C,
-                                zfloat_t alpha,
-                                zfloat_t beta,
-                                char transa,
-                                char transb,
-                                MPI_Comm comm);
+template void multiply_using_layout<zfloat_t>(costa::grid_layout<zfloat_t> &A,
+                                              costa::grid_layout<zfloat_t> &B,
+                                              costa::grid_layout<zfloat_t> &C,
+                                              zfloat_t alpha,
+                                              zfloat_t beta,
+                                              char transa,
+                                              char transb,
+                                              MPI_Comm comm);
+
+template void multiply_using_layout<bfloat16>(costa::grid_layout<bfloat16> &A,
+                                              costa::grid_layout<bfloat16> &B,
+                                              costa::grid_layout<bfloat16> &C,
+                                              bfloat16 alpha,
+                                              bfloat16 beta,
+                                              char transa,
+                                              char transb,
+                                              MPI_Comm comm);
 
 // explicit instantiation for multiply_using_layout with context
 template void multiply_using_layout<double>(cosma_context<double> *ctx,
@@ -1023,27 +1038,35 @@ template void multiply_using_layout<float>(cosma_context<float> *ctx,
                                            char transb,
                                            MPI_Comm comm);
 
-template void
-multiply_using_layout<zdouble_t>(cosma_context<zdouble_t> *ctx,
-                                 costa::grid_layout<zdouble_t> &A,
-                                 costa::grid_layout<zdouble_t> &B,
-                                 costa::grid_layout<zdouble_t> &C,
-                                 zdouble_t alpha,
-                                 zdouble_t beta,
-                                 char transa,
-                                 char transb,
-                                 MPI_Comm comm);
+template void multiply_using_layout<zdouble_t>(cosma_context<zdouble_t> *ctx,
+                                               costa::grid_layout<zdouble_t> &A,
+                                               costa::grid_layout<zdouble_t> &B,
+                                               costa::grid_layout<zdouble_t> &C,
+                                               zdouble_t alpha,
+                                               zdouble_t beta,
+                                               char transa,
+                                               char transb,
+                                               MPI_Comm comm);
 
-template void
-multiply_using_layout<zfloat_t>(cosma_context<zfloat_t> *ctx,
-                                costa::grid_layout<zfloat_t> &A,
-                                costa::grid_layout<zfloat_t> &B,
-                                costa::grid_layout<zfloat_t> &C,
-                                zfloat_t alpha,
-                                zfloat_t beta,
-                                char transa,
-                                char transb,
-                                MPI_Comm comm);
+template void multiply_using_layout<zfloat_t>(cosma_context<zfloat_t> *ctx,
+                                              costa::grid_layout<zfloat_t> &A,
+                                              costa::grid_layout<zfloat_t> &B,
+                                              costa::grid_layout<zfloat_t> &C,
+                                              zfloat_t alpha,
+                                              zfloat_t beta,
+                                              char transa,
+                                              char transb,
+                                              MPI_Comm comm);
+
+template void multiply_using_layout<bfloat16>(cosma_context<bfloat16> *ctx,
+                                              costa::grid_layout<bfloat16> &A,
+                                              costa::grid_layout<bfloat16> &B,
+                                              costa::grid_layout<bfloat16> &C,
+                                              bfloat16 alpha,
+                                              bfloat16 beta,
+                                              char transa,
+                                              char transb,
+                                              MPI_Comm comm);
 
 // Explicit instantiations for short `multiply`
 template void multiply<double>(cosma_context<double> *ctx,
@@ -1082,6 +1105,15 @@ template void multiply<zfloat_t>(cosma_context<zfloat_t> *ctx,
                                  zfloat_t alpha,
                                  zfloat_t beta);
 
+template void multiply<bfloat16>(cosma_context<bfloat16> *ctx,
+                                 CosmaMatrix<bfloat16> &A,
+                                 CosmaMatrix<bfloat16> &B,
+                                 CosmaMatrix<bfloat16> &C,
+                                 const Strategy &strategy,
+                                 MPI_Comm comm,
+                                 bfloat16 alpha,
+                                 bfloat16 beta);
+
 // Explicit instantiations for short `multiply` without the context
 //
 template void multiply<double>(CosmaMatrix<double> &A,
@@ -1115,4 +1147,13 @@ template void multiply<zfloat_t>(CosmaMatrix<zfloat_t> &A,
                                  MPI_Comm comm,
                                  zfloat_t alpha,
                                  zfloat_t beta);
+
+template void multiply<bfloat16>(CosmaMatrix<bfloat16> &A,
+                                 CosmaMatrix<bfloat16> &B,
+                                 CosmaMatrix<bfloat16> &C,
+                                 const Strategy &strategy,
+                                 MPI_Comm comm,
+                                 bfloat16 alpha,
+                                 bfloat16 beta);
+
 } // namespace cosma

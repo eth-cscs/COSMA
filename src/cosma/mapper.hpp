@@ -9,21 +9,26 @@
 #include <cassert>
 #include <fstream>
 #include <memory>
+#include <mutex>
 #include <numeric>
 #include <set>
 #include <stdexcept>
 #include <string>
 #include <tuple>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace cosma {
 class Mapper {
   public:
     Mapper() = default;
-    Mapper(char label,
-           const Strategy& strategy,
-           int rank);
+    Mapper(char label, const Strategy &strategy, int rank);
+
+    Mapper(const Mapper &other);
+    Mapper &operator=(const Mapper &other);
+    Mapper(Mapper &&other) noexcept;
+    Mapper &operator=(Mapper &&other) noexcept;
 
     size_t initial_size(int rank) const;
 
@@ -49,13 +54,13 @@ class Mapper {
     char which_matrix();
 
     // get a vector of offsets of each local block
-    std::vector<std::size_t>& local_blocks_offsets();
+    std::vector<std::size_t> &local_blocks_offsets();
 
     // get a vector of local blocks
     std::vector<Interval2D> local_blocks();
 
     // returns a rank owning given block
-    int owner(Interval2D& block);
+    int owner(Interval2D &block);
 
     costa::assigned_grid2D get_layout_grid();
 
@@ -64,7 +69,7 @@ class Mapper {
     int P() const;
     int rank() const;
     char label() const;
-    const Strategy& strategy() const;
+    const Strategy &strategy() const;
 
     // changes the current rank to new_rank
     // this is used when we want to reorder ranks
@@ -83,7 +88,7 @@ class Mapper {
     /// Maximum number of rank in the global communicator
     size_t P_;
     int rank_;
-    const Strategy* strategy_;
+    const Strategy *strategy_;
 
     // rank -> list of submatrices that this rank owns
     // the number of submatrices that this rank owns
@@ -112,7 +117,9 @@ class Mapper {
     std::vector<int> row_partition_;
     std::vector<int> col_partition_;
 
-    std::vector<std::pair<int, int>> global_coord;
+    mutable std::mutex global_coord_mutex_;
+    mutable bool global_coord_ready_{false};
+    mutable std::vector<std::pair<int, int>> global_coord_;
 
     void compute_sizes(Interval m,
                        Interval n,

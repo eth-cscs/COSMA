@@ -58,9 +58,10 @@ The paper and other materials on COSMA are available under the following link:
 ## Features
 
 - **[NEW] Multi-GPU Systems Support:** COSMA is now able to take advantage of fast GPU-to-GPU interconnects either through the use of NCCL/RCCL libraries or by using the GPU-aware MPI. Both, NVIDIA and AMD GPUs are supported.
+- **[NEW] BFloat16 Support:** COSMA now supports BFloat16 (BF16) reduced precision arithmetic for AI/ML workloads, enabling memory-efficient distributed matrix multiplication with automatic precision handling.
 - **ScaLAPACK API Support:** it is enough to link to COSMA, without changing the code and all `p?gemm` calls will use ScaLAPACK wrappers provided by COSMA.
 - **C/Fortran Interface:** written in `C++`, but provides `C` and `Fortran` interfaces.
-- **Custom Types:** fully templatized types.
+- **Custom Types:** fully templatized types including support for `float`, `double`, complex types (`zfloat`, `zdouble`), and **BFloat16** (`bfloat16`).
 - **GPU acceleration:** supports both **NVIDIA** and **AMD** GPUs.
 - **Supported BLAS (CPU) backends:** MKL, LibSci, NETLIB, BLIS, ATLAS.
 - **Custom Data Layout Support:** natively uses its own blocked data layout of matrices, but supports arbitrary grid-like data layout of matrices.
@@ -273,9 +274,19 @@ The overview of all supported options is given below:
   step. The third parameter is an integer which defines the divisor. This
   parameter can be omitted. In that case the default strategy will be used. An example of a possible value for the upper example: `--steps=sm2,pn2,pk2`.
 - `-r (--n_rep)` (optional, default: `2`): the number of repetitions.
-- `-t (--type)` (optional, default: `double`): data type of matrix entries. Can be one of: `float`, `double`, `zfloat` and `zdouble`. The last two correspond to complex numbers.
+- `-t (--type)` (optional, default: `double`): data type of matrix entries. Can be one of: `float`, `double`, `zfloat`, `zdouble`, and `bfloat16`. The `bfloat16` type enables reduced-precision arithmetic for AI/ML workloads. Complex types are `zfloat` and `zdouble`.
 - `--test` (optional): if present, the result of COSMA will be verified with the result of the available SCALAPACK.
 - `-h (--help) (optional)`: print available options.
+
+**Example: Testing BFloat16 matrix multiplication:**
+```bash
+# BFloat16 matrix multiplication with verification
+mpirun -np 4 ./build/miniapp/cosma_miniapp -m 2000 -n 2000 -k 2000 -t bfloat16 --test -r 5
+
+# Large-scale BFloat16 multiplication without verification (performance testing)
+mpirun -np 16 ./build/miniapp/cosma_miniapp -m 10000 -n 10000 -k 10000 -t bfloat16 -r 2
+```
+**Note:** BFloat16 provides approximately the same dynamic range as FP32 but uses only 16 bits per element, reducing memory bandwidth requirements by 50% compared to single precision. This is particularly beneficial for large-scale distributed matrix operations in AI/ML workloads.
 
 ### COSMA pxgemm wrapper
 
@@ -311,7 +322,7 @@ The overview of all supported options is given below:
 - `--alpha` (optional, default: 1): alpha parameter in `C = alpha*A*B + beta*C`.
 - `--beta` (optional, default: 0): beta parameter in `C = alpha*A*B + beta*C`.
 - `-r (--n_rep)` (optional, default: 2): number of repetitions.
-- `-t (--type)` (optional, default: `double`): data type of matrix entries. Can be one of: `float`, `double`, `zfloat` and `zdouble`. The last two correspond to complex numbers.
+- `-t (--type)` (optional, default: `double`): data type of matrix entries. Can be one of: `float`, `double`, `zfloat`, `zdouble`, and `bfloat16`. The `bfloat16` type enables reduced-precision arithmetic.
 - `--test` (optional): if present, the result of COSMA will be verified with the result of the available SCALAPACK.
 - `--algorithm` (optional, default: `both`): defines which algorithm (`cosma`, `scalapack` or `both`) to run.
 - `-h (--help) (optional)`: print available options.

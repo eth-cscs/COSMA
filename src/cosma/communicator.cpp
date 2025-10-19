@@ -1,5 +1,6 @@
 #include <complex>
 
+#include <cosma/bfloat16.hpp>
 #include <cosma/communicator.hpp>
 #include <cosma/one_sided_communicator.hpp>
 #include <cosma/two_sided_communicator.hpp>
@@ -11,8 +12,7 @@
 namespace cosma {
 bool communicator::use_busy_waiting = true;
 
-communicator::communicator(const Strategy strategy, 
-                           MPI_Comm comm)
+communicator::communicator(const Strategy strategy, MPI_Comm comm)
     : strategy_(strategy) {
 
     use_busy_waiting = strategy_.use_busy_waiting;
@@ -20,7 +20,7 @@ communicator::communicator(const Strategy strategy,
     MPI_Comm_rank(comm, &rank_);
     // rank_ = reordered_rank(rank_);
     MPI_Comm_size(comm, &comm_size_);
-    // check if the reordered rank belongs 
+    // check if the reordered rank belongs
     // to this communicator
     assert(rank_ < comm_size_);
     using_reduced_comm_ = comm_size_ != strategy.P;
@@ -37,10 +37,8 @@ communicator::communicator(const Strategy strategy,
 
         MPI_Group reduced_group;
 
-        MPI_Group_excl(group,
-                       exclude_ranks.size(),
-                       exclude_ranks.data(),
-                       &reduced_group);
+        MPI_Group_excl(
+            group, exclude_ranks.size(), exclude_ranks.data(), &reduced_group);
         MPI_Comm_create_group(comm, reduced_group, 0, &full_comm_);
 
         MPI_Group_free(&group);
@@ -165,9 +163,7 @@ void communicator::barrier(int step) {
     MPI_Barrier(comm_ring_[comm_index]);
 }
 
-MPI_Comm communicator::full_comm() {
-    return full_comm_;
-}
+MPI_Comm communicator::full_comm() { return full_comm_; }
 
 MPI_Comm communicator::active_comm(int step) {
     int comm_index = step_to_comm_index_[step];
@@ -183,11 +179,11 @@ ncclComm_t communicator::active_nccl_comm(int step) {
 
 int communicator::comm_size() { return comm_size_; }
 
-void communicator::free_comm(MPI_Comm &comm) { 
+void communicator::free_comm(MPI_Comm &comm) {
     int mpi_finalized;
     MPI_Finalized(&mpi_finalized);
     if (!mpi_finalized) {
-        MPI_Comm_free(&comm); 
+        MPI_Comm_free(&comm);
     }
 }
 
@@ -253,7 +249,8 @@ void communicator::split_communicators(MPI_Comm comm) {
 
 #ifdef COSMA_WITH_NCCL
             nccl_comm_ring_.push_back(gpu::mpi_to_nccl_comm(comm_ring_.back()));
-            nccl_comm_subproblem_.push_back(gpu::mpi_to_nccl_comm(comm_subproblem_.back()));
+            nccl_comm_subproblem_.push_back(
+                gpu::mpi_to_nccl_comm(comm_subproblem_.back()));
 #endif
 
             comm = comm_subproblem;
@@ -262,7 +259,7 @@ void communicator::split_communicators(MPI_Comm comm) {
     }
 }
 
-MPI_Comm create_comm(MPI_Comm& comm, std::vector<int>& ranks) {
+MPI_Comm create_comm(MPI_Comm &comm, std::vector<int> &ranks) {
     MPI_Comm newcomm;
     MPI_Group subgroup;
 
@@ -277,7 +274,6 @@ MPI_Comm create_comm(MPI_Comm& comm, std::vector<int>& ranks) {
 
     return newcomm;
 }
-
 
 void communicator::create_communicators(MPI_Comm comm) {
     // MPI_Comm_group(comm, &comm_group);
@@ -294,11 +290,14 @@ void communicator::create_communicators(MPI_Comm comm) {
             std::tie(group, offset) = group_and_offset(P, div, rank_);
 
             comm_ring_.emplace_back(create_comm_ring(comm, P, offset, div));
-            comm_subproblem_.emplace_back(create_comm_subproblem(comm, P, newP));
+            comm_subproblem_.emplace_back(
+                create_comm_subproblem(comm, P, newP));
 
 #ifdef COSMA_WITH_NCCL
-            nccl_comm_ring_.emplace_back(gpu::mpi_to_nccl_comm(comm_ring_.back()));
-            nccl_comm_subproblem_.emplace_back(gpu::mpi_to_nccl_comm(comm_subproblem_.back()));
+            nccl_comm_ring_.emplace_back(
+                gpu::mpi_to_nccl_comm(comm_ring_.back()));
+            nccl_comm_subproblem_.emplace_back(
+                gpu::mpi_to_nccl_comm(comm_subproblem_.back()));
 #endif
 
             comm = comm_subproblem_.back();
@@ -308,9 +307,9 @@ void communicator::create_communicators(MPI_Comm comm) {
 }
 
 MPI_Comm communicator::create_comm_ring(MPI_Comm comm,
-                                       Interval &P,
-                                       int offset,
-                                       int div) {
+                                        Interval &P,
+                                        int offset,
+                                        int div) {
     std::vector<int> ranks(div);
     for (int i = 0; i < div; ++i) {
         ranks[i] = rank_outside_ring(P, div, offset, i);
@@ -320,8 +319,8 @@ MPI_Comm communicator::create_comm_ring(MPI_Comm comm,
 }
 
 MPI_Comm communicator::create_comm_subproblem(MPI_Comm comm,
-                                     Interval &P,
-                                     Interval &newP) {
+                                              Interval &P,
+                                              Interval &newP) {
     MPI_Comm newcomm;
     MPI_Group subgroup;
 
@@ -441,9 +440,7 @@ void communicator::overlap_comm_and_comp(cosma_context<Scalar> *ctx,
                                                   beta);
 }
 
-const Strategy communicator::get_strategy() {
-    return strategy_;
-}
+const Strategy communicator::get_strategy() { return strategy_; }
 
 // Explicit instantiations for `copy`
 //
@@ -486,6 +483,16 @@ template void communicator::copy<std::complex<double>>(
     std::vector<int> &total_before,
     int total_after,
     int step);
+
+template void
+communicator::copy<bfloat16>(Interval &P,
+                             bfloat16 *in,
+                             bfloat16 *out,
+                             bfloat16 *reshuffle_buffer,
+                             std::vector<std::vector<int>> &size_before,
+                             std::vector<int> &total_before,
+                             int total_after,
+                             int step);
 
 // Explicit instantiations for `reduce`
 //
@@ -545,6 +552,20 @@ template void communicator::reduce<std::complex<double>>(
     std::complex<double> beta,
     int step);
 
+template void
+communicator::reduce<bfloat16>(Interval &P,
+                               bfloat16 *in,
+                               bfloat16 *out,
+                               bfloat16 *reshuffle_buffer,
+                               bfloat16 *reduce_buffer,
+                               std::vector<std::vector<int>> &c_current,
+                               std::vector<int> &c_total_current,
+                               std::vector<std::vector<int>> &c_expanded,
+                               std::vector<int> &c_total_expanded,
+                               bfloat16 alpha,
+                               bfloat16 beta,
+                               int step);
+
 // Explicit instantiations for `overlap_comm_and_comp`
 //
 template void
@@ -597,5 +618,18 @@ template void communicator::overlap_comm_and_comp<std::complex<double>>(
     size_t step,
     std::complex<double> alpha,
     std::complex<double> beta);
+
+template void
+communicator::overlap_comm_and_comp<bfloat16>(cosma_context<bfloat16> *ctx,
+                                              CosmaMatrix<bfloat16> &matrixA,
+                                              CosmaMatrix<bfloat16> &matrixB,
+                                              CosmaMatrix<bfloat16> &matrixC,
+                                              Interval &m,
+                                              Interval &n,
+                                              Interval &k,
+                                              Interval &P,
+                                              size_t step,
+                                              bfloat16 alpha,
+                                              bfloat16 beta);
 
 } // namespace cosma

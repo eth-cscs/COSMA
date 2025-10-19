@@ -90,3 +90,30 @@ multiply_using_layout:
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 4
+
+bfloat16_basic:
+  extends: .run_tests
+  stage: test
+  script: /cosma-env-cuda/.spack-env/view/bin/test.bfloat16_basic
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 1
+    USE_MPI: 'NO'
+
+bfloat16_mpi:
+  extends: .run_tests
+  stage: test
+  script: /cosma-env-cuda/.spack-env/view/bin/test.bfloat16_mpi
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 2
+    USE_MPI: 'YES'
+
+bfloat16_multiply:
+  extends: .run_tests
+  stage: test
+  script: /cosma-env-cuda/.spack-env/view/bin/test.bfloat16_multiply
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 8
+    USE_MPI: 'YES'

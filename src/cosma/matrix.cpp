@@ -1,3 +1,4 @@
+#include <cosma/bfloat16.hpp>
 #include <cosma/matrix.hpp>
 #include <mpi.h>
 
@@ -26,8 +27,7 @@ CosmaMatrix<T>::CosmaMatrix(cosma_context<T> *ctxt,
     if (rank < P_) {
         layout_ = Layout(&mapper_);
 
-        buffer_ =
-            buffer_t(ctxt_, &mapper_, &layout_, dry_run);
+        buffer_ = buffer_t(ctxt_, &mapper_, &layout_, dry_run);
     }
 }
 
@@ -49,8 +49,7 @@ CosmaMatrix<T>::CosmaMatrix(cosma_context<T> *ctxt,
     mapper_.reorder_rank(rank);
     if (rank < P_) {
         layout_ = Layout(&mapper_);
-        buffer_ =
-            buffer_t(ctxt_, &mapper_, &layout_, dry_run);
+        buffer_ = buffer_t(ctxt_, &mapper_, &layout_, dry_run);
     }
 }
 
@@ -357,8 +356,8 @@ void CosmaMatrix<T>::set_sizes(int rank, std::vector<int> &sizes, int start) {
 }
 
 template <typename T>
-typename CosmaMatrix<T>::scalar_t &CosmaMatrix<T>::
-operator[](const typename std::vector<scalar_t>::size_type index) {
+typename CosmaMatrix<T>::scalar_t &CosmaMatrix<T>::operator[](
+    const typename std::vector<scalar_t>::size_type index) {
     if (index < matrix_size()) {
         std::runtime_error("Matrix index out of bounds.");
     }
@@ -366,8 +365,8 @@ operator[](const typename std::vector<scalar_t>::size_type index) {
 }
 
 template <typename T>
-typename CosmaMatrix<T>::scalar_t CosmaMatrix<T>::
-operator[](const typename std::vector<scalar_t>::size_type index) const {
+typename CosmaMatrix<T>::scalar_t CosmaMatrix<T>::operator[](
+    const typename std::vector<scalar_t>::size_type index) const {
     if (index < matrix_size()) {
         std::runtime_error("Matrix index out of bounds.");
     }
@@ -406,18 +405,16 @@ costa::grid_layout<T> CosmaMatrix<T>::get_grid_layout() {
         Interval2D range = mapper_.local_blocks()[matrix_id];
         int offset = mapper_.local_blocks_offsets()[matrix_id];
 
-        costa::interval row_interval(range.rows.first(),
-                                         range.rows.last() + 1);
-        costa::interval col_interval(range.cols.first(),
-                                         range.cols.last() + 1);
+        costa::interval row_interval(range.rows.first(), range.rows.last() + 1);
+        costa::interval col_interval(range.cols.first(), range.cols.last() + 1);
 
         int stride = row_interval.length();
 
         costa::block<T> b(assigned_grid,
-                              row_interval,
-                              col_interval,
-                              matrix_pointer() + offset,
-                              stride);
+                          row_interval,
+                          col_interval,
+                          matrix_pointer() + offset,
+                          stride);
 
         assert(b.non_empty());
 
@@ -474,5 +471,6 @@ template class CosmaMatrix<float>;
 template class CosmaMatrix<double>;
 template class CosmaMatrix<std::complex<float>>;
 template class CosmaMatrix<std::complex<double>>;
+template class CosmaMatrix<bfloat16>;
 
 } // namespace cosma

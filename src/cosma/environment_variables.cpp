@@ -1,29 +1,28 @@
-#include <cosma/environment_variables.hpp>
 #include <algorithm>
+#include <cosma/bfloat16.hpp>
+#include <cosma/environment_variables.hpp>
 
-bool cosma::env_var_defined(const char* var_name) {
-    char* var = getenv (var_name);
+bool cosma::env_var_defined(const char *var_name) {
+    char *var = getenv(var_name);
     return var != nullptr;
 }
 
 bool cosma::get_bool_env_var(std::string name, bool default_value) {
-    char* var;
+    char *var;
     var = getenv(name.c_str());
     bool value = default_value;
     if (var != nullptr) {
         std::string s(var);
-        std::transform(s.begin(), s.end(), s.begin(), 
-            [&](char c) {
-                return std::toupper(c);
-            }
-        );
+        std::transform(s.begin(), s.end(), s.begin(), [&](char c) {
+            return std::toupper(c);
+        });
         value = (s == "ON");
     }
     return value;
 }
 
 int cosma::get_int_env_var(std::string name, int default_value) {
-    char* var;
+    char *var;
     var = getenv(name.c_str());
     int value = default_value;
     if (var != nullptr)
@@ -32,7 +31,7 @@ int cosma::get_int_env_var(std::string name, int default_value) {
 }
 
 float cosma::get_float_env_var(std::string name, float default_value) {
-    char* var;
+    char *var;
     var = getenv(name.c_str());
     float value = default_value;
     if (var != nullptr)
@@ -41,7 +40,7 @@ float cosma::get_float_env_var(std::string name, float default_value) {
 }
 
 double cosma::get_double_env_var(std::string name, double default_value) {
-    char* var;
+    char *var;
     var = getenv(name.c_str());
     double value = default_value;
     if (var != nullptr)
@@ -50,12 +49,12 @@ double cosma::get_double_env_var(std::string name, double default_value) {
 }
 
 std::size_t cosma::get_ull_env_var(std::string name, size_t default_value) {
-    char* var;
+    char *var;
     var = getenv(name.c_str());
     size_t value = default_value;
     if (var != nullptr)
         value = std::stoull(std::string(var));
-    return std::size_t (value);
+    return std::size_t(value);
 }
 
 int cosma::gpu_streams() {
@@ -84,8 +83,7 @@ bool cosma::get_adapt_strategy() {
 }
 
 bool cosma::get_overlap_comm_and_comp() {
-    return get_bool_env_var(env_var_names::overlap,
-                            env_var_defaults::overlap);
+    return get_bool_env_var(env_var_names::overlap, env_var_defaults::overlap);
 }
 
 bool cosma::get_memory_pinning() {
@@ -95,7 +93,7 @@ bool cosma::get_memory_pinning() {
 
 double cosma::get_memory_pool_amortization() {
     return get_double_env_var(env_var_names::memory_pool_amortization,
-                           env_var_defaults::memory_pool_amortization);
+                              env_var_defaults::memory_pool_amortization);
 }
 
 int cosma::get_min_local_dimension() {
@@ -117,7 +115,7 @@ int cosma::get_cosma_cpu_memory_alignment() {
 // and converts the limit to #elements that each rank is allowed to use
 template <typename T>
 long long cosma::get_cpu_max_memory() {
-    char* var;
+    char *var;
     var = getenv(env_var_names::cpu_max_memory.c_str());
     long long value = env_var_defaults::cpu_max_memory;
     long long megabytes = env_var_defaults::cpu_max_memory;
@@ -135,4 +133,4 @@ template long long cosma::get_cpu_max_memory<float>();
 template long long cosma::get_cpu_max_memory<double>();
 template long long cosma::get_cpu_max_memory<std::complex<float>>();
 template long long cosma::get_cpu_max_memory<std::complex<double>>();
-
+template long long cosma::get_cpu_max_memory<cosma::bfloat16>();
