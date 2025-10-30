@@ -98,30 +98,16 @@ endif ()
 set(COSTA_WITH_PROFILING ${COSMA_WITH_PROFILING} CACHE INTERNAL "")
 set(COSTA_SCALAPACK ${COSMA_SCALAPACK} CACHE INTERNAL "")
 
-<<<<<<< HEAD
 FetchContent_Declare(
   costa
   GIT_REPOSITORY https://github.com/eth-cscs/costa.git
   GIT_TAG        03847e66f05ad4a1eb371b85be628e218ce46f11 # v2.2.3
   FIND_PACKAGE_ARGS NAMES costa
 )
+
 # the joy of fetch_content. if we build costa and cosma together
 # fetch_content will pick up the FindSCALAPACK from cosma NOT costa.
 if (NOT TARGET costa::scalapack::scalapack AND NOT COSMA_SCALAPACK MATCHES "OFF")
-=======
-
-
-FetchContent_Declare(
-  costa
-  GIT_REPOSITORY https://github.com/mtaillefumier/costa.git
-  GIT_TAG        f9955e626adca8ca4b613932a57e1e6a38235581 # master
-)
-
-# the joy of fetch_content. if we build costa and cosma together
-# fetch_content will pick up the FindSCALAPACK from cosma NOT costa.
-
-if (NOT TARGET costa::scalapack::scalapack)
->>>>>>> 12ad142 (cmake cleanup)
   add_library(costa::scalapack::scalapack ALIAS cosma::scalapack::scalapack)
 endif ()
 
@@ -157,6 +143,7 @@ if (COSMA_WITH_PROFILING)
     semiprof
     GIT_REPOSITORY  https://github.com/bcumming/semiprof.git
     GIT_TAG         f132142ff2215dfa073e416fa7911d8877d62752
+    FIND_PACKAGE_ARGS NAMES semiprof
   )
   FetchContent_MakeAvailable(semiprof)
 endif ()
