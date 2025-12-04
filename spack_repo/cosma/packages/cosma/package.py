@@ -55,6 +55,9 @@ class Cosma(CMakePackage):
     with when("+rocm"):
         variant("rccl", default=False, description="Use rocm rccl")
 
+    with when("@2.8.0:"):
+        variant("unified_memory", default=False)
+
     depends_on("cxx", type="build")
     depends_on("c", type="build")
     depends_on("fortran", type="build")
@@ -136,6 +139,7 @@ class Cosma(CMakePackage):
             self.define_from_variant("COSMA_WITH_RCCL", "rccl"),
             self.define_from_variant("COSMA_WITH_GPU_AWARE_MPI", "gpu_direct"),
             self.define_from_variant("COSMA_WITH_PROFILING", "profiling"),
+            self.define_from_variant("COSMA_USE_UNIFIED_MEMORY", "unified_memory"),
             self.define("COSMA_WITH_BENCHMARKS", False),
             self.define("COSMA_BLAS", self.cosma_blas_cmake_arg()),
             self.define("COSMA_SCALAPACK", self.cosma_scalapack_cmake_arg()),
