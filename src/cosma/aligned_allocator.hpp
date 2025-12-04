@@ -114,7 +114,7 @@ class aligned_allocator {
         if (p) {
             if (!cosma::get_unified_memory())
                 std::free(p);
-#ifdef defined(COSMA_USE_UNIFIED_MEMORY)
+#if defined(COSMA_USE_UNIFIED_MEMORY)
             else
                 hipFree(p);
 #endif
