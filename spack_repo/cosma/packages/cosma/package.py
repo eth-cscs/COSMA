@@ -55,7 +55,7 @@ class Cosma(CMakePackage):
     with when("+rocm"):
         variant("rccl", default=False, description="Use rocm rccl")
 
-    with when("@2.8.0:"):
+    with when("@2.8.0:+rocm"):
         variant("unified_memory", default=False)
 
     depends_on("cxx", type="build")
