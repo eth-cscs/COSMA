@@ -1,5 +1,5 @@
 set(INSTALLED_TARGETS_LIST "")
-set(cosma_src_files blas.cpp
+set(cosma_src_files
   buffer.cpp
   communicator.cpp
   context.cpp
@@ -17,6 +17,10 @@ set(cosma_src_files blas.cpp
   random_generator.hpp
   cinterface.cpp
   environment_variables.cpp)
+
+if (COSMA_GPU_BACKEND MATCHES "OFF")
+	LIST(APPEND cosma_src_files blas.cpp)
+endif ()
 
 if (COSMA_GPU_BACKEND MATCHES "ROCM" OR COSMA_GPU_BACKEND MATCHES "CUDA")
   list(APPEND cosma_src_files "pinned_buffers.cpp")
@@ -40,7 +44,7 @@ target_link_libraries(cosma PUBLIC
   costa::costa
   $<TARGET_NAME_IF_EXISTS:roc::rccl>
   $<TARGET_NAME_IF_EXISTS:cosma::nccl>
-  $<$<NOT:$<STREQUAL:${COSMA_BLAS_VENDOR},"OFF">>:cosma::BLAS::blas>
+  $<$<STREQUAL:${COSMA_GPU_VENDOR},"OFF">:cosma::BLAS::blas>
   $<TARGET_NAME_IF_EXISTS:Tiled-MM::Tiled-MM>
   $<$<STREQUAL:${COSMA_GPU_BACKEND},CUDA>:Tiled-MM::Tiled-MM>
   $<$<STREQUAL:${COSMA_GPU_BACKEND},ROCM>:Tiled-MM::Tiled-MM>
@@ -55,7 +59,7 @@ target_compile_definitions(cosma PUBLIC
                               $<$<BOOL:${COSMA_WITH_RCCL}>:COSMA_WITH_NCCL>
                               $<$<STREQUAL:${COSMA_BLAS_VENDOR},MKL>:COSMA_WITH_MKL_BLAS>
                               $<$<STREQUAL:${COSMA_BLAS_VENDOR},BLIS>:COSMA_WITH_BLIS_BLAS>
-                              $<$<NOT:$<IN_LIST:${COSMA_BLAS_VENDOR},"MKL;BLIS">>:COSMA_WITH_BLAS>
+                              $<$<NOT:$<IN_LIST:${COSMA_BLAS_VENDOR},"MKL;BLISi;OFF">>:COSMA_WITH_BLAS>
                               $<$<STREQUAL:${COSMA_GPU_BACKEND},CUDA>:COSMA_HAVE_GPU>
                               $<$<STREQUAL:${COSMA_GPU_BACKEND},ROCM>:COSMA_HAVE_GPU>
                               PRIVATE

@@ -43,7 +43,7 @@ cosma_context<Scalar>::cosma_context(size_t cpu_mem_limit,
     // requires memory_pool_.resize(cpu_mem_limit);
 #ifdef COSMA_HAVE_GPU
     gpu_ctx_ = gpu::make_context<Scalar>(streams, tile_m, tile_n, tile_k);
-    gpu_ctx_.use_unified_memory_ = cosma::get_unified_memory();
+    use_unified_memory_ = cosma::get_unified_memory();
 #else
     std::cout << "Ignoring parameters in make_context. These parameters only "
                  "used in the CPU version."
@@ -64,11 +64,6 @@ cosma_context<Scalar>::~cosma_context() {
 template <typename Scalar>
 memory_pool<Scalar> &cosma_context<Scalar>::get_memory_pool() {
     return memory_pool_;
-}
-
-template <typename Scalar>
-bool cosma_context<Scalar>::unified_memory() {
-    return unified_memory_;
 }
 
 template <typename Scalar>

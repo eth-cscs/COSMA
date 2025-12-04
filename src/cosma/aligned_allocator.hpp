@@ -98,13 +98,12 @@ class aligned_allocator {
             pointer ptr;
             if (!cosma::get_unified_memory()) {
                 ptr = aligned_malloc(cnt);
+	    }
 #if defined(COSMA_USE_UNIFIED_MEMORY)
-            } else {
+            else {
                 hipMalloc(&ptr, cnt * sizeof(T));
-#else
-            }
+	    }
 #endif
-            }
             return ptr;
         }
         return nullptr;

@@ -40,6 +40,8 @@ class cosma_context {
 
     void turn_on_output();
 
+    bool unified_memory();
+
     bool adapt_to_scalapack_strategy = true;
 
     bool overlap_comm_and_comp = false;
