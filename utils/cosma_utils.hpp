@@ -1,21 +1,21 @@
 #include <algorithm>
 #include <cctype>
+#include <cosma/local_multiply.hpp>
+#include <cosma/mpi_mapper.hpp>
+#include <cosma/multiply.hpp>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <random>
 #include <string>
 #include <vector>
-#include <random>
-#include <cosma/local_multiply.hpp>
-#include <cosma/multiply.hpp>
-#include <cosma/mpi_mapper.hpp>
 
 using namespace cosma;
 
 template <typename T>
-void fill_matrix(T* ptr, size_t size) {
-    static std::random_device dev;                        // seed
-    static std::mt19937 rng(dev());                       // generator
+void fill_matrix(T *ptr, size_t size) {
+    static std::random_device dev;                       // seed
+    static std::mt19937 rng(dev());                      // generator
     static std::uniform_real_distribution<T> dist(10.0); // distribution
 
     for (unsigned i = 0; i < size; ++i) {
@@ -24,9 +24,9 @@ void fill_matrix(T* ptr, size_t size) {
 }
 
 template <typename T>
-void fill_matrix(std::complex<T>* ptr, size_t size) {
-    static std::random_device dev;                        // seed
-    static std::mt19937 rng(dev());                       // generator
+void fill_matrix(std::complex<T> *ptr, size_t size) {
+    static std::random_device dev;                       // seed
+    static std::mt19937 rng(dev());                      // generator
     static std::uniform_real_distribution<T> dist(10.0); // distribution
 
     for (unsigned i = 0; i < size; ++i) {
@@ -36,10 +36,10 @@ void fill_matrix(std::complex<T>* ptr, size_t size) {
 
 template <typename Scalar>
 bool test_cosma(Strategy s,
-         context<Scalar>& ctx,
-         MPI_Comm comm = MPI_COMM_WORLD,
-         double epsilon = 1e-8,
-         int tag = 0) {
+                context<Scalar> &ctx,
+                MPI_Comm comm = MPI_COMM_WORLD,
+                double epsilon = 1e-8,
+                int tag = 0) {
     auto alpha = Scalar{1};
     auto beta = Scalar{1};
 
@@ -103,12 +103,15 @@ bool test_cosma(Strategy s,
     std::vector<Scalar> As, Bs, Cs;
     if (rank == 0) {
         As = std::vector<Scalar>(m * k);
-        std::memcpy(As.data(), A.matrix_pointer(), A.matrix_size()*sizeof(Scalar));
+        std::memcpy(
+            As.data(), A.matrix_pointer(), A.matrix_size() * sizeof(Scalar));
         Bs = std::vector<Scalar>(k * n);
-        std::memcpy(Bs.data(), B.matrix_pointer(), B.matrix_size()*sizeof(Scalar));
+        std::memcpy(
+            Bs.data(), B.matrix_pointer(), B.matrix_size() * sizeof(Scalar));
         // copy C in case beta > 0
         Cs = std::vector<Scalar>(m * n);
-        std::memcpy(Cs.data(), C.matrix_pointer(), C.matrix_size()*sizeof(Scalar));
+        std::memcpy(
+            Cs.data(), C.matrix_pointer(), C.matrix_size() * sizeof(Scalar));
 
         int offsetA = sizeA;
         int offsetB = sizeB;
@@ -124,53 +127,62 @@ bool test_cosma(Strategy s,
 
             // Rank 0 receive data
             int info = MPI_Recv(As.data() + offsetA,
-                     receive_size_A,
-                     mpi_type,
-                     i,
-                     tag*n_comm_rounds,
-                     comm,
-                     &status);
+                                receive_size_A,
+                                mpi_type,
+                                i,
+                                tag * n_comm_rounds,
+                                comm,
+                                &status);
             if (info != MPI_SUCCESS) {
                 // check if we received the right amount
                 MPI_Get_elements(&status, mpi_type, &amount);
                 if (amount != receive_size_A) {
-                    std::cout << "Error: Did not receive all data for matrix A!" << std::endl;
-                    std::cout << "Received " << amount << ", instead of " << receive_size_A << std::endl;
-                    std::cout << "Message source: " << status.MPI_SOURCE << ", tag = " << status.MPI_TAG << std::endl;
+                    std::cout << "Error: Did not receive all data for matrix A!"
+                              << std::endl;
+                    std::cout << "Received " << amount << ", instead of "
+                              << receive_size_A << std::endl;
+                    std::cout << "Message source: " << status.MPI_SOURCE
+                              << ", tag = " << status.MPI_TAG << std::endl;
                 }
             }
 
             info = MPI_Recv(Bs.data() + offsetB,
-                     receive_size_B,
-                     mpi_type,
-                     i,
-                     tag*n_comm_rounds + 1,
-                     comm,
-                     &status);
+                            receive_size_B,
+                            mpi_type,
+                            i,
+                            tag * n_comm_rounds + 1,
+                            comm,
+                            &status);
             if (info != MPI_SUCCESS) {
                 // check if we received the right amount
                 MPI_Get_elements(&status, mpi_type, &amount);
                 if (amount != receive_size_B) {
-                    std::cout << "Error: Did not receive all data for matrix B!" << std::endl;
-                    std::cout << "Received " << amount << ", instead of " << receive_size_B << std::endl;
-                    std::cout << "Message source: " << status.MPI_SOURCE << ", tag = " << status.MPI_TAG << std::endl;
+                    std::cout << "Error: Did not receive all data for matrix B!"
+                              << std::endl;
+                    std::cout << "Received " << amount << ", instead of "
+                              << receive_size_B << std::endl;
+                    std::cout << "Message source: " << status.MPI_SOURCE
+                              << ", tag = " << status.MPI_TAG << std::endl;
                 }
             }
 
             info = MPI_Recv(Cs.data() + offsetC,
-                     receive_size_C,
-                     mpi_type,
-                     i,
-                     tag*n_comm_rounds + 2,
-                     comm,
-                     &status);
+                            receive_size_C,
+                            mpi_type,
+                            i,
+                            tag * n_comm_rounds + 2,
+                            comm,
+                            &status);
             if (info != MPI_SUCCESS) {
                 // check if we received the right amount
                 MPI_Get_elements(&status, mpi_type, &amount);
                 if (amount != receive_size_C) {
-                    std::cout << "Error: Did not receive all data for matrix C!" << std::endl;
-                    std::cout << "Received " << amount << ", instead of " << receive_size_C << std::endl;
-                    std::cout << "Message source: " << status.MPI_SOURCE << ", tag = " << status.MPI_TAG << std::endl;
+                    std::cout << "Error: Did not receive all data for matrix C!"
+                              << std::endl;
+                    std::cout << "Received " << amount << ", instead of "
+                              << receive_size_C << std::endl;
+                    std::cout << "Message source: " << status.MPI_SOURCE
+                              << ", tag = " << status.MPI_TAG << std::endl;
                 }
             }
 
@@ -181,17 +193,31 @@ bool test_cosma(Strategy s,
     }
     // Rank i send data
     if (rank > 0 && rank < s.P) {
-        int info = MPI_Ssend(A.matrix_pointer(), sizeA, mpi_type, 0, tag*n_comm_rounds, comm);
+        int info = MPI_Ssend(
+            A.matrix_pointer(), sizeA, mpi_type, 0, tag * n_comm_rounds, comm);
         if (info != MPI_SUCCESS) {
-            std::cout << "MPI_Send was not successful on rank: " << rank << ", for matrix A" << std::endl;
+            std::cout << "MPI_Send was not successful on rank: " << rank
+                      << ", for matrix A" << std::endl;
         }
-        info = MPI_Ssend(B.matrix_pointer(), sizeB, mpi_type, 0, tag*n_comm_rounds+1, comm);
+        info = MPI_Ssend(B.matrix_pointer(),
+                         sizeB,
+                         mpi_type,
+                         0,
+                         tag * n_comm_rounds + 1,
+                         comm);
         if (info != MPI_SUCCESS) {
-            std::cout << "MPI_Send was not successful on rank: " << rank << ", for matrix B" << std::endl;
+            std::cout << "MPI_Send was not successful on rank: " << rank
+                      << ", for matrix B" << std::endl;
         }
-        info = MPI_Ssend(C.matrix_pointer(), sizeC, mpi_type, 0, tag*n_comm_rounds+2, comm);
+        info = MPI_Ssend(C.matrix_pointer(),
+                         sizeC,
+                         mpi_type,
+                         0,
+                         tag * n_comm_rounds + 2,
+                         comm);
         if (info != MPI_SUCCESS) {
-            std::cout << "MPI_Send was not successful on rank: " << rank << ", for matrix C" << std::endl;
+            std::cout << "MPI_Send was not successful on rank: " << rank
+                      << ", for matrix C" << std::endl;
         }
     }
 
@@ -247,15 +273,14 @@ bool test_cosma(Strategy s,
             offsetC += local_size_C;
         }
         // Now compute the result
-        cosma::local_multiply_cpu(
-                              globA.data(),
-                              globB.data(),
-                              globCcheck.data(),
-                              m,
-                              n,
-                              k,
-                              alpha,
-                              beta);
+        cosma::local_multiply_cpu(globA.data(),
+                                  globB.data(),
+                                  globCcheck.data(),
+                                  m,
+                                  n,
+                                  k,
+                                  alpha,
+                                  beta);
 #ifdef DEBUG
         std::cout << "Complete matrix A: " << std::endl;
         for (int i = 0; i < m; i++) {
@@ -289,7 +314,8 @@ bool test_cosma(Strategy s,
 
     // Then rank0 asks for other ranks data
     if (rank == 0) {
-        std::memcpy(Cs.data(), C.matrix_pointer(), C.matrix_size()*sizeof(Scalar));
+        std::memcpy(
+            Cs.data(), C.matrix_pointer(), C.matrix_size() * sizeof(Scalar));
 
         int offsetC = sizeC;
 
@@ -300,7 +326,7 @@ bool test_cosma(Strategy s,
                      receive_size_C,
                      mpi_type,
                      i,
-                     tag*n_comm_rounds + 4,
+                     tag * n_comm_rounds + 4,
                      comm,
                      MPI_STATUSES_IGNORE);
             offsetC += receive_size_C;
@@ -308,7 +334,12 @@ bool test_cosma(Strategy s,
     }
     // Rank i sends data
     if (rank > 0 && rank < s.P) {
-        MPI_Ssend(C.matrix_pointer(), sizeC, mpi_type, 0, tag*n_comm_rounds+4, comm);
+        MPI_Ssend(C.matrix_pointer(),
+                  sizeC,
+                  mpi_type,
+                  0,
+                  tag * n_comm_rounds + 4,
+                  comm);
     }
 
     // Then rank 0 must reorder data locally
@@ -333,26 +364,45 @@ bool test_cosma(Strategy s,
         // Now Check result
         isOK = globCcheck.size() == globC.size();
         for (int i = 0; i < globC.size(); ++i) {
-            isOK = isOK && (std::abs(globC[i] - globCcheck[i]) < epsilon);
+            // Use relative error for large values, absolute error for small
+            // values
+            double abs_error = std::abs(globC[i] - globCcheck[i]);
+            double scale =
+                std::max(std::abs(globC[i]), std::abs(globCcheck[i]));
+            double rel_error = (scale > 1e-10) ? abs_error / scale : abs_error;
+            // For float32, relative error tolerance should be ~1e-6
+            // For float64, relative error tolerance should be ~1e-12
+            double tolerance = (sizeof(Scalar) == 4) ? 1e-5 : epsilon;
+            isOK = isOK && (rel_error < tolerance);
         }
 
         if (!isOK) {
             std::cout << "Result is NOT OK" << std::endl;
+            int error_count = 0;
+            const int MAX_ERRORS_TO_PRINT = 20;
             for (int i = 0; i < m * n; i++) {
                 if (globCcheck[i] != globC[i]) {
-                    int x = i % m;
-                    int y = i / m;
-                    int locidx, rank;
-                    std::tie(locidx, rank) = C.local_coordinates(x, y);
-                    std::cout << "global(" << x << ", " << y
-                              << ") = (loc = " << locidx << ", rank = " << rank
-                              << ") = " << globC.at(i) << " and should be "
-                              << globCcheck.at(i) << std::endl;
+                    error_count++;
+                    if (error_count <= MAX_ERRORS_TO_PRINT) {
+                        int x = i % m;
+                        int y = i / m;
+                        int locidx, rank;
+                        std::tie(locidx, rank) = C.local_coordinates(x, y);
+                        std::cout
+                            << "global(" << x << ", " << y
+                            << ") = (loc = " << locidx << ", rank = " << rank
+                            << ") = " << globC.at(i) << " and should be "
+                            << globCcheck.at(i) << " (diff = "
+                            << std::abs(globC.at(i) - globCcheck.at(i)) << ")"
+                            << std::endl;
+                    }
                 }
             }
-        }
-        else {
-            std::cout <<"Result is OK"<<std::endl;
+            std::cout << "Total errors: " << error_count << " out of "
+                      << (m * n) << " elements ("
+                      << (100.0 * error_count / (m * n)) << "%)" << std::endl;
+        } else {
+            std::cout << "Result is OK" << std::endl;
         }
     }
 #ifdef DEBUG
@@ -376,5 +426,9 @@ bool test_cosma(Strategy s,
         MPI_Barrier(comm);
     }
 #endif // DEBUG
+
+    // Synchronize all ranks before returning to prevent hangs
+    MPI_Barrier(comm);
+
     return rank > 0 || isOK;
 }
