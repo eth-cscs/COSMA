@@ -4,7 +4,7 @@
 namespace cosma {
 
 template <typename Scalar>
-void local_multiply(cosma_context<Scalar>* ctx,
+void local_multiply(cosma_context<Scalar> *ctx,
                     Scalar *a,
                     Scalar *b,
                     Scalar *c,
@@ -16,18 +16,17 @@ void local_multiply(cosma_context<Scalar>* ctx,
                     bool copy_c_back);
 
 template <typename Scalar>
-void local_multiply_cpu(
-                    Scalar *a,
-                    Scalar *b,
-                    Scalar *c,
-                    int m,
-                    int n,
-                    int k,
-                    Scalar alpha,
-                    Scalar beta);
+void local_multiply_cpu(Scalar *a,
+                        Scalar *b,
+                        Scalar *c,
+                        int m,
+                        int n,
+                        int k,
+                        Scalar alpha,
+                        Scalar beta);
 
 template <typename scalar>
-void local_multiply(context<scalar>& ctx,
+void local_multiply(context<scalar> &ctx,
                     scalar *a,
                     scalar *b,
                     scalar *c,
@@ -51,7 +50,7 @@ void local_multiply(scalar *a,
 
 #ifdef COSMA_HAVE_GPU
 template <typename scalar>
-void local_multiply(gpu::mm_handle<scalar>* gpu_ctx,
+void local_multiply(gpu::mm_handle<scalar> *gpu_ctx,
                     scalar *a,
                     scalar *b,
                     scalar *c,

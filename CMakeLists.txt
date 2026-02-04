@@ -27,6 +27,7 @@ option(COSMA_WITH_PROFILING "Enable profiling." OFF)
 option(COSMA_WITH_NCCL "Use NCCL as communication backend." OFF)
 option(COSMA_WITH_RCCL "Use RCCL as communication backend." OFF)
 option(COSMA_WITH_GPU_AWARE_MPI "Use gpu-aware MPI for communication." OFF)
+option(COSMA_USE_UNIFIED_MEMORY "Use unified memory when GPU acceleration is ON" OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries." OFF)
 set(COSMA_SCALAPACK "OFF" CACHE STRING "scalapack implementation. Can be MKL, CRAY_LIBSCI, NVPL, CUSTOM or OFF.")
 set(COSMA_BLAS "OFF" CACHE STRING "Blas library for computations on host or GPU")
@@ -42,13 +43,15 @@ set_property(CACHE COSMA_BLAS PROPERTY STRINGS ${COSMA_BLAS_LIST})
 # GPU supports since they are treated as separate components
 
 if(COSMA_BLAS STREQUAL "OFF")
-    message(FATAL_ERROR "A Blas implementation is needed when running on CPU only: choices are : auto, MKL, OPENBLAS, CRAY_LIBSCI, NVPL, CUSTOM, BLIS, ATLAS, FLEXIBLAS, ARMPL, GenericBLAS, CUDA or ROCM")
+    message(FATAL_ERROR "A Blas implementation is needed when running on CPU only: choices are : auto, MKL, OPENBLAS, CRAY_LIBSCI, CUSTOM, BLIS, ATLAS, FLEXIBLAS, ARMPL, GenericBLAS, CUDA or ROCM")
 endif()
 
 if (COSMA_BLAS MATCHES "CUDA|ROCM")
   set(COSMA_GPU_BACKEND ${COSMA_BLAS})
+  set(COSMA_BLAS_VENDOR "OFF")
 else()
   set(COSMA_BLAS_VENDOR ${COSMA_BLAS})
+  set(COSMA_GPU_BACKEND "OFF")
 endif()
 
 if ((COSMA_WITH_NCCL OR COSMA_WITH_RCCL) AND NOT COSMA_GPU_BACKEND IN_LIST COSMA_GPU_BACKENDS_LIST)
@@ -103,6 +106,7 @@ FetchContent_Declare(
   GIT_TAG        03847e66f05ad4a1eb371b85be628e218ce46f11 # v2.2.3
   FIND_PACKAGE_ARGS NAMES costa
 )
+
 # the joy of fetch_content. if we build costa and cosma together
 # fetch_content will pick up the FindSCALAPACK from cosma NOT costa.
 if (NOT TARGET costa::scalapack::scalapack AND NOT COSMA_SCALAPACK MATCHES "OFF")
@@ -141,7 +145,8 @@ if (COSMA_WITH_PROFILING)
     semiprof
     GIT_REPOSITORY  https://github.com/bcumming/semiprof.git
     GIT_TAG         f132142ff2215dfa073e416fa7911d8877d62752
-    FIND_PACKAGE_ARGS NAMES semiprof)
+    FIND_PACKAGE_ARGS NAMES semiprof
+  )
   FetchContent_MakeAvailable(semiprof)
 endif ()
 
@@ -239,3 +244,4 @@ endif()
 if(COSMA_WITH_BENCHMARKS AND NOT COSMA_BLAS MATCHES "OPENBLAS")
   add_subdirectory(benchmarks)
 endif()
+

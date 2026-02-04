@@ -1,8 +1,9 @@
-# Copyright 2013-2024 Lawrence Livermore National Security, LLC and other
-# Spack Project Developers. See the top-level COPYRIGHT file for details.
+# Copyright Spack Project Developers. See COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+
+from spack_repo.builtin.build_systems.cmake import CMakePackage
 
 from spack.package import *
 
@@ -22,6 +23,7 @@ class Cosma(CMakePackage):
     # note: The default archives produced with github do not have the archives
     #       of the submodules.
     version("master", branch="master", submodules=False)
+    version("2.7.0", sha256="f4775d18379539d7bb5053bff8acb4e13d6ed31a9677f498d9099a7500488789")
     version("2.6.6", sha256="1604be101e77192fbcc5551236bc87888d336e402f5409bbdd9dea900401cc37")
     version("2.6.5", sha256="10d9b7ecc1ce44ec5b9e0c0bf89278a63029912ec3ea99661be8576b553ececf")
     version("2.6.4", sha256="6d7bd5e3005874af9542a329c93e7ccd29ca1a5573dae27618fac2704fa2b6ab")
@@ -35,8 +37,6 @@ class Cosma(CMakePackage):
     version("2.2.0", sha256="1eb92a98110df595070a12193b9221eecf9d103ced8836c960f6c79a2bd553ca")
     version("2.0.7", sha256="8d70bfcbda6239b6a8fbeaca138790bbe58c0c3aa576879480d2632d4936cf7e")
     version("2.0.2", sha256="4f3354828bc718f3eef2f0098c3bdca3499297497a220da32db1acd57920c68d")
-
-    depends_on("cxx", type="build")  # generated
 
     # We just need the libraries of cuda and rocm, so no need to extend
     # CudaPackage or ROCmPackage.
@@ -54,6 +54,13 @@ class Cosma(CMakePackage):
 
     with when("+rocm"):
         variant("rccl", default=False, description="Use rocm rccl")
+
+    with when("@2.8.0:+rocm"):
+        variant("unified_memory", default=False)
+
+    depends_on("cxx", type="build")
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
 
     depends_on("cmake@3.22:", type="build")
     depends_on("mpi@3:")
@@ -82,7 +89,7 @@ class Cosma(CMakePackage):
 
     patch("fj-ssl2.patch", when="^fujitsu-ssl2")
 
-    def setup_build_environment(self, env):
+    def setup_build_environment(self, env: EnvironmentModifications) -> None:
         if self.spec.satisfies("+cuda"):
             env.set("CUDA_PATH", self.spec["cuda"].prefix)
 
@@ -90,17 +97,20 @@ class Cosma(CMakePackage):
         query_to_cmake_arg = [
             ("+cuda", "CUDA"),
             ("+rocm", "ROCM"),
-            ("^intel-mkl", "MKL"),
-            ("^intel-oneapi-mkl", "MKL"),
-            ("^cray-libsci", "CRAY_LIBSCI"),
-            ("^netlib-lapack", "CUSTOM"),
-            ("^openblas", "OPENBLAS"),
-            ("^fujitsu-ssl2", "SSL2"),
+            ("^[virtuals=blas] intel-oneapi-mkl", "MKL"),
+            ("^[virtuals=blas] cray-libsci", "CRAY_LIBSCI"),
+            ("^[virtuals=blas] netlib-lapack", "CUSTOM"),
+            ("^[virtuals=blas] openblas", "OPENBLAS"),
+            ("^[virtuals=blas] fujitsu-ssl2", "SSL2"),
         ]
 
         if self.version >= Version("2.4.0"):
             query_to_cmake_arg.extend(
-                [("^blis", "BLIS"), ("^amdblis", "BLIS"), ("^atlas", "ATLAS")]
+                [
+                    ("^[virtuals=blas] blis", "BLIS"),
+                    ("^[virtuals=blas] amdblis", "BLIS"),
+                    ("^[virtuals=blas] atlas", "ATLAS"),
+                ]
             )
 
         for query, cmake_arg in query_to_cmake_arg:
@@ -114,7 +124,7 @@ class Cosma(CMakePackage):
 
         if spec.satisfies("~scalapack"):
             return "OFF"
-        elif spec.satisfies("^intel-mkl") or spec.satisfies("^intel-oneapi-mkl"):
+        elif spec.satisfies("^[virtuals=scalapack] intel-oneapi-mkl"):
             return "MKL"
         elif spec.satisfies("^cray-libsci"):
             return "CRAY_LIBSCI"
@@ -129,6 +139,7 @@ class Cosma(CMakePackage):
             self.define_from_variant("COSMA_WITH_RCCL", "rccl"),
             self.define_from_variant("COSMA_WITH_GPU_AWARE_MPI", "gpu_direct"),
             self.define_from_variant("COSMA_WITH_PROFILING", "profiling"),
+            self.define_from_variant("COSMA_USE_UNIFIED_MEMORY", "unified_memory"),
             self.define("COSMA_WITH_BENCHMARKS", False),
             self.define("COSMA_BLAS", self.cosma_blas_cmake_arg()),
             self.define("COSMA_SCALAPACK", self.cosma_scalapack_cmake_arg()),
