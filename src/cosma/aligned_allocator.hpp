@@ -91,8 +91,7 @@ public:
 
     const_pointer address(const_reference r) { return &r; }
 
-    pointer allocate(size_type cnt,
-                     typename std::allocator<void>::const_pointer = 0) {
+    pointer allocate(size_type cnt){
         if (cnt > 0) {
             pointer ptr = aligned_malloc(cnt);
             return ptr;
