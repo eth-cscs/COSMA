@@ -104,6 +104,9 @@ void multiply_using_layout(cosma_context<T> *ctx,
         C.scale_by(beta);
         return;
     }
+    if (beta == T{0}) {
+        C.fill(beta);
+    }
 
     char trans_a = std::toupper(transa);
     char trans_b = std::toupper(transb);

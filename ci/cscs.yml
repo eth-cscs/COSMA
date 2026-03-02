@@ -40,8 +40,6 @@ build cosma:
     SLURM_CPU_BIND: 'socket'
     SLURM_MPI: "pmi2"
     CRAY_CUDA_MPS: 'YES'
-    # Workaround after update until hooks are fixed
-    ENROOT_LIBRARY_PATH: /capstor/scratch/cscs/fmohamed/enrootlibn
     # SLURM_WAIT: 0
     COSMA_GPU_MAX_TILE_K: 100
     COSMA_GPU_MAX_TILE_M: 100

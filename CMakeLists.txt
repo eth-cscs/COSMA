@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
 project(cosma
   DESCRIPTION "Communication Optimal Matrix Multiplication"
   HOMEPAGE_URL "https://github.com/eth-cscs/COSMA"
-  VERSION 2.6.6
+  VERSION 2.8.0
   LANGUAGES CXX)
 
 include(FetchContent)
