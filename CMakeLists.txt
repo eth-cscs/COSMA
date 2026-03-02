@@ -103,7 +103,7 @@ set(COSTA_SCALAPACK ${COSMA_SCALAPACK} CACHE INTERNAL "")
 FetchContent_Declare(
   costa
   GIT_REPOSITORY https://github.com/eth-cscs/costa.git
-  GIT_TAG        03847e66f05ad4a1eb371b85be628e218ce46f11 # v2.2.3
+  GIT_TAG        2484769535772f807d402901ffca63bb6678dd42 # v2.3.0
   FIND_PACKAGE_ARGS NAMES costa
 )
 
