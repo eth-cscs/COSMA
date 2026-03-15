@@ -44,7 +44,7 @@ target_link_libraries(cosma PUBLIC
   costa::costa
   $<TARGET_NAME_IF_EXISTS:roc::rccl>
   $<TARGET_NAME_IF_EXISTS:cosma::nccl>
-  $<$<STREQUAL:${COSMA_GPU_VENDOR},"OFF">:cosma::BLAS::blas>
+  $<$<STREQUAL:${COSMA_GPU_BACKEND},OFF>:cosma::BLAS::blas>
   $<TARGET_NAME_IF_EXISTS:Tiled-MM::Tiled-MM>
   $<$<STREQUAL:${COSMA_GPU_BACKEND},CUDA>:Tiled-MM::Tiled-MM>
   $<$<STREQUAL:${COSMA_GPU_BACKEND},ROCM>:Tiled-MM::Tiled-MM>
@@ -53,13 +53,13 @@ target_link_libraries(cosma PUBLIC
 
 target_compile_definitions(cosma PUBLIC
                               $<$<BOOL:${COSMA_WITH_NCCL}>:COSMA_WITH_NCCL>
-                              $<$<STREQUAL:${COSMA_GPU_BACKEND},"ROCM">:__HIP_PLATFORM_HCC__>
+                              $<$<STREQUAL:${COSMA_GPU_BACKEND},ROCM>:__HIP_PLATFORM_HCC__>
                               $<$<BOOL:${COSMA_WITH_GPU_AWARE_MPI}>:COSMA_WITH_GPU_AWARE_MPI>
                               $<$<BOOL:${COSMA_WITH_NCCL}>:COSMA_WITH_NCCL>
                               $<$<BOOL:${COSMA_WITH_RCCL}>:COSMA_WITH_NCCL>
                               $<$<STREQUAL:${COSMA_BLAS_VENDOR},MKL>:COSMA_WITH_MKL_BLAS>
                               $<$<STREQUAL:${COSMA_BLAS_VENDOR},BLIS>:COSMA_WITH_BLIS_BLAS>
-                              $<$<NOT:$<IN_LIST:${COSMA_BLAS_VENDOR},"MKL;BLISi;OFF">>:COSMA_WITH_BLAS>
+                              $<$<NOT:$<IN_LIST:${COSMA_BLAS_VENDOR},MKL;BLIS;OFF>>:COSMA_WITH_BLAS>
                               $<$<STREQUAL:${COSMA_GPU_BACKEND},CUDA>:COSMA_HAVE_GPU>
                               $<$<STREQUAL:${COSMA_GPU_BACKEND},ROCM>:COSMA_HAVE_GPU>
                               PRIVATE
