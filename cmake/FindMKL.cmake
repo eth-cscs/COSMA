@@ -137,6 +137,7 @@ endif()
 # Dependencies
 #
 enable_language(Fortran)
+enable_language(C)
 find_package(Threads)
 find_package(MPI COMPONENTS CXX C Fortran)
 find_package(OpenMP COMPONENTS CXX C Fortran)
