@@ -286,7 +286,9 @@ void local_multiply_cpu(Scalar *matrixA,
     for (int mi = 0; mi < m; ++mi) {
         for (int ni = 0; ni < n; ++ni) {
             Scalar &Cvalue = get_element(matrixC, m, n, mi, ni);
-            Cvalue *= beta;
+            // BLAS spec: when beta=0, C may be uninitialized.
+            // 0.0 * NaN = NaN (IEEE 754), so we must assign, not multiply.
+            Cvalue = (beta == Scalar{0}) ? Scalar{0} : Cvalue * beta;
             for (int ki = 0; ki < k; ++ki) {
                 Scalar &Avalue = get_element(matrixA, m, k, mi, ki);
                 Scalar &Bvalue = get_element(matrixB, k, n, ki, ni);

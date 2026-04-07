@@ -548,6 +548,18 @@ void sequential(cosma_context<Scalar> *ctx,
     // parameter be 1 in the substeps that follow so that dgemm automatically
     // adds up the subsequent results to the previous partial results of C.
     if (strategy.split_k(step)) {
+        // When beta=0, the caller expects C to be ignored (BLAS spec).
+        // However, iterations K>0 use beta=1 to accumulate partial results,
+        // which reads C. If C comes from the memory pool and is uninitialized,
+        // this produces garbage (NaN/Inf * 1 = NaN/Inf).
+        // Fix: zero out C before the split_k loop when the original beta is 0.
+        if (beta == Scalar{0} && strategy.divisor(step) > 1) {
+            auto C_size = matrixC.buffer_size();
+            auto *C_ptr = matrixC.current_matrix();
+            if (C_ptr && C_size > 0) {
+                std::fill(C_ptr, C_ptr + C_size, Scalar{0});
+            }
+        }
         for (int K = 0; K < strategy.divisor(step); ++K) {
             Interval newk = k.subinterval(strategy.divisor(step), K);
             auto new_beta = beta;
