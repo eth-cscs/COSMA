@@ -36,7 +36,7 @@ RUN spack config add packages:all:variants:cuda_arch=${CUDA_ARCH}
 
 # add local repo for cosma and tiled-mm
 COPY ./spack_repo /
-RUN spack repo add spack_repo/cosma
+RUN spack repo add /spack_repo/cosma
 
 # find all external packages
 RUN spack external find --all --exclude python
