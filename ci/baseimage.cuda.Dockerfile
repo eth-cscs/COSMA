@@ -27,7 +27,7 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cm
     tar zxvf cmake.tar.gz --strip-components=1 -C /usr
 
 # get latest version of spack
-RUN git clone -b v0.23.0 https://github.com/spack/spack.git
+RUN git clone -b releases/v1.1 https://github.com/spack/spack.git
 
 # set the location of packages built by spack
 RUN spack config add config:install_tree:root:/opt/local
@@ -56,28 +56,28 @@ RUN ldconfig
 
 # create environments for several configurations and install dependencies
 RUN spack env create -d /cosma-env-cuda && \
-    spack -e /cosma-env-cuda add "cosma@master %gcc +cuda +tests +scalapack +shared ^mpich" && \
+    spack -e /cosma-env-cuda add "cosma@master +cuda +tests +scalapack +shared %gcc  ^mpich" && \
     spack -e /cosma-env-cuda add "tiled-mm@master" && \
     spack -e /cosma-env-cuda add "costa@master" && \
     spack -e /cosma-env-cuda develop -p /src cosma@master && \
     spack -e /cosma-env-cuda install --only=dependencies --fail-fast
 
 RUN spack env create -d /cosma-env-cuda-gpu-direct && \
-    spack -e /cosma-env-cuda-gpu-direct add "cosma@master %gcc +cuda +tests +scalapack +shared +gpu_direct ^mpich " && \
+    spack -e /cosma-env-cuda-gpu-direct add "cosma@master +cuda +tests +scalapack +shared +gpu_direct %gcc  ^mpich " && \
     spack -e /cosma-env-cuda-gpu-direct add "tiled-mm@master" && \
     spack -e /cosma-env-cuda-gpu-direct add "costa@master" && \
     spack -e /cosma-env-cuda-gpu-direct develop -p /src cosma@master && \
     spack -e /cosma-env-cuda-gpu-direct install --only=dependencies --fail-fast
 
 RUN spack env create -d /cosma-env-cuda-nccl && \
-    spack -e /cosma-env-cuda-nccl add "cosma@master %gcc +cuda +tests +scalapack +shared +nccl ^mpich " && \
+    spack -e /cosma-env-cuda-nccl add "cosma@master +cuda +tests +scalapack +shared +nccl  %gcc ^mpich " && \
     spack -e /cosma-env-cuda-nccl add "tiled-mm@2.3.1" && \
     spack -e /cosma-env-cuda-nccl add "costa@master" && \
     spack -e /cosma-env-cuda-nccl develop -p /src cosma@master && \
     spack -e /cosma-env-cuda-nccl install --only=dependencies --fail-fast
 
 RUN spack env create -d /cosma-env-cpu && \
-    spack -e /cosma-env-cpu add "cosma@master %gcc ~cuda +tests +scalapack +shared ^mpich " && \
+    spack -e /cosma-env-cpu add "cosma@master ~cuda +tests +scalapack +shared %gcc  ^mpich " && \
     spack -e /cosma-env-cpu add "costa@master" && \
     spack -e /cosma-env-cpu develop -p /src cosma@master && \
     spack -e /cosma-env-cpu install --only=dependencies --fail-fast
