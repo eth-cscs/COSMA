@@ -55,32 +55,35 @@ RUN echo $(spack find --format='{prefix.lib}' mpich) > /etc/ld.so.conf.d/mpich.c
 RUN ldconfig
 
 # create environments for several configurations and install dependencies
+RUN mkdir -p /cosma-env-cuda/costa /cosma-env-cuda/tiled-mm
 RUN spack env create -d /cosma-env-cuda && \
-    spack -e /cosma-env-cuda add "cosma@master +cuda +tests +scalapack +shared %gcc  ^mpich" && \
-    spack -e /cosma-env-cuda add "tiled-mm@master" && \
+    spack -e /cosma-env-cuda add "cosma@=master +cuda +tests +scalapack +shared %gcc  ^mpich" && \
+    spack -e /cosma-env-cuda add "tiled-mm@=master" && \
+    spack -e /cosma-env-cuda develop -p "./tiled-mm tiled-mm" && \
     spack -e /cosma-env-cuda add "cuda@12" && \
-    spack -e /cosma-env-cuda add "costa@master" && \
+    spack -e /cosma-env-cuda add "costa@=master" && \
+    spack -e /cosma-env-cuda develop -p "./costa costa" && \
     spack -e /cosma-env-cuda develop -p /src cosma@master && \
     spack -e /cosma-env-cuda install --only=dependencies --fail-fast
 
-RUN spack env create -d /cosma-env-cuda-gpu-direct && \
-    spack -e /cosma-env-cuda-gpu-direct add "cosma@master +cuda +tests +scalapack +shared +gpu_direct %gcc  ^mpich " && \
-    spack -e /cosma-env-cuda-gpu-direct add "tiled-mm@master" && \
-    spack -e /cosma-env-cuda-gpu-direct add "costa@master" && \
-    spack -e /cosma-env-cuda-gpu-direct add "cuda@12" && \
-    spack -e /cosma-env-cuda-gpu-direct develop -p /src cosma@master && \
-    spack -e /cosma-env-cuda-gpu-direct install --only=dependencies --fail-fast
+# RUN spack env create -d /cosma-env-cuda-gpu-direct && \
+#     spack -e /cosma-env-cuda-gpu-direct add "cosma@master +cuda +tests +scalapack +shared +gpu_direct %gcc  ^mpich " && \
+#     spack -e /cosma-env-cuda-gpu-direct add "tiled-mm@master" && \
+#     spack -e /cosma-env-cuda-gpu-direct add "costa@master" && \
+#     spack -e /cosma-env-cuda-gpu-direct add "cuda@12" && \
+#     spack -e /cosma-env-cuda-gpu-direct develop -p /src cosma@master && \
+#     spack -e /cosma-env-cuda-gpu-direct install --only=dependencies --fail-fast
 
-RUN spack env create -d /cosma-env-cuda-nccl && \
-    spack -e /cosma-env-cuda-nccl add "cosma@master +cuda +tests +scalapack +shared +nccl  %gcc ^mpich " && \
-    spack -e /cosma-env-cuda-nccl add "tiled-mm@2.3.1" && \
-    spack -e /cosma-env-cuda-nccl add "costa@master" && \
-    spack -e /cosma-env-cuda-nccl add "cuda@12" && \
-    spack -e /cosma-env-cuda-nccl develop -p /src cosma@master && \
-    spack -e /cosma-env-cuda-nccl install --only=dependencies --fail-fast
+# RUN spack env create -d /cosma-env-cuda-nccl && \
+#     spack -e /cosma-env-cuda-nccl add "cosma@master +cuda +tests +scalapack +shared +nccl  %gcc ^mpich " && \
+#     spack -e /cosma-env-cuda-nccl add "tiled-mm@2.3.1" && \
+#     spack -e /cosma-env-cuda-nccl add "costa@master" && \
+#     spack -e /cosma-env-cuda-nccl add "cuda@12" && \
+#     spack -e /cosma-env-cuda-nccl develop -p /src cosma@master && \
+#     spack -e /cosma-env-cuda-nccl install --only=dependencies --fail-fast
 
-RUN spack env create -d /cosma-env-cpu && \
-    spack -e /cosma-env-cpu add "cosma@master ~cuda +tests +scalapack +shared %gcc  ^mpich " && \
-    spack -e /cosma-env-cpu add "costa@master" && \
-    spack -e /cosma-env-cpu develop -p /src cosma@master && \
-    spack -e /cosma-env-cpu install --only=dependencies --fail-fast
+# RUN spack env create -d /cosma-env-cpu && \
+#     spack -e /cosma-env-cpu add "cosma@master ~cuda +tests +scalapack +shared %gcc  ^mpich " && \
+#     spack -e /cosma-env-cpu add "costa@master" && \
+#     spack -e /cosma-env-cpu develop -p /src cosma@master && \
+#     spack -e /cosma-env-cpu install --only=dependencies --fail-fast
