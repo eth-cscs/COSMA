@@ -1,4 +1,4 @@
-FROM ubuntu:22.04 as builder
+FROM ubuntu:24.04 as builder
 
 ARG CUDA_ARCH=90
 
