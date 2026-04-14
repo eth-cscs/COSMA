@@ -16,9 +16,13 @@ RUN apt-get install -y apt-utils
 
 # install basic tools
 RUN apt-get install -y --no-install-recommends gcc g++ gfortran clang libomp-14-dev git make unzip file \
-  vim wget pkg-config python3-pip python3-dev cython3 python3-pythran tcl m4 cpio automake meson \
+  vim wget pkg-config python3-pip python3-dev cython3 python3-pythran tcl m4 cpio curl automake meson \
   xz-utils patch patchelf apt-transport-https ca-certificates gnupg software-properties-common perl tar bzip2 \
   liblzma-dev libbz2-dev
+
+# install CMake
+RUN wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-aarch64.tar.gz -O cmake.tar.gz && \
+    tar zxvf cmake.tar.gz --strip-components=1 -C /usr
 
 # get latest version of spack
 RUN git clone -b releases/v1.1 https://github.com/spack/spack.git
