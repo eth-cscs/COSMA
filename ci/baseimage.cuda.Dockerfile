@@ -8,9 +8,7 @@ ENV FORCE_UNSAFE_CONFIGURE 1
 
 ENV PATH="/spack/bin:${PATH}"
 
-ENV MPICH_VERSION=3.4.3
-
-ENV CMAKE_VERSION=3.30.3
+ENV MPICH_VERSION=4.3.3
 
 RUN apt-get -y update
 
@@ -21,10 +19,6 @@ RUN apt-get install -y --no-install-recommends gcc g++ gfortran clang libomp-14-
   vim wget pkg-config python3-pip python3-dev cython3 python3-pythran curl tcl m4 cpio automake meson \
   xz-utils patch patchelf apt-transport-https ca-certificates gnupg software-properties-common perl tar bzip2 \
   liblzma-dev libbz2-dev
-
-# install CMake
-RUN wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-aarch64.tar.gz -O cmake.tar.gz && \
-    tar zxvf cmake.tar.gz --strip-components=1 -C /usr
 
 # get latest version of spack
 RUN git clone -b releases/v1.1 https://github.com/spack/spack.git
