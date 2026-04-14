@@ -38,9 +38,6 @@ RUN spack external find --all --exclude python --exclude meson
 # find compilers
 RUN spack compiler find
 
-# install yq (utility to manipulate the yaml files)
-RUN wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_arm64 && chmod a+x /usr/local/bin/yq
-
 # install MPICH
 RUN spack install mpich@${MPICH_VERSION} %gcc
 
