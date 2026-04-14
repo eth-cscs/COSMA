@@ -8,7 +8,7 @@ ENV FORCE_UNSAFE_CONFIGURE 1
 
 ENV PATH="/spack/bin:${PATH}"
 
-ENV MPICH_VERSION=4.3.3
+ENV MPICH_VERSION=4.3.2
 
 RUN apt-get -y update
 
