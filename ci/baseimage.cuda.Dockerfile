@@ -22,7 +22,7 @@ RUN apt-get install -y --no-install-recommends gcc g++ gfortran clang libomp-14-
   liblzma-dev libbz2-dev
 
 # install CMake
-RUN wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-aarch64.tar.gz -O cmake.tar.gz && \
+RUN wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-$(uname -m).tar.gz -O cmake.tar.gz && \
     tar zxvf cmake.tar.gz --strip-components=1 -C /usr
 
 # get latest version of spack
@@ -50,17 +50,16 @@ RUN spack install mpich@${MPICH_VERSION} %gcc
 RUN echo $(spack find --format='{prefix.lib}' mpich) > /etc/ld.so.conf.d/mpich.conf
 RUN ldconfig
 
-# create environments for several configurations and install dependencies
+# # create environments for several configurations and install dependencies
 RUN mkdir -p /cosma-env-cuda/costa /cosma-env-cuda/tiled-mm
 RUN spack env create -d /cosma-env-cuda && \
     spack -e /cosma-env-cuda add "cosma@=master +cuda +tests +scalapack +shared %gcc  ^mpich" && \
     spack -e /cosma-env-cuda add "tiled-mm@=master" && \
     spack -e /cosma-env-cuda develop -p "./tiled-mm tiled-mm" && \
-    spack -e /cosma-env-cuda add "cuda@12" && \
     spack -e /cosma-env-cuda add "costa@=master" && \
     spack -e /cosma-env-cuda develop -p "./costa costa" && \
-    spack -e /cosma-env-cuda develop -p /src cosma@master && \
-    spack -e /cosma-env-cuda install --only=dependencies --fail-fast
+    spack -e /cosma-env-cuda develop -p /src cosma@master
+RUN spack -e /cosma-env-cuda install --only=dependencies --fail-fast
 RUN spack clean -a
 
 # RUN spack env create -d /cosma-env-cuda-gpu-direct && \
