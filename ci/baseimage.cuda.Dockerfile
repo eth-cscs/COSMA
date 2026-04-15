@@ -61,6 +61,7 @@ RUN spack env create -d /cosma-env-cuda && \
     spack -e /cosma-env-cuda develop -p "./costa costa" && \
     spack -e /cosma-env-cuda develop -p /src cosma@master && \
     spack -e /cosma-env-cuda install --only=dependencies --fail-fast
+RUN spack clean -a
 
 # RUN spack env create -d /cosma-env-cuda-gpu-direct && \
 #     spack -e /cosma-env-cuda-gpu-direct add "cosma@master +cuda +tests +scalapack +shared +gpu_direct %gcc  ^mpich " && \
