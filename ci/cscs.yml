@@ -14,8 +14,8 @@ build base image:
     DOCKERFILE: ci/baseimage.cuda.Dockerfile
     WATCH_FILECHANGES: ci/baseimage.cuda.Dockerfile
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/base/cosma-ci
-    KUBERNETES_MEMORY_REQUEST: "128Gi"
-    KUBERNETES_MEMORY_LIMIT: "128Gi"
+    KUBERNETES_MEMORY_REQUEST: "92Gi"
+    KUBERNETES_MEMORY_LIMIT: "92Gi"
 
 build cosma:
   extends: .container-builder-cscs-gh200
