@@ -22,6 +22,7 @@ build cosma:
   needs: ["build base image"]
   stage: build
   variables:
+    CSCS_REBUILD_POLICY: "always"
     DOCKERFILE: ci/build.Dockerfile
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/cosma/cosma-ci:$CI_COMMIT_SHA
     ENVPATH: "/cosma-env-cuda"
