@@ -4,6 +4,7 @@
 #include <iostream>
 #include <chrono>
 #include <complex>
+#include <limits>
 #include <vector>
 #include <cassert>
 
@@ -21,7 +22,24 @@
 // but it's not necessary (they are anyway stored as double's)
 template <typename T>
 void fill_randomly(std::vector<T> &in) {
-    std::generate(in.begin(), in.end(), []() { return cosma::random_generator<T>::sample();});
+    std::generate(in.begin(), in.end(), []() {
+        return cosma::random_generator<T>::sample();
+    });
+}
+
+template <typename T>
+struct real_type {
+    using type = T;
+};
+template <typename T>
+struct real_type<std::complex<T>> {
+    using type = T;
+};
+
+template <typename T>
+void fill_nan(std::vector<T> &in) {
+    using R = typename real_type<T>::type;
+    std::fill(in.begin(), in.end(), T{std::numeric_limits<R>::quiet_NaN()});
 }
 
 // **********************
@@ -304,13 +322,27 @@ bool benchmark_pxgemm(cosma::pxgemm_params<T>& params, MPI_Comm comm, int n_rep,
         fill_randomly(a);
         fill_randomly(b);
         if (algorithm == "both") {
-            fill_randomly(c_cosma);
-            // in case beta > 0, this is important in order to get the same results
-            c_scalapack = c_cosma;
+            // if beta == 0, C should not be read; fill with NaN to catch any
+            // accidental reads
+            if (params.beta == T{0}) {
+                fill_nan(c_cosma);
+                fill_nan(c_scalapack);
+            } else {
+                fill_randomly(c_cosma);
+                // in case beta > 0, this is important in order to get the same
+                // results
+                c_scalapack = c_cosma;
+            }
         } else if (algorithm == "cosma") {
-            fill_randomly(c_cosma);
+            if (params.beta == T{0})
+                fill_nan(c_cosma);
+            else
+                fill_randomly(c_cosma);
         } else {
-            fill_randomly(c_scalapack);
+            if (params.beta == T{0})
+                fill_nan(c_scalapack);
+            else
+                fill_randomly(c_scalapack);
         }
 
         if (algorithm == "both" || algorithm == "cosma") {
