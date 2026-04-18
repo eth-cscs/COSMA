@@ -51,7 +51,6 @@ RUN echo $(spack find --format='{prefix.lib}' mpich) > /etc/ld.so.conf.d/mpich.c
 RUN ldconfig
 
 # # create environments for several configurations and install dependencies
-RUN mkdir -p /cosma-env-cuda/costa /cosma-env-cuda/tiled-mm
 RUN spack env create -d /cosma-env-cuda && \
     spack -e /cosma-env-cuda add "cosma@=master +cuda +tests +scalapack +shared %gcc  ^mpich" && \
     spack -e /cosma-env-cuda add "tiled-mm@=master" && \
