@@ -55,9 +55,9 @@ RUN mkdir -p /cosma-env-cuda/costa /cosma-env-cuda/tiled-mm
 RUN spack env create -d /cosma-env-cuda && \
     spack -e /cosma-env-cuda add "cosma@=master +cuda +tests +scalapack +shared %gcc  ^mpich" && \
     spack -e /cosma-env-cuda add "tiled-mm@=master" && \
-    spack -e /cosma-env-cuda develop -p "./tiled-mm tiled-mm" && \
+    spack -e /cosma-env-cuda develop -p "./tiled-mm" "tiled-mm" && \
     spack -e /cosma-env-cuda add "costa@=master" && \
-    spack -e /cosma-env-cuda develop -p "./costa costa" && \
+    spack -e /cosma-env-cuda develop -p "./costa" "costa" && \
     spack -e /cosma-env-cuda develop -p /src cosma@master
 RUN spack -e /cosma-env-cuda install --only=dependencies --fail-fast
 RUN spack clean -a
