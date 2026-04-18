@@ -10,8 +10,11 @@ COPY . /src
 RUN spack -e $ENVPATH find -lcdv
 
 # build COSTA and Tiled-MM with current @master branch
-RUN git clone -b master https://github.com/eth-cscs/COSTA.git $ENVPATH/costa
-RUN git clone -b master https://github.com/eth-cscs/Tiled-MM.git $ENVPATH/tiled-mm
+RUN cd $ENVPATH/costa && git pull && git log --oneline -1 && \
+    cd $ENVPATH/tiled-mm && git pull && git log --oneline -1
+
+# show the spack.yaml
+RUN cat $ENVPATH/spack.yaml
 
 # build packages
 RUN spack -e $ENVPATH install
