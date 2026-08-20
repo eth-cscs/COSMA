@@ -30,6 +30,13 @@ class cosma_context {
     void register_state(MPI_Comm comm, const Strategy strategy);
 
     memory_pool<Scalar> &get_memory_pool();
+
+    // Releases all memory currently held by COSMA's internal memory
+    // pool back to the OS. Safe to call between multiply() invocations
+    // (the next multiplication that needs memory will reallocate it),
+    // but not while a CosmaMatrix/Buffer from a previous call is still
+    // alive - see memory_pool::free() for details.
+    void free_memory_pool();
 #ifdef COSMA_HAVE_GPU
     gpu::mm_handle<Scalar> *get_gpu_context();
 #endif
@@ -89,4 +96,13 @@ context<Scalar> make_context(size_t cpu_mem_limit,
 //     for completion of the initialization
 template <typename Scalar>
 global_context<Scalar> get_context_instance();
+
+// Releases all memory currently held by the global COSMA context's
+// memory pool back to the OS. Useful for freeing up memory between
+// multiply() calls (e.g. in an application that interleaves COSMA
+// with other memory-hungry libraries), without having to destroy
+// and recreate the whole context. See cosma_context::free_memory_pool()
+// for the lifetime constraint on when this is safe to call.
+template <typename Scalar>
+void free_memory_pool();
 } // namespace cosma

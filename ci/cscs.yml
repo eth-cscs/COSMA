@@ -91,3 +91,20 @@ multiply_using_layout:
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 4
+
+memory_pool:
+  extends: .run_tests
+  stage: test
+  script: /cosma-env-cuda/.spack-env/view/bin/test.memory_pool
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 1
+
+memory_pool_mpi:
+  extends: .run_tests
+  stage: test
+  script: /cosma-env-cuda/.spack-env/view/bin/test.memory_pool_mpi
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 4
+    USE_MPI: 'YES'

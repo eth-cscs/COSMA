@@ -67,6 +67,11 @@ memory_pool<Scalar> &cosma_context<Scalar>::get_memory_pool() {
 }
 
 template <typename Scalar>
+void cosma_context<Scalar>::free_memory_pool() {
+    memory_pool_.free();
+}
+
+template <typename Scalar>
 long long cosma_context<Scalar>::get_cpu_memory_limit() {
     return cpu_memory_limit;
 }
@@ -157,6 +162,11 @@ global_context<Scalar> get_context_instance() {
     return ctxt.get();
 }
 
+template <typename Scalar>
+void free_memory_pool() {
+    get_context_instance<Scalar>()->free_memory_pool();
+}
+
 using zfloat = std::complex<float>;
 using zdouble = std::complex<double>;
 
@@ -198,4 +208,10 @@ template global_context<float> get_context_instance();
 template global_context<double> get_context_instance();
 template global_context<zfloat> get_context_instance();
 template global_context<zdouble> get_context_instance();
+
+// template instantiation for free_memory_pool
+template void free_memory_pool<float>();
+template void free_memory_pool<double>();
+template void free_memory_pool<zfloat>();
+template void free_memory_pool<zdouble>();
 } // namespace cosma

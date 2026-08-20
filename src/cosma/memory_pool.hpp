@@ -33,11 +33,27 @@ public:
     void resize(size_t capacity);
     void reset();
 
+    // Releases all memory currently held by the pool back to the OS
+    // (unlike reset(), which only marks the pool as empty but keeps
+    // its capacity allocated). Useful when COSMA's buffers are not
+    // needed for a while and other libraries/parts of the application
+    // need the memory in the meantime. The next multiplication that
+    // needs the pool will simply reallocate what it needs.
+    //
+    // WARNING: only call this when no CosmaMatrix/Buffer objects from
+    // a previous multiply() are still alive. Those objects cache raw
+    // pointers into the pool's backing storage, which free() releases;
+    // reusing them afterwards is a use-after-free. It is safe to call
+    // between independent multiply()/multiply_using_layout() calls,
+    // since those construct fresh matrix objects internally each time.
+    void free();
+
     T* get_pool_pointer();
 
     void turn_on_output();
 
     size_t size();
+    size_t capacity();
     void reserve(std::vector<size_t>& buffer_sizes);
 
     void pin(T* ptr, std::size_t size);
