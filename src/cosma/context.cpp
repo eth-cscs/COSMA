@@ -24,7 +24,6 @@ cosma_context<Scalar>::cosma_context() {
     gpu_ctx_ = gpu::make_context<Scalar>(
         gpu_streams(), gpu_max_tile_m(), gpu_max_tile_n(), gpu_max_tile_k());
 #endif
-    attach_finalize_hook();
 }
 
 template <typename Scalar>
@@ -50,12 +49,19 @@ cosma_context<Scalar>::cosma_context(size_t cpu_mem_limit,
                  "used in the CPU version."
               << std::endl;
 #endif
-    attach_finalize_hook();
 }
 
 template <typename Scalar>
 cosma_context<Scalar>::~cosma_context() {
     memory_pool_.unpin_all();
+    int mpi_finalized;
+    MPI_Finalized(&mpi_finalized);
+    if (!mpi_finalized && finalize_keyval_ != MPI_KEYVAL_INVALID) {
+        // Detach this instance so the finalize callback cannot run on
+        // freed memory.
+        MPI_Comm_delete_attr(MPI_COMM_SELF, finalize_keyval_);
+        MPI_Comm_free_keyval(&finalize_keyval_);
+    }
 #ifdef DEBUG
     if (output) {
         std::cout << "context destroyed" << std::endl;
@@ -83,6 +89,11 @@ void cosma_context<Scalar>::register_state(MPI_Comm comm,
                                            const Strategy strategy) {
     if (comm == MPI_COMM_NULL)
         return;
+
+    // The constructor may run before MPI_Init; attach at first use.
+    if (finalize_keyval_ == MPI_KEYVAL_INVALID) {
+        attach_finalize_hook();
+    }
 
     int same_comm = 0;
 
