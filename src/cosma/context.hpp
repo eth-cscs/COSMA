@@ -63,6 +63,22 @@ class cosma_context {
     bool use_unified_memory_ = false;
     Strategy prev_strategy;
     std::unique_ptr<cosma::communicator> prev_cosma_comm;
+
+    // MPI_Finalize calls this callback while MPI is still alive. This is the
+    // last point where the cached communicator can be freed. The destructor
+    // of this class runs after MPI_Finalize and cannot free it.
+    static int finalize_delete_fn(MPI_Comm, int, void *attr_val, void *) {
+        static_cast<cosma_context *>(attr_val)->prev_cosma_comm.reset();
+        return MPI_SUCCESS;
+    }
+
+    void attach_finalize_hook() {
+        int keyval;
+        MPI_Comm_create_keyval(MPI_NULL_COPY_FN, &finalize_delete_fn,
+                               &keyval, nullptr);
+        MPI_Comm_set_attr(MPI_COMM_SELF, keyval, this);
+        // The keyval is never freed. It is an integer, not heap memory.
+    }
 };
 
 template <typename Scalar>

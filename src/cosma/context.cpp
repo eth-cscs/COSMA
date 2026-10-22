@@ -24,6 +24,7 @@ cosma_context<Scalar>::cosma_context() {
     gpu_ctx_ = gpu::make_context<Scalar>(
         gpu_streams(), gpu_max_tile_m(), gpu_max_tile_n(), gpu_max_tile_k());
 #endif
+    attach_finalize_hook();
 }
 
 template <typename Scalar>
@@ -49,6 +50,7 @@ cosma_context<Scalar>::cosma_context(size_t cpu_mem_limit,
                  "used in the CPU version."
               << std::endl;
 #endif
+    attach_finalize_hook();
 }
 
 template <typename Scalar>
