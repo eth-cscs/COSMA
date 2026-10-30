@@ -1,8 +1,29 @@
 #include <cassert>
 #include <complex>
 #include <cosma/memory_pool.hpp>
+#include <iomanip>
 #include <iostream>
 #include <mpi.h>
+#include <sstream>
+
+namespace {
+// human-readable representation of a number of elements of type T,
+// e.g. "3.42 GB", used to report how much memory COSMA actually
+// tried (and failed) to allocate.
+template <typename T>
+std::string human_readable_size(size_t n_elements) {
+    double bytes = static_cast<double>(n_elements) * sizeof(T);
+    const char *units[] = {"B", "KB", "MB", "GB", "TB"};
+    int unit = 0;
+    while (bytes >= 1024.0 && unit < 4) {
+        bytes /= 1024.0;
+        ++unit;
+    }
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(2) << bytes << " " << units[unit];
+    return oss.str();
+}
+}
 
 template <typename T>
 cosma::memory_pool<T>::memory_pool() {}
@@ -75,13 +96,29 @@ void cosma::memory_pool<T>::resize(size_t capacity) {
     try {
         pool_.resize(capacity);
     } catch (const std::bad_alloc& e) {
-        std::cout << "COSMA (memory pool): not enough space. Try setting the CPU memory limit (see environment variable COSMA_CPU_MAX_MEMORY)." << std::endl;
+        std::cout << "COSMA (memory pool): failed to allocate "
+                   << human_readable_size<T>(capacity)
+                   << " (" << capacity << " elements) per rank. "
+                   << "Try lowering the CPU memory limit (see environment "
+                      "variable COSMA_CPU_MAX_MEMORY) so that COSMA uses "
+                      "more sequential steps and less memory per rank."
+                   << std::endl;
         throw;
     } catch (const std::length_error& e) {
-        std::cout << "COSMA (memory pool): size >= max_size(). Try setting the CPU memory limit (see environment variable COSMA_CPU_MAX_MEMORY)." << std::endl;
+        std::cout << "COSMA (memory pool): requested size ("
+                   << human_readable_size<T>(capacity)
+                   << ", " << capacity << " elements per rank) "
+                   << "exceeds the container's max_size(). Try setting the "
+                      "CPU memory limit (see environment variable "
+                      "COSMA_CPU_MAX_MEMORY)."
+                   << std::endl;
         throw;
     } catch (const std::exception& e) {
-        std::cout << "COSMA (memory pool): unknown exception, potentially a bug. Please inform us of the test-case." << std::endl;
+        std::cout << "COSMA (memory pool): unknown exception while "
+                      "allocating " << human_readable_size<T>(capacity)
+                   << " per rank, potentially a bug. Please inform us of "
+                      "the test-case."
+                   << std::endl;
         throw;
     }
     pool_size_ = capacity;
@@ -93,6 +130,21 @@ void cosma::memory_pool<T>::reset() {
     pool_size_ = 0;
     n_buffers_ = 0;
     this->unpin_all();
+    resized = false;
+    already_pinned = false;
+}
+
+template <typename T>
+void cosma::memory_pool<T>::free() {
+    this->unpin_all();
+    // swapping with a freshly-constructed, empty vector is the
+    // standard way to force the allocated capacity to be released;
+    // shrink_to_fit() is only a non-binding request and most
+    // implementations honor it, but it is not guaranteed to.
+    aligned_vector_t().swap(pool_);
+    pool_size_ = 0;
+    pool_capacity_ = 0;
+    n_buffers_ = 0;
     resized = false;
     already_pinned = false;
 }
@@ -110,6 +162,11 @@ void cosma::memory_pool<T>::turn_on_output() {
 template <typename T>
 size_t cosma::memory_pool<T>::size() {
     return pool_size_;
+}
+
+template <typename T>
+size_t cosma::memory_pool<T>::capacity() {
+    return pool_capacity_;
 }
 
 template <typename T>
@@ -137,13 +194,29 @@ void cosma::memory_pool<T>::reserve(std::vector<size_t>& buffer_sizes) {
         try {
             pool_.reserve(pool_capacity_);
         } catch (const std::bad_alloc& e) {
-            std::cout << "COSMA (memory pool): not enough space. Try setting the CPU memory limit (see environment variable COSMA_CPU_MAX_MEMORY)." << std::endl;
+            std::cout << "COSMA (memory pool): failed to reserve "
+                       << human_readable_size<T>(pool_capacity_)
+                       << " (" << pool_capacity_ << " elements) per rank. "
+                       << "Try lowering the CPU memory limit (see environment "
+                          "variable COSMA_CPU_MAX_MEMORY) so that COSMA uses "
+                          "more sequential steps and less memory per rank."
+                       << std::endl;
             throw;
         } catch (const std::length_error& e) {
-            std::cout << "COSMA (memory pool): size >= max_size(). Try setting the CPU memory limit (see environment variable COSMA_CPU_MAX_MEMORY)." << std::endl;
+            std::cout << "COSMA (memory pool): requested size ("
+                       << human_readable_size<T>(pool_capacity_)
+                       << ", " << pool_capacity_ << " elements per rank) "
+                       << "exceeds the container's max_size(). Try setting the "
+                          "CPU memory limit (see environment variable "
+                          "COSMA_CPU_MAX_MEMORY)."
+                       << std::endl;
             throw;
         } catch (const std::exception& e) {
-            std::cout << "COSMA (memory pool): unknown exception, potentially a bug. Please inform us of the test-case." << std::endl;
+            std::cout << "COSMA (memory pool): unknown exception while "
+                          "reserving " << human_readable_size<T>(pool_capacity_)
+                       << " per rank, potentially a bug. Please inform us of "
+                          "the test-case."
+                       << std::endl;
             throw;
         }
     }

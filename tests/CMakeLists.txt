@@ -29,6 +29,12 @@ add_test(NAME test.mapper COMMAND test.mapper)
 add_dependencies(tests test.mapper)
 install(TARGETS test.mapper DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
+add_executable(test.memory_pool memory_pool.cpp)
+target_link_libraries(test.memory_pool PRIVATE main_gtest gtest cosma)
+add_test(NAME test.memory_pool COMMAND test.memory_pool)
+add_dependencies(tests test.memory_pool)
+install(TARGETS test.memory_pool DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
 # Standalone main: the check runs during MPI_Finalize, after gtest has finished.
 add_executable(test.finalize_hook finalize_hook.cpp)
 target_link_libraries(test.finalize_hook PRIVATE cosma)
@@ -46,3 +52,4 @@ endif()
 add_cosma_mpi_test(multiply_using_layout 4 cosma)
 add_cosma_mpi_test(multiply 16 cosma)
 add_cosma_mpi_test(scalar_matmul 8 cosma)
+add_cosma_mpi_test(memory_pool_mpi 4 cosma)
