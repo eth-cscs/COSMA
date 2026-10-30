@@ -67,7 +67,9 @@ class cosma_context {
     // Runs during MPI_Finalize, the last point where the cached
     // communicator can still be freed.
     static int finalize_delete_fn(MPI_Comm, int, void *attr_val, void *) {
-        static_cast<cosma_context *>(attr_val)->prev_cosma_comm.reset();
+        auto *ctx = static_cast<cosma_context *>(attr_val);
+        ctx->prev_cosma_comm.reset();
+        MPI_Comm_free_keyval(&ctx->finalize_keyval_);
         return MPI_SUCCESS;
     }
 

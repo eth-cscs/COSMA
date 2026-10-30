@@ -58,9 +58,8 @@ cosma_context<Scalar>::~cosma_context() {
     MPI_Finalized(&mpi_finalized);
     if (!mpi_finalized && finalize_keyval_ != MPI_KEYVAL_INVALID) {
         // Detach this instance so the finalize callback cannot run on
-        // freed memory.
+        // freed memory. The callback also frees the keyval.
         MPI_Comm_delete_attr(MPI_COMM_SELF, finalize_keyval_);
-        MPI_Comm_free_keyval(&finalize_keyval_);
     }
 #ifdef DEBUG
     if (output) {
