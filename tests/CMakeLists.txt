@@ -29,6 +29,16 @@ add_test(NAME test.mapper COMMAND test.mapper)
 add_dependencies(tests test.mapper)
 install(TARGETS test.mapper DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
+# Standalone main: the check runs during MPI_Finalize, after gtest has finished.
+add_executable(test.finalize_hook finalize_hook.cpp)
+target_link_libraries(test.finalize_hook PRIVATE cosma)
+add_test(NAME test.finalize_hook
+         WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH}
+         COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
+                 ${MPIEXEC_PREFLAGS} ./test.finalize_hook ${MPIEXEC_POSTFLAGS})
+add_dependencies(tests test.finalize_hook)
+install(TARGETS test.finalize_hook DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
 if(NOT COSMA_SCALAPACK MATCHES "OFF")
     add_cosma_mpi_test(pdgemm 16 cosma_pxgemm_cpp)
 endif()

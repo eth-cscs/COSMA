@@ -91,3 +91,12 @@ multiply_using_layout:
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 4
+
+finalize_hook:
+  extends: .run_tests
+  stage: test
+  script: /cosma-env-cuda/.spack-env/view/bin/test.finalize_hook
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 4
+    USE_MPI: 'YES'
