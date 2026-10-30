@@ -69,6 +69,31 @@ cosma_context<Scalar>::~cosma_context() {
 }
 
 template <typename Scalar>
+int cosma_context<Scalar>::finalize_delete_fn(MPI_Comm,
+                                              int,
+                                              void *attr_val,
+                                              void *) {
+    auto *ctx = static_cast<cosma_context *>(attr_val);
+    ctx->prev_cosma_comm.reset();
+    MPI_Comm_free_keyval(&ctx->finalize_keyval_);
+    return MPI_SUCCESS;
+}
+
+template <typename Scalar>
+void cosma_context<Scalar>::attach_finalize_hook() {
+    int initialized, finalized;
+    MPI_Initialized(&initialized);
+    MPI_Finalized(&finalized);
+    if (!initialized || finalized)
+        return; // no MPI: no cached communicator to free
+    MPI_Comm_create_keyval(MPI_COMM_NULL_COPY_FN,
+                           &finalize_delete_fn,
+                           &finalize_keyval_,
+                           nullptr);
+    MPI_Comm_set_attr(MPI_COMM_SELF, finalize_keyval_, this);
+}
+
+template <typename Scalar>
 memory_pool<Scalar> &cosma_context<Scalar>::get_memory_pool() {
     return memory_pool_;
 }

@@ -66,25 +66,11 @@ class cosma_context {
 
     // Runs during MPI_Finalize, the last point where the cached
     // communicator can still be freed.
-    static int finalize_delete_fn(MPI_Comm, int, void *attr_val, void *) {
-        auto *ctx = static_cast<cosma_context *>(attr_val);
-        ctx->prev_cosma_comm.reset();
-        MPI_Comm_free_keyval(&ctx->finalize_keyval_);
-        return MPI_SUCCESS;
-    }
+    static int finalize_delete_fn(MPI_Comm, int, void *attr_val, void *);
 
     int finalize_keyval_ = MPI_KEYVAL_INVALID;
 
-    void attach_finalize_hook() {
-        int initialized, finalized;
-        MPI_Initialized(&initialized);
-        MPI_Finalized(&finalized);
-        if (!initialized || finalized)
-            return;  // no MPI: no cached communicator to free
-        MPI_Comm_create_keyval(MPI_COMM_NULL_COPY_FN, &finalize_delete_fn,
-                               &finalize_keyval_, nullptr);
-        MPI_Comm_set_attr(MPI_COMM_SELF, finalize_keyval_, this);
-    }
+    void attach_finalize_hook();
 };
 
 template <typename Scalar>
