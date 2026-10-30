@@ -81,7 +81,7 @@ class cosma_context {
         MPI_Finalized(&finalized);
         if (!initialized || finalized)
             return;  // no MPI: no cached communicator to free
-        MPI_Comm_create_keyval(MPI_NULL_COPY_FN, &finalize_delete_fn,
+        MPI_Comm_create_keyval(MPI_COMM_NULL_COPY_FN, &finalize_delete_fn,
                                &finalize_keyval_, nullptr);
         MPI_Comm_set_attr(MPI_COMM_SELF, finalize_keyval_, this);
     }
