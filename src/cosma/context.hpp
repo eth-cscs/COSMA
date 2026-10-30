@@ -70,6 +70,14 @@ class cosma_context {
     bool use_unified_memory_ = false;
     Strategy prev_strategy;
     std::unique_ptr<cosma::communicator> prev_cosma_comm;
+
+    // Runs during MPI_Finalize, the last point where the cached
+    // communicator can still be freed.
+    static int finalize_delete_fn(MPI_Comm, int, void *attr_val, void *);
+
+    int finalize_keyval_ = MPI_KEYVAL_INVALID;
+
+    void attach_finalize_hook();
 };
 
 template <typename Scalar>

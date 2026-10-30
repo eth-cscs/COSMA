@@ -54,11 +54,43 @@ cosma_context<Scalar>::cosma_context(size_t cpu_mem_limit,
 template <typename Scalar>
 cosma_context<Scalar>::~cosma_context() {
     memory_pool_.unpin_all();
+    int mpi_finalized;
+    MPI_Finalized(&mpi_finalized);
+    if (!mpi_finalized && finalize_keyval_ != MPI_KEYVAL_INVALID) {
+        // Detach this instance so the finalize callback cannot run on
+        // freed memory. The callback also frees the keyval.
+        MPI_Comm_delete_attr(MPI_COMM_SELF, finalize_keyval_);
+    }
 #ifdef DEBUG
     if (output) {
         std::cout << "context destroyed" << std::endl;
     }
 #endif
+}
+
+template <typename Scalar>
+int cosma_context<Scalar>::finalize_delete_fn(MPI_Comm,
+                                              int,
+                                              void *attr_val,
+                                              void *) {
+    auto *ctx = static_cast<cosma_context *>(attr_val);
+    ctx->prev_cosma_comm.reset();
+    MPI_Comm_free_keyval(&ctx->finalize_keyval_);
+    return MPI_SUCCESS;
+}
+
+template <typename Scalar>
+void cosma_context<Scalar>::attach_finalize_hook() {
+    int initialized, finalized;
+    MPI_Initialized(&initialized);
+    MPI_Finalized(&finalized);
+    if (!initialized || finalized)
+        return; // no MPI: no cached communicator to free
+    MPI_Comm_create_keyval(MPI_COMM_NULL_COPY_FN,
+                           &finalize_delete_fn,
+                           &finalize_keyval_,
+                           nullptr);
+    MPI_Comm_set_attr(MPI_COMM_SELF, finalize_keyval_, this);
 }
 
 template <typename Scalar>
@@ -86,6 +118,11 @@ void cosma_context<Scalar>::register_state(MPI_Comm comm,
                                            const Strategy strategy) {
     if (comm == MPI_COMM_NULL)
         return;
+
+    // The constructor may run before MPI_Init; attach at first use.
+    if (finalize_keyval_ == MPI_KEYVAL_INVALID) {
+        attach_finalize_hook();
+    }
 
     int same_comm = 0;
 
